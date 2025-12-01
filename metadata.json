@@ -1,0 +1,7 @@
+{
+  "name": "LabHome BD",
+  "description": "Book lab tests from home with sample collection service in Bangladesh.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
