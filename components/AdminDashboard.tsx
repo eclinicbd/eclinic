@@ -1,359 +1,678 @@
-
 import React, { useState } from 'react';
-import { Language, BookingHistoryItem, TestPackage } from '../types';
+import { Language, BookingHistoryItem, TestPackage, HealthPackage, LabPartner, BookingStatus, SiteSettings, ServiceItem } from '../types';
 import { TRANSLATIONS } from '../translations';
-import { getTests } from '../constants';
 import { 
   LayoutDashboard, 
   ShoppingBag, 
   FlaskConical, 
+  Building2, 
   Users, 
   Settings, 
   LogOut, 
   ChevronRight, 
-  TrendingUp, 
-  DollarSign, 
-  Clock, 
-  CheckCircle, 
-  XCircle,
-  AlertCircle,
-  MoreHorizontal,
-  Search,
-  Plus
+  Check, 
+  Globe, 
+  ArrowLeft,
+  Sparkles,
+  ShieldCheck,
+  Layers,
+  FileEdit
 } from 'lucide-react';
 import { Button } from './Button';
 
+// Modular Admin Sub-components
+import { AdminOverview } from './admin/AdminOverview';
+import { AdminOrders } from './admin/AdminOrders';
+import { AdminTests } from './admin/AdminTests';
+import { AdminPackages } from './admin/AdminPackages';
+import { AdminLabs } from './admin/AdminLabs';
+import { AdminCustomers } from './admin/AdminCustomers';
+import { AdminSettings } from './admin/AdminSettings';
+import { AdminCMS } from './admin/AdminCMS';
+import { 
+  TestFormModal, 
+  PackageFormModal,
+  LabFormModal, 
+  OrderFormModal, 
+  OrderDetailsModal, 
+  DeleteConfirmModal,
+  ServiceFormModal
+} from './admin/AdminModals';
+
 interface AdminDashboardProps {
   lang: Language;
+  onToggleLanguage?: () => void;
+  tests: TestPackage[];
+  onUpdateTests: (tests: TestPackage[]) => void;
+  packages?: HealthPackage[];
+  onUpdatePackages?: (packages: HealthPackage[]) => void;
+  labs: LabPartner[];
+  onUpdateLabs: (labs: LabPartner[]) => void;
+  bookings: BookingHistoryItem[];
+  onUpdateBookings: (bookings: BookingHistoryItem[]) => void;
+  siteSettings: SiteSettings;
+  onUpdateSiteSettings: (settings: SiteSettings) => void;
+  onResetAllData: () => void;
   onLogout: () => void;
 }
 
-// Mock Data for Admin
-const MOCK_ADMIN_BOOKINGS: BookingHistoryItem[] = [
-  {
-    id: "BK-2025",
-    customerName: "Rahim Ahmed",
-    customerPhone: "01712345678",
-    date: "2024-03-22",
-    time: "10:00 AM - 11:00 AM",
-    labName: "Popular Diagnostic Centre Ltd.",
-    testNames: ["CBC", "Lipid Profile"],
-    totalCost: 1650,
-    status: "pending"
-  },
-  {
-    id: "BK-2024",
-    customerName: "Karim Uddin",
-    customerPhone: "01812345678",
-    date: "2024-03-22",
-    time: "11:00 AM - 12:00 PM",
-    labName: "Labaid Diagnostics Center",
-    testNames: ["Diabetes Checkup (HbA1c)"],
-    totalCost: 1000,
-    status: "confirmed"
-  },
-  {
-    id: "BK-2023",
-    customerName: "Salma Begum",
-    customerPhone: "01912345678",
-    date: "2024-03-21",
-    time: "09:00 AM - 10:00 AM",
-    labName: "BIRDEM General Hospital",
-    testNames: ["Vitamin D Test", "Thyroid Profile"],
-    totalCost: 3700,
-    status: "completed"
-  },
-  {
-    id: "BK-2022",
-    customerName: "Tanvir Hasan",
-    customerPhone: "01612345678",
-    date: "2024-03-21",
-    time: "02:00 PM - 03:00 PM",
-    labName: "BSMMU (PG)",
-    testNames: ["CBC"],
-    totalCost: 300,
-    status: "cancelled"
-  }
-];
+export const AdminDashboard: React.FC<AdminDashboardProps> = ({
+  lang,
+  onToggleLanguage,
+  tests,
+  onUpdateTests,
+  packages = [],
+  onUpdatePackages,
+  labs,
+  onUpdateLabs,
+  bookings,
+  onUpdateBookings,
+  siteSettings,
+  onUpdateSiteSettings,
+  onResetAllData,
+  onLogout
+}) => {
+  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'tests' | 'packages' | 'labs' | 'customers' | 'cms' | 'settings'>('overview');
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-export const AdminDashboard: React.FC<AdminDashboardProps> = ({ lang, onLogout }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'tests' | 'users'>('overview');
-  const [searchTerm, setSearchTerm] = useState('');
+  // Modals state
+  const [isTestModalOpen, setIsTestModalOpen] = useState(false);
+  const [editingTest, setEditingTest] = useState<TestPackage | null>(null);
+
+  const [isPackageModalOpen, setIsPackageModalOpen] = useState(false);
+  const [editingPackage, setEditingPackage] = useState<HealthPackage | null>(null);
+
+  const [isLabModalOpen, setIsLabModalOpen] = useState(false);
+  const [editingLab, setEditingLab] = useState<LabPartner | null>(null);
+
+  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+  const [editingOrder, setEditingOrder] = useState<BookingHistoryItem | null>(null);
+
+  const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
+  const [editingService, setEditingService] = useState<ServiceItem | null>(null);
+
+  const [selectedOrderForDetails, setSelectedOrderForDetails] = useState<BookingHistoryItem | null>(null);
+
+  const [deleteTarget, setDeleteTarget] = useState<{
+    type: 'test' | 'package' | 'lab' | 'order' | 'service';
+    id: string;
+    name: string;
+  } | null>(null);
+
   const t = TRANSLATIONS[lang];
-  const allTests = getTests(lang);
 
-  const getStatusBadge = (status: string) => {
-    switch(status) {
-      case 'pending': return <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-bold flex items-center gap-1 w-fit"><Clock size={12}/> {t.statusPending}</span>;
-      case 'confirmed': return <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold flex items-center gap-1 w-fit"><CheckCircle size={12}/> {t.statusConfirmed}</span>;
-      case 'completed': return <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold flex items-center gap-1 w-fit"><CheckCircle size={12}/> {t.statusCompleted}</span>;
-      case 'cancelled': return <span className="px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold flex items-center gap-1 w-fit"><XCircle size={12}/> {t.statusCancelled}</span>;
-      default: return null;
-    }
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3500);
   };
 
-  const SidebarItem = ({ id, icon: Icon, label }: { id: typeof activeTab, icon: any, label: string }) => (
-    <button 
+
+  // ==========================================
+  // TEST HANDLERS
+  // ==========================================
+  const handleOpenAddTest = () => {
+    setEditingTest(null);
+    setIsTestModalOpen(true);
+  };
+
+  const handleOpenEditTest = (test: TestPackage) => {
+    setEditingTest(test);
+    setIsTestModalOpen(true);
+  };
+
+  const handleSaveTest = (testToSave: TestPackage) => {
+    if (editingTest) {
+      const updated = tests.map(t => t.id === testToSave.id ? testToSave : t);
+      onUpdateTests(updated);
+      showToast(t.adminSaveSuccess);
+    } else {
+      onUpdateTests([testToSave, ...tests]);
+      showToast(t.adminSaveSuccess);
+    }
+    setIsTestModalOpen(false);
+    setEditingTest(null);
+  };
+
+  const handleToggleHideTest = (testId: string) => {
+    const targetTest = tests.find(t => t.id === testId);
+    if (!targetTest) return;
+    const isNowHidden = !targetTest.isHidden;
+    const updated = tests.map(t => t.id === testId ? { ...t, isHidden: isNowHidden } : t);
+    onUpdateTests(updated);
+    showToast(isNowHidden ? t.adminHideSuccess : t.adminUnhideSuccess);
+  };
+
+  const handleDuplicateTest = (test: TestPackage) => {
+    const clone: TestPackage = {
+      ...test,
+      id: `test_${Date.now()}`,
+      name: `${test.name} (Copy)`,
+      isHidden: false
+    };
+    onUpdateTests([clone, ...tests]);
+    showToast("Test duplicated successfully!");
+  };
+
+  // ==========================================
+  // PACKAGE HANDLERS
+  // ==========================================
+  const handleOpenAddPackage = () => {
+    setEditingPackage(null);
+    setIsPackageModalOpen(true);
+  };
+
+  const handleOpenEditPackage = (pkg: HealthPackage) => {
+    setEditingPackage(pkg);
+    setIsPackageModalOpen(true);
+  };
+
+  const handleSavePackage = (pkgToSave: HealthPackage) => {
+    if (!onUpdatePackages) return;
+    if (editingPackage) {
+      const updated = packages.map(p => p.id === pkgToSave.id ? pkgToSave : p);
+      onUpdatePackages(updated);
+      showToast(lang === 'bn' ? 'প্যাকেজ সফলভাবে আপডেট করা হয়েছে!' : 'Package updated successfully!');
+    } else {
+      onUpdatePackages([pkgToSave, ...packages]);
+      showToast(lang === 'bn' ? 'নতুন প্যাকেজ সফলভাবে তৈরি করা হয়েছে!' : 'New package created successfully!');
+    }
+    setIsPackageModalOpen(false);
+    setEditingPackage(null);
+  };
+
+  const handleToggleHidePackage = (pkgId: string) => {
+    if (!onUpdatePackages) return;
+    const targetPkg = packages.find(p => p.id === pkgId);
+    if (!targetPkg) return;
+    const isNowHidden = !targetPkg.isHidden;
+    const updated = packages.map(p => p.id === pkgId ? { ...p, isHidden: isNowHidden } : p);
+    onUpdatePackages(updated);
+    showToast(isNowHidden 
+      ? (lang === 'bn' ? 'প্যাকেজটি লুকানো হয়েছে!' : 'Package is now hidden!') 
+      : (lang === 'bn' ? 'প্যাকেজটি সক্রিয় করা হয়েছে!' : 'Package is now active & visible!'));
+  };
+
+  const handleDuplicatePackage = (pkg: HealthPackage) => {
+    if (!onUpdatePackages) return;
+    const clone: HealthPackage = {
+      ...pkg,
+      id: `pkg_${Date.now()}`,
+      name: `${pkg.name} (Copy)`,
+      isHidden: false
+    };
+    onUpdatePackages([clone, ...packages]);
+    showToast(lang === 'bn' ? 'প্যাকেজের অনুলিপি তৈরি করা হয়েছে!' : 'Package duplicated successfully!');
+  };
+
+  // ==========================================
+  // LAB HANDLERS
+  // ==========================================
+  const handleOpenAddLab = () => {
+    setEditingLab(null);
+    setIsLabModalOpen(true);
+  };
+
+  const handleOpenEditLab = (lab: LabPartner) => {
+    setEditingLab(lab);
+    setIsLabModalOpen(true);
+  };
+
+  const handleSaveLab = (labToSave: LabPartner) => {
+    if (editingLab) {
+      const updated = labs.map(l => l.id === labToSave.id ? labToSave : l);
+      onUpdateLabs(updated);
+      showToast(t.adminSaveSuccess);
+    } else {
+      onUpdateLabs([...labs, labToSave]);
+      showToast(t.adminSaveSuccess);
+    }
+    setIsLabModalOpen(false);
+    setEditingLab(null);
+  };
+
+  const handleToggleHideLab = (labId: string) => {
+    const targetLab = labs.find(l => l.id === labId);
+    if (!targetLab) return;
+    const isNowHidden = !targetLab.isHidden;
+    const updated = labs.map(l => l.id === labId ? { ...l, isHidden: isNowHidden } : l);
+    onUpdateLabs(updated);
+    showToast(isNowHidden ? t.adminHideLabSuccess : t.adminUnhideLabSuccess);
+  };
+
+  // ==========================================
+  // ORDER HANDLERS
+  // ==========================================
+  const handleOpenAddOrder = () => {
+    setEditingOrder(null);
+    setIsOrderModalOpen(true);
+  };
+
+  const handleOpenEditOrder = (order: BookingHistoryItem) => {
+    setEditingOrder(order);
+    setIsOrderModalOpen(true);
+  };
+
+  const handleSaveOrder = (orderToSave: BookingHistoryItem) => {
+    if (editingOrder) {
+      const updated = bookings.map(b => b.id === orderToSave.id ? orderToSave : b);
+      onUpdateBookings(updated);
+      if (selectedOrderForDetails?.id === orderToSave.id) {
+        setSelectedOrderForDetails(orderToSave);
+      }
+      showToast(t.adminSaveSuccess);
+    } else {
+      onUpdateBookings([orderToSave, ...bookings]);
+      showToast("New manual order created successfully!");
+    }
+    setIsOrderModalOpen(false);
+    setEditingOrder(null);
+  };
+
+  const handleUpdateOrderStatus = (orderId: string, newStatus: BookingStatus) => {
+    const updated = bookings.map(b => b.id === orderId ? { ...b, status: newStatus } : b);
+    onUpdateBookings(updated);
+    if (selectedOrderForDetails?.id === orderId) {
+      setSelectedOrderForDetails({ ...selectedOrderForDetails, status: newStatus });
+    }
+    showToast(`Order #${orderId} status changed to ${newStatus}`);
+  };
+
+  // ==========================================
+  // SERVICE HANDLERS (CMS)
+  // ==========================================
+  const handleOpenAddService = () => {
+    setEditingService(null);
+    setIsServiceModalOpen(true);
+  };
+
+  const handleOpenEditService = (service: ServiceItem) => {
+    setEditingService(service);
+    setIsServiceModalOpen(true);
+  };
+
+  const handleSaveService = (serviceToSave: ServiceItem) => {
+    const currentServices = siteSettings.services || [];
+    let updatedServices: ServiceItem[];
+    if (editingService) {
+      updatedServices = currentServices.map(s => s.id === serviceToSave.id ? serviceToSave : s);
+      showToast(t.adminSaveSuccess);
+    } else {
+      updatedServices = [serviceToSave, ...currentServices];
+      showToast("New service added successfully!");
+    }
+    const updatedSettings = { ...siteSettings, services: updatedServices };
+    onUpdateSiteSettings(updatedSettings);
+    setIsServiceModalOpen(false);
+    setEditingService(null);
+  };
+
+  const handleToggleServiceActive = (serviceId: string) => {
+    const currentServices = siteSettings.services || [];
+    const updatedServices = currentServices.map(s => {
+      if (s.id === serviceId) {
+        const nextState = s.isActive === false ? true : false;
+        showToast(nextState ? "Service is now visible on website!" : "Service is hidden from website!");
+        return { ...s, isActive: nextState };
+      }
+      return s;
+    });
+    onUpdateSiteSettings({ ...siteSettings, services: updatedServices });
+  };
+
+  // ==========================================
+  // DELETE HANDLER
+  // ==========================================
+  const handleConfirmDelete = () => {
+    if (!deleteTarget) return;
+
+    if (deleteTarget.type === 'test') {
+      const updated = tests.filter(t => t.id !== deleteTarget.id);
+      onUpdateTests(updated);
+      showToast(t.adminDeleteSuccess);
+    } else if (deleteTarget.type === 'package') {
+      if (onUpdatePackages) {
+        const updated = packages.filter(p => p.id !== deleteTarget.id);
+        onUpdatePackages(updated);
+        showToast(lang === 'bn' ? 'প্যাকেজটি সফলভাবে মুছে ফেলা হয়েছে!' : 'Package deleted successfully!');
+      }
+    } else if (deleteTarget.type === 'lab') {
+      const updated = labs.filter(l => l.id !== deleteTarget.id);
+      onUpdateLabs(updated);
+      showToast(t.adminDeleteSuccess);
+    } else if (deleteTarget.type === 'order') {
+      const updated = bookings.filter(b => b.id !== deleteTarget.id);
+      onUpdateBookings(updated);
+      if (selectedOrderForDetails?.id === deleteTarget.id) {
+        setSelectedOrderForDetails(null);
+      }
+      showToast(t.adminDeleteSuccess);
+    } else if (deleteTarget.type === 'service') {
+      const updatedServices = (siteSettings.services || []).filter(s => s.id !== deleteTarget.id);
+      onUpdateSiteSettings({ ...siteSettings, services: updatedServices });
+      showToast(t.adminDeleteSuccess);
+    }
+    setDeleteTarget(null);
+  };
+
+  const pendingCount = bookings.filter(b => b.status === 'pending').length;
+
+  const NavButton = ({ 
+    id, 
+    icon: Icon, 
+    label, 
+    badge 
+  }: { 
+    id: typeof activeTab; 
+    icon: any; 
+    label: string; 
+    badge?: number;
+  }) => (
+    <button
       onClick={() => setActiveTab(id)}
-      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-        activeTab === id 
-          ? 'bg-secondary text-white shadow-md' 
-          : 'text-slate-600 hover:bg-slate-100'
+      className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-semibold text-xs transition-all ${
+        activeTab === id
+          ? 'bg-slate-900 text-white shadow-md'
+          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
       }`}
     >
-      <Icon size={20} />
-      <span className="font-medium">{label}</span>
-      {activeTab === id && <ChevronRight size={16} className="ml-auto opacity-50" />}
+      <div className="flex items-center gap-3">
+        <Icon size={17} />
+        <span>{label}</span>
+      </div>
+      <div className="flex items-center gap-1.5">
+        {badge !== undefined && badge > 0 && (
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+            activeTab === id ? 'bg-amber-400 text-slate-900' : 'bg-amber-100 text-amber-800'
+          }`}>
+            {badge}
+          </span>
+        )}
+        {activeTab === id && <ChevronRight size={14} className="opacity-60" />}
+      </div>
     </button>
   );
 
   return (
-    <div className="bg-slate-100 min-h-screen flex flex-col md:flex-row">
-      
-      {/* Sidebar */}
-      <div className="w-full md:w-64 bg-white border-r border-slate-200 h-auto md:h-screen sticky top-0 md:flex flex-col z-20 hidden">
-        <div className="p-6 border-b border-slate-100">
+    <div className="bg-slate-100 min-h-screen">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed top-5 right-5 z-50 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-xl border border-slate-700 flex items-center gap-2.5 text-xs font-semibold animate-in slide-in-from-top-3">
+          <div className="w-5 h-5 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center font-bold">
+            <Check size={13} />
+          </div>
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
+      {/* Top Admin Navigation Header */}
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-30 px-4 md:px-8 py-3">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={onLogout}
+              className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors flex items-center gap-1.5 text-xs font-bold"
+              title="Return to Main Website"
+            >
+              <ArrowLeft size={16} />
+              <span className="hidden sm:inline">Back to Customer View</span>
+            </button>
+            <div className="h-5 w-px bg-slate-200" />
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                LH
+              </div>
+              <div>
+                <span className="font-bold text-slate-900 text-sm block leading-none">LabHome BD</span>
+                <span className="text-[10px] font-semibold text-emerald-600">Admin Control Panel</span>
+              </div>
+            </div>
+          </div>
+
           <div className="flex items-center gap-2">
-            <div className="bg-secondary p-2 rounded-lg">
-              <FlaskConical className="text-white" size={20} />
-            </div>
-            <div>
-              <h2 className="font-bold text-lg text-slate-800 leading-tight">LabHome BD</h2>
-              <p className="text-xs text-slate-500 uppercase tracking-wider font-bold">Admin Panel</p>
-            </div>
+            {onToggleLanguage && (
+              <button
+                onClick={onToggleLanguage}
+                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors border border-slate-200"
+              >
+                <Globe size={13} />
+                <span>{lang === 'bn' ? 'English' : 'বাংলা'}</span>
+              </button>
+            )}
+
+            <button
+              onClick={onLogout}
+              className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors border border-rose-100"
+            >
+              <LogOut size={13} />
+              <span className="hidden sm:inline">Logout</span>
+            </button>
           </div>
         </div>
+      </header>
+
+      {/* Main Layout Container */}
+      <div className="max-w-7xl mx-auto p-4 md:p-6 grid grid-cols-1 md:grid-cols-5 gap-6">
         
-        <nav className="p-4 space-y-1 flex-grow">
-          <SidebarItem id="overview" icon={LayoutDashboard} label={t.dashOverview} />
-          <SidebarItem id="orders" icon={ShoppingBag} label={t.adminTotalOrders} />
-          <SidebarItem id="tests" icon={FlaskConical} label={t.adminManageTests} />
-          <SidebarItem id="users" icon={Users} label={t.adminCustomers} />
-        </nav>
+        {/* Left Sidebar */}
+        <aside className="md:col-span-1 space-y-4">
+          <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm space-y-1">
+            <NavButton id="overview" icon={LayoutDashboard} label="Dashboard" />
+            <NavButton id="orders" icon={ShoppingBag} label={t.adminTotalOrders} badge={pendingCount} />
+            <NavButton id="tests" icon={FlaskConical} label={t.adminManageTests} />
+            <NavButton id="packages" icon={Layers} label={lang === 'bn' ? 'ডায়াগনস্টিক প্যাকেজ' : 'Diagnostic Packages'} badge={packages.length} />
+            <NavButton id="labs" icon={Building2} label="Centers & Fees" />
+            <NavButton id="cms" icon={Globe} label={t.adminSiteCMS} />
+            <NavButton id="customers" icon={Users} label={t.adminCustomers} />
+            <NavButton id="settings" icon={Settings} label={t.adminSettings} />
+          </div>
 
-        <div className="p-4 border-t border-slate-100">
-          <button 
-            onClick={onLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-500 hover:bg-red-50 transition-all"
-          >
-            <LogOut size={20} />
-            <span className="font-medium">{t.dashLogout}</span>
-          </button>
-        </div>
-      </div>
 
-      {/* Mobile Header (Only visible on mobile) */}
-      <div className="md:hidden bg-white border-b border-slate-200 p-4 flex justify-between items-center sticky top-0 z-20">
-         <div className="flex items-center gap-2">
-            <div className="bg-secondary p-1.5 rounded-lg">
-              <FlaskConical className="text-white" size={16} />
+          {/* Quick Stats Widget */}
+          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm text-xs space-y-2.5">
+            <span className="font-bold text-slate-900 block text-[11px] uppercase tracking-wider text-slate-400">Database Status</span>
+            <div className="flex justify-between text-slate-600">
+              <span>Tests Catalog:</span>
+              <strong className="text-slate-900">{tests.length} tests</strong>
             </div>
-            <span className="font-bold text-slate-800">Admin Panel</span>
-         </div>
-         <Button onClick={onLogout} variant="outline" className="!py-1 !px-3 !text-xs">Logout</Button>
-      </div>
-      
-      {/* Mobile Nav Bar */}
-      <div className="md:hidden bg-white border-b border-slate-200 overflow-x-auto">
-        <div className="flex p-2 gap-2 min-w-max">
-           <button onClick={() => setActiveTab('overview')} className={`px-3 py-1.5 rounded-full text-sm font-medium ${activeTab === 'overview' ? 'bg-secondary text-white' : 'bg-slate-100 text-slate-600'}`}>Overview</button>
-           <button onClick={() => setActiveTab('orders')} className={`px-3 py-1.5 rounded-full text-sm font-medium ${activeTab === 'orders' ? 'bg-secondary text-white' : 'bg-slate-100 text-slate-600'}`}>Orders</button>
-           <button onClick={() => setActiveTab('tests')} className={`px-3 py-1.5 rounded-full text-sm font-medium ${activeTab === 'tests' ? 'bg-secondary text-white' : 'bg-slate-100 text-slate-600'}`}>Tests</button>
-           <button onClick={() => setActiveTab('users')} className={`px-3 py-1.5 rounded-full text-sm font-medium ${activeTab === 'users' ? 'bg-secondary text-white' : 'bg-slate-100 text-slate-600'}`}>Users</button>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-grow p-4 md:p-8 overflow-y-auto">
-        
-        {/* OVERVIEW */}
-        {activeTab === 'overview' && (
-          <div className="space-y-6 animate-in fade-in duration-500">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-slate-800">{t.dashOverview}</h2>
-              <span className="text-sm text-slate-500">{new Date().toDateString()}</span>
+            <div className="flex justify-between text-slate-600">
+              <span>Health Packages:</span>
+              <strong className="text-slate-900">{packages.length} packages</strong>
             </div>
-
-            {/* KPI Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="bg-blue-50 p-3 rounded-lg text-blue-600">
-                    <DollarSign size={24} />
-                  </div>
-                  <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded">+12%</span>
-                </div>
-                <p className="text-slate-500 text-sm font-medium">{t.adminTotalRev}</p>
-                <h3 className="text-2xl font-bold text-slate-800">৳ 24,500</h3>
-              </div>
-
-              <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="bg-purple-50 p-3 rounded-lg text-purple-600">
-                    <ShoppingBag size={24} />
-                  </div>
-                </div>
-                <p className="text-slate-500 text-sm font-medium">{t.adminTotalOrders}</p>
-                <h3 className="text-2xl font-bold text-slate-800">142</h3>
-              </div>
-
-              <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="bg-yellow-50 p-3 rounded-lg text-yellow-600">
-                    <AlertCircle size={24} />
-                  </div>
-                </div>
-                <p className="text-slate-500 text-sm font-medium">{t.adminPendingOrders}</p>
-                <h3 className="text-2xl font-bold text-slate-800">15</h3>
-              </div>
-
-              <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="bg-teal-50 p-3 rounded-lg text-teal-600">
-                    <Users size={24} />
-                  </div>
-                </div>
-                <p className="text-slate-500 text-sm font-medium">{t.adminCustomers}</p>
-                <h3 className="text-2xl font-bold text-slate-800">1,204</h3>
-              </div>
+            <div className="flex justify-between text-slate-600">
+              <span>Partner Labs:</span>
+              <strong className="text-slate-900">{labs.length} labs</strong>
             </div>
-
-            {/* Recent Orders Table */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-              <div className="p-5 border-b border-slate-100 flex justify-between items-center">
-                <h3 className="font-bold text-slate-800">{t.adminRecentOrders}</h3>
-                <Button variant="outline" className="!py-1.5 !px-3 !text-xs" onClick={() => setActiveTab('orders')}>View All</Button>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
-                  <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-100">
-                    <tr>
-                      <th className="px-5 py-3">Order ID</th>
-                      <th className="px-5 py-3">Customer</th>
-                      <th className="px-5 py-3">Lab</th>
-                      <th className="px-5 py-3">Status</th>
-                      <th className="px-5 py-3 text-right">Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {MOCK_ADMIN_BOOKINGS.map(booking => (
-                      <tr key={booking.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="px-5 py-3 font-medium text-slate-800">#{booking.id}</td>
-                        <td className="px-5 py-3">
-                          <p className="font-medium text-slate-800">{booking.customerName}</p>
-                          <p className="text-xs text-slate-500">{booking.customerPhone}</p>
-                        </td>
-                        <td className="px-5 py-3 text-slate-600">{booking.labName}</td>
-                        <td className="px-5 py-3">{getStatusBadge(booking.status)}</td>
-                        <td className="px-5 py-3 text-right font-bold text-slate-800">৳ {booking.totalCost}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+            <div className="flex justify-between text-slate-600">
+              <span>Total Orders:</span>
+              <strong className="text-slate-900">{bookings.length}</strong>
             </div>
           </div>
-        )}
+        </aside>
 
-        {/* ORDERS MANAGEMENT */}
-        {activeTab === 'orders' && (
-          <div className="space-y-6 animate-in fade-in duration-500">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <h2 className="text-2xl font-bold text-slate-800">{t.adminTotalOrders}</h2>
-              <div className="flex gap-2 w-full md:w-auto">
-                <div className="relative flex-grow md:flex-grow-0">
-                  <Search className="absolute left-3 top-2.5 text-slate-400" size={16} />
-                  <input 
-                    type="text" 
-                    placeholder="Search orders..." 
-                    className="pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-secondary outline-none w-full"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-              </div>
-            </div>
+        {/* Right Main Content */}
+        <main className="md:col-span-4">
+          {activeTab === 'overview' && (
+            <AdminOverview 
+              lang={lang}
+              tests={tests}
+              labs={labs}
+              bookings={bookings}
+              onNavigateTab={setActiveTab}
+              onOpenAddTest={handleOpenAddTest}
+              onOpenAddLab={handleOpenAddLab}
+              onOpenAddOrder={handleOpenAddOrder}
+              onSelectOrder={setSelectedOrderForDetails}
+            />
+          )}
 
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
-                  <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-100">
-                    <tr>
-                      <th className="px-5 py-3">Order ID</th>
-                      <th className="px-5 py-3">Date & Time</th>
-                      <th className="px-5 py-3">Customer</th>
-                      <th className="px-5 py-3">Lab & Tests</th>
-                      <th className="px-5 py-3">Status</th>
-                      <th className="px-5 py-3 text-right">Amount</th>
-                      <th className="px-5 py-3 text-center">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {MOCK_ADMIN_BOOKINGS.filter(b => 
-                      b.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                      b.customerName?.toLowerCase().includes(searchTerm.toLowerCase())
-                    ).map(booking => (
-                      <tr key={booking.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="px-5 py-3 font-medium text-slate-800">#{booking.id}</td>
-                        <td className="px-5 py-3 text-slate-600">{booking.date}<br/><span className="text-xs">{booking.time}</span></td>
-                        <td className="px-5 py-3">
-                          <p className="font-medium text-slate-800">{booking.customerName}</p>
-                          <p className="text-xs text-slate-500">{booking.customerPhone}</p>
-                        </td>
-                        <td className="px-5 py-3 text-slate-600">
-                           <p className="font-medium text-xs text-primary">{booking.labName}</p>
-                           <p className="text-xs truncate max-w-[150px]">{booking.testNames.join(', ')}</p>
-                        </td>
-                        <td className="px-5 py-3">{getStatusBadge(booking.status)}</td>
-                        <td className="px-5 py-3 text-right font-bold text-slate-800">৳ {booking.totalCost}</td>
-                        <td className="px-5 py-3 text-center">
-                          <button className="p-1.5 hover:bg-slate-200 rounded text-slate-500">
-                            <MoreHorizontal size={16} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
+          {activeTab === 'orders' && (
+            <AdminOrders 
+              lang={lang}
+              bookings={bookings}
+              labs={labs}
+              onUpdateStatus={handleUpdateOrderStatus}
+              onSelectOrder={setSelectedOrderForDetails}
+              onOpenEditOrder={handleOpenEditOrder}
+              onOpenAddOrder={handleOpenAddOrder}
+              onOpenDeleteOrder={(order) => setDeleteTarget({ type: 'order', id: order.id, name: `Order #${order.id} (${order.customerName || 'Patient'})` })}
+            />
+          )}
 
-        {/* TESTS MANAGEMENT */}
-        {activeTab === 'tests' && (
-          <div className="space-y-6 animate-in fade-in duration-500">
-             <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-slate-800">{t.adminManageTests}</h2>
-              <Button className="!py-2 !px-4 flex items-center gap-2">
-                <Plus size={16} /> Add New Test
-              </Button>
-            </div>
+          {activeTab === 'tests' && (
+            <AdminTests 
+              lang={lang}
+              tests={tests}
+              labs={labs}
+              onOpenAddTest={handleOpenAddTest}
+              onOpenEditTest={handleOpenEditTest}
+              onToggleHideTest={handleToggleHideTest}
+              onDuplicateTest={handleDuplicateTest}
+              onOpenDeleteTest={(test) => setDeleteTarget({ type: 'test', id: test.id, name: test.name })}
+            />
+          )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {allTests.map(test => (
-                <div key={test.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col hover:shadow-md transition-shadow">
-                  <div className="flex gap-4 mb-4">
-                    <img src={test.image} alt={test.name} className="w-16 h-16 rounded-lg object-cover bg-slate-100" />
-                    <div>
-                      <h4 className="font-bold text-slate-800 text-sm line-clamp-2">{test.name}</h4>
-                      <span className="inline-block px-2 py-0.5 mt-1 text-[10px] font-bold uppercase rounded-full bg-slate-100 text-slate-500 border border-slate-200">
-                        {test.category}
-                      </span>
-                    </div>
-                  </div>
-                  <p className="text-xs text-slate-500 mb-4 line-clamp-2 flex-grow">{test.description}</p>
-                  <div className="flex items-center justify-between pt-3 border-t border-slate-100 mt-auto">
-                    <span className="font-bold text-slate-800">৳ {test.price}</span>
-                    <button className="text-xs font-bold text-primary hover:underline">Edit</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+          {activeTab === 'packages' && (
+            <AdminPackages 
+              lang={lang}
+              packages={packages}
+              labs={labs}
+              onOpenAddPackage={handleOpenAddPackage}
+              onOpenEditPackage={handleOpenEditPackage}
+              onToggleHidePackage={handleToggleHidePackage}
+              onDuplicatePackage={handleDuplicatePackage}
+              onOpenDeletePackage={(pkg) => setDeleteTarget({ type: 'package', id: pkg.id, name: pkg.name })}
+            />
+          )}
 
+          {activeTab === 'labs' && (
+            <AdminLabs 
+              lang={lang}
+              labs={labs}
+              tests={tests}
+              onOpenAddLab={handleOpenAddLab}
+              onOpenEditLab={handleOpenEditLab}
+              onToggleHideLab={handleToggleHideLab}
+              onOpenDeleteLab={(lab) => setDeleteTarget({ type: 'lab', id: lab.id, name: lab.name })}
+            />
+          )}
+
+          {activeTab === 'customers' && (
+            <AdminCustomers 
+              lang={lang}
+              bookings={bookings}
+              onSelectCustomerOrders={(phone) => {
+                setActiveTab('orders');
+              }}
+            />
+          )}
+
+          {activeTab === 'cms' && (
+            <AdminCMS 
+              lang={lang}
+              siteSettings={siteSettings}
+              onUpdateSiteSettings={onUpdateSiteSettings}
+              onOpenAddService={handleOpenAddService}
+              onOpenEditService={handleOpenEditService}
+              onDeleteService={(srv) => setDeleteTarget({ type: 'service', id: srv.id, name: srv.title })}
+              onToggleServiceActive={handleToggleServiceActive}
+              showToast={showToast}
+            />
+          )}
+
+          {activeTab === 'settings' && (
+            <AdminSettings 
+              lang={lang}
+              onResetAllData={() => {
+                onResetAllData();
+                showToast(t.adminResetSuccess);
+              }}
+              onDataRestored={() => {
+                showToast("Data restored successfully!");
+              }}
+            />
+          )}
+        </main>
       </div>
+
+      {/* ========================================== */}
+      {/* ALL ADMIN MODALS                           */}
+      {/* ========================================== */}
+      <TestFormModal 
+        lang={lang}
+        isOpen={isTestModalOpen}
+        onClose={() => {
+          setIsTestModalOpen(false);
+          setEditingTest(null);
+        }}
+        onSave={handleSaveTest}
+        editingTest={editingTest}
+        labs={labs}
+      />
+
+      <PackageFormModal 
+        lang={lang}
+        isOpen={isPackageModalOpen}
+        onClose={() => {
+          setIsPackageModalOpen(false);
+          setEditingPackage(null);
+        }}
+        onSave={handleSavePackage}
+        editingPackage={editingPackage}
+        labs={labs}
+        tests={tests}
+      />
+
+      <LabFormModal 
+        lang={lang}
+        isOpen={isLabModalOpen}
+        onClose={() => {
+          setIsLabModalOpen(false);
+          setEditingLab(null);
+        }}
+        onSave={handleSaveLab}
+        editingLab={editingLab}
+      />
+
+      <OrderFormModal 
+        lang={lang}
+        isOpen={isOrderModalOpen}
+        onClose={() => {
+          setIsOrderModalOpen(false);
+          setEditingOrder(null);
+        }}
+        onSave={handleSaveOrder}
+        editingOrder={editingOrder}
+        labs={labs}
+        tests={tests}
+      />
+
+      <ServiceFormModal 
+        lang={lang}
+        isOpen={isServiceModalOpen}
+        onClose={() => {
+          setIsServiceModalOpen(false);
+          setEditingService(null);
+        }}
+        onSave={handleSaveService}
+        editingService={editingService}
+      />
+
+      <OrderDetailsModal 
+        lang={lang}
+        order={selectedOrderForDetails}
+        onClose={() => setSelectedOrderForDetails(null)}
+        onUpdateStatus={handleUpdateOrderStatus}
+      />
+
+
+      <DeleteConfirmModal 
+        lang={lang}
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleConfirmDelete}
+        title={t.adminConfirmDelete}
+        description={`Are you sure you want to permanently remove "${deleteTarget?.name}"?`}
+      />
     </div>
   );
 };

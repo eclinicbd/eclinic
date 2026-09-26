@@ -1,0 +1,370 @@
+import React from 'react';
+import { TestPackage, LabPartner, Language } from '../types';
+import { TRANSLATIONS } from '../translations';
+import { TestCard } from './TestCard';
+import { LabLogo } from './LabLogo';
+import { Button } from './Button';
+import { 
+  Search, 
+  Filter, 
+  ArrowUpDown, 
+  ShoppingBag, 
+  Trash2, 
+  FlaskConical, 
+  ChevronRight,
+  Home,
+  CheckCircle2,
+  Building2,
+  X
+} from 'lucide-react';
+
+interface TestsViewProps {
+  tests: TestPackage[];
+  labs: LabPartner[];
+  cart: string[];
+  toggleCart: (test: TestPackage) => void;
+  removeFromCart: (id: string) => void;
+  openCartModal: () => void;
+  lang: Language;
+  selectedLabId: string;
+  setSelectedLabId: (id: string) => void;
+  activeCategory: string;
+  setActiveCategory: (cat: string) => void;
+  searchTerm: string;
+  setSearchTerm: (term: string) => void;
+  onBackToHome: () => void;
+}
+
+const CATEGORIES = ['All', 'General', 'Diabetes', 'Heart', 'Thyroid', 'Vitamin'];
+
+export const TestsView: React.FC<TestsViewProps> = ({
+  tests,
+  labs,
+  cart,
+  toggleCart,
+  removeFromCart,
+  openCartModal,
+  lang,
+  selectedLabId,
+  setSelectedLabId,
+  activeCategory,
+  setActiveCategory,
+  searchTerm,
+  setSearchTerm,
+  onBackToHome
+}) => {
+  const t = TRANSLATIONS[lang];
+
+  const filteredTests = tests.filter(test => {
+    if (test.isHidden) return false;
+    const matchesSearch = test.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          (test.description && test.description.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesCategory = activeCategory === 'All' || test.category === activeCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  const cartItems = tests.filter(test => cart.includes(test.id));
+  
+  const selectedLab = labs.find(l => l.id === selectedLabId);
+  const serviceCharge = selectedLab ? selectedLab.serviceCharge : 0;
+
+  const subTotal = cartItems.reduce((sum, item) => {
+    if (selectedLabId && item.priceByLab && item.priceByLab[selectedLabId]) {
+      return sum + item.priceByLab[selectedLabId];
+    }
+    return sum + item.price;
+  }, 0);
+
+  const totalBill = subTotal + (cartItems.length > 0 ? serviceCharge : 0);
+  const visibleLabs = labs.filter(l => !l.isHidden);
+
+  return (
+    <div className="py-8 bg-slate-50 min-h-screen">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        {/* Breadcrumb & Header */}
+        <div className="mb-8">
+          <nav className="flex items-center gap-2 text-xs text-slate-500 mb-3">
+            <button 
+              onClick={onBackToHome}
+              className="flex items-center gap-1 hover:text-primary transition-colors"
+            >
+              <Home size={14} />
+              <span>{t.navHome}</span>
+            </button>
+            <ChevronRight size={12} className="text-slate-400" />
+            <span className="text-slate-800 font-semibold">{t.sectionTestsTitle}</span>
+          </nav>
+
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-slate-200">
+            <div>
+              <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+                {t.sectionTestsTitle}
+              </h1>
+              <p className="text-slate-600 text-sm sm:text-base mt-2 max-w-2xl">
+                {lang === 'bn' 
+                  ? 'আপনার পছন্দের ডায়াগনস্টিক ল্যাব নির্বাচন করুন, প্রয়োজনীয় টেস্ট বাছাই করুন এবং হোম কালেকশন বুক করুন।'
+                  : 'Compare prices across top accredited diagnostic labs, add your required tests to cart, and schedule home sample collection.'}
+              </p>
+            </div>
+
+            {/* Quick Lab Switcher Pill Badges */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-semibold text-slate-500 mr-1 flex items-center gap-1">
+                <Building2 size={14} /> {lang === 'bn' ? 'সেন্টার:' : 'Partner:'}
+              </span>
+              <button
+                onClick={() => setSelectedLabId('')}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                  !selectedLabId 
+                    ? 'bg-primary text-white shadow-xs' 
+                    : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                }`}
+              >
+                {t.allCenters}
+              </button>
+              {visibleLabs.map(lab => (
+                <button
+                  key={lab.id}
+                  onClick={() => setSelectedLabId(lab.id)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                    selectedLabId === lab.id 
+                      ? 'bg-primary text-white shadow-xs' 
+                      : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                  }`}
+                >
+                  <LabLogo name={lab.name} logo={lab.logo} size="xs" accentColor={lab.accentColor} className="!w-4 !h-4 !rounded-sm !p-0 border-none" />
+                  <span>{lab.name.split(' ')[0]}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* 3-Column Layout */}
+        <div className="flex flex-col lg:flex-row gap-6">
+          
+          {/* LEFT SIDEBAR: FILTERS */}
+          <div className="w-full lg:w-64 flex-shrink-0 space-y-6">
+            
+            {/* Lab Partner Filter */}
+            <div className="bg-white p-5 rounded-2xl shadow-xs border border-slate-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                  <Building2 size={16} className="text-primary" /> {t.filterByCenter}
+                </h3>
+                {selectedLabId && (
+                  <button 
+                    onClick={() => setSelectedLabId('')} 
+                    className="text-[11px] text-primary hover:underline font-semibold"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+
+              <div className="space-y-2.5">
+                <label className="flex items-center gap-3 cursor-pointer group p-1.5 rounded-lg hover:bg-slate-50 transition-colors">
+                  <div className={`w-4.5 h-4.5 rounded-full border flex items-center justify-center transition-colors ${!selectedLabId ? 'border-primary' : 'border-slate-300'}`}>
+                    {!selectedLabId && <div className="w-2.5 h-2.5 bg-primary rounded-full" />}
+                  </div>
+                  <input type="radio" className="hidden" checked={!selectedLabId} onChange={() => setSelectedLabId('')} />
+                  <span className={`text-xs ${!selectedLabId ? 'text-slate-900 font-bold' : 'text-slate-600 group-hover:text-primary'}`}>
+                    {t.allCenters}
+                  </span>
+                </label>
+
+                {visibleLabs.map(lab => (
+                  <label key={lab.id} className="flex items-center gap-2.5 cursor-pointer group p-1.5 rounded-xl hover:bg-slate-50 transition-colors">
+                    <div className={`w-4 h-4 rounded-full border flex-shrink-0 flex items-center justify-center transition-colors ${selectedLabId === lab.id ? 'border-primary' : 'border-slate-300'}`}>
+                      {selectedLabId === lab.id && <div className="w-2 h-2 bg-primary rounded-full" />}
+                    </div>
+                    <input type="radio" className="hidden" checked={selectedLabId === lab.id} onChange={() => setSelectedLabId(lab.id)} />
+                    <LabLogo name={lab.name} logo={lab.logo} size="xs" accentColor={lab.accentColor} className="!w-6 !h-6 !rounded-md" />
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-xs truncate ${selectedLabId === lab.id ? 'text-slate-900 font-bold' : 'text-slate-600 group-hover:text-primary'}`}>
+                        {lab.name}
+                      </p>
+                      {lab.discountBadge && (
+                        <span className="text-[10px] text-emerald-600 font-semibold">{lab.discountBadge}</span>
+                      )}
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Category Filter */}
+            <div className="bg-white p-5 rounded-2xl shadow-xs border border-slate-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                  <Filter size={16} className="text-teal-600" /> {t.filterByCategory}
+                </h3>
+                {activeCategory !== 'All' && (
+                  <button 
+                    onClick={() => setActiveCategory('All')} 
+                    className="text-[11px] text-teal-600 hover:underline font-semibold"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+
+              <div className="space-y-2.5">
+                {CATEGORIES.map(cat => (
+                  <label key={cat} className="flex items-center gap-3 cursor-pointer group p-1.5 rounded-lg hover:bg-slate-50 transition-colors">
+                    <div className={`w-4.5 h-4.5 rounded-full border flex items-center justify-center transition-colors ${activeCategory === cat ? 'border-teal-500' : 'border-slate-300'}`}>
+                      {activeCategory === cat && <div className="w-2.5 h-2.5 bg-teal-500 rounded-full" />}
+                    </div>
+                    <input type="radio" className="hidden" checked={activeCategory === cat} onChange={() => setActiveCategory(cat)} />
+                    {/* @ts-ignore */}
+                    <span className={`text-xs ${activeCategory === cat ? 'text-slate-900 font-bold' : 'text-slate-600 group-hover:text-teal-600'}`}>
+                      {t.categories[cat]}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+          </div>
+
+          {/* CENTER: SEARCH BAR & TESTS GRID */}
+          <div className="flex-1">
+            
+            {/* Search Bar Row */}
+            <div className="flex gap-3 mb-6">
+              <div className="relative flex-1">
+                <Search className="absolute left-4 top-3 text-slate-400" size={18} />
+                <input 
+                  type="text"
+                  placeholder={t.searchPlaceholder}
+                  className="w-full pl-11 pr-10 py-2.5 rounded-xl border border-slate-200 shadow-xs focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-slate-800 text-sm bg-white"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                {searchTerm && (
+                  <button 
+                    onClick={() => setSearchTerm('')} 
+                    className="absolute right-3 top-3 text-slate-400 hover:text-slate-600"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+              
+              <div className="hidden sm:flex items-center px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-600">
+                <span>{filteredTests.length} {lang === 'bn' ? 'টি টেস্ট উপলব্ধ' : 'tests found'}</span>
+              </div>
+            </div>
+
+            {/* Test Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {filteredTests.map(test => (
+                <div key={test.id} className="h-full">
+                  <TestCard 
+                    test={test} 
+                    onToggleCart={toggleCart} 
+                    isInCart={cart.includes(test.id)}
+                    lang={lang} 
+                    labName={selectedLabId ? labs.find(l => l.id === selectedLabId)?.name : t.allCenters}
+                    selectedLabId={selectedLabId}
+                  />
+                </div>
+              ))}
+            </div>
+
+            {filteredTests.length === 0 && (
+              <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-300 p-8">
+                <FlaskConical size={48} className="mx-auto text-slate-300 mb-3" />
+                <p className="text-slate-600 font-semibold mb-1">{t.noTestsFound}</p>
+                <p className="text-xs text-slate-400 mb-4">
+                  {lang === 'bn' 
+                    ? 'ভিন্ন কীওয়ার্ড দিয়ে খুঁজুন অথবা ফিল্টার রিসেট করুন।' 
+                    : 'Try searching with a different keyword or reset filters.'}
+                </p>
+                <Button 
+                  variant="outline" 
+                  onClick={() => { setSearchTerm(''); setActiveCategory('All'); setSelectedLabId(''); }}
+                  className="!text-xs"
+                >
+                  {lang === 'bn' ? 'সকল ফিল্টার রিসেট করুন' : 'Reset All Filters'}
+                </Button>
+              </div>
+            )}
+
+          </div>
+
+          {/* RIGHT: SELECTED TESTS (CART SUMMARY) */}
+          <div className="hidden lg:block w-80 flex-shrink-0">
+            <div className="bg-white rounded-2xl shadow-xs border border-slate-200 p-5 sticky top-24">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                <h3 className="font-bold text-slate-900 flex items-center gap-2 text-sm">
+                  <ShoppingBag size={18} className="text-primary" /> 
+                  <span>{t.selectedTests}</span>
+                </h3>
+                <span className="bg-sky-100 text-primary text-xs font-bold px-2 py-0.5 rounded-full">
+                  {cart.length}
+                </span>
+              </div>
+              
+              {cartItems.length === 0 ? (
+                <div className="text-center py-10 border-2 border-dashed border-slate-100 rounded-xl bg-slate-50/50">
+                  <FlaskConical size={40} className="mx-auto text-slate-300 mb-2 opacity-60" />
+                  <p className="text-xs text-slate-500 font-medium">{t.noTestsSelected}</p>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    {lang === 'bn' ? 'টেস্ট কার্ড থেকে Add to Cart করুন' : 'Click Add to Cart on any test'}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-2.5 mb-5 max-h-[280px] overflow-y-auto pr-1 custom-scrollbar">
+                    {cartItems.map((item) => (
+                      <div key={item.id} className="flex justify-between items-start gap-2 p-3 bg-slate-50 rounded-xl border border-slate-100 group hover:border-sky-200 transition-colors">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-bold text-slate-800 line-clamp-1">{item.name}</p>
+                          <p className="text-[11px] text-slate-500 mt-0.5">
+                            {selectedLabId ? (item.priceByLab?.[selectedLabId] || item.price) : item.price} ৳
+                          </p>
+                        </div>
+                        <button 
+                          onClick={() => removeFromCart(item.id)}
+                          className="text-slate-300 hover:text-red-500 transition-colors p-1 flex-shrink-0"
+                          title="Remove test"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="border-t border-slate-100 pt-3.5 space-y-2 text-xs">
+                    <div className="flex justify-between text-slate-600">
+                      <span>{t.cartSubtotal}</span>
+                      <span className="font-semibold text-slate-800">৳ {subTotal}</span>
+                    </div>
+                    {serviceCharge > 0 && (
+                      <div className="flex justify-between text-slate-600">
+                        <span>{t.serviceCharge}</span>
+                        <span className="font-semibold text-slate-800">৳ {serviceCharge}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-sm font-bold text-slate-900 pt-2 border-t border-slate-100">
+                      <span>{t.cartTotal}</span>
+                      <span className="text-primary text-base">৳ {totalBill}</span>
+                    </div>
+                    
+                    <Button onClick={openCartModal} fullWidth className="mt-4 !rounded-xl !py-2.5 font-bold shadow-xs">
+                      {t.checkoutBtn}
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  );
+};

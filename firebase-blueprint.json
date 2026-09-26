@@ -1,0 +1,168 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Patient user profile and contact details",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "User UID matching auth.uid",
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name of patient",
+          "maxLength": 100
+        },
+        "phone": {
+          "type": "string",
+          "description": "Mobile phone number",
+          "maxLength": 30
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address",
+          "maxLength": 100
+        },
+        "address": {
+          "type": "string",
+          "description": "Home/Delivery address",
+          "maxLength": 300
+        },
+        "gender": {
+          "type": "string",
+          "enum": ["male", "female", "other"]
+        },
+        "age": {
+          "type": "string",
+          "maxLength": 10
+        },
+        "bloodGroup": {
+          "type": "string",
+          "maxLength": 10
+        },
+        "avatar": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "createdAt": {
+          "type": "string",
+          "maxLength": 50
+        }
+      },
+      "required": ["id", "name", "phone", "address"]
+    },
+    "Booking": {
+      "title": "Booking",
+      "description": "Diagnostic test or package home collection booking order",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique booking reference ID",
+          "maxLength": 128
+        },
+        "userId": {
+          "type": "string",
+          "description": "ID of user who made the booking",
+          "maxLength": 128
+        },
+        "customerName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "customerPhone": {
+          "type": "string",
+          "maxLength": 30
+        },
+        "customerAddress": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "date": {
+          "type": "string",
+          "maxLength": 30
+        },
+        "time": {
+          "type": "string",
+          "maxLength": 50
+        },
+        "labId": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "labName": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "testNames": {
+          "type": "array",
+          "description": "List of ordered test names"
+        },
+        "totalCost": {
+          "type": "number",
+          "description": "Total amount in BDT"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "confirmed", "collected", "processing", "completed", "cancelled"]
+        },
+        "doctorName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "createdAt": {
+          "type": "string",
+          "maxLength": 50
+        }
+      },
+      "required": ["customerName", "customerPhone", "customerAddress", "date", "time", "labName", "totalCost", "status"]
+    },
+    "TestItem": {
+      "title": "TestItem",
+      "description": "Diagnostic test item catalog entry",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "price": {
+          "type": "number"
+        },
+        "category": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "turnaroundTime": {
+          "type": "string",
+          "maxLength": 100
+        }
+      },
+      "required": ["name", "price", "category"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "UserProfile" },
+      "description": "User profiles collection"
+    },
+    "/bookings/{bookingId}": {
+      "schema": { "$ref": "Booking" },
+      "description": "Orders and diagnostic bookings collection"
+    },
+    "/tests/{testId}": {
+      "schema": { "$ref": "TestItem" },
+      "description": "Diagnostic tests public collection"
+    }
+  }
+}

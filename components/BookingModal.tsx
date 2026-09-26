@@ -1,11 +1,32 @@
-
-
 import React, { useState, useEffect, useRef } from 'react';
-import { TestPackage, BookingFormData, Language } from '../types';
+import { TestPackage, BookingFormData, Language, LabPartner, BookingHistoryItem, PatientUser } from '../types';
 import { getLabs } from '../constants';
 import { TRANSLATIONS } from '../translations';
 import { Button } from './Button';
-import { X, Calendar, MapPin, Phone, User, CheckCircle, Clock, Trash2, ChevronRight, Loader2, ShoppingBag, FileText, Upload, Stethoscope, FlaskConical, MessageSquare, Search, Plus } from 'lucide-react';
+import { 
+  X, 
+  Calendar, 
+  MapPin, 
+  Phone, 
+  User, 
+  CheckCircle, 
+  Clock, 
+  Trash2, 
+  ChevronRight, 
+  Loader2, 
+  ShoppingBag, 
+  FileText, 
+  Upload, 
+  Stethoscope, 
+  FlaskConical, 
+  MessageSquare, 
+  Search, 
+  Plus, 
+  Sparkles, 
+  Building2,
+  Tag,
+  Check
+} from 'lucide-react';
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -17,9 +38,13 @@ interface BookingModalProps {
   onClearCart?: () => void;
   allTests?: TestPackage[];
   onAddTest?: (test: TestPackage) => void;
+  labsList?: LabPartner[];
+  onBookingConfirmed?: (booking: BookingHistoryItem) => void;
+  currentPatient?: PatientUser | null;
+  onOpenAuthModal?: () => void;
 }
 
-// Updated to 1-hour ranges
+// 1-hour ranges
 const TIME_SLOTS = [
   "08:00 AM - 09:00 AM",
   "09:00 AM - 10:00 AM",
@@ -53,7 +78,7 @@ const getNext7Days = (lang: Language) => {
   return days;
 };
 
-// Helper to check if a slot is available (at least 3 hours from now)
+// Helper to check if a slot is available
 const isSlotAvailable = (dateStr: string, slotStr: string): boolean => {
   const todayStr = new Date().toISOString().split('T')[0];
   
@@ -61,15 +86,13 @@ const isSlotAvailable = (dateStr: string, slotStr: string): boolean => {
   if (dateStr !== todayStr) return true;
 
   const now = new Date();
-  // Add 3 hours to current time for buffer
   const minTime = new Date(now.getTime() + 3 * 60 * 60 * 1000); 
 
-  // Parse slot start time (e.g. "08:00 AM")
-  const startTimeStr = slotStr.split(' - ')[0]; // "08:00 AM"
+  const startTimeStr = slotStr.split(' - ')[0];
   const [time, modifier] = startTimeStr.split(' ');
   let [hours, minutes] = time.split(':');
   
-  let slotDate = new Date(); // Today
+  let slotDate = new Date();
   let h = parseInt(hours, 10);
   
   if (h === 12) h = 0;
@@ -77,71 +100,97 @@ const isSlotAvailable = (dateStr: string, slotStr: string): boolean => {
   
   slotDate.setHours(h, parseInt(minutes, 10), 0, 0);
 
-  // Return true if slot time is after the minimum buffer time
   return slotDate > minTime;
 };
 
-export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, cartItems, onRemoveItem, lang, preSelectedLabId, onClearCart, allTests, onAddTest }) => {
+export const BookingModal: React.FC<BookingModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  cartItems, 
+  onRemoveItem, 
+  lang, 
+  preSelectedLabId, 
+  onClearCart, 
+  allTests = [], 
+  onAddTest,
+  labsList,
+  onBookingConfirmed,
+  currentPatient,
+  onOpenAuthModal
+}) => {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState<BookingFormData>({
-    fullName: '',
-    phoneNumber: '',
-    address: '',
-    date: '',
-    time: '',
-    testIds: [],
-    labId: '',
-    doctorName: '',
-    prescription: null
-  });
   
-  // Search state
+  // Search and autocomplete suggestions state
   const [searchTerm, setSearchTerm] = useState('');
-
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const t = TRANSLATIONS[lang];
-  let labs = getLabs(lang);
+  
+  // Get all active labs
+  const rawLabs = (labsList && labsList.length > 0 ? labsList : getLabs(lang)).filter(l => !l.isHidden);
+  // Filter out labs that are hidden for any items in cart
+  const availableLabsForCart = rawLabs.filter(l => !cartItems.some(item => item.hiddenLabs?.includes(l.id)));
+  const labs = availableLabsForCart.length > 0 ? availableLabsForCart : rawLabs;
   const nextDays = getNext7Days(lang);
 
-  // Filter labs if one is pre-selected
-  if (preSelectedLabId) {
-    labs = labs.filter(l => l.id === preSelectedLabId);
-  }
+  const [formData, setFormData] = useState<BookingFormData>({
+    fullName: currentPatient?.name || '',
+    phoneNumber: currentPatient?.phone || '',
+    address: currentPatient?.address || '',
+    date: '',
+    time: '',
+    testIds: [],
+    labId: preSelectedLabId || (labs[0]?.id || 'lab_popular'),
+    doctorName: '',
+    prescription: null
+  });
+
+  // Handle outside clicks to close search suggestions
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setIsSearchFocused(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Effect 1: Reset state ONLY when Modal opens/closes
   useEffect(() => {
     if (isOpen) {
       setStep(1);
-      setSearchTerm(''); // Reset search
+      setSearchTerm('');
+      setIsSearchFocused(false);
       
-      // Automatic Date Selection Logic
       const days = getNext7Days(lang);
-      let bestDate = days[0].fullDate; // Default to today
+      let bestDate = days[0].fullDate;
 
-      // Loop through days to find the first one with available slots
       for (const day of days) {
         const hasAvailableSlots = TIME_SLOTS.some(slot => isSlotAvailable(day.fullDate, slot));
         if (hasAvailableSlots) {
           bestDate = day.fullDate;
-          break; // Found the first available day
+          break;
         }
       }
       
-      // Initialize form data
       setFormData(prev => ({
         ...prev,
-        date: bestDate, // Set the automatically calculated date
+        fullName: currentPatient?.name || prev.fullName || '',
+        phoneNumber: currentPatient?.phone || prev.phoneNumber || '',
+        address: currentPatient?.address || prev.address || '',
+        date: bestDate,
         testIds: cartItems.map(t => t.id),
-        // Use current labs context for initialization
-        labId: preSelectedLabId || prev.labId || (labs.length === 1 ? labs[0].id : ''), 
+        labId: prev.labId || preSelectedLabId || (labs[0]?.id || 'lab_popular'), 
       }));
       setIsSubmitting(false);
     }
-  }, [isOpen, lang]); // Added lang dependency
+  }, [isOpen, lang, currentPatient, preSelectedLabId]);
 
-  // Effect 2: Sync cart items if they change while modal is open (without resetting step)
+  // Effect 2: Sync cart items if they change
   useEffect(() => {
     if (isOpen) {
       setFormData(prev => ({
@@ -170,28 +219,71 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, car
   if (!isOpen) return null;
 
   // Calculate bill based on selected lab
-  const getItemPrice = (item: TestPackage) => {
-    if (formData.labId && item.priceByLab && item.priceByLab[formData.labId]) {
-      return item.priceByLab[formData.labId];
+  const getItemPrice = (item: TestPackage, labId?: string) => {
+    const targetLab = labId || formData.labId;
+    if (targetLab && item.priceByLab && item.priceByLab[targetLab] !== undefined) {
+      return item.priceByLab[targetLab];
     }
     return item.price;
   };
 
-  const selectedLab = labs.find(l => l.id === formData.labId);
+  const getItemRegularPrice = (item: TestPackage, labId?: string) => {
+    const targetLab = labId || formData.labId;
+    if (targetLab && item.originalPriceByLab && item.originalPriceByLab[targetLab] !== undefined) {
+      return item.originalPriceByLab[targetLab];
+    }
+    return item.originalPrice;
+  };
+
+  const selectedLab = labs.find(l => l.id === formData.labId) || labs[0];
   const serviceCharge = selectedLab ? selectedLab.serviceCharge : 0;
   
   const subTotal = cartItems.reduce((sum, item) => sum + getItemPrice(item), 0);
-  const totalBill = subTotal + serviceCharge;
+  const regularSubTotal = cartItems.reduce((sum, item) => sum + (getItemRegularPrice(item) || getItemPrice(item)), 0);
+  const totalSavings = regularSubTotal > subTotal ? regularSubTotal - subTotal : 0;
+  const totalBill = subTotal + (cartItems.length > 0 ? serviceCharge : 0);
+
+  // Suggestions search logic: matches name (en/bn), category, tags, or description
+  const cleanSearch = searchTerm.trim().toLowerCase();
+  const availableToAddTests = allTests.filter(test => !cartItems.some(item => item.id === test.id));
+
+  const suggestedTests = cleanSearch 
+    ? availableToAddTests.filter(test => {
+        const nameMatch = (test.name || '').toLowerCase().includes(cleanSearch);
+        const catMatch = (test.category || '').toLowerCase().includes(cleanSearch);
+        const descMatch = (test.description || '').toLowerCase().includes(cleanSearch);
+        return nameMatch || catMatch || descMatch;
+      }).slice(0, 8)
+    : availableToAddTests.slice(0, 6); // default popular recommendations when focused
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.time) return;
 
     setIsSubmitting(true);
-    // Simulate API Call
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    if (onBookingConfirmed) {
+      const newBooking: BookingHistoryItem = {
+        id: "BK-" + Math.floor(1000 + Math.random() * 9000),
+        customerName: formData.fullName || (lang === 'bn' ? 'কাস্টমার' : 'Customer'),
+        customerPhone: formData.phoneNumber || 'N/A',
+        customerAddress: formData.address || '',
+        date: formData.date,
+        time: formData.time,
+        labId: formData.labId,
+        labName: selectedLab?.name || 'Popular Diagnostic Centre',
+        testNames: cartItems.map(t => t.name),
+        totalCost: totalBill,
+        status: 'pending',
+        doctorName: formData.doctorName,
+        createdAt: new Date().toISOString()
+      };
+      onBookingConfirmed(newBooking);
+    }
+
     setIsSubmitting(false);
-    setStep(3); // Success state
+    setStep(3);
   };
 
   const handleClose = () => {
@@ -199,13 +291,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, car
   };
 
   const handleBackToHome = () => {
-    // If a clear cart handler is provided, use it
     if (onClearCart) {
       onClearCart();
     }
-    // Close the modal
     onClose();
-    // Scroll to top of the page
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -225,421 +314,499 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, car
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+      <div className="bg-white rounded-2xl sm:rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[92vh] border border-slate-100">
         
         {/* Header */}
-        <div className="p-4 border-b flex justify-between items-center bg-slate-50">
+        <div className="p-4 sm:p-5 border-b flex justify-between items-center bg-slate-50/80">
           <div>
-            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
               {step === 1 && <ShoppingBag size={18} className="text-primary" />}
               {step === 2 && <User size={18} className="text-primary" />}
-              {step === 3 && <CheckCircle size={18} className="text-primary" />}
-              {getStepTitle()}
+              {step === 3 && <CheckCircle size={18} className="text-emerald-500" />}
+              <span>{getStepTitle()}</span>
             </h2>
-            <p className="text-xs text-slate-500">{t.step1.split(" ")[0]} {step} / 3</p>
+            <p className="text-[11px] text-slate-500">{t.step1.split(" ")[0]} {step} / 3</p>
           </div>
-          <button onClick={handleClose} className="p-1 hover:bg-slate-200 rounded-full transition-colors">
-            <X size={20} className="text-slate-500" />
+          <button 
+            onClick={handleClose} 
+            className="p-1.5 hover:bg-slate-200 rounded-full transition-colors text-slate-400 hover:text-slate-600"
+          >
+            <X size={18} />
           </button>
         </div>
 
         {/* Body */}
-        <div ref={scrollRef} className="p-6 overflow-y-auto custom-scrollbar flex-grow">
+        <div ref={scrollRef} className="p-4 sm:p-6 overflow-y-auto custom-scrollbar flex-grow space-y-5">
           
-          {/* STEP 1: Cart Review & Lab Selection */}
+          {/* STEP 1: Cart Review, Lab Selection & Test Search Suggestions */}
           {step === 1 && (
-            <div className="space-y-6">
+            <div className="space-y-5">
 
-              {/* Selected Lab Prominent Display */}
-              {selectedLab && (
-                <div className="bg-gradient-to-br from-sky-50 to-white border border-sky-100 rounded-xl p-4 flex flex-col items-center text-center shadow-sm relative overflow-hidden">
-                  <div className="absolute top-2 right-2 opacity-5">
-                    <FlaskConical size={64} />
-                  </div>
-                  <img src={selectedLab.logo} alt={selectedLab.name} className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-md mb-2 bg-white" />
-                  <h3 className="text-lg font-bold text-slate-800 leading-tight">{selectedLab.name}</h3>
-                  <div className="flex items-center gap-1 text-xs text-slate-500 mt-1">
-                    <span className="bg-white px-2 py-0.5 rounded-full border border-slate-100 flex items-center gap-1 shadow-sm">
-                      <span className="text-yellow-500">⭐</span> {selectedLab.rating}
-                    </span>
-                    <span>• {t.successLab}</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Lab Selection Section - Hidden if pre-selected */}
-              {cartItems.length > 0 && !preSelectedLabId && (
-                <div className="space-y-3">
-                   <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
-                    <CheckCircle size={16} className="text-primary" />
-                    {t.selectLab}
+              {/* 1. SELECT DIAGNOSTIC LAB (Always available & interactive) */}
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs sm:text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                    <Building2 size={16} className="text-primary" />
+                    <span>{t.selectLab || (lang === 'bn' ? 'ডায়াগনস্টিক ল্যাব নির্বাচন করুন' : 'Select Diagnostic Lab')}</span>
                   </label>
-                  <div className="grid grid-cols-1 gap-3 max-h-48 overflow-y-auto pr-1">
-                    {labs.map(lab => (
+                  <span className="text-[11px] text-slate-500 font-medium">
+                    {labs.length} {lang === 'bn' ? 'টি অনুমোদিত ল্যাব' : 'Partner Labs'}
+                  </span>
+                </div>
+
+                {/* Lab Selection Cards Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+                  {labs.map(lab => {
+                    const isSelected = formData.labId === lab.id;
+                    return (
                       <div 
                         key={lab.id}
-                        onClick={() => setFormData({...formData, labId: lab.id})}
-                        className={`p-3 border rounded-lg cursor-pointer flex items-center justify-between transition-all hover:bg-slate-50 ${formData.labId === lab.id ? 'border-primary bg-sky-50 ring-1 ring-primary' : 'border-slate-200'}`}
+                        onClick={() => setFormData(prev => ({ ...prev, labId: lab.id }))}
+                        className={`p-2.5 rounded-xl border cursor-pointer flex items-center justify-between transition-all select-none ${
+                          isSelected 
+                            ? 'border-primary bg-sky-50/80 ring-2 ring-primary/20 shadow-xs' 
+                            : 'border-slate-200 hover:border-sky-300 hover:bg-slate-50/60'
+                        }`}
                       >
-                        <div className="flex items-center gap-3">
-                          <img src={lab.logo} alt={lab.name} className="w-10 h-10 rounded-full object-cover bg-slate-200" />
-                          <div>
-                            <p className="font-bold text-sm text-slate-800">{lab.name}</p>
-                            <div className="flex items-center gap-1">
-                              <span className="text-yellow-500 text-xs">⭐</span>
-                              <span className="text-xs text-slate-500">{lab.rating}</span>
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <img 
+                            src={lab.logo} 
+                            alt={lab.name} 
+                            className="w-8 h-8 rounded-full object-cover bg-white border border-slate-200 shrink-0" 
+                          />
+                          <div className="min-w-0">
+                            <p className="font-bold text-xs text-slate-800 truncate leading-tight">
+                              {lab.name}
+                            </p>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <span className="text-amber-500 text-[10px]">⭐ {lab.rating}</span>
+                              <span className="text-[10px] text-slate-400">•</span>
+                              <span className="text-[10px] text-slate-500">
+                                {lab.serviceCharge === 0 ? (lang === 'bn' ? 'ফ্রি কালেকশন' : 'Free Home Visit') : `৳${lab.serviceCharge}`}
+                              </span>
                             </div>
                           </div>
                         </div>
-                        <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${formData.labId === lab.id ? 'border-primary bg-primary' : 'border-slate-300'}`}>
-                          {formData.labId === lab.id && <div className="w-2 h-2 bg-white rounded-full" />}
+                        
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ml-1 ${
+                          isSelected ? 'border-primary bg-primary text-white' : 'border-slate-300'
+                        }`}>
+                          {isSelected && <Check size={10} />}
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
-              )}
-              
-              {/* Cart Items List */}
-              <div className="space-y-3 pt-4 border-t border-slate-100">
-                <label className="text-sm font-medium text-slate-700 flex items-center justify-between">
-                  {t.selectTest}
-                  <span className="text-xs bg-sky-100 text-primary px-2 py-0.5 rounded-full">{cartItems.length} items</span>
-                </label>
+              </div>
 
-                {/* Search Bar for Adding Tests */}
-                {onAddTest && allTests && (
-                  <div className="relative mb-2">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-2.5 text-slate-400" size={16} />
-                      <input 
-                        type="text" 
-                        className="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none transition-all focus:bg-white"
-                        placeholder={t.searchAndAddPlaceholder}
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
-                      {searchTerm && (
-                        <button onClick={() => setSearchTerm('')} className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600">
-                          <X size={16} />
-                        </button>
+              {/* 2. SEARCH & ADD TEST AUTOCOMPLETE */}
+              {onAddTest && allTests.length > 0 && (
+                <div ref={searchContainerRef} className="space-y-1.5 pt-2 border-t border-slate-100 relative">
+                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <Search size={14} className="text-primary" />
+                    <span>{t.searchAndAddPlaceholder || (lang === 'bn' ? 'টেস্ট খুঁজুন ও যোগ করুন' : 'Search & Add More Tests')}</span>
+                  </label>
+
+                  <div className="relative">
+                    <Search className="absolute left-3 top-2.5 text-slate-400" size={15} />
+                    <input 
+                      type="text" 
+                      className="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all focus:bg-white"
+                      placeholder={lang === 'bn' ? 'টেস্টের নাম লিখুন (যেমন: CBC, Lipid, HbA1c, Thyroid...)' : 'Type test name (e.g. CBC, Sugar, Lipid Profile, TSH...)'}
+                      value={searchTerm}
+                      onFocus={() => setIsSearchFocused(true)}
+                      onChange={(e) => {
+                        setSearchTerm(e.target.value);
+                        setIsSearchFocused(true);
+                      }}
+                    />
+                    {searchTerm && (
+                      <button 
+                        onClick={() => setSearchTerm('')} 
+                        className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
+                      >
+                        <X size={15} />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Smart Suggestions Dropdown */}
+                  {isSearchFocused && (
+                    <div className="absolute z-30 left-0 right-0 mt-1 bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-150 custom-scrollbar">
+                      
+                      {/* Suggestion Header */}
+                      <div className="px-3 py-2 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-semibold">
+                        <span className="flex items-center gap-1">
+                          <Sparkles size={12} className="text-primary" />
+                          {searchTerm 
+                            ? (lang === 'bn' ? `পাওয়া গেছে (${suggestedTests.length} টি)` : `Matching Tests (${suggestedTests.length})`)
+                            : (lang === 'bn' ? 'জনপ্রিয় টেস্টসমূহ' : 'Popular Diagnostic Tests')}
+                        </span>
+                        <span className="text-[10px] text-slate-400">{selectedLab?.name.split(' ')[0]}</span>
+                      </div>
+
+                      {/* Suggestions List */}
+                      {suggestedTests.length > 0 ? (
+                        <div className="divide-y divide-slate-100">
+                          {suggestedTests.map(test => {
+                            const testPrice = getItemPrice(test);
+                            const regPrice = getItemRegularPrice(test);
+                            const hasDiscount = regPrice && regPrice > testPrice;
+
+                            return (
+                              <div
+                                key={test.id}
+                                className="p-2.5 sm:p-3 hover:bg-sky-50/70 transition-colors flex items-center justify-between gap-3 group"
+                              >
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <p className="text-xs sm:text-sm font-bold text-slate-800 group-hover:text-primary transition-colors truncate">
+                                      {test.name}
+                                    </p>
+                                    {test.category && (
+                                      <span className="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded font-medium shrink-0">
+                                        {test.category}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-1.5 mt-0.5">
+                                    <span className="text-xs font-black text-primary">৳{testPrice}</span>
+                                    {hasDiscount && (
+                                      <span className="text-[10px] line-through text-slate-400">৳{regPrice}</span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    onAddTest(test);
+                                    setSearchTerm('');
+                                    setIsSearchFocused(false);
+                                  }}
+                                  className="px-2.5 py-1.5 rounded-lg bg-primary hover:bg-sky-600 text-white text-xs font-bold flex items-center gap-1 shadow-2xs transition-all shrink-0 cursor-pointer"
+                                >
+                                  <Plus size={13} />
+                                  <span>{lang === 'bn' ? 'যোগ করুন' : 'Add'}</span>
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="p-4 text-center text-xs text-slate-400">
+                          {lang === 'bn' ? 'কোনো টেস্ট পাওয়া যায়নি।' : 'No matching tests found.'}
+                        </div>
                       )}
                     </div>
-                    
-                    {/* Suggestions Dropdown */}
-                    {searchTerm && (
-                      <div className="absolute z-20 w-full mt-1 bg-white rounded-lg shadow-xl border border-slate-100 max-h-52 overflow-y-auto">
-                        {allTests
-                          .filter(test => 
-                            test.name.toLowerCase().includes(searchTerm.toLowerCase()) && 
-                            !cartItems.find(item => item.id === test.id)
-                          )
-                          .map(test => (
-                            <button
-                              key={test.id}
-                              onClick={() => {
-                                onAddTest(test);
-                                setSearchTerm('');
-                              }}
-                              className="w-full text-left p-3 hover:bg-sky-50 flex justify-between items-center border-b border-slate-50 last:border-none transition-colors group"
-                            >
-                              <div>
-                                 <p className="text-sm font-medium text-slate-800 group-hover:text-primary">{test.name}</p>
-                                 <p className="text-xs text-slate-500">{test.category}</p>
-                              </div>
-                              <Plus size={16} className="text-slate-400 group-hover:text-primary" />
-                            </button>
-                          ))}
-                          {allTests.filter(test => test.name.toLowerCase().includes(searchTerm.toLowerCase()) && !cartItems.find(item => item.id === test.id)).length === 0 && (
-                              <div className="p-3 text-xs text-slate-400 text-center">No matches found / Already in cart</div>
-                          )}
-                      </div>
-                    )}
-                  </div>
-                )}
-                
+                  )}
+                </div>
+              )}
+
+              {/* 3. CART ITEMS LIST */}
+              <div className="space-y-2.5 pt-2 border-t border-slate-100">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs sm:text-sm font-bold text-slate-800">
+                    {t.selectTest || (lang === 'bn' ? 'নির্বাচিত টেস্টসমূহ' : 'Selected Tests')}
+                  </label>
+                  <span className="text-xs bg-sky-100 text-primary font-bold px-2 py-0.5 rounded-full">
+                    {cartItems.length} {lang === 'bn' ? 'টি' : 'items'}
+                  </span>
+                </div>
+
                 {cartItems.length === 0 ? (
-                  <div className="text-center py-6 bg-slate-50 rounded-lg border border-dashed border-slate-300">
-                    <p className="text-slate-500 text-sm">{t.cartEmpty}</p>
+                  <div className="text-center py-6 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                    <ShoppingBag size={28} className="mx-auto text-slate-300 mb-2" />
+                    <p className="text-slate-500 text-xs font-medium">{t.cartEmpty}</p>
+                    <p className="text-slate-400 text-[11px] mt-0.5">
+                      {lang === 'bn' ? 'উপরের সার্চ বার থেকে টেস্ট যোগ করুন' : 'Search and add tests from above'}
+                    </p>
                   </div>
                 ) : (
-                  <div className="space-y-2 max-h-52 overflow-y-auto pr-1 custom-scrollbar">
-                    {cartItems.map((item) => (
-                      <div key={item.id} className="bg-white border border-slate-200 p-3 rounded-lg flex items-center gap-3 group hover:border-sky-200 transition-colors">
-                        <img src={item.image} alt={item.name} className="w-12 h-12 rounded object-cover bg-slate-100" />
-                        <div className="flex-grow min-w-0">
-                          <p className="font-bold text-slate-800 text-sm truncate">{item.name}</p>
-                          <p className="text-primary font-bold text-xs">৳ {getItemPrice(item)}</p>
-                        </div>
-                        <button 
-                          onClick={() => onRemoveItem(item.id)}
-                          className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
-                          title={t.removeItem}
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+                    {cartItems.map((item) => {
+                      const itemPrice = getItemPrice(item);
+                      const itemRegularPrice = getItemRegularPrice(item);
+                      const hasDiscount = itemRegularPrice !== undefined && itemRegularPrice > itemPrice;
+                      const discountPercent = hasDiscount 
+                        ? (item.discountPercent || Math.round(((itemRegularPrice - itemPrice) / itemRegularPrice) * 100))
+                        : 0;
+
+                      return (
+                        <div 
+                          key={item.id} 
+                          className="bg-white border border-slate-200/90 p-2.5 sm:p-3 rounded-xl flex items-center gap-3 hover:border-sky-300 transition-colors shadow-2xs"
                         >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    ))}
+                          <img 
+                            src={item.image} 
+                            alt={item.name} 
+                            className="w-10 h-10 rounded-lg object-cover bg-slate-100 shrink-0" 
+                          />
+                          <div className="flex-grow min-w-0">
+                            <p className="font-bold text-slate-800 text-xs sm:text-sm truncate">{item.name}</p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              {hasDiscount && (
+                                <span className="line-through text-slate-400 text-[11px]">৳{itemRegularPrice}</span>
+                              )}
+                              <span className="text-primary font-black text-xs">৳{itemPrice}</span>
+                              {hasDiscount && (
+                                <span className="text-[9px] font-black text-rose-600 bg-rose-50 px-1 py-0.2 rounded border border-rose-200/60">
+                                  -{discountPercent}%
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <button 
+                            type="button"
+                            onClick={() => onRemoveItem(item.id)}
+                            className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all shrink-0"
+                            title={t.removeItem}
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
-                
+
+                {/* Bill Summary */}
                 {cartItems.length > 0 && (
-                  <div className="bg-slate-50 p-4 rounded-lg mt-2 space-y-2 border border-slate-100">
-                    <div className="flex justify-between items-center text-sm text-slate-600">
+                  <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 space-y-1.5 text-xs">
+                    <div className="flex justify-between text-slate-600">
                       <span>{t.cartSubtotal}</span>
-                      <span>৳ {subTotal}</span>
+                      <span className="font-semibold">৳{subTotal}</span>
                     </div>
-                    {serviceCharge > 0 && (
-                       <div className="flex justify-between items-center text-sm text-slate-600">
-                        <span>{t.serviceCharge}</span>
-                        <span>৳ {serviceCharge}</span>
+                    {totalSavings > 0 && (
+                      <div className="flex justify-between text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200/80 font-medium">
+                        <span>{lang === 'bn' ? 'মোট ডিসকাউন্ট সাশ্রয়:' : 'Total Discount:'}</span>
+                        <span className="font-bold">- ৳{totalSavings}</span>
                       </div>
                     )}
-                    <div className="flex justify-between items-center border-t border-slate-200 pt-2 mt-2">
-                      <span className="text-sm font-bold text-slate-800">{t.cartTotal}</span>
-                      <span className="text-lg font-bold text-primary">৳ {totalBill}</span>
+                    <div className="flex justify-between text-slate-600">
+                      <span>{t.serviceCharge} ({selectedLab?.name.split(' ')[0]})</span>
+                      <span className="font-semibold">
+                        {serviceCharge === 0 ? (lang === 'bn' ? 'ফ্রি' : 'Free') : `৳${serviceCharge}`}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center border-t border-slate-200 pt-2 text-slate-900 font-bold">
+                      <span className="text-xs">{t.cartTotal}</span>
+                      <span className="text-base font-black text-primary">৳{totalBill}</span>
                     </div>
                   </div>
                 )}
               </div>
 
-              <Button 
-                fullWidth 
-                onClick={() => setStep(2)} 
-                disabled={!formData.labId || cartItems.length === 0}
-                className="mt-4"
-              >
-                {t.nextStep} <ChevronRight size={16} />
-              </Button>
+              {/* Step 1 Actions */}
+              <div className="pt-2">
+                <Button 
+                  onClick={() => setStep(2)} 
+                  disabled={cartItems.length === 0}
+                  className="w-full py-3 text-xs sm:text-sm font-bold shadow-md flex items-center justify-center gap-1.5"
+                >
+                  <span>{lang === 'bn' ? 'তারিখ ও সময় নির্বাচন করুন' : 'Continue to Schedule'}</span>
+                  <ChevronRight size={16} />
+                </Button>
+              </div>
             </div>
           )}
 
-          {/* STEP 2: Scheduling & Personal Info */}
+          {/* STEP 2: Patient Info, Date & Time Selection */}
           {step === 2 && (
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
               
-              {/* Schedule Section */}
-              <div className="space-y-4">
-                <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2 border-b border-slate-100 pb-2">
-                  <Clock size={16} className="text-primary" />
-                  {t.scheduleTitle}
-                </h3>
-                
-                {/* Custom Date Strip */}
+              {/* Patient Details */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <User size={14} className="text-primary" />
+                    <span>{t.patientDetails || (lang === 'bn' ? 'রোগীর তথ্য' : 'Patient Information')}</span>
+                  </label>
+                  {!currentPatient && onOpenAuthModal && (
+                    <button
+                      type="button"
+                      onClick={onOpenAuthModal}
+                      className="text-[11px] text-primary hover:underline font-semibold"
+                    >
+                      {lang === 'bn' ? 'লগইন থাকলে অটো ফিল হবে' : 'Log in to auto-fill'}
+                    </button>
+                  )}
+                </div>
+
                 <div>
-                  <label className="block text-xs text-slate-500 mb-2">{t.dateLabel}</label>
-                  <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-                    {nextDays.map((day) => (
+                  <input 
+                    type="text" 
+                    required
+                    placeholder={lang === 'bn' ? 'রোগীর পুরো নাম *' : 'Full Name *'}
+                    value={formData.fullName}
+                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                  />
+                </div>
+
+                <div>
+                  <input 
+                    type="tel" 
+                    required
+                    placeholder={lang === 'bn' ? 'মোবাইল নম্বর * (০১৭XXXXXXXX)' : 'Phone Number *'}
+                    value={formData.phoneNumber}
+                    onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                  />
+                </div>
+
+                <div>
+                  <textarea 
+                    rows={2}
+                    required
+                    placeholder={lang === 'bn' ? 'স্যাম্পল কালেকশনের পূর্ণ ঠিকানা *' : 'Full Address for Sample Collection *'}
+                    value={formData.address}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all resize-none"
+                  />
+                </div>
+              </div>
+
+              {/* Date Selection */}
+              <div className="space-y-2 pt-2 border-t border-slate-100">
+                <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                  <Calendar size={14} className="text-primary" />
+                  <span>{t.selectDate || (lang === 'bn' ? 'তারিখ নির্বাচন করুন' : 'Select Date')}</span>
+                </label>
+
+                <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                  {nextDays.map((d) => {
+                    const isSelected = formData.date === d.fullDate;
+                    return (
                       <button
-                        key={day.fullDate}
+                        key={d.fullDate}
                         type="button"
-                        onClick={() => setFormData({...formData, date: day.fullDate})}
-                        className={`flex-shrink-0 flex flex-col items-center justify-center w-16 h-20 rounded-xl border transition-all ${
-                          formData.date === day.fullDate
-                            ? 'bg-primary text-white border-primary shadow-md transform scale-105'
-                            : 'bg-white text-slate-600 border-slate-200 hover:border-sky-300 hover:bg-sky-50'
+                        onClick={() => setFormData({ ...formData, date: d.fullDate })}
+                        className={`p-2 rounded-xl text-center flex-1 min-w-[62px] border transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-primary text-white border-primary shadow-xs'
+                            : 'bg-white text-slate-700 border-slate-200 hover:border-primary/50'
                         }`}
                       >
-                        <span className="text-xs font-medium uppercase opacity-80">{day.dayName}</span>
-                        <span className="text-xl font-bold">{day.dayNumber}</span>
-                        <span className="text-[10px] uppercase opacity-70">{day.month}</span>
+                        <p className="text-[10px] uppercase font-bold opacity-80">{d.dayName}</p>
+                        <p className="text-base font-black leading-tight my-0.5">{d.dayNumber}</p>
+                        <p className="text-[10px] opacity-80">{d.month}</p>
                       </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Time Slots Grid */}
-                <div>
-                  <label className="block text-xs text-slate-500 mb-2">{t.timeLabel}</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {TIME_SLOTS.map(slot => {
-                       const isAvailable = isSlotAvailable(formData.date, slot);
-                       return (
-                         <button 
-                           key={slot}
-                           type="button"
-                           disabled={!isAvailable}
-                           onClick={() => setFormData({...formData, time: slot})}
-                           className={`text-xs py-2 px-1 rounded-md border transition-all truncate ${
-                             formData.time === slot 
-                               ? 'bg-primary text-white border-primary shadow-md' 
-                               : isAvailable 
-                                 ? 'bg-white text-slate-600 border-slate-200 hover:border-primary hover:bg-sky-50'
-                                 : 'bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed'
-                           }`}
-                         >
-                           {slot}
-                         </button>
-                       );
-                    })}
-                  </div>
-                  {!formData.time && <p className="text-[10px] text-red-500 mt-1">{t.timeError}</p>}
+                    );
+                  })}
                 </div>
               </div>
 
-              {/* Personal Info Section */}
-              <div className="space-y-3 pt-2 border-t border-slate-100">
-                <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
-                  <User size={16} className="text-primary" />
-                  {t.step2.split(' ')[0]} {/* "Info" / "তথ্য" */}
-                </h3>
-                
-                <div className="grid grid-cols-1 gap-3">
-                  <div className="relative">
-                    <User className="absolute left-3 top-2.5 text-slate-400" size={18} />
-                    <input 
-                      required
-                      type="text" 
-                      className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-sm"
-                      placeholder={t.namePlaceholder}
-                      value={formData.fullName}
-                      onChange={e => setFormData({...formData, fullName: e.target.value})}
-                    />
-                  </div>
+              {/* Time Slot Selection */}
+              <div className="space-y-2 pt-2 border-t border-slate-100">
+                <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                  <Clock size={14} className="text-primary" />
+                  <span>{t.selectTime || (lang === 'bn' ? 'সময়সূচি নির্বাচন করুন' : 'Select Time Slot')}</span>
+                </label>
 
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-2.5 text-slate-400" size={18} />
-                    <input 
-                      required
-                      type="tel" 
-                      className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-sm"
-                      placeholder={t.phoneLabel}
-                      value={formData.phoneNumber}
-                      onChange={e => setFormData({...formData, phoneNumber: e.target.value})}
-                    />
-                  </div>
+                <div className="grid grid-cols-2 gap-2 max-h-36 overflow-y-auto pr-1 custom-scrollbar">
+                  {TIME_SLOTS.map((slot) => {
+                    const available = isSlotAvailable(formData.date, slot);
+                    const isSelected = formData.time === slot;
 
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-2.5 text-slate-400" size={18} />
-                    <textarea 
-                      required
-                      className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-sm"
-                      placeholder={t.addrPlaceholder}
-                      rows={2}
-                      value={formData.address}
-                      onChange={e => setFormData({...formData, address: e.target.value})}
-                    />
-                  </div>
-                </div>
-
-                {/* Doctor & Prescription (Moved Here) */}
-                <div className="space-y-3 pt-2">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">{t.doctorLabel}</label>
-                    <div className="relative">
-                      <Stethoscope className="absolute left-3 top-2.5 text-slate-400" size={18} />
-                      <input 
-                        type="text" 
-                        className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-sm"
-                        placeholder={t.doctorPlaceholder}
-                        value={formData.doctorName}
-                        onChange={e => setFormData({...formData, doctorName: e.target.value})}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">{t.prescriptionLabel}</label>
-                    <div className="relative">
-                      <input 
-                        type="file" 
-                        id="prescription-upload"
-                        className="hidden" 
-                        accept="image/*,.pdf"
-                        onChange={handleFileChange}
-                      />
-                      <label 
-                        htmlFor="prescription-upload"
-                        className="flex items-center justify-center gap-2 w-full py-2 border border-dashed border-primary/50 bg-sky-50 rounded-lg cursor-pointer hover:bg-sky-100 transition-colors text-primary text-sm font-medium"
+                    return (
+                      <button
+                        key={slot}
+                        type="button"
+                        disabled={!available}
+                        onClick={() => setFormData({ ...formData, time: slot })}
+                        className={`p-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                          !available
+                            ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-60'
+                            : isSelected
+                            ? 'bg-primary text-white border-primary shadow-xs'
+                            : 'bg-white text-slate-700 border-slate-200 hover:border-primary/50'
+                        }`}
                       >
-                        <Upload size={18} />
-                        {formData.prescription ? (
-                           <span className="text-slate-800">{formData.prescription.name}</span>
-                        ) : (
-                           <span>{t.attachBtn}</span>
-                        )}
-                      </label>
-                    </div>
-                  </div>
+                        {slot}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-2">
-                <Button type="button" variant="outline" onClick={() => setStep(1)} fullWidth disabled={isSubmitting}>{t.backBtn}</Button>
-                <Button type="submit" fullWidth disabled={isSubmitting || !formData.date || !formData.time}>
+              {/* Doctor / Prescription (Optional) */}
+              <div className="pt-2 border-t border-slate-100">
+                <input 
+                  type="text"
+                  placeholder={lang === 'bn' ? 'রেফারকারী চিকিৎসকের নাম (ঐচ্ছিক)' : 'Referring Doctor Name (Optional)'}
+                  value={formData.doctorName}
+                  onChange={(e) => setFormData({ ...formData, doctorName: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                />
+              </div>
+
+              {/* Step 2 Actions */}
+              <div className="pt-3 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-colors"
+                >
+                  {lang === 'bn' ? 'পেছনে' : 'Back'}
+                </button>
+                <Button 
+                  type="submit" 
+                  disabled={isSubmitting || !formData.time || !formData.fullName || !formData.phoneNumber || !formData.address}
+                  className="flex-1 py-2.5 text-xs sm:text-sm font-bold shadow-md flex items-center justify-center gap-1.5"
+                >
                   {isSubmitting ? (
-                    <span className="flex items-center gap-2">
-                      <Loader2 className="animate-spin" size={16} /> {t.processing}
-                    </span>
+                    <span>{lang === 'bn' ? 'কনফার্ম হচ্ছে...' : 'Confirming...'}</span>
                   ) : (
-                    t.confirmBtn
+                    <>
+                      <CheckCircle size={16} />
+                      <span>{lang === 'bn' ? 'বুকিং নিশ্চিত করুন' : 'Confirm Booking'}</span>
+                    </>
                   )}
                 </Button>
               </div>
             </form>
           )}
 
-          {/* STEP 3: Success */}
+          {/* STEP 3: Booking Success State */}
           {step === 3 && (
-            <div className="text-center py-4 animate-in zoom-in duration-300">
-              <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 relative">
-                <div className="absolute inset-0 bg-green-200 rounded-full animate-ping opacity-25"></div>
-                <CheckCircle size={48} className="text-green-600 relative z-10" />
+            <div className="py-6 text-center space-y-4">
+              <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
+                <CheckCircle size={36} />
               </div>
-              <h3 className="text-2xl font-bold text-slate-800 mb-2">{t.successTitle}</h3>
-              <p className="text-slate-600 mb-8">
-                {t.successDesc}
-              </p>
               
-              <div className="bg-slate-50 p-6 rounded-xl text-left border border-slate-100 shadow-sm mb-6 relative overflow-hidden">
-                <div className="absolute top-0 right-0 bg-primary text-white text-xs font-bold px-2 py-1 rounded-bl-lg">{t.successConfirmed}</div>
-                <div className="space-y-3">
-                   <div className="flex justify-between border-b border-slate-200 pb-2">
-                    <span className="text-slate-500 text-sm">{t.successTest}</span>
-                    <span className="font-bold text-slate-800 text-right">{cartItems.length} Tests</span>
-                  </div>
-                   <div className="flex justify-between border-b border-slate-200 pb-2">
-                    <span className="text-slate-500 text-sm">{t.successLab}</span>
-                    <span className="font-bold text-slate-800">{labs.find(l => l.id === formData.labId)?.name}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-200 pb-2">
-                    <span className="text-slate-500 text-sm">{t.successDateTime}</span>
-                    <span className="font-bold text-slate-800 text-right">{formData.date}<br/>{formData.time}</span>
-                  </div>
-                  {formData.doctorName && (
-                    <div className="flex justify-between border-b border-slate-200 pb-2">
-                      <span className="text-slate-500 text-sm">Doctor Ref</span>
-                      <span className="font-bold text-slate-800 text-right">{formData.doctorName}</span>
-                    </div>
-                  )}
-                  {/* Bill Breakdown in Step 3 */}
-                   <div className="pt-2 space-y-1">
-                      <div className="flex justify-between text-xs text-slate-500">
-                        <span>{t.cartSubtotal}</span>
-                        <span>৳ {subTotal}</span>
-                      </div>
-                      <div className="flex justify-between text-xs text-slate-500">
-                        <span>{t.serviceCharge}</span>
-                        <span>৳ {serviceCharge}</span>
-                      </div>
-                       <div className="flex justify-between pt-1 border-t border-slate-200 mt-1">
-                        <span className="text-slate-500 text-sm">{t.successTotal}</span>
-                        <span className="font-bold text-primary text-lg">৳ {totalBill}</span>
-                      </div>
-                   </div>
+              <h3 className="text-xl font-extrabold text-slate-900">
+                {lang === 'bn' ? 'বুকিং সফলভাবে সম্পন্ন হয়েছে!' : 'Booking Confirmed!'}
+              </h3>
+              
+              <p className="text-xs sm:text-sm text-slate-600 max-w-sm mx-auto leading-relaxed">
+                {lang === 'bn' 
+                  ? 'আপনার টেস্ট বুকিং গ্রহণ করা হয়েছে। ল্যাব টেকনিশিয়ান নির্ধারিত সময়ে আপনার ঠিকানায় উপস্থিত হবেন।'
+                  : 'Your booking has been received. A certified phlebotomist will visit your address at the scheduled time.'}
+              </p>
+
+              {/* Booking Summary Box */}
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-left text-xs space-y-2 max-w-sm mx-auto">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">{lang === 'bn' ? 'ডায়াগনস্টিক ল্যাব:' : 'Lab:'}</span>
+                  <span className="font-bold text-slate-800">{selectedLab?.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">{lang === 'bn' ? 'তারিখ ও সময়:' : 'Schedule:'}</span>
+                  <span className="font-bold text-slate-800">{formData.date} ({formData.time})</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">{lang === 'bn' ? 'মোট বিল:' : 'Total Amount:'}</span>
+                  <span className="font-black text-primary text-sm">৳{totalBill}</span>
                 </div>
               </div>
 
-              {/* Contact Confirmation Note */}
-              <div className="bg-sky-50 p-4 rounded-lg mb-6 flex items-center gap-3 text-left border border-sky-100">
-                <Phone className="text-primary flex-shrink-0" size={20} />
-                <p className="text-sm text-slate-700">
-                  {t.successContact} <span className="font-bold text-slate-900">{formData.phoneNumber}</span>
-                </p>
+              <div className="pt-3 flex flex-col sm:flex-row gap-2.5 justify-center">
+                <Button onClick={handleBackToHome} className="w-full sm:w-auto">
+                  {lang === 'bn' ? 'হোমে ফিরে যান' : 'Back to Home'}
+                </Button>
               </div>
-              
-              <Button onClick={handleBackToHome} fullWidth>{t.successHomeBtn}</Button>
             </div>
           )}
         </div>
