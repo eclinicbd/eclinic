@@ -86,7 +86,7 @@ export const PackagesView: React.FC<PackagesViewProps> = ({
   return (
     <div className="min-h-screen bg-slate-50/70 pb-20">
       {/* Header Banner */}
-      <section className="bg-gradient-to-r from-sky-900 via-primary to-cyan-900 text-white pt-12 pb-16 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      <section className="bg-gradient-to-r from-sky-900 via-primary to-cyan-900 text-white pt-14 pb-20 sm:pb-24 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"></div>
 
         <div className="max-w-7xl mx-auto relative z-10">
@@ -107,7 +107,7 @@ export const PackagesView: React.FC<PackagesViewProps> = ({
             </p>
 
             {/* Search Bar */}
-            <div className="mt-8 max-w-xl mx-auto">
+            <div className="mt-8 mb-2 max-w-xl mx-auto">
               <div className="relative">
                 <input
                   type="text"
@@ -132,9 +132,9 @@ export const PackagesView: React.FC<PackagesViewProps> = ({
       </section>
 
       {/* Main Content Area */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 sm:-mt-10 relative z-20">
         {/* Filter Pills */}
-        <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-200/80 mb-8 overflow-x-auto scrollbar-none">
+        <div className="bg-white p-3.5 sm:p-4 rounded-2xl shadow-md border border-slate-200/90 mb-10 sm:mb-12 overflow-x-auto scrollbar-none">
           <div className="flex items-center gap-2 min-w-max">
             <span className="text-xs font-bold text-slate-400 px-2 flex items-center gap-1">
               <Filter size={14} />
@@ -161,7 +161,7 @@ export const PackagesView: React.FC<PackagesViewProps> = ({
         </div>
 
         {/* Results Counter */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-8 pt-2">
           <p className="text-xs sm:text-sm font-bold text-slate-700">
             {lang === 'bn' 
               ? `মোট ${filteredPackages.length} টি প্যাকেজ পাওয়া গেছে` 
@@ -202,7 +202,7 @@ export const PackagesView: React.FC<PackagesViewProps> = ({
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-9 mb-12">
             {filteredPackages.map((pkg) => {
               const isInCart = cart.includes(pkg.id);
               const originalPrice = (selectedLabId && pkg.originalPriceByLab?.[selectedLabId]) || pkg.originalPrice;
