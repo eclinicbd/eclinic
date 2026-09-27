@@ -57,6 +57,8 @@ interface AdminDashboardProps {
   onUpdateLabs: (labs: LabPartner[]) => void;
   bookings: BookingHistoryItem[];
   onUpdateBookings: (bookings: BookingHistoryItem[]) => void;
+  patients?: PatientUser[];
+  onUpdatePatients?: (patients: PatientUser[]) => void;
   siteSettings: SiteSettings;
   onUpdateSiteSettings: (settings: SiteSettings) => void;
   onResetAllData: () => void;
@@ -76,6 +78,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onUpdateLabs,
   bookings,
   onUpdateBookings,
+  patients = [],
+  onUpdatePatients,
   siteSettings,
   onUpdateSiteSettings,
   onResetAllData,
@@ -604,7 +608,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <NavButton id="categories" icon={Tag} label={lang === 'bn' ? 'ক্যাটেগরি ব্যবস্থাপনা' : 'Test Categories'} badge={categories.length} />
             <NavButton id="labs" icon={Building2} label="Centers & Fees" />
             <NavButton id="cms" icon={Globe} label={t.adminSiteCMS} />
-            <NavButton id="customers" icon={Users} label={t.adminCustomers} />
+            <NavButton id="customers" icon={Users} label={t.adminCustomers} badge={patients.length} />
             <NavButton id="settings" icon={Settings} label={t.adminSettings} />
           </div>
 
@@ -724,6 +728,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           {activeTab === 'customers' && (
             <AdminCustomers 
               lang={lang}
+              patients={patients}
               bookings={bookings}
               onSelectCustomerOrders={(phone) => {
                 setActiveTab('orders');

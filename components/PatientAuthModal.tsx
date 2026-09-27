@@ -9,7 +9,8 @@ import {
 import { 
   signInWithGoogle, 
   loginWithEmail, 
-  registerWithEmail 
+  registerWithEmail,
+  saveUserProfileToFirestore
 } from '../services/firebase';
 import { Button } from './Button';
 import { PRESET_AVATARS } from './ProfilePictureModal';
@@ -240,6 +241,8 @@ export const PatientAuthModal: React.FC<PatientAuthModalProps> = ({
 
       setIsLoading(false);
       if (result.success && result.patient) {
+        // Save to Firestore so customer immediately shows up in Admin Panel across all domains
+        saveUserProfileToFirestore(result.patient);
         setSuccessMsg(t.authSignupSuccess);
         setTimeout(() => {
           onSuccess(result.patient!);

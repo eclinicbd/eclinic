@@ -254,6 +254,40 @@ export const logoutFirebase = async () => {
 };
 
 /**
+ * Real-time subscription to registered patients/users
+ */
+export const subscribeToUsers = (callback: (users: PatientUser[]) => void) => {
+  try {
+    const usersCol = collection(db, 'users');
+    return onSnapshot(usersCol, (snapshot) => {
+      const users: PatientUser[] = [];
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        users.push({
+          id: docSnap.id,
+          name: data.name || 'Patient',
+          phone: data.phone || '01700000000',
+          email: data.email || undefined,
+          address: data.address || 'Dhaka, Bangladesh',
+          avatar: data.avatar || undefined,
+          gender: data.gender || 'male',
+          age: data.age,
+          bloodGroup: data.bloodGroup || 'B+',
+          emergencyContact: data.emergencyContact,
+          createdAt: data.createdAt || new Date().toISOString()
+        });
+      });
+      callback(users);
+    }, (error) => {
+      console.warn("Users subscription warning:", error);
+    });
+  } catch (error) {
+    console.error("Error setting up users subscription:", error);
+    return () => {};
+  }
+};
+
+/**
  * Save user profile updates to Firestore
  */
 export const saveUserProfileToFirestore = async (user: PatientUser): Promise<boolean> => {
@@ -270,6 +304,7 @@ export const saveUserProfileToFirestore = async (user: PatientUser): Promise<boo
       age: user.age || '',
       bloodGroup: user.bloodGroup || '',
       emergencyContact: user.emergencyContact || '',
+      createdAt: user.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString()
     }, { merge: true });
     return true;

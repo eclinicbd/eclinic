@@ -19,6 +19,8 @@ import {
   getStoredCurrentPatient,
   saveStoredCurrentPatient,
   updateStoredPatientProfile,
+  getStoredPatients,
+  saveStoredPatients,
   getIsAdminSessionActive,
   setAdminSessionActive
 } from './services/dataStorage';
@@ -38,7 +40,8 @@ import {
   saveTestsToFirestore,
   subscribeToTests,
   savePackagesToFirestore,
-  subscribeToPackages
+  subscribeToPackages,
+  subscribeToUsers
 } from './services/firebase';
 import { TestCard } from './components/TestCard';
 import { BookingModal } from './components/BookingModal';
@@ -117,6 +120,7 @@ export default function App() {
   const [packages, setPackages] = useState<HealthPackage[]>(() => getStoredPackages(language));
   const [categories, setCategories] = useState<CategoryItem[]>(() => getStoredCategories());
   const [bookings, setBookings] = useState<BookingHistoryItem[]>(() => getStoredBookings());
+  const [patients, setPatients] = useState<PatientUser[]>(() => getStoredPatients());
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(() => getStoredSiteSettings(language));
   const [selectedPackageForDetail, setSelectedPackageForDetail] = useState<HealthPackage | null>(null);
 
@@ -225,6 +229,11 @@ export default function App() {
     saveStoredBookings(updated);
   };
 
+  const handleUpdatePatients = (updated: PatientUser[]) => {
+    setPatients(updated);
+    saveStoredPatients(updated);
+  };
+
   const handleUpdateSiteSettings = (updated: SiteSettings) => {
     setSiteSettings(updated);
     saveStoredSiteSettings(language, updated);
@@ -312,6 +321,22 @@ export default function App() {
     });
     return () => unsubscribe();
   }, [language]);
+
+  // Real-time subscription to Registered Patients in Firestore
+  useEffect(() => {
+    const unsubscribe = subscribeToUsers((firestoreUsers) => {
+      if (firestoreUsers && firestoreUsers.length > 0) {
+        setPatients(prev => {
+          const firestoreIds = new Set(firestoreUsers.map(u => u.id));
+          const localOnly = prev.filter(u => !firestoreIds.has(u.id));
+          const merged = [...firestoreUsers, ...localOnly];
+          saveStoredPatients(merged);
+          return merged;
+        });
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   // Subscribe to real-time Firestore bookings
   useEffect(() => {
@@ -408,6 +433,15 @@ export default function App() {
   const handleAuthSuccess = (patient: PatientUser) => {
     setCurrentPatient(patient);
     saveStoredCurrentPatient(patient);
+    setPatients(prev => {
+      const exists = prev.some(p => p.id === patient.id || (p.phone && p.phone === patient.phone));
+      if (!exists) {
+        const next = [patient, ...prev];
+        saveStoredPatients(next);
+        return next;
+      }
+      return prev.map(p => (p.id === patient.id || (p.phone && p.phone === patient.phone)) ? patient : p);
+    });
     setCurrentView('dashboard');
   };
 
@@ -444,6 +478,7 @@ export default function App() {
     if (res.success && res.patient) {
       setCurrentPatient(res.patient);
       saveUserProfileToFirestore(res.patient);
+      setPatients(prev => prev.map(p => p.id === res.patient!.id ? res.patient! : p));
     }
   };
 
@@ -715,6 +750,8 @@ export default function App() {
           onUpdateLabs={handleUpdateLabs}
           bookings={bookings}
           onUpdateBookings={handleUpdateBookings}
+          patients={patients}
+          onUpdatePatients={handleUpdatePatients}
           siteSettings={siteSettings}
           onUpdateSiteSettings={handleUpdateSiteSettings}
           onResetAllData={handleResetAllData}
