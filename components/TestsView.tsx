@@ -1,5 +1,5 @@
 import React from 'react';
-import { TestPackage, LabPartner, Language } from '../types';
+import { TestPackage, LabPartner, Language, CategoryItem } from '../types';
 import { TRANSLATIONS } from '../translations';
 import { TestCard } from './TestCard';
 import { LabLogo } from './LabLogo';
@@ -21,6 +21,7 @@ import {
 interface TestsViewProps {
   tests: TestPackage[];
   labs: LabPartner[];
+  categories?: CategoryItem[];
   cart: string[];
   toggleCart: (test: TestPackage) => void;
   removeFromCart: (id: string) => void;
@@ -35,11 +36,10 @@ interface TestsViewProps {
   onBackToHome: () => void;
 }
 
-const CATEGORIES = ['All', 'General', 'Diabetes', 'Heart', 'Thyroid', 'Vitamin'];
-
 export const TestsView: React.FC<TestsViewProps> = ({
   tests,
   labs,
+  categories = [],
   cart,
   toggleCart,
   removeFromCart,
@@ -54,6 +54,12 @@ export const TestsView: React.FC<TestsViewProps> = ({
   onBackToHome
 }) => {
   const t = TRANSLATIONS[lang];
+
+  // Derive visible categories list
+  const activeCategoriesList = ['All', ...Array.from(new Set([
+    ...categories.filter(c => !c.isHidden).map(c => c.name),
+    ...tests.filter(t => !t.isHidden).map(t => t.category).filter(Boolean)
+  ]))];
 
   const filteredTests = tests.filter(test => {
     if (test.isHidden) return false;
@@ -211,18 +217,24 @@ export const TestsView: React.FC<TestsViewProps> = ({
               </div>
 
               <div className="space-y-2.5">
-                {CATEGORIES.map(cat => (
-                  <label key={cat} className="flex items-center gap-3 cursor-pointer group p-1.5 rounded-lg hover:bg-slate-50 transition-colors">
-                    <div className={`w-4.5 h-4.5 rounded-full border flex items-center justify-center transition-colors ${activeCategory === cat ? 'border-teal-500' : 'border-slate-300'}`}>
-                      {activeCategory === cat && <div className="w-2.5 h-2.5 bg-teal-500 rounded-full" />}
-                    </div>
-                    <input type="radio" className="hidden" checked={activeCategory === cat} onChange={() => setActiveCategory(cat)} />
-                    {/* @ts-ignore */}
-                    <span className={`text-xs ${activeCategory === cat ? 'text-slate-900 font-bold' : 'text-slate-600 group-hover:text-teal-600'}`}>
-                      {t.categories[cat]}
-                    </span>
-                  </label>
-                ))}
+                {activeCategoriesList.map(cat => {
+                  const catObj = categories.find(c => c.name.toLowerCase() === cat.toLowerCase());
+                  const displayName = lang === 'bn' 
+                    ? (catObj?.nameBn || t.categories[cat as keyof typeof t.categories] || cat)
+                    : (t.categories[cat as keyof typeof t.categories] || cat);
+
+                  return (
+                    <label key={cat} className="flex items-center gap-3 cursor-pointer group p-1.5 rounded-lg hover:bg-slate-50 transition-colors">
+                      <div className={`w-4.5 h-4.5 rounded-full border flex items-center justify-center transition-colors ${activeCategory === cat ? 'border-teal-500' : 'border-slate-300'}`}>
+                        {activeCategory === cat && <div className="w-2.5 h-2.5 bg-teal-500 rounded-full" />}
+                      </div>
+                      <input type="radio" className="hidden" checked={activeCategory === cat} onChange={() => setActiveCategory(cat)} />
+                      <span className={`text-xs ${activeCategory === cat ? 'text-slate-900 font-bold' : 'text-slate-600 group-hover:text-teal-600'}`}>
+                        {displayName}
+                      </span>
+                    </label>
+                  );
+                })}
               </div>
             </div>
 

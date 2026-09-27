@@ -27,7 +27,16 @@ import {
   User as FirebaseUser
 } from 'firebase/auth';
 import firebaseConfig from '../firebase-applet-config.json';
-import { BookingHistoryItem, PatientUser } from '../types';
+import { 
+  BookingHistoryItem, 
+  PatientUser, 
+  SiteSettings, 
+  TestPackage, 
+  HealthPackage, 
+  LabPartner, 
+  CategoryItem, 
+  Language 
+} from '../types';
 
 // Initialize Firebase App
 export const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
@@ -388,3 +397,180 @@ export const getBookingsFromFirestore = async (): Promise<BookingHistoryItem[]> 
     return [];
   }
 };
+
+/**
+ * ============================================================================
+ * SITE SETTINGS & CMS REAL-TIME SYNC (HEADER, FOOTER, BRANDING, CONTACTS, HERO)
+ * Ensures changes in Admin CMS immediately reflect on all public live domains!
+ * ============================================================================
+ */
+
+export const saveSiteSettingsToFirestore = async (lang: Language, settings: SiteSettings): Promise<boolean> => {
+  try {
+    const settingsDoc = doc(db, 'site_settings', `config_${lang}`);
+    await setDoc(settingsDoc, {
+      ...settings,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+    return true;
+  } catch (error) {
+    console.error("Error saving site settings to Firestore:", error);
+    return false;
+  }
+};
+
+export const subscribeToSiteSettings = (lang: Language, callback: (settings: SiteSettings) => void) => {
+  try {
+    const settingsDoc = doc(db, 'site_settings', `config_${lang}`);
+    return onSnapshot(settingsDoc, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data() as SiteSettings;
+        callback(data);
+      }
+    }, (error) => {
+      console.warn("Site settings subscription warning:", error);
+    });
+  } catch (error) {
+    console.error("Error subscribing to site settings:", error);
+    return () => {};
+  }
+};
+
+/**
+ * ============================================================================
+ * CATEGORIES, LABS, TESTS & PACKAGES REAL-TIME SYNC
+ * ============================================================================
+ */
+
+export const saveCategoriesToFirestore = async (categories: CategoryItem[]): Promise<boolean> => {
+  try {
+    const catDoc = doc(db, 'categories', 'master_list');
+    await setDoc(catDoc, {
+      items: categories,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+    return true;
+  } catch (error) {
+    console.error("Error saving categories to Firestore:", error);
+    return false;
+  }
+};
+
+export const subscribeToCategories = (callback: (categories: CategoryItem[]) => void) => {
+  try {
+    const catDoc = doc(db, 'categories', 'master_list');
+    return onSnapshot(catDoc, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        if (Array.isArray(data.items) && data.items.length > 0) {
+          callback(data.items as CategoryItem[]);
+        }
+      }
+    }, (error) => {
+      console.warn("Categories subscription warning:", error);
+    });
+  } catch (error) {
+    console.error("Error subscribing to categories:", error);
+    return () => {};
+  }
+};
+
+export const saveLabsToFirestore = async (lang: Language, labs: LabPartner[]): Promise<boolean> => {
+  try {
+    const labsDoc = doc(db, 'labs', `list_${lang}`);
+    await setDoc(labsDoc, {
+      items: labs,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+    return true;
+  } catch (error) {
+    console.error("Error saving labs to Firestore:", error);
+    return false;
+  }
+};
+
+export const subscribeToLabs = (lang: Language, callback: (labs: LabPartner[]) => void) => {
+  try {
+    const labsDoc = doc(db, 'labs', `list_${lang}`);
+    return onSnapshot(labsDoc, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        if (Array.isArray(data.items) && data.items.length > 0) {
+          callback(data.items as LabPartner[]);
+        }
+      }
+    }, (error) => {
+      console.warn("Labs subscription warning:", error);
+    });
+  } catch (error) {
+    console.error("Error subscribing to labs:", error);
+    return () => {};
+  }
+};
+
+export const saveTestsToFirestore = async (lang: Language, tests: TestPackage[]): Promise<boolean> => {
+  try {
+    const testsDoc = doc(db, 'tests', `list_${lang}`);
+    await setDoc(testsDoc, {
+      items: tests,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+    return true;
+  } catch (error) {
+    console.error("Error saving tests to Firestore:", error);
+    return false;
+  }
+};
+
+export const subscribeToTests = (lang: Language, callback: (tests: TestPackage[]) => void) => {
+  try {
+    const testsDoc = doc(db, 'tests', `list_${lang}`);
+    return onSnapshot(testsDoc, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        if (Array.isArray(data.items) && data.items.length > 0) {
+          callback(data.items as TestPackage[]);
+        }
+      }
+    }, (error) => {
+      console.warn("Tests subscription warning:", error);
+    });
+  } catch (error) {
+    console.error("Error subscribing to tests:", error);
+    return () => {};
+  }
+};
+
+export const savePackagesToFirestore = async (lang: Language, packages: HealthPackage[]): Promise<boolean> => {
+  try {
+    const pkgsDoc = doc(db, 'packages', `list_${lang}`);
+    await setDoc(pkgsDoc, {
+      items: packages,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+    return true;
+  } catch (error) {
+    console.error("Error saving packages to Firestore:", error);
+    return false;
+  }
+};
+
+export const subscribeToPackages = (lang: Language, callback: (packages: HealthPackage[]) => void) => {
+  try {
+    const pkgsDoc = doc(db, 'packages', `list_${lang}`);
+    return onSnapshot(pkgsDoc, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        if (Array.isArray(data.items) && data.items.length > 0) {
+          callback(data.items as HealthPackage[]);
+        }
+      }
+    }, (error) => {
+      console.warn("Packages subscription warning:", error);
+    });
+  } catch (error) {
+    console.error("Error subscribing to packages:", error);
+    return () => {};
+  }
+};
+

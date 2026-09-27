@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { TestPackage, HealthPackage, LabPartner, Language, BookingHistoryItem, SiteSettings, PatientUser } from './types';
+import { TestPackage, HealthPackage, LabPartner, Language, BookingHistoryItem, SiteSettings, PatientUser, CategoryItem } from './types';
 import { TRANSLATIONS } from './translations';
 import { 
   getStoredTests, 
@@ -9,6 +9,8 @@ import {
   saveStoredLabs, 
   getStoredPackages,
   saveStoredPackages,
+  getStoredCategories,
+  saveStoredCategories,
   getStoredBookings, 
   saveStoredBookings,
   getStoredSiteSettings,
@@ -16,7 +18,9 @@ import {
   resetAllDataToDefaults,
   getStoredCurrentPatient,
   saveStoredCurrentPatient,
-  updateStoredPatientProfile
+  updateStoredPatientProfile,
+  getIsAdminSessionActive,
+  setAdminSessionActive
 } from './services/dataStorage';
 import { 
   auth, 
@@ -24,13 +28,24 @@ import {
   saveBookingToFirestore, 
   saveUserProfileToFirestore,
   subscribeToBookings, 
-  logoutFirebase 
+  logoutFirebase,
+  saveSiteSettingsToFirestore,
+  subscribeToSiteSettings,
+  saveCategoriesToFirestore,
+  subscribeToCategories,
+  saveLabsToFirestore,
+  subscribeToLabs,
+  saveTestsToFirestore,
+  subscribeToTests,
+  savePackagesToFirestore,
+  subscribeToPackages
 } from './services/firebase';
 import { TestCard } from './components/TestCard';
 import { BookingModal } from './components/BookingModal';
 import { AIAssistant } from './components/AIAssistant';
 import { UserDashboard } from './components/UserDashboard';
 import { AdminDashboard } from './components/AdminDashboard';
+import { AdminLoginModal } from './components/AdminLoginModal';
 import { PatientAuthModal } from './components/PatientAuthModal';
 import { TestsView } from './components/TestsView';
 import { PackagesView } from './components/PackagesView';
@@ -100,9 +115,14 @@ export default function App() {
   const [tests, setTests] = useState<TestPackage[]>(() => getStoredTests(language));
   const [labs, setLabs] = useState<LabPartner[]>(() => getStoredLabs(language));
   const [packages, setPackages] = useState<HealthPackage[]>(() => getStoredPackages(language));
+  const [categories, setCategories] = useState<CategoryItem[]>(() => getStoredCategories());
   const [bookings, setBookings] = useState<BookingHistoryItem[]>(() => getStoredBookings());
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(() => getStoredSiteSettings(language));
   const [selectedPackageForDetail, setSelectedPackageForDetail] = useState<HealthPackage | null>(null);
+
+  // Secure Admin Authentication State (session based, prevents public domain auto-login)
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => getIsAdminSessionActive());
+  const [isAdminLoginModalOpen, setIsAdminLoginModalOpen] = useState(false);
 
   const [isLabPaused, setIsLabPaused] = useState(false);
   const labScrollRef = useRef<HTMLDivElement>(null);
@@ -179,16 +199,25 @@ export default function App() {
   const handleUpdateTests = (updated: TestPackage[]) => {
     setTests(updated);
     saveStoredTests(language, updated);
+    saveTestsToFirestore(language, updated);
   };
 
   const handleUpdateLabs = (updated: LabPartner[]) => {
     setLabs(updated);
     saveStoredLabs(language, updated);
+    saveLabsToFirestore(language, updated);
   };
 
   const handleUpdatePackages = (updated: HealthPackage[]) => {
     setPackages(updated);
     saveStoredPackages(language, updated);
+    savePackagesToFirestore(language, updated);
+  };
+
+  const handleUpdateCategories = (updated: CategoryItem[]) => {
+    setCategories(updated);
+    saveStoredCategories(updated);
+    saveCategoriesToFirestore(updated);
   };
 
   const handleUpdateBookings = (updated: BookingHistoryItem[]) => {
@@ -199,17 +228,90 @@ export default function App() {
   const handleUpdateSiteSettings = (updated: SiteSettings) => {
     setSiteSettings(updated);
     saveStoredSiteSettings(language, updated);
+    // Real-time synchronization to Firestore ensures changes are visible to ALL visitors across the live domain
+    saveSiteSettingsToFirestore(language, updated);
   };
 
   const handleResetAllData = () => {
     resetAllDataToDefaults();
-    setTests(getStoredTests(language));
-    setLabs(getStoredLabs(language));
-    setPackages(getStoredPackages(language));
+    const dTests = getStoredTests(language);
+    const dLabs = getStoredLabs(language);
+    const dPkgs = getStoredPackages(language);
+    const dCats = getStoredCategories();
+    const dSettings = getStoredSiteSettings(language);
+    
+    setTests(dTests);
+    setLabs(dLabs);
+    setPackages(dPkgs);
+    setCategories(dCats);
     setBookings(getStoredBookings());
-    setSiteSettings(getStoredSiteSettings(language));
+    setSiteSettings(dSettings);
+
+    // Sync reset to Firestore
+    saveTestsToFirestore(language, dTests);
+    saveLabsToFirestore(language, dLabs);
+    savePackagesToFirestore(language, dPkgs);
+    saveCategoriesToFirestore(dCats);
+    saveSiteSettingsToFirestore(language, dSettings);
   };
 
+  // Real-time subscription to Site Settings (Header, Footer, Logo, Tagline, Phone, Address, Hero Images, Services)
+  useEffect(() => {
+    const unsubscribe = subscribeToSiteSettings(language, (liveSettings) => {
+      if (liveSettings && Object.keys(liveSettings).length > 0) {
+        setSiteSettings(prev => {
+          const merged = { ...prev, ...liveSettings };
+          saveStoredSiteSettings(language, merged);
+          return merged;
+        });
+      }
+    });
+    return () => unsubscribe();
+  }, [language]);
+
+  // Real-time subscription to Categories
+  useEffect(() => {
+    const unsubscribe = subscribeToCategories((liveCategories) => {
+      if (liveCategories && liveCategories.length > 0) {
+        setCategories(liveCategories);
+        saveStoredCategories(liveCategories);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Real-time subscription to Labs
+  useEffect(() => {
+    const unsubscribe = subscribeToLabs(language, (liveLabs) => {
+      if (liveLabs && liveLabs.length > 0) {
+        setLabs(liveLabs);
+        saveStoredLabs(language, liveLabs);
+      }
+    });
+    return () => unsubscribe();
+  }, [language]);
+
+  // Real-time subscription to Tests
+  useEffect(() => {
+    const unsubscribe = subscribeToTests(language, (liveTests) => {
+      if (liveTests && liveTests.length > 0) {
+        setTests(liveTests);
+        saveStoredTests(language, liveTests);
+      }
+    });
+    return () => unsubscribe();
+  }, [language]);
+
+  // Real-time subscription to Packages
+  useEffect(() => {
+    const unsubscribe = subscribeToPackages(language, (livePkgs) => {
+      if (livePkgs && livePkgs.length > 0) {
+        setPackages(livePkgs);
+        saveStoredPackages(language, livePkgs);
+      }
+    });
+    return () => unsubscribe();
+  }, [language]);
 
   // Subscribe to real-time Firestore bookings
   useEffect(() => {
@@ -313,6 +415,26 @@ export default function App() {
     saveStoredCurrentPatient(null);
     setCurrentPatient(null);
     logoutFirebase();
+    setCurrentView('home');
+  };
+
+  const handleOpenAdminPortal = () => {
+    if (isAdminAuthenticated) {
+      setCurrentView('admin');
+    } else {
+      setIsAdminLoginModalOpen(true);
+    }
+  };
+
+  const handleAdminLoginSuccess = () => {
+    setIsAdminAuthenticated(true);
+    setIsAdminLoginModalOpen(false);
+    setCurrentView('admin');
+  };
+
+  const handleAdminLogout = () => {
+    setAdminSessionActive(false);
+    setIsAdminAuthenticated(false);
     setCurrentView('home');
   };
 
@@ -579,7 +701,7 @@ export default function App() {
       )}
 
       {/* CONDITIONAL RENDERING: ADMIN vs DASHBOARD vs HOME */}
-      {currentView === 'admin' ? (
+      {currentView === 'admin' && isAdminAuthenticated ? (
         <AdminDashboard 
           lang={language} 
           onToggleLanguage={toggleLanguage}
@@ -587,6 +709,8 @@ export default function App() {
           onUpdateTests={handleUpdateTests}
           packages={packages}
           onUpdatePackages={handleUpdatePackages}
+          categories={categories}
+          onUpdateCategories={handleUpdateCategories}
           labs={labs}
           onUpdateLabs={handleUpdateLabs}
           bookings={bookings}
@@ -594,7 +718,7 @@ export default function App() {
           siteSettings={siteSettings}
           onUpdateSiteSettings={handleUpdateSiteSettings}
           onResetAllData={handleResetAllData}
-          onLogout={() => setCurrentView('home')} 
+          onLogout={handleAdminLogout} 
         />
       ) : currentView === 'dashboard' ? (
         <UserDashboard 
@@ -632,6 +756,7 @@ export default function App() {
         <TestsView 
           tests={tests}
           labs={labs}
+          categories={categories}
           cart={cart}
           toggleCart={toggleCart}
           removeFromCart={removeFromCart}
@@ -1125,6 +1250,16 @@ export default function App() {
         initialTab={authModalTab}
         onSuccess={handleAuthSuccess}
       />
+
+      <AdminLoginModal
+        isOpen={isAdminLoginModalOpen || (currentView === 'admin' && !isAdminAuthenticated)}
+        onClose={() => {
+          setIsAdminLoginModalOpen(false);
+          if (currentView === 'admin') setCurrentView('home');
+        }}
+        onSuccess={handleAdminLoginSuccess}
+        lang={language}
+      />
       
       {currentView !== 'admin' && <AIAssistant lang={language} />}
       
@@ -1255,8 +1390,8 @@ export default function App() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 pt-8 border-t border-slate-800 text-center text-xs flex flex-col md:flex-row justify-between items-center gap-4">
             <p>© {new Date().getFullYear()} {siteSettings.siteName || 'LabHome BD'}. All rights reserved.</p>
             <button 
-              onClick={() => setCurrentView('admin')} 
-              className="text-slate-500 hover:text-white flex items-center gap-1.5 px-3 py-1 rounded-md bg-slate-800/80 border border-slate-700 hover:border-slate-600 transition-all"
+              onClick={handleOpenAdminPortal} 
+              className="text-slate-400 hover:text-white flex items-center gap-1.5 px-3 py-1 rounded-md bg-slate-800/80 border border-slate-700 hover:border-slate-600 transition-all cursor-pointer"
             >
                <ShieldCheck size={14} className="text-emerald-400" /> 
                <span>Admin Portal</span>

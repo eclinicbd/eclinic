@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { HealthPackage, LabPartner, Language } from '../../types';
+import { HealthPackage, LabPartner, Language, CategoryItem } from '../../types';
 import { TRANSLATIONS } from '../../translations';
 import { 
   Search, 
@@ -23,6 +23,7 @@ interface AdminPackagesProps {
   lang: Language;
   packages: HealthPackage[];
   labs: LabPartner[];
+  categories?: CategoryItem[];
   onOpenAddPackage: () => void;
   onOpenEditPackage: (pkg: HealthPackage) => void;
   onToggleHidePackage: (pkgId: string) => void;
@@ -30,12 +31,11 @@ interface AdminPackagesProps {
   onOpenDeletePackage: (pkg: HealthPackage) => void;
 }
 
-const PRESET_CATEGORIES = ['All', 'Diabetes', 'Heart', 'Full Body', 'Liver & Kidney', 'Women Health', 'Senior Citizen', 'Routine Screening'];
-
 export const AdminPackages: React.FC<AdminPackagesProps> = ({
   lang,
   packages,
   labs,
+  categories = [],
   onOpenAddPackage,
   onOpenEditPackage,
   onToggleHidePackage,
@@ -48,6 +48,12 @@ export const AdminPackages: React.FC<AdminPackagesProps> = ({
   const [sortBy, setSortBy] = useState<'default' | 'name_asc' | 'price_low' | 'price_high' | 'tests_count'>('default');
 
   const t = TRANSLATIONS[lang];
+
+  // Derive unique categories
+  const packageCategoryOptions = ['All', ...Array.from(new Set([
+    ...categories.map(c => c.name),
+    ...packages.map(p => p.category).filter(Boolean)
+  ]))];
 
   // Filtering
   const filtered = packages.filter(pkg => {
@@ -152,7 +158,7 @@ export const AdminPackages: React.FC<AdminPackagesProps> = ({
 
         {/* Category Pills */}
         <div className="flex items-center gap-1.5 overflow-x-auto pt-2 pb-1 no-scrollbar">
-          {PRESET_CATEGORIES.map((cat) => (
+          {packageCategoryOptions.map((cat) => (
             <button
               key={cat}
               onClick={() => setCategoryFilter(cat)}

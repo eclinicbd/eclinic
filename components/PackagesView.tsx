@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { HealthPackage, Language, LabPartner } from '../types';
+import { HealthPackage, Language, LabPartner, CategoryItem } from '../types';
 import { 
   Search, 
   Sparkles, 
@@ -23,6 +23,7 @@ import { Button } from './Button';
 
 interface PackagesViewProps {
   packages: HealthPackage[];
+  categories?: CategoryItem[];
   lang: Language;
   onAddToCart: (pkgId: string) => void;
   onDirectBook: (pkgId: string, labId?: string) => void;
@@ -35,6 +36,7 @@ interface PackagesViewProps {
 
 export const PackagesView: React.FC<PackagesViewProps> = ({
   packages,
+  categories = [],
   lang,
   onAddToCart,
   onDirectBook,
@@ -47,16 +49,36 @@ export const PackagesView: React.FC<PackagesViewProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState<string>('All');
 
-  const filterOptions = [
-    { id: 'All', labelBn: 'সকল প্যাকেজ', labelEn: 'All Packages' },
-    { id: '4_tests', labelBn: '৪টি টেস্টের প্যাকেজ', labelEn: '4-Test Packages' },
-    { id: '10_tests', labelBn: '১০টি টেস্টের ফুল বডি', labelEn: '10-Test Full Body' },
-    { id: 'Full Body', labelBn: 'ফুল বডি চেকআপ', labelEn: 'Full Body' },
-    { id: 'Diabetes', labelBn: 'ডায়াবেটিস স্পেশাল', labelEn: 'Diabetes' },
-    { id: 'Heart', labelBn: 'কার্ডিয়াক ওয়েলনেস', labelEn: 'Cardiac' },
-    { id: 'Women', labelBn: 'নারী স্বাস্থ্য', labelEn: 'Women Care' },
-    { id: 'Senior', labelBn: 'সিনিয়র সিটিজেন', labelEn: 'Seniors' }
-  ];
+  // Build filter options dynamically combining standard counts and active categories
+  const filterOptions = useMemo(() => {
+    const defaultOptions = [
+      { id: 'All', labelBn: 'সকল প্যাকেজ', labelEn: 'All Packages' },
+      { id: '4_tests', labelBn: '৪টি টেস্টের প্যাকেজ', labelEn: '4-Test Packages' },
+      { id: '10_tests', labelBn: '১০টি টেস্টের ফুল বডি', labelEn: '10-Test Full Body' }
+    ];
+
+    const dynamicCategoryOptions = categories
+      .filter(c => !c.isHidden)
+      .map(c => ({
+        id: c.name,
+        labelBn: c.nameBn || c.name,
+        labelEn: c.name
+      }));
+
+    // If categories prop is empty, fallback to basic options
+    if (dynamicCategoryOptions.length === 0) {
+      return [
+        ...defaultOptions,
+        { id: 'Full Body', labelBn: 'ফুল বডি চেকআপ', labelEn: 'Full Body' },
+        { id: 'Diabetes', labelBn: 'ডায়াবেটিস স্পেশাল', labelEn: 'Diabetes' },
+        { id: 'Heart', labelBn: 'কার্ডিয়াক ওয়েলনেস', labelEn: 'Cardiac' },
+        { id: 'Women Health', labelBn: 'নারী স্বাস্থ্য', labelEn: 'Women Care' },
+        { id: 'Senior', labelBn: 'সিনিয়র সিটিজেন', labelEn: 'Seniors' }
+      ];
+    }
+
+    return [...defaultOptions, ...dynamicCategoryOptions];
+  }, [categories]);
 
   const filteredPackages = useMemo(() => {
     return packages.filter(pkg => {

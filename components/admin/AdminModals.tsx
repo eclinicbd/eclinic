@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TestPackage, HealthPackage, LabPartner, BookingHistoryItem, BookingStatus, Language, ServiceItem } from '../../types';
+import { TestPackage, HealthPackage, LabPartner, BookingHistoryItem, BookingStatus, Language, ServiceItem, CategoryItem } from '../../types';
 import { TRANSLATIONS } from '../../translations';
 import { LabLogo } from '../LabLogo';
 import { 
@@ -28,9 +28,17 @@ import {
   Percent,
   Edit2,
   Search,
-  Droplet
+  Droplet,
+  Zap,
+  HeartPulse,
+  Activity,
+  ShieldCheck,
+  Award,
+  Pill,
+  Flame
 } from 'lucide-react';
 import { Button } from '../Button';
+import { CATEGORY_ICON_MAP, CATEGORY_COLOR_MAP } from './AdminCategories';
 
 const PRESET_IMAGES = [
   { label: 'Blood/Tube', url: 'https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&q=80&w=400' },
@@ -52,6 +60,8 @@ interface TestModalProps {
   onSave: (test: TestPackage) => void;
   editingTest: TestPackage | null;
   labs: LabPartner[];
+  categories?: CategoryItem[];
+  onAddNewCategory?: (category: CategoryItem) => void;
 }
 
 export const TestFormModal: React.FC<TestModalProps> = ({
@@ -60,7 +70,9 @@ export const TestFormModal: React.FC<TestModalProps> = ({
   onClose,
   onSave,
   editingTest,
-  labs
+  labs,
+  categories = [],
+  onAddNewCategory
 }) => {
   const [formData, setFormData] = useState<Partial<TestPackage>>({
     name: '',
@@ -78,6 +90,14 @@ export const TestFormModal: React.FC<TestModalProps> = ({
   });
   const [targetLabForPricing, setTargetLabForPricing] = useState<string>('ALL');
   const [applySuccessMsg, setApplySuccessMsg] = useState<string | null>(null);
+
+  // Quick Add Category State
+  const [isAddingNewCat, setIsAddingNewCat] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatNameBn, setNewCatNameBn] = useState('');
+  const [newCatIcon, setNewCatIcon] = useState('FlaskConical');
+  const [newCatColor, setNewCatColor] = useState('blue');
+  const [catError, setCatError] = useState<string | null>(null);
 
   const t = TRANSLATIONS[lang];
 
@@ -306,16 +326,133 @@ export const TestFormModal: React.FC<TestModalProps> = ({
               />
             </div>
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Category</label>
-              <select 
-                value={formData.category || 'General'}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none text-xs bg-white"
-              >
-                {PRESET_CATEGORIES.map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block font-bold text-slate-700">
+                  {lang === 'bn' ? 'ক্যাটেগরি (Category) *' : 'Category *'}
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAddingNewCat(!isAddingNewCat);
+                    setCatError(null);
+                  }}
+                  className="text-[11px] font-bold text-primary hover:text-sky-700 flex items-center gap-1 cursor-pointer transition-colors"
+                >
+                  <Plus size={12} />
+                  <span>{isAddingNewCat ? (lang === 'bn' ? 'তালিকা দেখুন' : 'Select from list') : (lang === 'bn' ? '+ নতুন ক্যাটেগরি' : '+ New Category')}</span>
+                </button>
+              </div>
+
+              {!isAddingNewCat ? (
+                <div className="space-y-1">
+                  <select 
+                    value={formData.category || 'General'}
+                    onChange={(e) => {
+                      if (e.target.value === '__add_new__') {
+                        setIsAddingNewCat(true);
+                      } else {
+                        setFormData({ ...formData, category: e.target.value });
+                      }
+                    }}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none text-xs bg-white font-semibold cursor-pointer"
+                  >
+                    {(categories.length > 0 ? categories : PRESET_CATEGORIES.map(c => ({ id: c, name: c }))).map(c => (
+                      <option key={c.id || c.name} value={c.name}>
+                        {c.name} {c.nameBn ? `(${c.nameBn})` : ''}
+                      </option>
+                    ))}
+                    {formData.category && !(categories.length > 0 ? categories : PRESET_CATEGORIES.map(c => ({ name: c }))).some(c => c.name.toLowerCase() === formData.category?.toLowerCase()) && (
+                      <option value={formData.category}>{formData.category} (Custom)</option>
+                    )}
+                    <option value="__add_new__" className="text-primary font-bold">
+                      ➕ {lang === 'bn' ? '+ নতুন ক্যাটেগরি তৈরি করুন...' : '+ Create New Category...'}
+                    </option>
+                  </select>
+                </div>
+              ) : (
+                /* Inline Quick Category Creator */
+                <div className="p-3 bg-sky-50/80 rounded-xl border border-sky-200 space-y-2.5 animate-fadeIn">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-800 text-[11px] flex items-center gap-1">
+                      <Tag size={12} className="text-primary" />
+                      {lang === 'bn' ? 'নতুন ক্যাটেগরি তৈরি ও নির্বাচন করুন' : 'Create & Select New Category'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingNewCat(false)}
+                      className="text-slate-400 hover:text-slate-600 p-0.5"
+                    >
+                      <X size={13} />
+                    </button>
+                  </div>
+
+                  {catError && (
+                    <div className="text-[10px] text-red-600 font-bold bg-red-50 p-1.5 rounded-lg border border-red-200">
+                      {catError}
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <input 
+                      type="text" 
+                      placeholder="Name (e.g. Vitamin)" 
+                      value={newCatName}
+                      onChange={e => {
+                        setNewCatName(e.target.value);
+                        setCatError(null);
+                      }}
+                      className="px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-white font-bold outline-none focus:ring-1 focus:ring-primary"
+                    />
+                    <input 
+                      type="text" 
+                      placeholder="বাংলা নাম (অপশনাল)" 
+                      value={newCatNameBn}
+                      onChange={e => setNewCatNameBn(e.target.value)}
+                      className="px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-white outline-none focus:ring-1 focus:ring-primary"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 pt-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingNewCat(false)}
+                      className="px-2.5 py-1 text-[11px] text-slate-600 hover:bg-slate-200/60 rounded-lg font-semibold"
+                    >
+                      {lang === 'bn' ? 'বাতিল' : 'Cancel'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const trimmed = newCatName.trim();
+                        if (!trimmed) {
+                          setCatError(lang === 'bn' ? 'ক্যাটেগরির ইংরেজি নাম দিন' : 'Enter category name');
+                          return;
+                        }
+                        const newCatItem: CategoryItem = {
+                          id: `cat_${Date.now()}`,
+                          name: trimmed,
+                          nameBn: newCatNameBn.trim() || undefined,
+                          icon: newCatIcon,
+                          color: newCatColor,
+                          order: (categories?.length || 0) + 1,
+                          isHidden: false
+                        };
+                        if (onAddNewCategory) {
+                          onAddNewCategory(newCatItem);
+                        }
+                        setFormData(prev => ({ ...prev, category: trimmed }));
+                        setNewCatName('');
+                        setNewCatNameBn('');
+                        setIsAddingNewCat(false);
+                      }}
+                      className="px-3 py-1 bg-primary hover:bg-sky-600 text-white rounded-lg text-xs font-bold shadow-xs flex items-center gap-1 cursor-pointer"
+                    >
+                      <Check size={12} />
+                      <span>{lang === 'bn' ? 'যুক্ত করুন' : 'Save & Select'}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1496,6 +1633,8 @@ interface PackageModalProps {
   editingPackage: HealthPackage | null;
   labs: LabPartner[];
   tests?: TestPackage[];
+  categories?: CategoryItem[];
+  onAddNewCategory?: (category: CategoryItem) => void;
 }
 
 const PACKAGE_PRESET_IMAGES = [
@@ -1523,7 +1662,9 @@ export const PackageFormModal: React.FC<PackageModalProps> = ({
   onSave,
   editingPackage,
   labs,
-  tests = []
+  tests = [],
+  categories = [],
+  onAddNewCategory
 }) => {
   const [formData, setFormData] = useState<Partial<HealthPackage>>({
     name: '',
@@ -1551,6 +1692,12 @@ export const PackageFormModal: React.FC<PackageModalProps> = ({
   const [showLabPricing, setShowLabPricing] = useState(false);
   const [targetLabForPricing, setTargetLabForPricing] = useState<string>('ALL');
   const [applySuccessMsg, setApplySuccessMsg] = useState<string | null>(null);
+
+  // Quick Add Category State
+  const [isAddingNewCat, setIsAddingNewCat] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatNameBn, setNewCatNameBn] = useState('');
+  const [catError, setCatError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -1825,23 +1972,146 @@ export const PackageFormModal: React.FC<PackageModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                {lang === 'bn' ? 'ক্যাটাগরি' : 'Category'}
-              </label>
-              <select 
-                value={formData.category || 'Full Body'}
-                onChange={e => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-primary outline-none bg-white cursor-pointer"
-              >
-                <option value="Full Body">Full Body (সম্পূর্ণ শরীর)</option>
-                <option value="Diabetes">Diabetes (ডায়াবেটিস)</option>
-                <option value="Heart">Heart (হার্ট ও কার্ডিয়াক)</option>
-                <option value="Liver & Kidney">Liver & Kidney (লিভার ও কিডনি)</option>
-                <option value="Women Health">Women Health (নারী স্বাস্থ্য)</option>
-                <option value="Senior Citizen">Senior Citizen (প্রবীণ স্বাস্থ্য)</option>
-                <option value="Routine Screening">Routine Screening (রুটিন টেস্ট)</option>
-                <option value="Fever & Infection">Fever & Infection (জ্বর ও সংক্রমণ)</option>
-              </select>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-bold text-slate-700">
+                  {lang === 'bn' ? 'ক্যাটাগরি (Category) *' : 'Category *'}
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAddingNewCat(!isAddingNewCat);
+                    setCatError(null);
+                  }}
+                  className="text-[11px] font-bold text-primary hover:text-sky-700 flex items-center gap-1 cursor-pointer transition-colors"
+                >
+                  <Plus size={12} />
+                  <span>{isAddingNewCat ? (lang === 'bn' ? 'তালিকা দেখুন' : 'Select from list') : (lang === 'bn' ? '+ নতুন ক্যাটেগরি' : '+ New Category')}</span>
+                </button>
+              </div>
+
+              {!isAddingNewCat ? (
+                <select 
+                  value={formData.category || 'Full Body'}
+                  onChange={e => {
+                    if (e.target.value === '__add_new__') {
+                      setIsAddingNewCat(true);
+                    } else {
+                      setFormData(prev => ({ ...prev, category: e.target.value }));
+                    }
+                  }}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-primary outline-none bg-white cursor-pointer"
+                >
+                  {categories.length > 0 ? (
+                    categories.map(c => (
+                      <option key={c.id || c.name} value={c.name}>
+                        {c.name} {c.nameBn ? `(${c.nameBn})` : ''}
+                      </option>
+                    ))
+                  ) : (
+                    <>
+                      <option value="Full Body">Full Body (সম্পূর্ণ শরীর)</option>
+                      <option value="General">General (সাধারণ)</option>
+                      <option value="Diabetes">Diabetes (ডায়াবেটিস)</option>
+                      <option value="Heart">Heart (হার্ট ও কার্ডিয়াক)</option>
+                      <option value="Thyroid">Thyroid (থাইরয়েড)</option>
+                      <option value="Vitamin">Vitamin (ভিটামিন)</option>
+                      <option value="Kidney">Kidney (কিডনি)</option>
+                      <option value="Liver">Liver (লিভার)</option>
+                      <option value="Women Health">Women Health (নারী স্বাস্থ্য)</option>
+                      <option value="Senior">Senior (প্রবীণ স্বাস্থ্য)</option>
+                    </>
+                  )}
+                  {formData.category && categories.length > 0 && !categories.some(c => c.name.toLowerCase() === formData.category?.toLowerCase()) && (
+                    <option value={formData.category}>{formData.category} (Custom)</option>
+                  )}
+                  <option value="__add_new__" className="text-primary font-bold">
+                    ➕ {lang === 'bn' ? '+ নতুন ক্যাটেগরি তৈরি করুন...' : '+ Create New Category...'}
+                  </option>
+                </select>
+              ) : (
+                /* Inline Quick Category Creator */
+                <div className="p-3 bg-sky-50/80 rounded-xl border border-sky-200 space-y-2.5 animate-fadeIn">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-800 text-[11px] flex items-center gap-1">
+                      <Tag size={12} className="text-primary" />
+                      {lang === 'bn' ? 'নতুন ক্যাটেগরি তৈরি ও নির্বাচন' : 'Create & Select Category'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingNewCat(false)}
+                      className="text-slate-400 hover:text-slate-600 p-0.5"
+                    >
+                      <X size={13} />
+                    </button>
+                  </div>
+
+                  {catError && (
+                    <div className="text-[10px] text-red-600 font-bold bg-red-50 p-1.5 rounded-lg border border-red-200">
+                      {catError}
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <input 
+                      type="text" 
+                      placeholder="Name (e.g. Executive)" 
+                      value={newCatName}
+                      onChange={e => {
+                        setNewCatName(e.target.value);
+                        setCatError(null);
+                      }}
+                      className="px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-white font-bold outline-none focus:ring-1 focus:ring-primary"
+                    />
+                    <input 
+                      type="text" 
+                      placeholder="বাংলা নাম (অপশনাল)" 
+                      value={newCatNameBn}
+                      onChange={e => setNewCatNameBn(e.target.value)}
+                      className="px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-white outline-none focus:ring-1 focus:ring-primary"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 pt-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingNewCat(false)}
+                      className="px-2.5 py-1 text-[11px] text-slate-600 hover:bg-slate-200/60 rounded-lg font-semibold"
+                    >
+                      {lang === 'bn' ? 'বাতিল' : 'Cancel'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const trimmed = newCatName.trim();
+                        if (!trimmed) {
+                          setCatError(lang === 'bn' ? 'ক্যাটেগরির ইংরেজি নাম দিন' : 'Enter category name');
+                          return;
+                        }
+                        const newCatItem: CategoryItem = {
+                          id: `cat_${Date.now()}`,
+                          name: trimmed,
+                          nameBn: newCatNameBn.trim() || undefined,
+                          icon: 'Award',
+                          color: 'teal',
+                          order: (categories?.length || 0) + 1,
+                          isHidden: false
+                        };
+                        if (onAddNewCategory) {
+                          onAddNewCategory(newCatItem);
+                        }
+                        setFormData(prev => ({ ...prev, category: trimmed }));
+                        setNewCatName('');
+                        setNewCatNameBn('');
+                        setIsAddingNewCat(false);
+                      }}
+                      className="px-3 py-1 bg-primary hover:bg-sky-600 text-white rounded-lg text-xs font-bold shadow-xs flex items-center gap-1 cursor-pointer"
+                    >
+                      <Check size={12} />
+                      <span>{lang === 'bn' ? 'যুক্ত করুন' : 'Save & Select'}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -2294,6 +2564,338 @@ export const PackageFormModal: React.FC<PackageModalProps> = ({
             </button>
             <Button type="submit" className="px-5 py-2 text-xs font-bold shadow-sm cursor-pointer">
               <Check size={14} className="mr-1 inline" /> {lang === 'bn' ? 'প্যাকেজ সংরক্ষণ করুন' : 'Save Package'}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+// 8. CATEGORY FORM MODAL (Add & Edit Categories)
+// ==========================================
+export interface CategoryFormModalProps {
+  lang: Language;
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (category: CategoryItem, oldName?: string) => void;
+  editingCategory: CategoryItem | null;
+  existingCategoriesCount?: number;
+}
+
+const AVAILABLE_CATEGORY_ICONS = [
+  { id: 'FlaskConical', label: 'Lab Flask / Tests' },
+  { id: 'Droplet', label: 'Blood Drop / Diabetes' },
+  { id: 'HeartPulse', label: 'Heart / Cardio' },
+  { id: 'Activity', label: 'Activity / Thyroid' },
+  { id: 'Zap', label: 'Energy / Vitamin' },
+  { id: 'ShieldCheck', label: 'Shield / Kidney' },
+  { id: 'Layers', label: 'Layers / Liver (LFT)' },
+  { id: 'AlertCircle', label: 'Infection / Fever' },
+  { id: 'Sparkles', label: 'Sparkles / Women Health' },
+  { id: 'User', label: 'User / Senior Citizen' },
+  { id: 'Award', label: 'Award / Full Body' },
+  { id: 'Stethoscope', label: 'Stethoscope / Doctor' },
+  { id: 'Pill', label: 'Pill / Medicine' },
+  { id: 'Flame', label: 'Flame / Hormones' },
+  { id: 'Tag', label: 'Tag / General' }
+];
+
+const AVAILABLE_CATEGORY_COLORS = [
+  { id: 'blue', label: 'Sky Blue', hex: '#0284c7' },
+  { id: 'rose', label: 'Rose Pink', hex: '#e11d48' },
+  { id: 'red', label: 'Crimson Red', hex: '#dc2626' },
+  { id: 'purple', label: 'Purple', hex: '#9333ea' },
+  { id: 'amber', label: 'Amber Yellow', hex: '#d97706' },
+  { id: 'cyan', label: 'Cyan Teal', hex: '#0891b2' },
+  { id: 'emerald', label: 'Emerald Green', hex: '#059669' },
+  { id: 'orange', label: 'Orange', hex: '#ea580c' },
+  { id: 'pink', label: 'Pink', hex: '#db2777' },
+  { id: 'indigo', label: 'Indigo', hex: '#4f46e5' },
+  { id: 'teal', label: 'Teal', hex: '#0d9488' }
+];
+
+export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
+  lang,
+  isOpen,
+  onClose,
+  onSave,
+  editingCategory,
+  existingCategoriesCount = 0
+}) => {
+  const [name, setName] = useState('');
+  const [nameBn, setNameBn] = useState('');
+  const [description, setDescription] = useState('');
+  const [icon, setIcon] = useState('FlaskConical');
+  const [color, setColor] = useState('blue');
+  const [order, setOrder] = useState<number>(1);
+  const [isHidden, setIsHidden] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (editingCategory) {
+      setName(editingCategory.name || '');
+      setNameBn(editingCategory.nameBn || '');
+      setDescription(editingCategory.description || '');
+      setIcon(editingCategory.icon || 'FlaskConical');
+      setColor(editingCategory.color || 'blue');
+      setOrder(editingCategory.order || 1);
+      setIsHidden(!!editingCategory.isHidden);
+      setErrorMsg(null);
+    } else {
+      setName('');
+      setNameBn('');
+      setDescription('');
+      setIcon('FlaskConical');
+      setColor('blue');
+      setOrder(existingCategoriesCount + 1);
+      setIsHidden(false);
+      setErrorMsg(null);
+    }
+  }, [editingCategory, isOpen, existingCategoriesCount]);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg(null);
+
+    const cleanName = name.trim();
+    if (!cleanName) {
+      setErrorMsg(lang === 'bn' ? 'অনুগ্রহ করে ক্যাটেগরির ইংরেজি নাম দিন।' : 'Please enter category name.');
+      return;
+    }
+
+    const categoryToSave: CategoryItem = {
+      id: editingCategory ? editingCategory.id : `cat_${Date.now()}`,
+      name: cleanName,
+      nameBn: nameBn.trim() || undefined,
+      description: description.trim() || undefined,
+      icon,
+      color,
+      order: Number(order) || 1,
+      isHidden
+    };
+
+    onSave(categoryToSave, editingCategory ? editingCategory.name : undefined);
+    onClose();
+  };
+
+  const SelectedIcon = CATEGORY_ICON_MAP[icon] || Tag;
+  const selectedColorScheme = CATEGORY_COLOR_MAP[color] || CATEGORY_COLOR_MAP.blue;
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+      <div className="bg-white rounded-3xl max-w-xl w-full max-h-[92vh] overflow-y-auto shadow-2xl border border-slate-100 flex flex-col">
+        {/* Header */}
+        <div className="p-6 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-2xl ${selectedColorScheme.bg} ${selectedColorScheme.text} border ${selectedColorScheme.border} flex items-center justify-center font-bold shadow-xs`}>
+              <SelectedIcon size={20} />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">
+                {editingCategory 
+                  ? (lang === 'bn' ? 'ক্যাটেগরি সম্পাদনা (Edit Category)' : 'Edit Test Category') 
+                  : (lang === 'bn' ? 'নতুন ক্যাটেগরি যোগ করুন (New Category)' : 'Add New Test Category')}
+              </h2>
+              <p className="text-xs text-slate-500">
+                {lang === 'bn' ? 'টেস্ট ও প্যাকেজের ক্যাটেগরি নাম, আইকন ও কালার কনফিগার করুন' : 'Configure category name, icon badge, description, and color theme'}
+              </p>
+            </div>
+          </div>
+          <button 
+            type="button" 
+            onClick={onClose} 
+            className="p-2 text-slate-400 hover:text-slate-700 rounded-xl hover:bg-slate-100 transition-colors"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs">
+          {errorMsg && (
+            <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl flex items-center gap-2">
+              <AlertCircle size={15} className="flex-shrink-0" />
+              <span>{errorMsg}</span>
+            </div>
+          )}
+
+          {/* Live Preview Card */}
+          <div className="p-3.5 bg-slate-50/80 rounded-2xl border border-slate-200/80 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className={`w-11 h-11 rounded-2xl ${selectedColorScheme.bg} ${selectedColorScheme.text} border ${selectedColorScheme.border} flex items-center justify-center font-bold shadow-xs`}>
+                <SelectedIcon size={20} />
+              </div>
+              <div>
+                <span className="text-xs font-bold text-slate-800 block">
+                  {name || 'Category Name'} {nameBn ? `(${nameBn})` : ''}
+                </span>
+                <span className="text-[11px] text-slate-500 line-clamp-1">
+                  {description || 'Category description will appear here...'}
+                </span>
+              </div>
+            </div>
+            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-white text-slate-700 border border-slate-200 shadow-2xs">
+              Preview
+            </span>
+          </div>
+
+          {/* Name English & Bangla */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">
+                {lang === 'bn' ? 'ক্যাটেগরির নাম (English) *' : 'Category Name (English) *'}
+              </label>
+              <input 
+                type="text" 
+                required
+                placeholder="e.g. Diabetes, Heart, Vitamin, Kidney" 
+                value={name} 
+                onChange={e => setName(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-white"
+              />
+              <span className="text-[10px] text-slate-400 mt-0.5 block">Used for test/package filtering and URLs</span>
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">
+                {lang === 'bn' ? 'ক্যাটেগরির নাম (বাংলা)' : 'Category Name (Bangla)'}
+              </label>
+              <input 
+                type="text" 
+                placeholder="যেমন: ডায়াবেটিস, হার্ট, ভিটামিন" 
+                value={nameBn} 
+                onChange={e => setNameBn(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-white"
+              />
+              <span className="text-[10px] text-slate-400 mt-0.5 block">Displayed on Bengali customer interface</span>
+            </div>
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">
+              {lang === 'bn' ? 'ক্যাটেগরির বিবরণ' : 'Description'}
+            </label>
+            <textarea 
+              rows={2}
+              placeholder="e.g. Fasting blood sugar, HbA1c, oral glucose tolerance, and insulin sensitivity profiles" 
+              value={description} 
+              onChange={e => setDescription(e.target.value)}
+              className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary focus:border-transparent outline-none resize-none bg-white"
+            />
+          </div>
+
+          {/* Icon Picker */}
+          <div>
+            <label className="block font-bold text-slate-700 mb-1.5">
+              {lang === 'bn' ? 'আইকন নির্বাচন করুন (Icon)' : 'Select Category Icon'}
+            </label>
+            <div className="grid grid-cols-5 gap-2 max-h-36 overflow-y-auto p-1.5 bg-slate-50 rounded-2xl border border-slate-200">
+              {AVAILABLE_CATEGORY_ICONS.map((item) => {
+                const ItemIcon = CATEGORY_ICON_MAP[item.id] || Tag;
+                const isSelected = icon === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setIcon(item.id)}
+                    className={`p-2 rounded-xl border text-center flex flex-col items-center justify-center gap-1 transition-all ${
+                      isSelected
+                        ? 'border-primary bg-sky-50 text-primary ring-2 ring-primary/20 scale-105 font-bold'
+                        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                    }`}
+                    title={item.label}
+                  >
+                    <ItemIcon size={18} />
+                    <span className="text-[9px] truncate max-w-[55px]">{item.id}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Color Theme */}
+          <div>
+            <label className="block font-bold text-slate-700 mb-1.5">
+              {lang === 'bn' ? 'কালার থিম (Color Theme)' : 'Badge Color Theme'}
+            </label>
+            <div className="flex items-center gap-2 flex-wrap">
+              {AVAILABLE_CATEGORY_COLORS.map(c => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => setColor(c.id)}
+                  className={`px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all flex items-center gap-1.5 ${
+                    color === c.id 
+                      ? 'border-slate-900 bg-slate-900 text-white shadow-xs scale-105' 
+                      : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                  }`}
+                >
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: c.hex }} />
+                  <span>{c.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Order & Visibility */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">
+                {lang === 'bn' ? 'প্রদর্শনের ক্রম (Order / Priority)' : 'Display Order'}
+              </label>
+              <input 
+                type="number" 
+                min="1"
+                max="99"
+                value={order} 
+                onChange={e => setOrder(Number(e.target.value))}
+                className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-bold focus:ring-2 focus:ring-primary outline-none bg-white"
+              />
+            </div>
+
+            <div className="flex items-center">
+              <label className="p-3 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 flex items-center justify-between w-full cursor-pointer transition-colors mt-4">
+                <span className="font-bold text-slate-700">
+                  {lang === 'bn' ? 'ক্যাটেগরি সক্রিয় রাখুন' : 'Active & Visible'}
+                </span>
+                <input 
+                  type="checkbox" 
+                  checked={!isHidden}
+                  onChange={e => setIsHidden(!e.target.checked)}
+                  className="w-4 h-4 text-primary rounded accent-primary cursor-pointer"
+                />
+              </label>
+            </div>
+          </div>
+
+          {editingCategory && (
+            <div className="p-3 bg-sky-50 text-sky-800 border border-sky-200 rounded-xl text-[11px] flex items-center gap-2">
+              <CheckCircle2 size={15} className="flex-shrink-0 text-primary" />
+              <span>
+                {lang === 'bn' 
+                  ? 'ক্যাটেগরির নাম পরিবর্তন করলে সম্পর্কিত টেস্ট ও প্যাকেজসমূহের ক্যাটেগরি স্বয়ংক্রিয়ভাবে আপডেট হবে।' 
+                  : 'Updating this category name will automatically update all existing tests and packages under it.'}
+              </span>
+            </div>
+          )}
+
+          {/* Footer Actions */}
+          <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2.5">
+            <button 
+              type="button" 
+              onClick={onClose} 
+              className="px-4 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <Button type="submit" className="px-5 py-2 text-xs font-bold shadow-sm">
+              <Check size={14} className="mr-1 inline" /> 
+              <span>{editingCategory ? (lang === 'bn' ? 'আপডেট করুন' : 'Update Category') : (lang === 'bn' ? 'ক্যাটেগরি সংরক্ষণ করুন' : 'Save Category')}</span>
             </Button>
           </div>
         </form>

@@ -11,49 +11,40 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
     // User profiles
     match /users/{userId} {
-      allow read: if isOwner(userId);
-      allow create, update: if isOwner(userId);
-      allow delete: if isOwner(userId);
+      allow read, write: if true;
     }
 
     // Bookings collection
     match /bookings/{bookingId} {
-      allow read: if true;
-      allow create: if true;
-      allow update: if isSignedIn() || request.resource.data.status is string;
-      allow delete: if isSignedIn();
+      allow read, write: if true;
     }
 
     // Connection test document
     match /test/{docId} {
-      allow read: if true;
+      allow read, write: if true;
     }
 
-    // Public catalog data (Tests, Labs, Packages, Site Settings)
+    // Public catalog & CMS data (Tests, Labs, Packages, Categories, Site Settings)
     match /tests/{testId} {
-      allow read: if true;
-      allow write: if isSignedIn();
+      allow read, write: if true;
     }
 
     match /labs/{labId} {
-      allow read: if true;
-      allow write: if isSignedIn();
+      allow read, write: if true;
     }
 
     match /packages/{packageId} {
-      allow read: if true;
-      allow write: if isSignedIn();
+      allow read, write: if true;
+    }
+
+    match /categories/{categoryId} {
+      allow read, write: if true;
     }
 
     match /site_settings/{docId} {
-      allow read: if true;
-      allow write: if isSignedIn();
+      allow read, write: if true;
     }
   }
 }

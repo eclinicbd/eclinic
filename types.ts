@@ -1,6 +1,17 @@
 
 export type Language = 'bn' | 'en';
 
+export interface CategoryItem {
+  id: string;
+  name: string; // e.g. "Diabetes", "Heart", "Vitamin"
+  nameBn?: string; // e.g. "ডায়াবেটিস", "হার্ট ও কার্ডিয়াক"
+  description?: string;
+  icon?: string; // e.g. 'FlaskConical', 'Droplet', 'HeartPulse', 'Activity', 'Zap', 'ShieldCheck', 'Layers', 'AlertCircle', 'Sparkles', 'User'
+  color?: string; // e.g. 'blue', 'rose', 'red', 'purple', 'amber', 'cyan', 'emerald', 'orange', 'pink', 'indigo'
+  order?: number;
+  isHidden?: boolean;
+}
+
 export interface TestPackage {
   id: string;
   name: string;
@@ -43,6 +54,7 @@ export interface LabPartner {
   discountBadge?: string;
   accreditation?: string;
   accentColor?: string;
+  order?: number;
   isHidden?: boolean; // When true, hidden from customer-facing booking and selector
 }
 

@@ -1,4 +1,4 @@
-import { TestPackage, LabPartner, Language, BookingHistoryItem, SiteSettings, PatientUser, HealthPackage } from '../types';
+import { TestPackage, LabPartner, Language, BookingHistoryItem, SiteSettings, PatientUser, HealthPackage, CategoryItem } from '../types';
 import { 
   getTests as getDefaultTests, 
   getLabs as getDefaultLabs, 
@@ -14,10 +14,49 @@ const STORAGE_KEYS = {
   LABS_BN: 'labhome_labs_bn_v3',
   LABS_EN: 'labhome_labs_en_v3',
   BOOKINGS: 'labhome_bookings_v2',
+  CATEGORIES: 'labhome_categories_v2',
   SITE_SETTINGS_BN: 'labhome_site_settings_bn_v2',
   SITE_SETTINGS_EN: 'labhome_site_settings_en_v2',
   PATIENTS: 'labhome_patients_v2',
   CURRENT_PATIENT: 'labhome_current_patient_v2'
+};
+
+export const DEFAULT_CATEGORIES: CategoryItem[] = [
+  { id: 'cat_general', name: 'General', nameBn: 'সাধারণ স্বাস্থ্য', description: 'Routine checkups, CBC, and essential baseline screening', icon: 'FlaskConical', color: 'blue', order: 1, isHidden: false },
+  { id: 'cat_diabetes', name: 'Diabetes', nameBn: 'ডায়াবেটিস', description: 'Fasting glucose, HbA1c, oral glucose tolerance, and insulin levels', icon: 'Droplet', color: 'rose', order: 2, isHidden: false },
+  { id: 'cat_heart', name: 'Heart', nameBn: 'হার্ট ও কার্ডিয়াক', description: 'Lipid profile, cholesterol, cardiac markers, and heart risk profiles', icon: 'HeartPulse', color: 'red', order: 3, isHidden: false },
+  { id: 'cat_thyroid', name: 'Thyroid', nameBn: 'থাইরয়েড', description: 'TSH, Free T3, Free T4, and thyroid metabolism screenings', icon: 'Activity', color: 'purple', order: 4, isHidden: false },
+  { id: 'cat_vitamin', name: 'Vitamin', nameBn: 'ভিটামিন ও নিউট্রিশন', description: 'Vitamin D3, B12, Calcium, Iron deficiency & micronutrients', icon: 'Zap', color: 'amber', order: 5, isHidden: false },
+  { id: 'cat_kidney', name: 'Kidney', nameBn: 'কিডনি ও রেনাল', description: 'Serum Creatinine, Urea, Uric Acid, Electrolytes & KFT panels', icon: 'ShieldCheck', color: 'cyan', order: 6, isHidden: false },
+  { id: 'cat_liver', name: 'Liver', nameBn: 'লিভার (LFT)', description: 'SGPT, SGOT, Bilirubin, Albumin, and hepatic enzymes screening', icon: 'Layers', color: 'emerald', order: 7, isHidden: false },
+  { id: 'cat_infection', name: 'Infection', nameBn: 'ইনফেকশন ও ইমিউনিটি', description: 'Dengue, Widal, Malaria, CRP, Urine R/E, and fever panels', icon: 'AlertCircle', color: 'orange', order: 8, isHidden: false },
+  { id: 'cat_women', name: 'Women Health', nameBn: 'নারী স্বাস্থ্য', description: 'Hormones, PCOS, pregnancy, calcium, and women wellness panels', icon: 'Sparkles', color: 'pink', order: 9, isHidden: false },
+  { id: 'cat_senior', name: 'Senior', nameBn: 'সিনিয়র স্বাস্থ্য', description: 'Comprehensive geriatric panels tailored for elderly parents', icon: 'User', color: 'indigo', order: 10, isHidden: false },
+  { id: 'cat_fullbody', name: 'Full Body', nameBn: 'ফুল বডি চেকআপ', description: 'Master executive whole body preventive health checkups', icon: 'Award', color: 'teal', order: 11, isHidden: false }
+];
+
+export const getStoredCategories = (): CategoryItem[] => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEYS.CATEGORIES);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+    return DEFAULT_CATEGORIES;
+  } catch (e) {
+    console.error("Error reading stored categories:", e);
+    return DEFAULT_CATEGORIES;
+  }
+};
+
+export const saveStoredCategories = (categories: CategoryItem[]): void => {
+  try {
+    localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(categories));
+  } catch (e) {
+    console.error("Error saving stored categories:", e);
+  }
 };
 
 const DEFAULT_PATIENTS: PatientUser[] = [
@@ -539,6 +578,80 @@ export const resetAllDataToDefaults = (): void => {
     Object.values(STORAGE_KEYS).forEach(key => localStorage.removeItem(key));
   } catch (e) {
     console.error("Failed to reset storage:", e);
+  }
+};
+
+export const ADMIN_STORAGE_KEY = 'labhome_admin_credentials_v1';
+export const ADMIN_SESSION_KEY = 'labhome_admin_session_auth';
+
+export interface AdminCredentials {
+  username: string;
+  password: string;
+  updatedAt?: string;
+}
+
+export const getStoredAdminCredentials = (): AdminCredentials => {
+  try {
+    const stored = localStorage.getItem(ADMIN_STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (parsed && parsed.username && parsed.password) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.error("Error reading admin credentials:", e);
+  }
+  return {
+    username: 'admin',
+    password: 'admin123'
+  };
+};
+
+export const saveStoredAdminCredentials = (credentials: AdminCredentials): void => {
+  try {
+    localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify({
+      ...credentials,
+      updatedAt: new Date().toISOString()
+    }));
+  } catch (e) {
+    console.error("Error saving admin credentials:", e);
+  }
+};
+
+export const verifyAdminLogin = (inputUsername: string, inputPass: string): boolean => {
+  const creds = getStoredAdminCredentials();
+  const cleanInputUser = (inputUsername || '').trim().toLowerCase();
+  const cleanSavedUser = (creds.username || '').trim().toLowerCase();
+  
+  // Accept match with saved custom username, default handles, or registered admin email
+  const isUserMatch = 
+    cleanInputUser === cleanSavedUser || 
+    (cleanSavedUser === 'admin' && (cleanInputUser === 'admin@labhome.com' || cleanInputUser === 'muradhn.abc@gmail.com'));
+                      
+  // Check exact match with configured password
+  const isPassMatch = inputPass === creds.password;
+
+  return Boolean(isUserMatch && isPassMatch);
+};
+
+export const getIsAdminSessionActive = (): boolean => {
+  try {
+    return sessionStorage.getItem(ADMIN_SESSION_KEY) === 'true';
+  } catch {
+    return false;
+  }
+};
+
+export const setAdminSessionActive = (active: boolean): void => {
+  try {
+    if (active) {
+      sessionStorage.setItem(ADMIN_SESSION_KEY, 'true');
+    } else {
+      sessionStorage.removeItem(ADMIN_SESSION_KEY);
+    }
+  } catch (e) {
+    console.error("Error updating admin session:", e);
   }
 };
 

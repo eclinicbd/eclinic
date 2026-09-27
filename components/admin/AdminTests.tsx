@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TestPackage, LabPartner, Language } from '../../types';
+import { TestPackage, LabPartner, Language, CategoryItem } from '../../types';
 import { TRANSLATIONS } from '../../translations';
 import { 
   Search, 
@@ -20,6 +20,7 @@ interface AdminTestsProps {
   lang: Language;
   tests: TestPackage[];
   labs: LabPartner[];
+  categories?: CategoryItem[];
   onOpenAddTest: () => void;
   onOpenEditTest: (test: TestPackage) => void;
   onToggleHideTest: (testId: string) => void;
@@ -27,12 +28,11 @@ interface AdminTestsProps {
   onOpenDeleteTest: (test: TestPackage) => void;
 }
 
-const PRESET_CATEGORIES = ['General', 'Diabetes', 'Heart', 'Thyroid', 'Vitamin', 'Kidney', 'Liver', 'Infection', 'Women Health'];
-
 export const AdminTests: React.FC<AdminTestsProps> = ({
   lang,
   tests,
   labs,
+  categories = [],
   onOpenAddTest,
   onOpenEditTest,
   onToggleHideTest,
@@ -45,6 +45,12 @@ export const AdminTests: React.FC<AdminTestsProps> = ({
   const [sortBy, setSortBy] = useState<'default' | 'name_asc' | 'price_low' | 'price_high'>('default');
 
   const t = TRANSLATIONS[lang];
+
+  // Derive unique categories from both categories prop and existing tests
+  const categoryOptions = Array.from(new Set([
+    ...categories.map(c => c.name),
+    ...tests.map(t => t.category).filter(Boolean)
+  ]));
 
   // Filtering
   const filtered = tests.filter(test => {
@@ -123,7 +129,7 @@ export const AdminTests: React.FC<AdminTestsProps> = ({
             className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium bg-slate-50 outline-none cursor-pointer"
           >
             <option value="All">All Categories ({tests.length})</option>
-            {PRESET_CATEGORIES.map(c => (
+            {categoryOptions.map(c => (
               <option key={c} value={c}>{c}</option>
             ))}
           </select>

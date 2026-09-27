@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Language, BookingHistoryItem, TestPackage, HealthPackage, LabPartner, BookingStatus, SiteSettings, ServiceItem } from '../types';
+import { Language, BookingHistoryItem, TestPackage, HealthPackage, LabPartner, BookingStatus, SiteSettings, ServiceItem, CategoryItem } from '../types';
 import { TRANSLATIONS } from '../translations';
 import { 
   LayoutDashboard, 
@@ -16,15 +16,19 @@ import {
   Sparkles,
   ShieldCheck,
   Layers,
-  FileEdit
+  FileEdit,
+  Tag
 } from 'lucide-react';
 import { Button } from './Button';
+import { DEFAULT_CATEGORIES } from '../services/dataStorage';
+import { getLabs } from '../constants';
 
 // Modular Admin Sub-components
 import { AdminOverview } from './admin/AdminOverview';
 import { AdminOrders } from './admin/AdminOrders';
 import { AdminTests } from './admin/AdminTests';
 import { AdminPackages } from './admin/AdminPackages';
+import { AdminCategories } from './admin/AdminCategories';
 import { AdminLabs } from './admin/AdminLabs';
 import { AdminCustomers } from './admin/AdminCustomers';
 import { AdminSettings } from './admin/AdminSettings';
@@ -32,6 +36,7 @@ import { AdminCMS } from './admin/AdminCMS';
 import { 
   TestFormModal, 
   PackageFormModal,
+  CategoryFormModal,
   LabFormModal, 
   OrderFormModal, 
   OrderDetailsModal, 
@@ -46,6 +51,8 @@ interface AdminDashboardProps {
   onUpdateTests: (tests: TestPackage[]) => void;
   packages?: HealthPackage[];
   onUpdatePackages?: (packages: HealthPackage[]) => void;
+  categories?: CategoryItem[];
+  onUpdateCategories?: (categories: CategoryItem[]) => void;
   labs: LabPartner[];
   onUpdateLabs: (labs: LabPartner[]) => void;
   bookings: BookingHistoryItem[];
@@ -63,6 +70,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onUpdateTests,
   packages = [],
   onUpdatePackages,
+  categories = [],
+  onUpdateCategories,
   labs,
   onUpdateLabs,
   bookings,
@@ -72,7 +81,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onResetAllData,
   onLogout
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'tests' | 'packages' | 'labs' | 'customers' | 'cms' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'tests' | 'packages' | 'categories' | 'labs' | 'customers' | 'cms' | 'settings'>('overview');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Modals state
@@ -81,6 +90,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const [isPackageModalOpen, setIsPackageModalOpen] = useState(false);
   const [editingPackage, setEditingPackage] = useState<HealthPackage | null>(null);
+
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<CategoryItem | null>(null);
 
   const [isLabModalOpen, setIsLabModalOpen] = useState(false);
   const [editingLab, setEditingLab] = useState<LabPartner | null>(null);
@@ -94,7 +106,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [selectedOrderForDetails, setSelectedOrderForDetails] = useState<BookingHistoryItem | null>(null);
 
   const [deleteTarget, setDeleteTarget] = useState<{
-    type: 'test' | 'package' | 'lab' | 'order' | 'service';
+    type: 'test' | 'package' | 'category' | 'lab' | 'order' | 'service';
     id: string;
     name: string;
   } | null>(null);
@@ -104,6 +116,106 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  // ==========================================
+  // CATEGORY HANDLERS
+  // ==========================================
+  const handleOpenAddCategory = () => {
+    setEditingCategory(null);
+    setIsCategoryModalOpen(true);
+  };
+
+  const handleOpenEditCategory = (category: CategoryItem) => {
+    setEditingCategory(category);
+    setIsCategoryModalOpen(true);
+  };
+
+  const handleSaveCategory = (categoryToSave: CategoryItem, oldName?: string) => {
+    if (!onUpdateCategories) return;
+
+    if (editingCategory) {
+      const updated = categories.map(c => c.id === categoryToSave.id ? categoryToSave : c);
+      onUpdateCategories(updated);
+
+      // If category name was renamed, automatically update tests and packages using old name!
+      if (oldName && oldName.toLowerCase() !== categoryToSave.name.toLowerCase()) {
+        const updatedTests = tests.map(t => {
+          if (t.category && t.category.toLowerCase() === oldName.toLowerCase()) {
+            return { ...t, category: categoryToSave.name };
+          }
+          return t;
+        });
+        onUpdateTests(updatedTests);
+
+        if (onUpdatePackages && packages.length > 0) {
+          const updatedPkgs = packages.map(p => {
+            if (p.category && p.category.toLowerCase() === oldName.toLowerCase()) {
+              return { ...p, category: categoryToSave.name };
+            }
+            return p;
+          });
+          onUpdatePackages(updatedPkgs);
+        }
+      }
+
+      showToast(lang === 'bn' ? 'ক্যাটেগরি সফলভাবে আপডেট করা হয়েছে!' : 'Category updated successfully!');
+    } else {
+      // Check if duplicate name
+      if (categories.some(c => c.name.toLowerCase() === categoryToSave.name.toLowerCase())) {
+        showToast(lang === 'bn' ? 'এই নামের ক্যাটেগরি ইতিমধ্যেই বিদ্যমান!' : 'Category with this name already exists!');
+        return;
+      }
+      onUpdateCategories([...categories, categoryToSave]);
+      showToast(lang === 'bn' ? 'নতুন ক্যাটেগরি সফলভাবে তৈরি করা হয়েছে!' : 'New category created successfully!');
+    }
+    setIsCategoryModalOpen(false);
+    setEditingCategory(null);
+  };
+
+  const handleToggleHideCategory = (categoryId: string) => {
+    if (!onUpdateCategories) return;
+    const targetCat = categories.find(c => c.id === categoryId);
+    if (!targetCat) return;
+    const isNowHidden = !targetCat.isHidden;
+    const updated = categories.map(c => c.id === categoryId ? { ...c, isHidden: isNowHidden } : c);
+    onUpdateCategories(updated);
+    showToast(isNowHidden 
+      ? (lang === 'bn' ? 'ক্যাটেগরি লুকানো হয়েছে!' : 'Category is now hidden!') 
+      : (lang === 'bn' ? 'ক্যাটেগরি সক্রিয় করা হয়েছে!' : 'Category is now active!'));
+  };
+
+  const handleReorderCategory = (categoryId: string, direction: 'up' | 'down') => {
+    if (!onUpdateCategories) return;
+    const index = categories.findIndex(c => c.id === categoryId);
+    if (index === -1) return;
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= categories.length) return;
+
+    const updated = [...categories];
+    const temp = updated[index];
+    updated[index] = updated[targetIndex];
+    updated[targetIndex] = temp;
+
+    // Update orders
+    const reordered = updated.map((c, i) => ({ ...c, order: i + 1 }));
+    onUpdateCategories(reordered);
+  };
+
+  const handleResetDefaultCategories = () => {
+    if (!onUpdateCategories) return;
+    onUpdateCategories(DEFAULT_CATEGORIES);
+    showToast(lang === 'bn' ? 'ডিফল্ট ক্যাটেগরি সমূহ পুনঃস্থাপন করা হয়েছে!' : 'Default categories restored!');
+  };
+
+  const handleQuickAddCategory = (categoryToSave: CategoryItem) => {
+    if (!onUpdateCategories) return;
+    const exists = categories.some(c => c.name.toLowerCase() === categoryToSave.name.toLowerCase());
+    if (!exists) {
+      const updated = [...categories, categoryToSave];
+      onUpdateCategories(updated);
+      showToast(lang === 'bn' ? `নতুন ক্যাটেগরি "${categoryToSave.name}" তৈরি করা হয়েছে!` : `New category "${categoryToSave.name}" created!`);
+    }
   };
 
 
@@ -239,6 +351,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     showToast(isNowHidden ? t.adminHideLabSuccess : t.adminUnhideLabSuccess);
   };
 
+  const handleReorderLab = (labId: string, direction: 'up' | 'down') => {
+    const index = labs.findIndex(l => l.id === labId);
+    if (index === -1) return;
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= labs.length) return;
+
+    const updated = [...labs];
+    const temp = updated[index];
+    updated[index] = updated[targetIndex];
+    updated[targetIndex] = temp;
+
+    // Update order indexes
+    const reordered = updated.map((l, i) => ({ ...l, order: i + 1 }));
+    onUpdateLabs(reordered);
+    showToast(lang === 'bn' ? `"${temp.name}" সেন্টারের ক্রম পরিবর্তন করা হয়েছে!` : `Diagnostic center "${temp.name}" moved ${direction}!`);
+  };
+
+  const handleResetDefaultLabs = () => {
+    const defaultLabs = getLabs(lang);
+    onUpdateLabs(defaultLabs);
+    showToast(lang === 'bn' ? 'ডিফল্ট সেন্টারের তালিকা পুনঃস্থাপন করা হয়েছে!' : 'Default diagnostic centers list restored!');
+  };
+
   // ==========================================
   // ORDER HANDLERS
   // ==========================================
@@ -334,6 +469,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         const updated = packages.filter(p => p.id !== deleteTarget.id);
         onUpdatePackages(updated);
         showToast(lang === 'bn' ? 'প্যাকেজটি সফলভাবে মুছে ফেলা হয়েছে!' : 'Package deleted successfully!');
+      }
+    } else if (deleteTarget.type === 'category') {
+      if (onUpdateCategories) {
+        const updated = categories.filter(c => c.id !== deleteTarget.id);
+        onUpdateCategories(updated);
+        showToast(lang === 'bn' ? 'ক্যাটেগরি সফলভাবে মুছে ফেলা হয়েছে!' : 'Category deleted successfully!');
       }
     } else if (deleteTarget.type === 'lab') {
       const updated = labs.filter(l => l.id !== deleteTarget.id);
@@ -460,6 +601,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <NavButton id="orders" icon={ShoppingBag} label={t.adminTotalOrders} badge={pendingCount} />
             <NavButton id="tests" icon={FlaskConical} label={t.adminManageTests} />
             <NavButton id="packages" icon={Layers} label={lang === 'bn' ? 'ডায়াগনস্টিক প্যাকেজ' : 'Diagnostic Packages'} badge={packages.length} />
+            <NavButton id="categories" icon={Tag} label={lang === 'bn' ? 'ক্যাটেগরি ব্যবস্থাপনা' : 'Test Categories'} badge={categories.length} />
             <NavButton id="labs" icon={Building2} label="Centers & Fees" />
             <NavButton id="cms" icon={Globe} label={t.adminSiteCMS} />
             <NavButton id="customers" icon={Users} label={t.adminCustomers} />
@@ -477,6 +619,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div className="flex justify-between text-slate-600">
               <span>Health Packages:</span>
               <strong className="text-slate-900">{packages.length} packages</strong>
+            </div>
+            <div className="flex justify-between text-slate-600">
+              <span>Test Categories:</span>
+              <strong className="text-slate-900">{categories.length} categories</strong>
             </div>
             <div className="flex justify-between text-slate-600">
               <span>Partner Labs:</span>
@@ -523,6 +669,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               lang={lang}
               tests={tests}
               labs={labs}
+              categories={categories}
               onOpenAddTest={handleOpenAddTest}
               onOpenEditTest={handleOpenEditTest}
               onToggleHideTest={handleToggleHideTest}
@@ -536,11 +683,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               lang={lang}
               packages={packages}
               labs={labs}
+              categories={categories}
               onOpenAddPackage={handleOpenAddPackage}
               onOpenEditPackage={handleOpenEditPackage}
               onToggleHidePackage={handleToggleHidePackage}
               onDuplicatePackage={handleDuplicatePackage}
               onOpenDeletePackage={(pkg) => setDeleteTarget({ type: 'package', id: pkg.id, name: pkg.name })}
+            />
+          )}
+
+          {activeTab === 'categories' && (
+            <AdminCategories 
+              lang={lang}
+              categories={categories}
+              tests={tests}
+              packages={packages}
+              onOpenAddCategory={handleOpenAddCategory}
+              onOpenEditCategory={handleOpenEditCategory}
+              onToggleHideCategory={handleToggleHideCategory}
+              onOpenDeleteCategory={(cat) => setDeleteTarget({ type: 'category', id: cat.id, name: `${cat.name} ${cat.nameBn ? `(${cat.nameBn})` : ''}` })}
+              onReorderCategory={handleReorderCategory}
+              onResetDefaultCategories={handleResetDefaultCategories}
             />
           )}
 
@@ -553,6 +716,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               onOpenEditLab={handleOpenEditLab}
               onToggleHideLab={handleToggleHideLab}
               onOpenDeleteLab={(lab) => setDeleteTarget({ type: 'lab', id: lab.id, name: lab.name })}
+              onReorderLab={handleReorderLab}
+              onResetDefaultLabs={handleResetDefaultLabs}
             />
           )}
 
@@ -607,6 +772,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         onSave={handleSaveTest}
         editingTest={editingTest}
         labs={labs}
+        categories={categories}
+        onAddNewCategory={handleQuickAddCategory}
       />
 
       <PackageFormModal 
@@ -620,6 +787,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         editingPackage={editingPackage}
         labs={labs}
         tests={tests}
+        categories={categories}
+        onAddNewCategory={handleQuickAddCategory}
+      />
+
+      <CategoryFormModal 
+        lang={lang}
+        isOpen={isCategoryModalOpen}
+        onClose={() => {
+          setIsCategoryModalOpen(false);
+          setEditingCategory(null);
+        }}
+        onSave={handleSaveCategory}
+        editingCategory={editingCategory}
+        existingCategoriesCount={categories.length}
       />
 
       <LabFormModal 
