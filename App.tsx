@@ -343,11 +343,26 @@ export default function App() {
     const unsubscribe = subscribeToBookings((firestoreBookings) => {
       if (firestoreBookings && firestoreBookings.length > 0) {
         setBookings(prev => {
-          const firestoreIds = new Set(firestoreBookings.map(b => b.id));
-          const localOnly = prev.filter(b => !firestoreIds.has(b.id));
-          const merged = [...firestoreBookings, ...localOnly];
-          saveStoredBookings(merged);
-          return merged;
+          const seenIds = new Set<string>();
+          const deduplicated: BookingHistoryItem[] = [];
+          
+          // Prioritize incoming Firestore entries
+          for (const item of firestoreBookings) {
+            if (item && item.id && !seenIds.has(item.id)) {
+              seenIds.add(item.id);
+              deduplicated.push(item);
+            }
+          }
+          // Append any local-only entries that don't match Firestore IDs or same phone+time+date
+          for (const item of prev) {
+            if (item && item.id && !seenIds.has(item.id)) {
+              seenIds.add(item.id);
+              deduplicated.push(item);
+            }
+          }
+          
+          saveStoredBookings(deduplicated);
+          return deduplicated;
         });
       }
     });
@@ -380,9 +395,14 @@ export default function App() {
   }, []);
 
   const handleNewBooking = (booking: BookingHistoryItem) => {
-    const next = [booking, ...bookings];
-    setBookings(next);
-    saveStoredBookings(next);
+    setBookings(prev => {
+      if (prev.some(b => b.id === booking.id)) {
+        return prev;
+      }
+      const next = [booking, ...prev];
+      saveStoredBookings(next);
+      return next;
+    });
     // Persist real-time to Firebase Firestore
     saveBookingToFirestore(booking);
   };

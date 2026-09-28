@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { TestPackage, HealthPackage, LabPartner, BookingHistoryItem, BookingStatus, Language, ServiceItem, CategoryItem } from '../../types';
 import { TRANSLATIONS } from '../../translations';
+import { generateUniqueOrderId, formatOrderId } from '../BookingModal';
 import { LabLogo } from '../LabLogo';
 import { 
   X, 
@@ -35,8 +36,10 @@ import {
   ShieldCheck,
   Award,
   Pill,
-  Flame
+  Flame,
+  Download
 } from 'lucide-react';
+import { printOrDownloadInvoice } from '../../services/invoiceService';
 import { Button } from '../Button';
 import { CATEGORY_ICON_MAP, CATEGORY_COLOR_MAP } from './AdminCategories';
 
@@ -1062,7 +1065,7 @@ export const OrderFormModal: React.FC<OrderModalProps> = ({
     const selectedTestsList = tests.filter(t => selectedTestIds.includes(t.id));
 
     const orderToSave: BookingHistoryItem = {
-      id: editingOrder ? editingOrder.id : `BK-${Math.floor(1000 + Math.random() * 9000)}`,
+      id: editingOrder ? editingOrder.id : generateUniqueOrderId(),
       customerName: customerName.trim() || 'Anonymous Patient',
       customerPhone: customerPhone.trim(),
       customerAddress: customerAddress.trim() || 'Dhaka, Bangladesh',
@@ -1277,7 +1280,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
   const t = TRANSLATIONS[lang];
 
   const handlePrint = () => {
-    window.print();
+    printOrDownloadInvoice(order, lang);
   };
 
   return (
@@ -1289,17 +1292,17 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Invoice & Booking Details</span>
             </div>
-            <h2 className="text-xl font-extrabold text-slate-900 mt-0.5">Order #{order.id}</h2>
+            <h2 className="text-xl font-extrabold text-slate-900 mt-0.5 font-mono">Order {formatOrderId(order.id)}</h2>
           </div>
           <div className="flex items-center gap-2 print:hidden">
             <button 
               onClick={handlePrint}
-              className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors"
-              title="Print Receipt"
+              className="px-3 py-1.5 bg-primary hover:bg-sky-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+              title="Download / Print Official PDF Invoice"
             >
-              <Printer size={15} /> Print
+              <Download size={14} /> Official Invoice
             </button>
-            <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg">
+            <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer">
               <X size={18} />
             </button>
           </div>

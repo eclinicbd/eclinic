@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Language, BookingHistoryItem, TestPackage, HealthPackage, LabPartner, BookingStatus, SiteSettings, ServiceItem, CategoryItem } from '../types';
+import { Language, BookingHistoryItem, TestPackage, HealthPackage, LabPartner, BookingStatus, SiteSettings, ServiceItem, CategoryItem, PatientUser } from '../types';
 import { TRANSLATIONS } from '../translations';
 import { 
   LayoutDashboard, 
@@ -17,7 +17,8 @@ import {
   ShieldCheck,
   Layers,
   FileEdit,
-  Tag
+  Tag,
+  BarChart3
 } from 'lucide-react';
 import { Button } from './Button';
 import { DEFAULT_CATEGORIES } from '../services/dataStorage';
@@ -26,6 +27,7 @@ import { getLabs } from '../constants';
 // Modular Admin Sub-components
 import { AdminOverview } from './admin/AdminOverview';
 import { AdminOrders } from './admin/AdminOrders';
+import { AdminReports } from './admin/AdminReports';
 import { AdminTests } from './admin/AdminTests';
 import { AdminPackages } from './admin/AdminPackages';
 import { AdminCategories } from './admin/AdminCategories';
@@ -85,7 +87,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onResetAllData,
   onLogout
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'tests' | 'packages' | 'categories' | 'labs' | 'customers' | 'cms' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'reports' | 'tests' | 'packages' | 'categories' | 'labs' | 'customers' | 'cms' | 'settings'>('overview');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Modals state
@@ -603,6 +605,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm space-y-1">
             <NavButton id="overview" icon={LayoutDashboard} label="Dashboard" />
             <NavButton id="orders" icon={ShoppingBag} label={t.adminTotalOrders} badge={pendingCount} />
+            <NavButton id="reports" icon={BarChart3} label={lang === 'bn' ? 'রিপোর্ট ও অ্যানালিটিক্স' : 'Reports & Analytics'} />
             <NavButton id="tests" icon={FlaskConical} label={t.adminManageTests} />
             <NavButton id="packages" icon={Layers} label={lang === 'bn' ? 'ডায়াগনস্টিক প্যাকেজ' : 'Diagnostic Packages'} badge={packages.length} />
             <NavButton id="categories" icon={Tag} label={lang === 'bn' ? 'ক্যাটেগরি ব্যবস্থাপনা' : 'Test Categories'} badge={categories.length} />
@@ -665,6 +668,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               onOpenEditOrder={handleOpenEditOrder}
               onOpenAddOrder={handleOpenAddOrder}
               onOpenDeleteOrder={(order) => setDeleteTarget({ type: 'order', id: order.id, name: `Order #${order.id} (${order.customerName || 'Patient'})` })}
+            />
+          )}
+
+          {activeTab === 'reports' && (
+            <AdminReports
+              lang={lang}
+              bookings={bookings}
+              labs={labs}
+              onSelectOrder={setSelectedOrderForDetails}
             />
           )}
 

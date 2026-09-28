@@ -241,3 +241,27 @@ export interface AdminStats {
   activeUsers: number;
 }
 
+export type SlotPeriod = 'morning' | 'afternoon' | 'evening' | 'night';
+
+export interface TimeSlotConfigItem {
+  id: string;
+  time: string; // e.g. "08:00 AM - 09:00 AM"
+  period: SlotPeriod;
+  isActive: boolean;
+  maxCapacity?: number; // max appointments allowed per slot
+}
+
+export interface BlockedDateItem {
+  date: string; // YYYY-MM-DD
+  reason?: string; // e.g. "Eid Holiday", "Maintenance"
+}
+
+export interface DateSlotConfig {
+  advanceDays: number; // e.g. 7, 14, 30 days
+  leadTimeHours: number; // minimum hours required for same-day booking (e.g. 2, 3)
+  weeklyHolidays: number[]; // 0=Sunday, 1=Monday, ..., 5=Friday, 6=Saturday
+  blockedDates: BlockedDateItem[]; // Specific dates closed
+  slots: TimeSlotConfigItem[];
+}
+
+

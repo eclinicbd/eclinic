@@ -1,5 +1,5 @@
 
-import { TestPackage, LabPartner, Language, SiteSettings, ServiceItem, NursingCareService } from './types';
+import { TestPackage, LabPartner, Language, SiteSettings, ServiceItem, NursingCareService, HealthPackage } from './types';
 
 const TESTS_BN: TestPackage[] = [
   {

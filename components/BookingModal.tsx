@@ -25,8 +25,28 @@ import {
   Sparkles, 
   Building2,
   Tag,
-  Check
+  Check,
+  Copy,
+  Download,
+  Printer
 } from 'lucide-react';
+import { printOrDownloadInvoice } from '../services/invoiceService';
+
+// Helper to format Order ID without EC- or # prefix
+export const formatOrderId = (id?: string): string => {
+  if (!id) return '';
+  return id.replace(/^#?EC-?/i, '').replace(/^#?BK-?/i, '').replace(/^#/, '');
+};
+
+// Helper to generate a unique Order ID in Year/Month/Date/ID format (e.g. 20260928-4821)
+export const generateUniqueOrderId = (): string => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const date = String(now.getDate()).padStart(2, '0');
+  const randomId = Math.floor(1000 + Math.random() * 9000);
+  return `${year}${month}${date}-${randomId}`;
+};
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -148,6 +168,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     prescription: null
   });
 
+  const [confirmedBookingId, setConfirmedBookingId] = useState<string>('');
+  const [copiedId, setCopiedId] = useState(false);
+
   // Handle outside clicks to close search suggestions
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -258,14 +281,18 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.time) return;
+    if (isSubmitting || step === 3 || !formData.time || !formData.fullName || !formData.phoneNumber) return;
 
     setIsSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 800));
+    await new Promise(resolve => setTimeout(resolve, 500));
     
+    const uniqueOrderId = generateUniqueOrderId();
+    setConfirmedBookingId(uniqueOrderId);
+    setCopiedId(false);
+
     if (onBookingConfirmed) {
       const newBooking: BookingHistoryItem = {
-        id: "BK-" + Math.floor(1000 + Math.random() * 9000),
+        id: uniqueOrderId,
         customerName: formData.fullName || (lang === 'bn' ? 'কাস্টমার' : 'Customer'),
         customerPhone: formData.phoneNumber || 'N/A',
         customerAddress: formData.address || '',
@@ -787,7 +814,41 @@ export const BookingModal: React.FC<BookingModalProps> = ({
               </p>
 
               {/* Booking Summary Box */}
-              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-left text-xs space-y-2 max-w-sm mx-auto">
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-left text-xs space-y-2.5 max-w-sm mx-auto">
+                {confirmedBookingId && (
+                  <div className="flex items-center justify-between bg-primary/10 border border-primary/20 p-2.5 rounded-xl">
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-primary block">
+                        {lang === 'bn' ? 'অর্ডার ট্র্যাকিং আইডি' : 'Order Tracking ID'}
+                      </span>
+                      <span className="font-mono font-black text-slate-900 text-sm tracking-wide">
+                        {formatOrderId(confirmedBookingId)}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(formatOrderId(confirmedBookingId));
+                        setCopiedId(true);
+                        setTimeout(() => setCopiedId(false), 2500);
+                      }}
+                      className="px-2.5 py-1.5 bg-white hover:bg-sky-50 text-slate-700 hover:text-primary rounded-lg border border-slate-200 text-[11px] font-bold transition-all flex items-center gap-1 shadow-2xs cursor-pointer"
+                      title={lang === 'bn' ? 'অর্ডার আইডি কপি করুন' : 'Copy Order ID'}
+                    >
+                      {copiedId ? (
+                        <>
+                          <Check size={12} className="text-emerald-600" />
+                          <span className="text-emerald-600">{lang === 'bn' ? 'কপি হয়েছে' : 'Copied'}</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy size={12} />
+                          <span>{lang === 'bn' ? 'কপি' : 'Copy'}</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-slate-500">{lang === 'bn' ? 'ডায়াগনস্টিক ল্যাব:' : 'Lab:'}</span>
                   <span className="font-bold text-slate-800">{selectedLab?.name}</span>
@@ -802,8 +863,34 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 </div>
               </div>
 
-              <div className="pt-3 flex flex-col sm:flex-row gap-2.5 justify-center">
-                <Button onClick={handleBackToHome} className="w-full sm:w-auto">
+              <div className="pt-3 flex flex-col sm:flex-row gap-2.5 justify-center items-center max-w-sm mx-auto">
+                <Button 
+                  onClick={() => {
+                    const tempBooking: BookingHistoryItem = {
+                      id: confirmedBookingId,
+                      customerName: formData.fullName || (lang === 'bn' ? 'কাস্টমার' : 'Customer'),
+                      customerPhone: formData.phoneNumber || 'N/A',
+                      customerAddress: formData.address || '',
+                      date: formData.date,
+                      time: formData.time,
+                      labId: selectedLab?.id || 'labaid',
+                      labName: selectedLab?.name || 'Diagnostic Center',
+                      testNames: cartItems.map(t => t.name),
+                      totalCost: totalBill,
+                      status: 'pending',
+                      doctorName: formData.doctorName || undefined,
+                      createdAt: new Date().toISOString()
+                    };
+                    printOrDownloadInvoice(tempBooking, lang);
+                  }}
+                  variant="outline"
+                  className="w-full sm:w-auto !py-2 !px-4 text-xs font-bold flex items-center justify-center gap-1.5 border-primary text-primary hover:bg-sky-50"
+                >
+                  <Download size={14} />
+                  <span>{lang === 'bn' ? 'ইনভয়েস ডাউনলোড করুন' : 'Download Invoice'}</span>
+                </Button>
+
+                <Button onClick={handleBackToHome} className="w-full sm:w-auto !py-2 !px-4 text-xs font-bold">
                   {lang === 'bn' ? 'হোমে ফিরে যান' : 'Back to Home'}
                 </Button>
               </div>

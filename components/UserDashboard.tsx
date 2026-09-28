@@ -23,10 +23,15 @@ import {
   Camera,
   Upload,
   Trash2,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Printer,
+  Receipt
 } from 'lucide-react';
 import { Button } from './Button';
 import { ProfilePictureModal, PRESET_AVATARS } from './ProfilePictureModal';
+import { InvoiceModal } from './InvoiceModal';
+import { printOrDownloadInvoice } from '../services/invoiceService';
+import { formatOrderId } from './BookingModal';
 
 interface UserDashboardProps {
   lang: Language;
@@ -65,6 +70,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   const [profileAvatar, setProfileAvatar] = useState(currentPatient.avatar || '');
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [selectedInvoiceBooking, setSelectedInvoiceBooking] = useState<BookingHistoryItem | null>(null);
 
   useEffect(() => {
     setProfileName(currentPatient.name || '');
@@ -408,14 +414,27 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                           <CalendarDays size={20} />
                         </div>
                         <div>
-                          <p className="font-bold text-slate-800 text-sm">{booking.labName}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-bold text-slate-800 text-sm">{booking.labName}</p>
+                            <span className="text-[10px] font-mono text-slate-400 font-semibold">{formatOrderId(booking.id)}</span>
+                          </div>
                           <p className="text-xs text-slate-500">{booking.date} • {booking.time}</p>
                           <p className="text-[11px] text-slate-400 truncate max-w-xs">{booking.testNames.join(', ')}</p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        {getStatusBadge(booking.status)}
-                        <p className="text-xs font-bold text-slate-800 mt-1.5">৳ {booking.totalCost}</p>
+                      <div className="text-right flex items-center gap-3">
+                        <div>
+                          {getStatusBadge(booking.status)}
+                          <p className="text-xs font-bold text-slate-800 mt-1.5">৳ {booking.totalCost}</p>
+                        </div>
+                        <button
+                          onClick={() => setSelectedInvoiceBooking(booking)}
+                          className="px-2.5 py-1.5 bg-sky-50 hover:bg-sky-100 text-primary rounded-xl text-xs font-bold transition-colors flex items-center gap-1 border border-sky-100 cursor-pointer shadow-2xs"
+                          title={lang === 'bn' ? 'ইনভয়েস দেখুন ও ডাউনলোড করুন' : 'View & Download Invoice'}
+                        >
+                          <Download size={13} />
+                          <span className="hidden sm:inline">{lang === 'bn' ? 'ইনভয়েস' : 'Invoice'}</span>
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -463,12 +482,13 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                       <th className="px-5 py-3.5">{lang === 'bn' ? 'টেস্টসমূহ' : 'Selected Tests'}</th>
                       <th className="px-5 py-3.5">{t.dashStatus}</th>
                       <th className="px-5 py-3.5 text-right">{lang === 'bn' ? 'বিল' : 'Amount'}</th>
+                      <th className="px-5 py-3.5 text-center">{lang === 'bn' ? 'ইনভয়েস' : 'Invoice'}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {userBookings.map(booking => (
                       <tr key={booking.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="px-5 py-4 font-mono font-bold text-primary text-xs">#{booking.id}</td>
+                        <td className="px-5 py-4 font-mono font-bold text-primary text-xs">{formatOrderId(booking.id)}</td>
                         <td className="px-5 py-4 text-slate-700 text-xs">
                           <span className="font-medium">{booking.date}</span><br/>
                           <span className="text-slate-400">{booking.time}</span>
@@ -477,11 +497,21 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                         <td className="px-5 py-4 text-slate-600 text-xs max-w-xs">{booking.testNames.join(', ')}</td>
                         <td className="px-5 py-4">{getStatusBadge(booking.status)}</td>
                         <td className="px-5 py-4 text-right font-bold text-slate-800">৳ {booking.totalCost}</td>
+                        <td className="px-5 py-4 text-center">
+                          <button
+                            onClick={() => setSelectedInvoiceBooking(booking)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-sky-50 hover:bg-primary text-primary hover:text-white rounded-xl text-xs font-bold transition-all border border-sky-100 hover:border-primary cursor-pointer shadow-2xs"
+                            title={lang === 'bn' ? 'ইনভয়েস ডাউনলোড বা প্রিন্ট করুন' : 'Download or Print Invoice'}
+                          >
+                            <Download size={13} />
+                            <span>{lang === 'bn' ? 'ইনভয়েস' : 'Invoice'}</span>
+                          </button>
+                        </td>
                       </tr>
                     ))}
                     {userBookings.length === 0 && (
                       <tr>
-                        <td colSpan={6} className="px-5 py-12 text-center text-slate-400 text-sm">
+                        <td colSpan={7} className="px-5 py-12 text-center text-slate-400 text-sm">
                           {t.dashNoData}
                         </td>
                       </tr>
@@ -838,6 +868,14 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
         currentAvatar={profileAvatar || currentPatient.avatar}
         userName={currentPatient.name}
         onSaveAvatar={handleSaveAvatarFromModal}
+      />
+
+      {/* Official Invoice Modal */}
+      <InvoiceModal
+        isOpen={!!selectedInvoiceBooking}
+        onClose={() => setSelectedInvoiceBooking(null)}
+        order={selectedInvoiceBooking}
+        lang={lang}
       />
     </div>
   );

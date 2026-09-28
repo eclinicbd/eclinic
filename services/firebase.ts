@@ -345,18 +345,32 @@ export const getUserProfileFromFirestore = async (userId: string): Promise<Patie
 };
 
 /**
- * Save a new booking to Firestore
+ * Save a new booking to Firestore using the unique booking ID as document ID
  */
 export const saveBookingToFirestore = async (booking: BookingHistoryItem): Promise<boolean> => {
   try {
-    const bookingsCol = collection(db, 'bookings');
-    await addDoc(bookingsCol, {
+    const bookingDoc = doc(db, 'bookings', booking.id);
+    await setDoc(bookingDoc, {
       ...booking,
       createdAt: booking.createdAt || new Date().toISOString()
-    });
+    }, { merge: true });
     return true;
   } catch (error) {
     console.error("Error saving booking to Firestore:", error);
+    return false;
+  }
+};
+
+/**
+ * Delete a booking from Firestore
+ */
+export const deleteBookingFromFirestore = async (bookingId: string): Promise<boolean> => {
+  try {
+    const bookingDoc = doc(db, 'bookings', bookingId);
+    await deleteDoc(bookingDoc);
+    return true;
+  } catch (error) {
+    console.error("Error deleting booking from Firestore:", error);
     return false;
   }
 };
@@ -371,23 +385,29 @@ export const subscribeToBookings = (callback: (bookings: BookingHistoryItem[]) =
     
     return onSnapshot(q, (snapshot) => {
       const bookings: BookingHistoryItem[] = [];
+      const seenIds = new Set<string>();
+
       snapshot.forEach((docSnap) => {
         const data = docSnap.data();
-        bookings.push({
-          id: docSnap.id,
-          customerName: data.customerName,
-          customerPhone: data.customerPhone,
-          customerAddress: data.customerAddress,
-          date: data.date,
-          time: data.time,
-          labId: data.labId,
-          labName: data.labName,
-          testNames: data.testNames || [],
-          totalCost: data.totalCost || 0,
-          status: data.status || 'pending',
-          doctorName: data.doctorName,
-          createdAt: data.createdAt
-        });
+        const finalId = data.id || docSnap.id;
+        if (!seenIds.has(finalId)) {
+          seenIds.add(finalId);
+          bookings.push({
+            id: finalId,
+            customerName: data.customerName,
+            customerPhone: data.customerPhone,
+            customerAddress: data.customerAddress,
+            date: data.date,
+            time: data.time,
+            labId: data.labId,
+            labName: data.labName,
+            testNames: data.testNames || [],
+            totalCost: data.totalCost || 0,
+            status: data.status || 'pending',
+            doctorName: data.doctorName,
+            createdAt: data.createdAt
+          });
+        }
       });
       callback(bookings);
     }, (error) => {
@@ -408,23 +428,29 @@ export const getBookingsFromFirestore = async (): Promise<BookingHistoryItem[]> 
     const q = query(bookingsCol, orderBy('createdAt', 'desc'));
     const snapshot = await getDocs(q);
     const bookings: BookingHistoryItem[] = [];
+    const seenIds = new Set<string>();
+
     snapshot.forEach((docSnap) => {
       const data = docSnap.data();
-      bookings.push({
-        id: docSnap.id,
-        customerName: data.customerName,
-        customerPhone: data.customerPhone,
-        customerAddress: data.customerAddress,
-        date: data.date,
-        time: data.time,
-        labId: data.labId,
-        labName: data.labName,
-        testNames: data.testNames || [],
-        totalCost: data.totalCost || 0,
-        status: data.status || 'pending',
-        doctorName: data.doctorName,
-        createdAt: data.createdAt
-      });
+      const finalId = data.id || docSnap.id;
+      if (!seenIds.has(finalId)) {
+        seenIds.add(finalId);
+        bookings.push({
+          id: finalId,
+          customerName: data.customerName,
+          customerPhone: data.customerPhone,
+          customerAddress: data.customerAddress,
+          date: data.date,
+          time: data.time,
+          labId: data.labId,
+          labName: data.labName,
+          testNames: data.testNames || [],
+          totalCost: data.totalCost || 0,
+          status: data.status || 'pending',
+          doctorName: data.doctorName,
+          createdAt: data.createdAt
+        });
+      }
     });
     return bookings;
   } catch (error) {

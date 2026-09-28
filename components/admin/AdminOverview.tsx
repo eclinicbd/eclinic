@@ -15,16 +15,23 @@ import {
   XCircle, 
   Sparkles,
   ShieldCheck,
-  RotateCcw
+  RotateCcw,
+  Printer,
+  Download,
+  BarChart3,
+  TrendingUp,
+  ArrowUpRight
 } from 'lucide-react';
 import { Button } from '../Button';
+import { printOrDownloadInvoice } from '../../services/invoiceService';
+import { formatOrderId } from '../BookingModal';
 
 interface AdminOverviewProps {
   lang: Language;
   tests: TestPackage[];
   labs: LabPartner[];
   bookings: BookingHistoryItem[];
-  onNavigateTab: (tab: 'overview' | 'orders' | 'tests' | 'labs' | 'customers' | 'settings') => void;
+  onNavigateTab: (tab: 'overview' | 'orders' | 'reports' | 'tests' | 'packages' | 'categories' | 'labs' | 'customers' | 'settings') => void;
   onOpenAddTest: () => void;
   onOpenAddLab: () => void;
   onOpenAddOrder: () => void;
@@ -145,6 +152,38 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
         </div>
       </div>
 
+      {/* Analytics & Financial Reports Shortcut Banner */}
+      <div className="bg-gradient-to-r from-slate-900 to-sky-950 text-white p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="w-12 h-12 rounded-2xl bg-sky-500/20 text-sky-400 border border-sky-400/30 flex items-center justify-center shrink-0">
+            <BarChart3 size={24} />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="font-extrabold text-base text-white">
+                {lang === 'bn' ? 'দৈনিক, সাপ্তাহিক, মাসিক ও বাৎসরিক রিপোর্ট' : 'Daily, Weekly, Monthly & Yearly Reports'}
+              </h3>
+              <span className="text-[10px] bg-sky-500 text-white font-black px-2 py-0.5 rounded-md uppercase">
+                Analytics
+              </span>
+            </div>
+            <p className="text-xs text-sky-200/80 mt-0.5">
+              {lang === 'bn' 
+                ? 'কোন সেন্টারে কত টাকার টেস্ট হয়েছে, কতগুলো টেস্ট সম্পন্ন হয়েছে তার পূর্ণাঙ্গ বিশ্লেষণ ও প্রিন্ট কপি।' 
+                : 'Center-wise revenue, tests volume, order breakdown, and downloadable PDF/CSV reports.'}
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={() => onNavigateTab('reports')}
+          className="px-4 py-2.5 bg-primary hover:bg-sky-500 text-white rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all shadow-md shrink-0 cursor-pointer"
+        >
+          <span>{lang === 'bn' ? 'রিপোর্ট ও অ্যানালিটিক্স দেখুন' : 'Open Full Analytics'}</span>
+          <ArrowUpRight size={15} />
+        </button>
+      </div>
+
       {/* Recent Orders Section */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-5 border-b border-slate-100 flex justify-between items-center">
@@ -177,7 +216,7 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
               ) : (
                 bookings.slice(0, 5).map(booking => (
                   <tr key={booking.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-5 py-3.5 font-bold text-slate-900">#{booking.id}</td>
+                    <td className="px-5 py-3.5 font-bold text-slate-900 font-mono text-xs">{formatOrderId(booking.id)}</td>
                     <td className="px-5 py-3.5">
                       <p className="font-semibold text-slate-900 text-xs">{booking.customerName || 'Anonymous'}</p>
                       <p className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5"><Phone size={10} /> {booking.customerPhone}</p>
@@ -194,13 +233,23 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
                     <td className="px-5 py-3.5">{getStatusBadge(booking.status)}</td>
                     <td className="px-5 py-3.5 text-right font-bold text-slate-900">৳ {booking.totalCost}</td>
                     <td className="px-5 py-3.5 text-center">
-                      <button 
-                        onClick={() => onSelectOrder(booking)} 
-                        className="p-1.5 text-slate-500 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-colors"
-                        title="View Details"
-                      >
-                        <Eye size={16} />
-                      </button>
+                      <div className="flex items-center justify-center gap-1.5">
+                        <button 
+                          onClick={() => printOrDownloadInvoice(booking, lang)}
+                          className="px-2.5 py-1 bg-sky-50 hover:bg-primary text-primary hover:text-white rounded-lg text-xs font-bold transition-all border border-sky-100 flex items-center gap-1 cursor-pointer shadow-2xs"
+                          title={lang === 'bn' ? 'ইনভয়েস ডাউনলোড / প্রিন্ট করুন' : 'Download / Print Invoice'}
+                        >
+                          <Printer size={13} />
+                          <span>{lang === 'bn' ? 'ইনভয়েস' : 'Invoice'}</span>
+                        </button>
+                        <button 
+                          onClick={() => onSelectOrder(booking)} 
+                          className="p-1.5 text-slate-500 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-colors cursor-pointer"
+                          title="View Details"
+                        >
+                          <Eye size={16} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

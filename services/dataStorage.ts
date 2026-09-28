@@ -1,4 +1,4 @@
-import { TestPackage, LabPartner, Language, BookingHistoryItem, SiteSettings, PatientUser, HealthPackage, CategoryItem } from '../types';
+import { TestPackage, LabPartner, Language, BookingHistoryItem, SiteSettings, PatientUser, HealthPackage, CategoryItem, DateSlotConfig, TimeSlotConfigItem } from '../types';
 import { 
   getTests as getDefaultTests, 
   getLabs as getDefaultLabs, 
@@ -18,8 +18,62 @@ const STORAGE_KEYS = {
   SITE_SETTINGS_BN: 'labhome_site_settings_bn_v2',
   SITE_SETTINGS_EN: 'labhome_site_settings_en_v2',
   PATIENTS: 'labhome_patients_v2',
-  CURRENT_PATIENT: 'labhome_current_patient_v2'
+  CURRENT_PATIENT: 'labhome_current_patient_v2',
+  DATE_SLOT_CONFIG: 'labhome_date_slot_config_v1'
 };
+
+export const DEFAULT_TIME_SLOTS: TimeSlotConfigItem[] = [
+  { id: 'slot_1', time: '08:00 AM - 09:00 AM', period: 'morning', isActive: true, maxCapacity: 5 },
+  { id: 'slot_2', time: '09:00 AM - 10:00 AM', period: 'morning', isActive: true, maxCapacity: 5 },
+  { id: 'slot_3', time: '10:00 AM - 11:00 AM', period: 'morning', isActive: true, maxCapacity: 5 },
+  { id: 'slot_4', time: '11:00 AM - 12:00 PM', period: 'morning', isActive: true, maxCapacity: 5 },
+  { id: 'slot_5', time: '12:00 PM - 01:00 PM', period: 'afternoon', isActive: true, maxCapacity: 5 },
+  { id: 'slot_6', time: '02:00 PM - 03:00 PM', period: 'afternoon', isActive: true, maxCapacity: 5 },
+  { id: 'slot_7', time: '03:00 PM - 04:00 PM', period: 'afternoon', isActive: true, maxCapacity: 5 },
+  { id: 'slot_8', time: '04:00 PM - 05:00 PM', period: 'afternoon', isActive: true, maxCapacity: 5 },
+  { id: 'slot_9', time: '05:00 PM - 06:00 PM', period: 'evening', isActive: true, maxCapacity: 5 },
+  { id: 'slot_10', time: '06:00 PM - 07:00 PM', period: 'evening', isActive: true, maxCapacity: 5 },
+  { id: 'slot_11', time: '07:00 PM - 08:00 PM', period: 'evening', isActive: true, maxCapacity: 5 },
+  { id: 'slot_12', time: '08:00 PM - 09:00 PM', period: 'night', isActive: true, maxCapacity: 5 }
+];
+
+export const DEFAULT_DATE_SLOT_CONFIG: DateSlotConfig = {
+  advanceDays: 7,
+  leadTimeHours: 3,
+  weeklyHolidays: [], // e.g. [5] for Friday if desired
+  blockedDates: [],
+  slots: DEFAULT_TIME_SLOTS
+};
+
+export const getStoredDateSlotConfig = (): DateSlotConfig => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEYS.DATE_SLOT_CONFIG);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (parsed && Array.isArray(parsed.slots) && parsed.slots.length > 0) {
+        return {
+          advanceDays: typeof parsed.advanceDays === 'number' ? parsed.advanceDays : DEFAULT_DATE_SLOT_CONFIG.advanceDays,
+          leadTimeHours: typeof parsed.leadTimeHours === 'number' ? parsed.leadTimeHours : DEFAULT_DATE_SLOT_CONFIG.leadTimeHours,
+          weeklyHolidays: Array.isArray(parsed.weeklyHolidays) ? parsed.weeklyHolidays : [],
+          blockedDates: Array.isArray(parsed.blockedDates) ? parsed.blockedDates : [],
+          slots: parsed.slots
+        };
+      }
+    }
+  } catch (e) {
+    console.error("Failed to load date slot config:", e);
+  }
+  return DEFAULT_DATE_SLOT_CONFIG;
+};
+
+export const setStoredDateSlotConfig = (config: DateSlotConfig): void => {
+  try {
+    localStorage.setItem(STORAGE_KEYS.DATE_SLOT_CONFIG, JSON.stringify(config));
+  } catch (e) {
+    console.error("Failed to save date slot config:", e);
+  }
+};
+
 
 export const DEFAULT_CATEGORIES: CategoryItem[] = [
   { id: 'cat_general', name: 'General', nameBn: 'সাধারণ স্বাস্থ্য', description: 'Routine checkups, CBC, and essential baseline screening', icon: 'FlaskConical', color: 'blue', order: 1, isHidden: false },
@@ -91,7 +145,7 @@ const DEFAULT_PATIENTS: PatientUser[] = [
 
 const INITIAL_BOOKINGS: BookingHistoryItem[] = [
   {
-    id: "BK-2025",
+    id: "20240322-2025",
     customerName: "রাহিম আহমেদ (Rahim Ahmed)",
     customerPhone: "01712345678",
     customerAddress: "বাড়ি ১২, রোড ৫, ধানমন্ডি, ঢাকা",
@@ -106,7 +160,7 @@ const INITIAL_BOOKINGS: BookingHistoryItem[] = [
     createdAt: "2024-03-20T10:30:00Z"
   },
   {
-    id: "BK-2024",
+    id: "20240322-2024",
     customerName: "করিম উদ্দিন (Karim Uddin)",
     customerPhone: "01812345678",
     customerAddress: "প্লট ৯, সেক্টর ৩, উত্তরা, ঢাকা",
@@ -120,7 +174,7 @@ const INITIAL_BOOKINGS: BookingHistoryItem[] = [
     createdAt: "2024-03-21T08:15:00Z"
   },
   {
-    id: "BK-2023",
+    id: "20240321-2023",
     customerName: "সালমা বেগম (Salma Begum)",
     customerPhone: "01912345678",
     customerAddress: "ব্লক সি, মিরপুর ১০, ঢাকা",
@@ -135,7 +189,7 @@ const INITIAL_BOOKINGS: BookingHistoryItem[] = [
     createdAt: "2024-03-19T14:20:00Z"
   },
   {
-    id: "BK-2022",
+    id: "20240318-2022",
     customerName: "তানভীর হাসান (Tanvir Hasan)",
     customerPhone: "01612345678",
     customerAddress: "রোড ৮, বনানী, ঢাকা",
@@ -338,7 +392,19 @@ export const getStoredBookings = (): BookingHistoryItem[] => {
     if (stored) {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed)) {
-        return parsed;
+        const seen = new Set<string>();
+        const deduplicated: BookingHistoryItem[] = [];
+        for (const item of parsed) {
+          if (item && item.id) {
+            const cleanId = String(item.id).replace(/^#?EC-?/i, '').replace(/^#?BK-?/i, '').replace(/^#/, '');
+            const sanitizedItem = { ...item, id: cleanId };
+            if (!seen.has(cleanId)) {
+              seen.add(cleanId);
+              deduplicated.push(sanitizedItem);
+            }
+          }
+        }
+        return deduplicated;
       }
     }
   } catch (e) {
@@ -349,7 +415,13 @@ export const getStoredBookings = (): BookingHistoryItem[] => {
 
 export const saveStoredBookings = (bookings: BookingHistoryItem[]): void => {
   try {
-    localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(bookings));
+    const seen = new Set<string>();
+    const deduplicated = bookings.filter(item => {
+      if (!item || !item.id || seen.has(item.id)) return false;
+      seen.add(item.id);
+      return true;
+    });
+    localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(deduplicated));
   } catch (e) {
     console.error("Failed to save bookings to storage:", e);
   }
