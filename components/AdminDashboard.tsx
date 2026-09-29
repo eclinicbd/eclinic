@@ -18,10 +18,11 @@ import {
   Layers,
   FileEdit,
   Tag,
-  BarChart3
+  BarChart3,
+  CalendarClock
 } from 'lucide-react';
 import { Button } from './Button';
-import { DEFAULT_CATEGORIES } from '../services/dataStorage';
+import { DEFAULT_CATEGORIES, getStoredDateSlotConfig, setStoredDateSlotConfig } from '../services/dataStorage';
 import { getLabs } from '../constants';
 
 // Modular Admin Sub-components
@@ -32,6 +33,7 @@ import { AdminTests } from './admin/AdminTests';
 import { AdminPackages } from './admin/AdminPackages';
 import { AdminCategories } from './admin/AdminCategories';
 import { AdminLabs } from './admin/AdminLabs';
+import { AdminSlots } from './admin/AdminSlots';
 import { AdminCustomers } from './admin/AdminCustomers';
 import { AdminSettings } from './admin/AdminSettings';
 import { AdminCMS } from './admin/AdminCMS';
@@ -87,8 +89,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onResetAllData,
   onLogout
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'reports' | 'tests' | 'packages' | 'categories' | 'labs' | 'customers' | 'cms' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'reports' | 'tests' | 'packages' | 'categories' | 'labs' | 'slots' | 'customers' | 'cms' | 'settings'>('overview');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Date and Slot Configuration State
+  const [dateSlotConfig, setDateSlotConfig] = useState(getStoredDateSlotConfig);
+
+  const handleUpdateDateSlotConfig = (newConfig: typeof dateSlotConfig) => {
+    setDateSlotConfig(newConfig);
+    setStoredDateSlotConfig(newConfig);
+  };
 
   // Modals state
   const [isTestModalOpen, setIsTestModalOpen] = useState(false);
@@ -610,6 +620,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <NavButton id="packages" icon={Layers} label={lang === 'bn' ? 'ডায়াগনস্টিক প্যাকেজ' : 'Diagnostic Packages'} badge={packages.length} />
             <NavButton id="categories" icon={Tag} label={lang === 'bn' ? 'ক্যাটেগরি ব্যবস্থাপনা' : 'Test Categories'} badge={categories.length} />
             <NavButton id="labs" icon={Building2} label="Centers & Fees" />
+            <NavButton id="slots" icon={CalendarClock} label={lang === 'bn' ? 'তারিখ ও স্লট কাস্টমাইজ' : 'Date & Slot Manager'} />
             <NavButton id="cms" icon={Globe} label={t.adminSiteCMS} />
             <NavButton id="customers" icon={Users} label={t.adminCustomers} badge={patients.length} />
             <NavButton id="settings" icon={Settings} label={t.adminSettings} />
@@ -734,6 +745,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               onOpenDeleteLab={(lab) => setDeleteTarget({ type: 'lab', id: lab.id, name: lab.name })}
               onReorderLab={handleReorderLab}
               onResetDefaultLabs={handleResetDefaultLabs}
+            />
+          )}
+
+          {activeTab === 'slots' && (
+            <AdminSlots 
+              lang={lang}
+              config={dateSlotConfig}
+              onUpdateConfig={handleUpdateDateSlotConfig}
+              showToast={showToast}
             />
           )}
 

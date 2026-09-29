@@ -31,6 +31,7 @@ import {
   Printer
 } from 'lucide-react';
 import { printOrDownloadInvoice } from '../services/invoiceService';
+import { getStoredDateSlotConfig, DEFAULT_TIME_SLOTS } from '../services/dataStorage';
 
 // Helper to format Order ID without EC- or # prefix
 export const formatOrderId = (id?: string): string => {
@@ -64,35 +65,35 @@ interface BookingModalProps {
   onOpenAuthModal?: () => void;
 }
 
-// 1-hour ranges
-const TIME_SLOTS = [
-  "08:00 AM - 09:00 AM",
-  "09:00 AM - 10:00 AM",
-  "10:00 AM - 11:00 AM",
-  "11:00 AM - 12:00 PM",
-  "12:00 PM - 01:00 PM",
-  "02:00 PM - 03:00 PM", 
-  "03:00 PM - 04:00 PM",
-  "04:00 PM - 05:00 PM",
-  "05:00 PM - 06:00 PM",
-  "06:00 PM - 07:00 PM",
-  "07:00 PM - 08:00 PM",
-  "08:00 PM - 09:00 PM"
-];
+// Helper to get active calendar booking days based on admin config
+const getAvailableBookingDays = (lang: Language) => {
+  const config = getStoredDateSlotConfig();
+  const daysCount = config.advanceDays || 7;
+  const weeklyHolidays = config.weeklyHolidays || [];
+  const blockedDates = (config.blockedDates || []).map(b => b.date);
 
-// Helper to get next 7 days
-const getNext7Days = (lang: Language) => {
   const days = [];
   const today = new Date();
   
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < daysCount; i++) {
     const d = new Date(today);
     d.setDate(today.getDate() + i);
+    const dateStr = d.toISOString().split('T')[0];
+    const dayOfWeek = d.getDay(); // 0=Sunday, 5=Friday etc.
+    
+    const isWeeklyOff = weeklyHolidays.includes(dayOfWeek);
+    const isHoliday = blockedDates.includes(dateStr);
+    const isClosed = isWeeklyOff || isHoliday;
+
     days.push({
-      fullDate: d.toISOString().split('T')[0],
+      fullDate: dateStr,
       dayName: d.toLocaleDateString(lang === 'bn' ? 'bn-BD' : 'en-US', { weekday: 'short' }),
       dayNumber: d.toLocaleDateString(lang === 'bn' ? 'bn-BD' : 'en-US', { day: 'numeric' }),
-      month: d.toLocaleDateString(lang === 'bn' ? 'bn-BD' : 'en-US', { month: 'short' })
+      month: d.toLocaleDateString(lang === 'bn' ? 'bn-BD' : 'en-US', { month: 'short' }),
+      isClosed,
+      closedReason: isHoliday 
+        ? (config.blockedDates.find(b => b.date === dateStr)?.reason || (lang === 'bn' ? 'ছুটি' : 'Holiday')) 
+        : (isWeeklyOff ? (lang === 'bn' ? 'সাপ্তাহিক বন্ধ' : 'Weekly Off') : '')
     });
   }
   return days;
@@ -100,27 +101,43 @@ const getNext7Days = (lang: Language) => {
 
 // Helper to check if a slot is available
 const isSlotAvailable = (dateStr: string, slotStr: string): boolean => {
+  const config = getStoredDateSlotConfig();
   const todayStr = new Date().toISOString().split('T')[0];
   
-  // If date is in the future, all slots are available
+  // If the date itself is blocked/holiday, slot is not available
+  const isHoliday = (config.blockedDates || []).some(b => b.date === dateStr);
+  if (isHoliday) return false;
+
+  const dateObj = new Date(dateStr);
+  if (!isNaN(dateObj.getTime()) && (config.weeklyHolidays || []).includes(dateObj.getDay())) {
+    return false;
+  }
+
+  // If date is in the future, slot is available
   if (dateStr !== todayStr) return true;
 
+  // Same day lead time check
+  const leadHours = config.leadTimeHours !== undefined ? config.leadTimeHours : 3;
   const now = new Date();
-  const minTime = new Date(now.getTime() + 3 * 60 * 60 * 1000); 
+  const minTime = new Date(now.getTime() + leadHours * 60 * 60 * 1000); 
 
-  const startTimeStr = slotStr.split(' - ')[0];
-  const [time, modifier] = startTimeStr.split(' ');
-  let [hours, minutes] = time.split(':');
-  
-  let slotDate = new Date();
-  let h = parseInt(hours, 10);
-  
-  if (h === 12) h = 0;
-  if (modifier === 'PM') h += 12;
-  
-  slotDate.setHours(h, parseInt(minutes, 10), 0, 0);
+  try {
+    const startTimeStr = slotStr.split(' - ')[0];
+    const [time, modifier] = startTimeStr.split(' ');
+    let [hours, minutes] = time.split(':');
+    
+    let slotDate = new Date();
+    let h = parseInt(hours, 10);
+    
+    if (h === 12) h = 0;
+    if (modifier === 'PM') h += 12;
+    
+    slotDate.setHours(h, parseInt(minutes, 10), 0, 0);
 
-  return slotDate > minTime;
+    return slotDate > minTime;
+  } catch (e) {
+    return true;
+  }
 };
 
 export const BookingModal: React.FC<BookingModalProps> = ({ 
@@ -154,7 +171,12 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   // Filter out labs that are hidden for any items in cart
   const availableLabsForCart = rawLabs.filter(l => !cartItems.some(item => item.hiddenLabs?.includes(l.id)));
   const labs = availableLabsForCart.length > 0 ? availableLabsForCart : rawLabs;
-  const nextDays = getNext7Days(lang);
+  
+  const slotConfig = getStoredDateSlotConfig();
+  const availableBookingDays = getAvailableBookingDays(lang);
+  const activeTimeSlots = (slotConfig.slots && slotConfig.slots.length > 0 ? slotConfig.slots : DEFAULT_TIME_SLOTS)
+    .filter(s => s.isActive)
+    .map(s => s.time);
 
   const [formData, setFormData] = useState<BookingFormData>({
     fullName: currentPatient?.name || '',
@@ -189,15 +211,23 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       setSearchTerm('');
       setIsSearchFocused(false);
       
-      const days = getNext7Days(lang);
-      let bestDate = days[0].fullDate;
-
+      const days = getAvailableBookingDays(lang);
+      const currentActiveSlots = (getStoredDateSlotConfig().slots || DEFAULT_TIME_SLOTS).filter(s => s.isActive).map(s => s.time);
+      
+      let bestDate = '';
       for (const day of days) {
-        const hasAvailableSlots = TIME_SLOTS.some(slot => isSlotAvailable(day.fullDate, slot));
-        if (hasAvailableSlots) {
-          bestDate = day.fullDate;
-          break;
+        if (!day.isClosed) {
+          const hasAvailableSlots = currentActiveSlots.some(slot => isSlotAvailable(day.fullDate, slot));
+          if (hasAvailableSlots) {
+            bestDate = day.fullDate;
+            break;
+          }
         }
+      }
+
+      if (!bestDate && days.length > 0) {
+        const firstOpenDay = days.find(d => !d.isClosed);
+        bestDate = firstOpenDay ? firstOpenDay.fullDate : days[0].fullDate;
       }
       
       setFormData(prev => ({
@@ -206,6 +236,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         phoneNumber: currentPatient?.phone || prev.phoneNumber || '',
         address: currentPatient?.address || prev.address || '',
         date: bestDate,
+        time: '',
         testIds: cartItems.map(t => t.id),
         labId: prev.labId || preSelectedLabId || (labs[0]?.id || 'lab_popular'), 
       }));
@@ -697,28 +728,48 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
               {/* Date Selection */}
               <div className="space-y-2 pt-2 border-t border-slate-100">
-                <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                  <Calendar size={14} className="text-primary" />
-                  <span>{t.selectDate || (lang === 'bn' ? 'তারিখ নির্বাচন করুন' : 'Select Date')}</span>
+                <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Calendar size={14} className="text-primary" />
+                    <span>{t.selectDate || (lang === 'bn' ? 'তারিখ নির্বাচন করুন' : 'Select Date')}</span>
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-normal">
+                    {lang === 'bn' ? `আগামী ${availableBookingDays.length} দিনের মধ্যে` : `Next ${availableBookingDays.length} days`}
+                  </span>
                 </label>
 
-                <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-                  {nextDays.map((d) => {
+                <div className="flex gap-2 overflow-x-auto pb-1 custom-scrollbar">
+                  {availableBookingDays.map((d) => {
                     const isSelected = formData.date === d.fullDate;
+                    const isClosed = d.isClosed;
+
                     return (
                       <button
                         key={d.fullDate}
                         type="button"
-                        onClick={() => setFormData({ ...formData, date: d.fullDate })}
-                        className={`p-2 rounded-xl text-center flex-1 min-w-[62px] border transition-all cursor-pointer ${
-                          isSelected
-                            ? 'bg-primary text-white border-primary shadow-xs'
-                            : 'bg-white text-slate-700 border-slate-200 hover:border-primary/50'
+                        disabled={isClosed}
+                        onClick={() => {
+                          if (!isClosed) {
+                            setFormData({ ...formData, date: d.fullDate, time: '' });
+                          }
+                        }}
+                        title={isClosed ? `${d.fullDate}: ${d.closedReason || (lang === 'bn' ? 'ছুটি / বন্ধ' : 'Closed')}` : undefined}
+                        className={`p-2 rounded-xl text-center flex-1 min-w-[66px] border transition-all relative ${
+                          isClosed
+                            ? 'bg-slate-100/80 text-slate-400 border-dashed border-slate-300 cursor-not-allowed opacity-60'
+                            : isSelected
+                            ? 'bg-primary text-white border-primary shadow-xs cursor-pointer'
+                            : 'bg-white text-slate-700 border-slate-200 hover:border-primary/50 cursor-pointer'
                         }`}
                       >
                         <p className="text-[10px] uppercase font-bold opacity-80">{d.dayName}</p>
                         <p className="text-base font-black leading-tight my-0.5">{d.dayNumber}</p>
                         <p className="text-[10px] opacity-80">{d.month}</p>
+                        {isClosed && (
+                          <span className="block text-[8px] font-bold text-rose-600 truncate mt-0.5">
+                            {d.closedReason ? d.closedReason.substring(0, 8) : (lang === 'bn' ? 'বন্ধ' : 'Off')}
+                          </span>
+                        )}
                       </button>
                     );
                   })}
@@ -727,34 +778,45 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
               {/* Time Slot Selection */}
               <div className="space-y-2 pt-2 border-t border-slate-100">
-                <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                  <Clock size={14} className="text-primary" />
-                  <span>{t.selectTime || (lang === 'bn' ? 'সময়সূচি নির্বাচন করুন' : 'Select Time Slot')}</span>
+                <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Clock size={14} className="text-primary" />
+                    <span>{t.selectTime || (lang === 'bn' ? 'সময়সূচি নির্বাচন করুন' : 'Select Time Slot')}</span>
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-normal">
+                    {activeTimeSlots.length} {lang === 'bn' ? 'টি স্লট সক্রিয়' : 'slots available'}
+                  </span>
                 </label>
 
                 <div className="grid grid-cols-2 gap-2 max-h-36 overflow-y-auto pr-1 custom-scrollbar">
-                  {TIME_SLOTS.map((slot) => {
-                    const available = isSlotAvailable(formData.date, slot);
-                    const isSelected = formData.time === slot;
+                  {activeTimeSlots.length === 0 ? (
+                    <div className="col-span-2 text-center py-4 text-xs text-slate-400">
+                      {lang === 'bn' ? 'কোনো সক্রিয় সময়সূচি পাওয়া যায়নি' : 'No active time slots configured'}
+                    </div>
+                  ) : (
+                    activeTimeSlots.map((slot) => {
+                      const available = isSlotAvailable(formData.date, slot);
+                      const isSelected = formData.time === slot;
 
-                    return (
-                      <button
-                        key={slot}
-                        type="button"
-                        disabled={!available}
-                        onClick={() => setFormData({ ...formData, time: slot })}
-                        className={`p-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
-                          !available
-                            ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-60'
-                            : isSelected
-                            ? 'bg-primary text-white border-primary shadow-xs'
-                            : 'bg-white text-slate-700 border-slate-200 hover:border-primary/50'
-                        }`}
-                      >
-                        {slot}
-                      </button>
-                    );
-                  })}
+                      return (
+                        <button
+                          key={slot}
+                          type="button"
+                          disabled={!available}
+                          onClick={() => setFormData({ ...formData, time: slot })}
+                          className={`p-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                            !available
+                              ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-60'
+                              : isSelected
+                              ? 'bg-primary text-white border-primary shadow-xs'
+                              : 'bg-white text-slate-700 border-slate-200 hover:border-primary/50'
+                          }`}
+                        >
+                          {slot}
+                        </button>
+                      );
+                    })
+                  )}
                 </div>
               </div>
 

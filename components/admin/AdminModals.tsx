@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { TestPackage, HealthPackage, LabPartner, BookingHistoryItem, BookingStatus, Language, ServiceItem, CategoryItem } from '../../types';
 import { TRANSLATIONS } from '../../translations';
 import { generateUniqueOrderId, formatOrderId } from '../BookingModal';
+import { getStoredDateSlotConfig, DEFAULT_TIME_SLOTS } from '../../services/dataStorage';
 import { LabLogo } from '../LabLogo';
 import { 
   X, 
@@ -1151,13 +1152,11 @@ export const OrderFormModal: React.FC<OrderModalProps> = ({
                 onChange={(e) => setTime(e.target.value)}
                 className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none bg-white"
               >
-                <option value="07:00 AM - 08:00 AM">07:00 AM - 08:00 AM</option>
-                <option value="08:00 AM - 09:00 AM">08:00 AM - 09:00 AM</option>
-                <option value="09:00 AM - 10:00 AM">09:00 AM - 10:00 AM</option>
-                <option value="10:00 AM - 11:00 AM">10:00 AM - 11:00 AM</option>
-                <option value="11:00 AM - 12:00 PM">11:00 AM - 12:00 PM</option>
-                <option value="04:00 PM - 05:00 PM">04:00 PM - 05:00 PM</option>
-                <option value="05:00 PM - 06:00 PM">05:00 PM - 06:00 PM</option>
+                {(getStoredDateSlotConfig().slots || DEFAULT_TIME_SLOTS).map(slot => (
+                  <option key={slot.id || slot.time} value={slot.time}>
+                    {slot.time} {!slot.isActive ? '(Inactive)' : ''}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
