@@ -99,12 +99,30 @@ import { DEFAULT_HERO_IMAGES, DEFAULT_NURSING_SERVICES_BN, DEFAULT_NURSING_SERVI
 
 const CATEGORIES = ['All', 'General', 'Diabetes', 'Heart', 'Thyroid', 'Vitamin'];
 
+// Helper to determine if current URL is accessing the Admin Portal route
+const isPathAdmin = () => {
+  if (typeof window === 'undefined') return false;
+  const path = window.location.pathname.toLowerCase();
+  const hash = window.location.hash.toLowerCase();
+  const search = window.location.search.toLowerCase();
+  return (
+    path === '/admin' || 
+    path.startsWith('/admin/') || 
+    hash === '#admin' || 
+    hash.startsWith('#/admin') || 
+    search.includes('view=admin') ||
+    search.includes('admin=true')
+  );
+};
+
 export default function App() {
   const [language, setLanguage] = useState<Language>(() => {
     const saved = localStorage.getItem('labhome_lang');
     return (saved === 'bn' || saved === 'en') ? saved : 'en';
   });
-  const [currentView, setCurrentView] = useState<'home' | 'tests' | 'packages' | 'dashboard' | 'admin'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'tests' | 'packages' | 'dashboard' | 'admin'>(() => {
+    return isPathAdmin() ? 'admin' : 'home';
+  });
   const [currentPatient, setCurrentPatient] = useState<PatientUser | null>(() => getStoredCurrentPatient());
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalTab, setAuthModalTab] = useState<'login' | 'signup'>('login');
@@ -126,7 +144,31 @@ export default function App() {
 
   // Secure Admin Authentication State (session based, prevents public domain auto-login)
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => getIsAdminSessionActive());
-  const [isAdminLoginModalOpen, setIsAdminLoginModalOpen] = useState(false);
+  const [isAdminLoginModalOpen, setIsAdminLoginModalOpen] = useState(() => isPathAdmin() && !getIsAdminSessionActive());
+
+  // Listen to URL changes (e.g. user types /admin or uses browser back/forward buttons)
+  useEffect(() => {
+    const handleUrlRoute = () => {
+      if (isPathAdmin()) {
+        const hasSession = getIsAdminSessionActive();
+        setIsAdminAuthenticated(hasSession);
+        if (!hasSession) {
+          setIsAdminLoginModalOpen(true);
+        }
+        setCurrentView('admin');
+      } else {
+        setIsAdminLoginModalOpen(false);
+        setCurrentView(prev => (prev === 'admin' ? 'home' : prev));
+      }
+    };
+
+    window.addEventListener('popstate', handleUrlRoute);
+    window.addEventListener('hashchange', handleUrlRoute);
+    return () => {
+      window.removeEventListener('popstate', handleUrlRoute);
+      window.removeEventListener('hashchange', handleUrlRoute);
+    };
+  }, []);
 
   const [isLabPaused, setIsLabPaused] = useState(false);
   const labScrollRef = useRef<HTMLDivElement>(null);
@@ -473,6 +515,9 @@ export default function App() {
   };
 
   const handleOpenAdminPortal = () => {
+    if (window.location.pathname !== '/admin') {
+      window.history.pushState(null, '', '/admin');
+    }
     if (isAdminAuthenticated) {
       setCurrentView('admin');
     } else {
@@ -483,12 +528,18 @@ export default function App() {
   const handleAdminLoginSuccess = () => {
     setIsAdminAuthenticated(true);
     setIsAdminLoginModalOpen(false);
+    if (window.location.pathname !== '/admin') {
+      window.history.pushState(null, '', '/admin');
+    }
     setCurrentView('admin');
   };
 
   const handleAdminLogout = () => {
     setAdminSessionActive(false);
     setIsAdminAuthenticated(false);
+    if (window.location.pathname === '/admin' || window.location.hash.includes('admin')) {
+      window.history.pushState(null, '', '/');
+    }
     setCurrentView('home');
   };
 
@@ -1356,7 +1407,12 @@ export default function App() {
         isOpen={isAdminLoginModalOpen || (currentView === 'admin' && !isAdminAuthenticated)}
         onClose={() => {
           setIsAdminLoginModalOpen(false);
-          if (currentView === 'admin') setCurrentView('home');
+          if (currentView === 'admin') {
+            if (window.location.pathname === '/admin' || window.location.hash.includes('admin')) {
+              window.history.pushState(null, '', '/');
+            }
+            setCurrentView('home');
+          }
         }}
         onSuccess={handleAdminLoginSuccess}
         lang={language}
@@ -1488,15 +1544,11 @@ export default function App() {
             </div>
           </div>
 
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 pt-8 border-t border-slate-800 text-center text-xs flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 pt-8 border-t border-slate-800 text-center text-xs flex flex-col sm:flex-row justify-between items-center gap-3 text-slate-500">
             <p>© {new Date().getFullYear()} {siteSettings.siteName || 'LabHome BD'}. All rights reserved.</p>
-            <button 
-              onClick={handleOpenAdminPortal} 
-              className="text-slate-400 hover:text-white flex items-center gap-1.5 px-3 py-1 rounded-md bg-slate-800/80 border border-slate-700 hover:border-slate-600 transition-all cursor-pointer"
-            >
-               <ShieldCheck size={14} className="text-emerald-400" /> 
-               <span>Admin Portal</span>
-            </button>
+            <p className="text-[11px] text-slate-500">
+              {language === 'bn' ? 'স্মার্ট ডায়াগনস্টিক ও হোম হেলথকেয়ার সল্যুশন' : 'Smart Diagnostic & Home Healthcare Platform'}
+            </p>
           </div>
         </footer>
       )}
