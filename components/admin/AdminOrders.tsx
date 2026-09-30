@@ -27,6 +27,7 @@ import { Button } from '../Button';
 import { printOrDownloadInvoice } from '../../services/invoiceService';
 import { printOrdersListReport } from '../../services/reportService';
 import { formatOrderId } from '../BookingModal';
+import { getStoredCurrentStaff, getStoredStaffUsers } from '../../services/dataStorage';
 
 interface AdminOrdersProps {
   lang: Language;
@@ -50,6 +51,9 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({
   onOpenDeleteOrder
 }) => {
   const isBn = lang === 'bn';
+  const currentStaff = getStoredCurrentStaff();
+  const isSuperAdmin = !currentStaff;
+
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [labFilter, setLabFilter] = useState('All');
@@ -471,20 +475,26 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({
                         >
                           <Eye size={15} />
                         </button>
-                        <button 
-                          onClick={() => onOpenEditOrder(booking)}
-                          className="p-1 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors cursor-pointer" 
-                          title="Edit order"
-                        >
-                          <Edit2 size={14} />
-                        </button>
-                        <button 
-                          onClick={() => onOpenDeleteOrder(booking)}
-                          className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer" 
-                          title="Delete order"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        
+                        {/* Only Super Admin can edit or delete */}
+                        {isSuperAdmin && (
+                          <>
+                            <button 
+                              onClick={() => onOpenEditOrder(booking)}
+                              className="p-1 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors cursor-pointer" 
+                              title="Edit order"
+                            >
+                              <Edit2 size={14} />
+                            </button>
+                            <button 
+                              onClick={() => onOpenDeleteOrder(booking)}
+                              className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer" 
+                              title="Delete order"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>

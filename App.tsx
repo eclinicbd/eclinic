@@ -579,6 +579,10 @@ export default function App() {
     return sum + item.price;
   }, 0);
 
+  const handleHeaderBookTestClick = () => {
+    setIsBookingModalOpen(true);
+  };
+
   const totalBill = subTotal + (cartItems.length > 0 ? serviceCharge : 0);
 
   const renderBrandLogo = () => {
@@ -717,7 +721,7 @@ export default function App() {
 
                 {/* 5. Book Test Now (At the very end) */}
                 <button 
-                  onClick={() => setIsBookingModalOpen(true)}
+                  onClick={handleHeaderBookTestClick}
                   className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-primary hover:bg-sky-600 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
                 >
                   <Stethoscope size={14} />
@@ -731,14 +735,28 @@ export default function App() {
               </div>
 
               <div className="md:hidden flex items-center gap-2">
+                {/* Mobile Book Test Button */}
+                <button 
+                  onClick={handleHeaderBookTestClick}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary text-white text-xs font-bold shadow-xs cursor-pointer"
+                >
+                  <Stethoscope size={13} />
+                  <span>{language === 'bn' ? 'বুকিং' : 'Book'}</span>
+                  {cart.length > 0 && (
+                    <span className="bg-amber-400 text-slate-900 text-[9px] font-black px-1 rounded-full">
+                      {cart.length}
+                    </span>
+                  )}
+                </button>
+
                 <button 
                   onClick={toggleLanguage}
-                  className="flex items-center gap-1 px-2 py-1 rounded-full bg-slate-100 text-slate-600"
+                  className="flex items-center gap-1 px-2 py-1 rounded-full bg-slate-100 text-slate-600 cursor-pointer"
                 >
                   <Globe size={16} />
                   <span className="uppercase text-xs font-bold">{language}</span>
                 </button>
-                <button onClick={handlePatientNavClick} className="p-1.5 rounded-full hover:bg-slate-100 text-slate-700">
+                <button onClick={handlePatientNavClick} className="p-1.5 rounded-full hover:bg-slate-100 text-slate-700 cursor-pointer">
                   {currentPatient ? (
                     <img 
                       src={currentPatient.avatar || "https://images.unsplash.com/photo-1633332755192-727a05c4013d?auto=format&fit=crop&q=80&w=100"} 
@@ -1231,43 +1249,67 @@ export default function App() {
         </>
       )}
 
+      {/* Floating Checkout Bar for Mobile when cart has items */}
+      {cart.length > 0 && !isBookingModalOpen && currentView !== 'admin' && (
+        <div className="md:hidden fixed bottom-16 left-3 right-3 z-40 animate-in slide-in-from-bottom-3 duration-200">
+          <div 
+            onClick={openCartModal}
+            className="bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 text-white p-3 rounded-2xl shadow-2xl border border-white/10 flex items-center justify-between cursor-pointer active:scale-98 transition-all"
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-primary text-white flex items-center justify-center font-black text-xs shadow-md">
+                {cart.length}
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-300 block leading-tight">{language === 'bn' ? 'নির্বাচিত টেস্টসমূহ' : 'Selected Tests'}</span>
+                <span className="font-extrabold text-sm text-emerald-400">৳{totalBill}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 px-3.5 py-1.5 bg-primary hover:bg-sky-500 rounded-xl font-bold text-xs shadow-md text-white">
+              <span>{language === 'bn' ? 'চেকআউট করুন' : 'Checkout'}</span>
+              <ChevronRight size={15} />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* App Bar for Mobile (Bottom Navigation) - Active on Home, Packages, and Tests Views */}
       {(currentView === 'home' || currentView === 'tests' || currentView === 'packages') && (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 z-30 flex justify-around py-2.5 pb-safe shadow-lg">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 z-30 flex justify-around py-2 pb-safe shadow-lg">
           <button 
             onClick={navigateToHome} 
             className={`flex flex-col items-center px-3 py-1 transition-colors ${currentView === 'home' ? 'text-primary font-bold' : 'text-slate-500'}`}
           >
-            <Home size={20} />
-            <span className="text-[10px] mt-1">{t.navHome}</span>
+            <Home size={18} />
+            <span className="text-[10px] mt-0.5">{t.navHome}</span>
           </button>
           <button 
             onClick={() => navigateToTests()} 
             className={`flex flex-col items-center px-3 py-1 transition-colors ${currentView === 'tests' ? 'text-primary font-bold' : 'text-slate-500'}`}
           >
-            <FlaskConical size={20} />
-            <span className="text-[10px] mt-1">{t.navTests}</span>
+            <FlaskConical size={18} />
+            <span className="text-[10px] mt-0.5">{t.navTests}</span>
           </button>
           <button 
             onClick={navigateToPackages} 
             className={`flex flex-col items-center px-3 py-1 transition-colors ${currentView === 'packages' ? 'text-primary font-bold' : 'text-slate-500'}`}
           >
-            <Sparkles size={20} className={currentView === 'packages' ? 'text-amber-500' : ''} />
-            <span className="text-[10px] mt-1">{t.navPackages || (language === 'bn' ? 'প্যাকেজ' : 'Packages')}</span>
+            <Sparkles size={18} className={currentView === 'packages' ? 'text-amber-500' : ''} />
+            <span className="text-[10px] mt-0.5">{t.navPackages || (language === 'bn' ? 'প্যাকেজ' : 'Packages')}</span>
           </button>
           <button 
             onClick={openCartModal} 
             className={`flex flex-col items-center px-3 py-1 ${cart.length > 0 ? 'text-primary font-bold' : 'text-slate-500'} relative`}
           >
             <div className="relative">
-              <ShoppingCart size={20} />
+              <ShoppingCart size={18} />
               {cart.length > 0 && (
-                <span className="absolute -top-1.5 -right-2 bg-red-500 text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full border border-white">
+                <span className="absolute -top-1.5 -right-2 bg-red-500 text-white text-[9px] font-black w-4 h-4 flex items-center justify-center rounded-full border border-white">
                   {cart.length}
                 </span>
               )}
             </div>
-            <span className="text-[10px] font-medium mt-1">{t.navBookTestNow || (language === 'bn' ? 'বুক টেস্ট' : 'Book Test')}</span>
+            <span className="text-[10px] font-medium mt-0.5">{t.navBookTestNow || (language === 'bn' ? 'কার্ট/বুক' : 'Cart/Book')}</span>
           </button>
         </div>
       )}
@@ -1280,6 +1322,7 @@ export default function App() {
         onRemoveItem={removeFromCart}
         lang={language}
         preSelectedLabId={selectedLabId}
+        onSelectLab={setSelectedLabId}
         onClearCart={clearCart}
         allTests={allAvailableItems}
         onAddTest={addToCart}
@@ -1287,6 +1330,7 @@ export default function App() {
         onBookingConfirmed={handleNewBooking}
         currentPatient={currentPatient}
         onOpenAuthModal={() => handleOpenAuth('login')}
+        onNavigateToTests={() => navigateToTests()}
       />
 
       <PackageDetailModal

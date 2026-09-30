@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { TestPackage, HealthPackage, LabPartner, BookingHistoryItem, BookingStatus, Language, ServiceItem, CategoryItem } from '../../types';
 import { TRANSLATIONS } from '../../translations';
 import { generateUniqueOrderId, formatOrderId } from '../BookingModal';
-import { getStoredDateSlotConfig, DEFAULT_TIME_SLOTS } from '../../services/dataStorage';
+import { getStoredDateSlotConfig, DEFAULT_TIME_SLOTS, getStoredStaffUsers } from '../../services/dataStorage';
 import { LabLogo } from '../LabLogo';
 import { 
   X, 
@@ -1365,21 +1365,30 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
             <span className="text-2xl font-black text-emerald-400">৳ {order.totalCost}</span>
           </div>
 
-          {/* Quick Status Updater */}
-          <div className="pt-3 border-t border-slate-100 flex items-center justify-between print:hidden">
-            <span className="font-bold text-slate-700">Update Order Status:</span>
-            <select 
-              value={order.status} 
-              onChange={(e) => onUpdateStatus(order.id, e.target.value as BookingStatus)}
-              className="text-xs font-bold px-3 py-1.5 rounded-lg border border-slate-200 bg-white shadow-xs focus:ring-2 focus:ring-slate-900 outline-none"
-            >
-              <option value="pending">⏳ Pending</option>
-              <option value="confirmed">✓ Confirmed</option>
-              <option value="collected">🩸 Sample Collected</option>
-              <option value="processing">🔬 Lab Processing</option>
-              <option value="completed">🎉 Completed</option>
-              <option value="cancelled">✕ Cancelled</option>
-            </select>
+          {/* Quick Status & Assigned Staff */}
+          <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 print:hidden">
+            <div>
+              <span className="text-[10px] text-slate-400 uppercase font-bold block">Assigned Staff</span>
+              <span className="font-bold text-slate-800 text-xs">
+                {order.assignedStaffName ? `${order.assignedStaffName} (${order.assignedStaffRole || 'Staff'})` : (lang === 'bn' ? 'অ্যাসাইন করা হয়নি' : 'Not assigned yet')}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-slate-700 text-xs">Status:</span>
+              <select 
+                value={order.status} 
+                onChange={(e) => onUpdateStatus(order.id, e.target.value as BookingStatus)}
+                className="text-xs font-bold px-3 py-1.5 rounded-lg border border-slate-200 bg-white shadow-xs focus:ring-2 focus:ring-slate-900 outline-none cursor-pointer"
+              >
+                <option value="pending">⏳ Pending</option>
+                <option value="confirmed">✓ Confirmed</option>
+                <option value="collected">🩸 Sample Collected</option>
+                <option value="processing">🔬 Lab Processing</option>
+                <option value="completed">🎉 Completed</option>
+                <option value="cancelled">✕ Cancelled</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Language, BookingHistoryItem, TestPackage, HealthPackage, LabPartner, BookingStatus, SiteSettings, ServiceItem, CategoryItem, PatientUser } from '../types';
+import { Language, BookingHistoryItem, TestPackage, HealthPackage, LabPartner, BookingStatus, SiteSettings, ServiceItem, CategoryItem, PatientUser, StaffUser, StaffRole, StaffPermissions } from '../types';
 import { TRANSLATIONS } from '../translations';
 import { 
   LayoutDashboard, 
@@ -15,14 +15,25 @@ import {
   ArrowLeft,
   Sparkles,
   ShieldCheck,
+  ShieldAlert,
   Layers,
   FileEdit,
   Tag,
   BarChart3,
-  CalendarClock
+  CalendarClock,
+  UserCheck,
+  Lock
 } from 'lucide-react';
 import { Button } from './Button';
-import { DEFAULT_CATEGORIES, getStoredDateSlotConfig, setStoredDateSlotConfig } from '../services/dataStorage';
+import { 
+  DEFAULT_CATEGORIES, 
+  getStoredDateSlotConfig, 
+  setStoredDateSlotConfig,
+  getStoredStaffUsers,
+  saveStoredStaffUsers,
+  getStoredCurrentStaff,
+  setStoredCurrentStaff
+} from '../services/dataStorage';
 import { getLabs } from '../constants';
 
 // Modular Admin Sub-components
@@ -34,6 +45,7 @@ import { AdminPackages } from './admin/AdminPackages';
 import { AdminCategories } from './admin/AdminCategories';
 import { AdminLabs } from './admin/AdminLabs';
 import { AdminSlots } from './admin/AdminSlots';
+import { AdminStaffUsers } from './admin/AdminStaffUsers';
 import { AdminCustomers } from './admin/AdminCustomers';
 import { AdminSettings } from './admin/AdminSettings';
 import { AdminCMS } from './admin/AdminCMS';
@@ -89,8 +101,37 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onResetAllData,
   onLogout
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'reports' | 'tests' | 'packages' | 'categories' | 'labs' | 'slots' | 'customers' | 'cms' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'reports' | 'tests' | 'packages' | 'categories' | 'labs' | 'slots' | 'staff' | 'customers' | 'cms' | 'settings'>('overview');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Active Staff / RBAC Session State
+  const [currentStaff, setCurrentStaff] = useState<StaffUser | null>(getStoredCurrentStaff);
+  const isSuperAdmin = !currentStaff || currentStaff.role === 'admin';
+  const staffPermissions = currentStaff?.permissions || {
+    canViewOrders: true,
+    canUpdateOrderStatus: true,
+    canAssignStaff: true,
+    canViewReports: true,
+    canUploadReports: true,
+    canViewTests: true,
+    canEditTests: true,
+    canDeleteTests: true,
+    canViewCustomers: true,
+    canViewLabs: true,
+    canManageSettings: true,
+    canManageUsers: true,
+    canManageSlots: true,
+    canDeleteOrders: true,
+    assignedOnly: false
+  };
+
+  // Staff Users Management State
+  const [staffUsers, setStaffUsers] = useState<StaffUser[]>(getStoredStaffUsers);
+
+  const handleUpdateStaffUsers = (newUsers: StaffUser[]) => {
+    setStaffUsers(newUsers);
+    saveStoredStaffUsers(newUsers);
+  };
 
   // Date and Slot Configuration State
   const [dateSlotConfig, setDateSlotConfig] = useState(getStoredDateSlotConfig);
@@ -476,6 +517,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const handleConfirmDelete = () => {
     if (!deleteTarget) return;
 
+    if (!isSuperAdmin) {
+      showToast(lang === 'bn' ? 'স্টাফ অ্যাকাউন্টে কোনো কিছু মুছে ফেলার (Delete) অনুমতি নেই!' : 'Staff accounts are strictly prohibited from deleting any records!');
+      setDeleteTarget(null);
+      return;
+    }
+
     if (deleteTarget.type === 'test') {
       const updated = tests.filter(t => t.id !== deleteTarget.id);
       onUpdateTests(updated);
@@ -567,7 +614,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <div className="flex items-center gap-3">
             <button 
               onClick={onLogout}
-              className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors flex items-center gap-1.5 text-xs font-bold"
+              className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors flex items-center gap-1.5 text-xs font-bold cursor-pointer"
               title="Return to Main Website"
             >
               <ArrowLeft size={16} />
@@ -580,16 +627,33 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
               <div>
                 <span className="font-bold text-slate-900 text-sm block leading-none">LabHome BD</span>
-                <span className="text-[10px] font-semibold text-emerald-600">Admin Control Panel</span>
+                <span className="text-[10px] font-semibold text-emerald-600">
+                  {isSuperAdmin ? 'Super Admin Portal' : `${currentStaff?.name} (${currentStaff?.role?.toUpperCase()})`}
+                </span>
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Active User Role Badge */}
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-700">
+              {isSuperAdmin ? (
+                <>
+                  <ShieldCheck size={14} className="text-emerald-600" />
+                  <span>Super Admin</span>
+                </>
+              ) : (
+                <>
+                  <UserCheck size={14} className="text-purple-600" />
+                  <span className="capitalize">{currentStaff?.role} ({currentStaff?.id})</span>
+                </>
+              )}
+            </div>
+
             {onToggleLanguage && (
               <button
                 onClick={onToggleLanguage}
-                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors border border-slate-200"
+                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors border border-slate-200 cursor-pointer"
               >
                 <Globe size={13} />
                 <span>{lang === 'bn' ? 'English' : 'বাংলা'}</span>
@@ -597,8 +661,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             )}
 
             <button
-              onClick={onLogout}
-              className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors border border-rose-100"
+              onClick={() => {
+                setStoredCurrentStaff(null);
+                onLogout();
+              }}
+              className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors border border-rose-100 cursor-pointer"
             >
               <LogOut size={13} />
               <span className="hidden sm:inline">Logout</span>
@@ -607,6 +674,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       </header>
 
+      {/* Staff Restricted Mode Warning Banner */}
+      {!isSuperAdmin && (
+        <div className="bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 text-white px-4 py-2.5 text-xs font-semibold flex items-center justify-between border-b border-purple-800">
+          <div className="max-w-7xl mx-auto w-full flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-0.5 bg-purple-500/30 text-purple-200 rounded-md font-bold text-[10px] uppercase border border-purple-400/30">
+                Staff Restricted Access
+              </span>
+              <span className="text-slate-200 text-[11px]">
+                {lang === 'bn' 
+                  ? `আপনি ${currentStaff?.name} (${currentStaff?.role}) হিসেবে লগইন আছেন। টেস্ট বা প্রাইস এডিট ও যেকোনো কিছু ডিলিট করার এক্সেস ব্লক করা আছে।`
+                  : `Logged in as ${currentStaff?.name} (${currentStaff?.role}). Catalog modifications & record deletions are restricted.`}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 text-[11px] text-purple-200 font-mono">
+              <Lock size={12} />
+              <span>Read/Action Only</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Layout Container */}
       <div className="max-w-7xl mx-auto p-4 md:p-6 grid grid-cols-1 md:grid-cols-5 gap-6">
         
@@ -614,16 +703,49 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         <aside className="md:col-span-1 space-y-4">
           <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm space-y-1">
             <NavButton id="overview" icon={LayoutDashboard} label="Dashboard" />
-            <NavButton id="orders" icon={ShoppingBag} label={t.adminTotalOrders} badge={pendingCount} />
-            <NavButton id="reports" icon={BarChart3} label={lang === 'bn' ? 'রিপোর্ট ও অ্যানালিটিক্স' : 'Reports & Analytics'} />
-            <NavButton id="tests" icon={FlaskConical} label={t.adminManageTests} />
-            <NavButton id="packages" icon={Layers} label={lang === 'bn' ? 'ডায়াগনস্টিক প্যাকেজ' : 'Diagnostic Packages'} badge={packages.length} />
-            <NavButton id="categories" icon={Tag} label={lang === 'bn' ? 'ক্যাটেগরি ব্যবস্থাপনা' : 'Test Categories'} badge={categories.length} />
-            <NavButton id="labs" icon={Building2} label="Centers & Fees" />
-            <NavButton id="slots" icon={CalendarClock} label={lang === 'bn' ? 'তারিখ ও স্লট কাস্টমাইজ' : 'Date & Slot Manager'} />
-            <NavButton id="cms" icon={Globe} label={t.adminSiteCMS} />
-            <NavButton id="customers" icon={Users} label={t.adminCustomers} badge={patients.length} />
-            <NavButton id="settings" icon={Settings} label={t.adminSettings} />
+            
+            {staffPermissions.canViewOrders && (
+              <NavButton id="orders" icon={ShoppingBag} label={t.adminTotalOrders} badge={pendingCount} />
+            )}
+
+            {staffPermissions.canViewReports && (
+              <NavButton id="reports" icon={BarChart3} label={lang === 'bn' ? 'রিপোর্ট ও অ্যানালিটিক্স' : 'Reports & Analytics'} />
+            )}
+
+            {staffPermissions.canViewTests && (
+              <NavButton id="tests" icon={FlaskConical} label={t.adminManageTests} />
+            )}
+
+            {isSuperAdmin && (
+              <>
+                <NavButton id="packages" icon={Layers} label={lang === 'bn' ? 'ডায়াগনস্টিক প্যাকেজ' : 'Diagnostic Packages'} badge={packages.length} />
+                <NavButton id="categories" icon={Tag} label={lang === 'bn' ? 'ক্যাটেগরি ব্যবস্থাপনা' : 'Test Categories'} badge={categories.length} />
+              </>
+            )}
+
+            {staffPermissions.canViewLabs && (
+              <NavButton id="labs" icon={Building2} label="Centers & Fees" />
+            )}
+
+            {(isSuperAdmin || staffPermissions.canManageSlots) && (
+              <NavButton id="slots" icon={CalendarClock} label={lang === 'bn' ? 'তারিখ ও স্লট কাস্টমাইজ' : 'Date & Slot Manager'} />
+            )}
+
+            {(isSuperAdmin || staffPermissions.canManageUsers) && (
+              <NavButton id="staff" icon={Users} label={lang === 'bn' ? 'টিম ও ইউজার রোল' : 'Team & Staff Roles'} badge={staffUsers.length} />
+            )}
+
+            {isSuperAdmin && (
+              <NavButton id="cms" icon={Globe} label={t.adminSiteCMS} />
+            )}
+
+            {staffPermissions.canViewCustomers && (
+              <NavButton id="customers" icon={Users} label={t.adminCustomers} badge={patients.length} />
+            )}
+
+            {(isSuperAdmin || staffPermissions.canManageSettings) && (
+              <NavButton id="settings" icon={Settings} label={t.adminSettings} />
+            )}
           </div>
 
 
@@ -753,6 +875,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               lang={lang}
               config={dateSlotConfig}
               onUpdateConfig={handleUpdateDateSlotConfig}
+              showToast={showToast}
+            />
+          )}
+
+          {activeTab === 'staff' && (
+            <AdminStaffUsers 
+              lang={lang}
+              staffUsers={staffUsers}
+              onUpdateStaffUsers={handleUpdateStaffUsers}
               showToast={showToast}
             />
           )}

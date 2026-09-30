@@ -15,7 +15,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { Button } from './Button';
-import { verifyAdminLogin, setAdminSessionActive, getStoredAdminCredentials } from '../services/dataStorage';
+import { verifyStaffOrAdminLogin, setAdminSessionActive, getStoredAdminCredentials, getStoredStaffUsers } from '../services/dataStorage';
 
 interface AdminLoginModalProps {
   isOpen: boolean;
@@ -36,17 +36,19 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showHint, setShowHint] = useState(false);
+  const [selectedQuickRole, setSelectedQuickRole] = useState<'admin' | 'manager' | 'phleb' | 'nurse' | 'delivery'>('admin');
 
   if (!isOpen) return null;
 
   const currentCreds = getStoredAdminCredentials();
+  const staffList = getStoredStaffUsers();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
     if (!username.trim()) {
-      setError(lang === 'bn' ? 'ইউজারনেম বা ইমেইল প্রদান করুন' : 'Please enter username or email');
+      setError(lang === 'bn' ? 'ইউজারনেম, স্টাফ আইডি বা ইমেইল প্রদান করুন' : 'Please enter username, staff ID or email');
       return;
     }
 
@@ -58,8 +60,8 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
     setIsLoading(true);
 
     setTimeout(() => {
-      const isValid = verifyAdminLogin(username, password);
-      if (isValid) {
+      const result = verifyStaffOrAdminLogin(username, password);
+      if (result.success) {
         setAdminSessionActive(true);
         setIsLoading(false);
         setError(null);
@@ -67,17 +69,38 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
       } else {
         setIsLoading(false);
         setError(
-          lang === 'bn' 
-            ? 'ভুল ইউজারনেম অথবা পাসওয়ার্ড! সঠিক তথ্য দিয়ে আবার চেষ্টা করুন।' 
-            : 'Invalid username or password. Please try again.'
+          result.message || (
+            lang === 'bn' 
+              ? 'ভুল ইউজারনেম অথবা পাসওয়ার্ড! সঠিক তথ্য দিয়ে আবার চেষ্টা করুন।' 
+              : 'Invalid username or password. Please try again.'
+          )
         );
       }
     }, 400);
   };
 
-  const handleQuickFill = () => {
-    setUsername(currentCreds.username);
-    setPassword(currentCreds.password);
+  const handleQuickFillRole = (roleKey: 'admin' | 'manager' | 'phleb' | 'nurse' | 'delivery') => {
+    setSelectedQuickRole(roleKey);
+    if (roleKey === 'admin') {
+      setUsername(currentCreds.username);
+      setPassword(currentCreds.password);
+    } else if (roleKey === 'manager') {
+      const mgr = staffList.find(s => s.role === 'manager') || { emailOrUsername: 'manager', password: 'manager123' };
+      setUsername(mgr.emailOrUsername);
+      setPassword(mgr.password);
+    } else if (roleKey === 'phleb') {
+      const phleb = staffList.find(s => s.role === 'phlebotomist') || { emailOrUsername: 'phleb', password: 'phleb123' };
+      setUsername(phleb.emailOrUsername);
+      setPassword(phleb.password);
+    } else if (roleKey === 'nurse') {
+      const nurse = staffList.find(s => s.role === 'nurse') || { emailOrUsername: 'nurse', password: 'nurse123' };
+      setUsername(nurse.emailOrUsername);
+      setPassword(nurse.password);
+    } else if (roleKey === 'delivery') {
+      const deliv = staffList.find(s => s.role === 'delivery') || { emailOrUsername: 'delivery', password: 'delivery123' };
+      setUsername(deliv.emailOrUsername);
+      setPassword(deliv.password);
+    }
     setError(null);
   };
 
@@ -188,30 +211,43 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
 
           {/* Default Credentials Hint Box */}
           {showHint && (
-            <div className="bg-sky-50/80 border border-sky-200/80 rounded-xl p-3 text-xs text-sky-900 space-y-1.5 animate-in fade-in">
-              <div className="flex items-center justify-between font-bold text-sky-950">
-                <span className="flex items-center gap-1.5">
+            <div className="bg-sky-50/90 border border-sky-200 rounded-2xl p-3.5 text-xs text-sky-950 space-y-2.5 animate-in fade-in">
+              <div className="flex items-center justify-between font-bold">
+                <span className="flex items-center gap-1.5 text-sky-900">
                   <Info size={14} className="text-primary" />
-                  {lang === 'bn' ? 'ডিফল্ট অ্যাডমিন তথ্য:' : 'Default Admin Info:'}
+                  {lang === 'bn' ? 'ডেমো অ্যাকাউন্ট ও রোল সমূহ:' : 'Demo Accounts & Roles:'}
                 </span>
-                <button
-                  type="button"
-                  onClick={handleQuickFill}
-                  className="text-[11px] bg-primary text-white px-2 py-0.5 rounded-md hover:bg-sky-600 font-bold transition-all cursor-pointer"
-                >
-                  {lang === 'bn' ? 'অটো পূরণ করুন' : 'Auto Fill'}
-                </button>
               </div>
-              <div className="grid grid-cols-2 gap-2 pt-1 font-mono text-[11px] text-slate-700 bg-white/70 p-2 rounded-lg border border-sky-100">
-                <div>
-                  <span className="text-slate-400 block text-[9px] uppercase font-sans font-bold">User</span>
-                  <span className="font-bold text-slate-900 truncate block">{currentCreds.username}</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 block text-[9px] uppercase font-sans font-bold">Pass</span>
-                  <span className="font-bold text-slate-900 truncate block">{currentCreds.password}</span>
-                </div>
+
+              {/* Role Quick Selector Pills */}
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { key: 'admin', label: lang === 'bn' ? 'Super Admin' : 'Super Admin' },
+                  { key: 'manager', label: lang === 'bn' ? 'Manager' : 'Manager' },
+                  { key: 'phleb', label: lang === 'bn' ? 'Phlebotomist' : 'Phlebotomist' },
+                  { key: 'nurse', label: lang === 'bn' ? 'Nurse' : 'Nurse' },
+                  { key: 'delivery', label: lang === 'bn' ? 'Delivery' : 'Delivery' },
+                ].map(item => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => handleQuickFillRole(item.key as any)}
+                    className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
+                      selectedQuickRole === item.key
+                        ? 'bg-primary text-white shadow-xs'
+                        : 'bg-white text-slate-700 border border-sky-100 hover:bg-sky-100/70'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
               </div>
+
+              <p className="text-[10px] text-slate-500">
+                {lang === 'bn' 
+                  ? 'বাটনটিতে ক্লিক করলে স্বয়ংক্রিয়ভাবে সংশ্লিষ্ট রোলের ইউজারনেম ও পাসওয়ার্ড পূরণ হয়ে যাবে।' 
+                  : 'Click any role button above to auto-fill its credentials.'}
+              </p>
             </div>
           )}
 

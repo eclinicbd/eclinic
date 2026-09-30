@@ -1,4 +1,4 @@
-import { TestPackage, LabPartner, Language, BookingHistoryItem, SiteSettings, PatientUser, HealthPackage, CategoryItem, DateSlotConfig, TimeSlotConfigItem } from '../types';
+import { TestPackage, LabPartner, Language, BookingHistoryItem, SiteSettings, PatientUser, HealthPackage, CategoryItem, DateSlotConfig, TimeSlotConfigItem, StaffUser, StaffRole, StaffPermissions } from '../types';
 import { 
   getTests as getDefaultTests, 
   getLabs as getDefaultLabs, 
@@ -19,7 +19,212 @@ const STORAGE_KEYS = {
   SITE_SETTINGS_EN: 'labhome_site_settings_en_v2',
   PATIENTS: 'labhome_patients_v2',
   CURRENT_PATIENT: 'labhome_current_patient_v2',
-  DATE_SLOT_CONFIG: 'labhome_date_slot_config_v1'
+  DATE_SLOT_CONFIG: 'labhome_date_slot_config_v1',
+  STAFF_USERS: 'labhome_staff_users_v1',
+  CURRENT_STAFF: 'labhome_current_staff_session_v1'
+};
+
+export const ROLE_DEFAULT_PERMISSIONS: Record<StaffRole, StaffPermissions> = {
+  admin: {
+    canViewOrders: true,
+    canUpdateOrderStatus: true,
+    canAssignStaff: true,
+    canViewReports: true,
+    canUploadReports: true,
+    canViewTests: true,
+    canEditTests: true,
+    canDeleteTests: true,
+    canViewCustomers: true,
+    canViewLabs: true,
+    canManageSettings: true,
+    canManageUsers: true,
+    canManageSlots: true,
+    canDeleteOrders: true,
+    assignedOnly: false
+  },
+  manager: {
+    canViewOrders: true,
+    canUpdateOrderStatus: true,
+    canAssignStaff: true,
+    canViewReports: true,
+    canUploadReports: true,
+    canViewTests: true,
+    canEditTests: false, // Strict: cannot edit catalog/prices
+    canDeleteTests: false, // Strict: cannot delete
+    canViewCustomers: true,
+    canViewLabs: true,
+    canManageSettings: false,
+    canManageUsers: false,
+    canManageSlots: false,
+    canDeleteOrders: false,
+    assignedOnly: false
+  },
+  phlebotomist: {
+    canViewOrders: true,
+    canUpdateOrderStatus: true, // Sample collected/progress
+    canAssignStaff: false,
+    canViewReports: false,
+    canUploadReports: false,
+    canViewTests: true, // Reference only
+    canEditTests: false,
+    canDeleteTests: false,
+    canViewCustomers: true, // Patient address & phone for collection
+    canViewLabs: false,
+    canManageSettings: false,
+    canManageUsers: false,
+    canManageSlots: false,
+    canDeleteOrders: false,
+    assignedOnly: false
+  },
+  nurse: {
+    canViewOrders: true,
+    canUpdateOrderStatus: true,
+    canAssignStaff: false,
+    canViewReports: false,
+    canUploadReports: false,
+    canViewTests: true,
+    canEditTests: false,
+    canDeleteTests: false,
+    canViewCustomers: true,
+    canViewLabs: false,
+    canManageSettings: false,
+    canManageUsers: false,
+    canManageSlots: false,
+    canDeleteOrders: false,
+    assignedOnly: false
+  },
+  delivery: {
+    canViewOrders: true,
+    canUpdateOrderStatus: true, // Delivery completed
+    canAssignStaff: false,
+    canViewReports: true, // Deliverable report invoices
+    canUploadReports: false,
+    canViewTests: false,
+    canEditTests: false,
+    canDeleteTests: false,
+    canViewCustomers: true, // Address & phone for delivery
+    canViewLabs: false,
+    canManageSettings: false,
+    canManageUsers: false,
+    canManageSlots: false,
+    canDeleteOrders: false,
+    assignedOnly: false
+  },
+  custom: {
+    canViewOrders: true,
+    canUpdateOrderStatus: false,
+    canAssignStaff: false,
+    canViewReports: false,
+    canUploadReports: false,
+    canViewTests: true,
+    canEditTests: false,
+    canDeleteTests: false,
+    canViewCustomers: false,
+    canViewLabs: false,
+    canManageSettings: false,
+    canManageUsers: false,
+    canManageSlots: false,
+    canDeleteOrders: false,
+    assignedOnly: false
+  }
+};
+
+export const DEFAULT_STAFF_USERS: StaffUser[] = [
+  {
+    id: "MGR-101",
+    name: "Tariqul Islam (Manager)",
+    emailOrUsername: "manager",
+    password: "manager123",
+    role: "manager",
+    phone: "01711223344",
+    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100",
+    isActive: true,
+    createdAt: "2024-01-10T08:00:00Z",
+    permissions: ROLE_DEFAULT_PERMISSIONS.manager
+  },
+  {
+    id: "PHLEB-201",
+    name: "Md. Karim Ullah (Phlebotomist)",
+    emailOrUsername: "phleb",
+    password: "phleb123",
+    role: "phlebotomist",
+    phone: "01822334455",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=100",
+    isActive: true,
+    createdAt: "2024-01-12T10:00:00Z",
+    permissions: ROLE_DEFAULT_PERMISSIONS.phlebotomist
+  },
+  {
+    id: "NURSE-301",
+    name: "Nasrin Akter (Staff Nurse)",
+    emailOrUsername: "nurse",
+    password: "nurse123",
+    role: "nurse",
+    phone: "01933445566",
+    avatar: "https://images.unsplash.com/photo-1594824813511-209214739501?auto=format&fit=crop&q=80&w=100",
+    isActive: true,
+    createdAt: "2024-01-15T09:00:00Z",
+    permissions: ROLE_DEFAULT_PERMISSIONS.nurse
+  },
+  {
+    id: "DELIV-401",
+    name: "Robiul Hossain (Report Delivery)",
+    emailOrUsername: "delivery",
+    password: "delivery123",
+    role: "delivery",
+    phone: "01644556677",
+    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=100",
+    isActive: true,
+    createdAt: "2024-01-18T11:00:00Z",
+    permissions: ROLE_DEFAULT_PERMISSIONS.delivery
+  }
+];
+
+export const getStoredStaffUsers = (): StaffUser[] => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEYS.STAFF_USERS);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.error("Error reading stored staff users:", e);
+  }
+  return DEFAULT_STAFF_USERS;
+};
+
+export const saveStoredStaffUsers = (staff: StaffUser[]): void => {
+  try {
+    localStorage.setItem(STORAGE_KEYS.STAFF_USERS, JSON.stringify(staff));
+  } catch (e) {
+    console.error("Error saving staff users:", e);
+  }
+};
+
+export const getStoredCurrentStaff = (): StaffUser | null => {
+  try {
+    const stored = sessionStorage.getItem(STORAGE_KEYS.CURRENT_STAFF);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (e) {
+    console.error("Error reading current staff session:", e);
+  }
+  return null;
+};
+
+export const setStoredCurrentStaff = (staff: StaffUser | null): void => {
+  try {
+    if (staff) {
+      sessionStorage.setItem(STORAGE_KEYS.CURRENT_STAFF, JSON.stringify(staff));
+    } else {
+      sessionStorage.removeItem(STORAGE_KEYS.CURRENT_STAFF);
+    }
+  } catch (e) {
+    console.error("Error setting current staff session:", e);
+  }
 };
 
 export const DEFAULT_TIME_SLOTS: TimeSlotConfigItem[] = [
@@ -72,6 +277,43 @@ export const setStoredDateSlotConfig = (config: DateSlotConfig): void => {
   } catch (e) {
     console.error("Failed to save date slot config:", e);
   }
+};
+
+export const isSlotAvailable = (dateStr?: string, slotTime?: string): boolean => {
+  if (!dateStr || !slotTime) return false;
+  
+  const config = getStoredDateSlotConfig();
+  
+  // Check if date is blocked
+  const isBlocked = (config.blockedDates || []).some(b => b.date === dateStr);
+  if (isBlocked) return false;
+
+  // Check weekly off
+  try {
+    const d = new Date(dateStr);
+    const dayOfWeek = d.getDay();
+    if ((config.weeklyHolidays || []).includes(dayOfWeek)) return false;
+  } catch {
+    // ignore
+  }
+
+  // Check if slot itself is active
+  const slotItem = (config.slots || DEFAULT_TIME_SLOTS).find(s => s.time === slotTime);
+  if (slotItem && !slotItem.isActive) return false;
+
+  // Check bookings count against slot capacity
+  try {
+    const bookings = getStoredBookings();
+    const sameSlotBookings = bookings.filter(b => b.date === dateStr && b.time === slotTime && b.status !== 'cancelled');
+    const maxCap = slotItem?.maxCapacity || 5;
+    if (sameSlotBookings.length >= maxCap) {
+      return false;
+    }
+  } catch {
+    // fallback
+  }
+
+  return true;
 };
 
 
@@ -691,20 +933,75 @@ export const saveStoredAdminCredentials = (credentials: AdminCredentials): void 
   }
 };
 
-export const verifyAdminLogin = (inputUsername: string, inputPass: string): boolean => {
-  const creds = getStoredAdminCredentials();
-  const cleanInputUser = (inputUsername || '').trim().toLowerCase();
-  const cleanSavedUser = (creds.username || '').trim().toLowerCase();
-  
-  // Accept match with saved custom username, default handles, or registered admin email
-  const isUserMatch = 
-    cleanInputUser === cleanSavedUser || 
-    (cleanSavedUser === 'admin' && (cleanInputUser === 'admin@labhome.com' || cleanInputUser === 'muradhn.abc@gmail.com'));
-                      
-  // Check exact match with configured password
-  const isPassMatch = inputPass === creds.password;
+export interface LoginResult {
+  success: boolean;
+  isSuperAdmin: boolean;
+  role: StaffRole;
+  staffUser?: StaffUser;
+  message?: string;
+}
 
-  return Boolean(isUserMatch && isPassMatch);
+export const verifyStaffOrAdminLogin = (inputUsername: string, inputPass: string): LoginResult => {
+  const cleanInputUser = (inputUsername || '').trim().toLowerCase();
+  
+  // 1. Check Super Admin credentials first
+  const adminCreds = getStoredAdminCredentials();
+  const cleanAdminUser = (adminCreds.username || '').trim().toLowerCase();
+  const isAdminUserMatch = 
+    cleanInputUser === cleanAdminUser || 
+    (cleanAdminUser === 'admin' && (cleanInputUser === 'admin@labhome.com' || cleanInputUser === 'muradhn.abc@gmail.com'));
+
+  if (isAdminUserMatch && inputPass === adminCreds.password) {
+    setStoredCurrentStaff(null); // Super admin
+    return {
+      success: true,
+      isSuperAdmin: true,
+      role: 'admin',
+      message: 'Logged in as Super Admin'
+    };
+  }
+
+  // 2. Check Staff Users list (Manager, Phlebotomist, Nurse, Delivery, Custom)
+  const staffList = getStoredStaffUsers();
+  const matchingStaff = staffList.find(s => 
+    s.isActive && (
+      s.id.toLowerCase() === cleanInputUser || 
+      s.emailOrUsername.toLowerCase() === cleanInputUser ||
+      s.phone.replace(/[^0-9]/g, '') === cleanInputUser.replace(/[^0-9]/g, '')
+    )
+  );
+
+  if (matchingStaff) {
+    if (matchingStaff.password === inputPass) {
+      setStoredCurrentStaff(matchingStaff);
+      return {
+        success: true,
+        isSuperAdmin: false,
+        role: matchingStaff.role,
+        staffUser: matchingStaff,
+        message: `Logged in as ${matchingStaff.name} (${matchingStaff.role.toUpperCase()})`
+      };
+    } else {
+      return {
+        success: false,
+        isSuperAdmin: false,
+        role: matchingStaff.role,
+        message: 'ভুল পাসওয়ার্ড! সঠিক পাসওয়ার্ড দিয়ে আবার চেষ্টা করুন।'
+      };
+    }
+  }
+
+  return {
+    success: false,
+    isSuperAdmin: false,
+    role: 'custom',
+    message: 'কোনো বৈধ অ্যাডমিন বা স্টাফ অ্যাকাউন্ট পাওয়া যায়নি।'
+  };
+};
+
+export const verifyAdminLogin = (inputUsername: string, inputPass: string): boolean => {
+  const res = verifyStaffOrAdminLogin(inputUsername, inputPass);
+  return res.success;
 };
 
 export const getIsAdminSessionActive = (): boolean => {

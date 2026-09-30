@@ -94,6 +94,12 @@ export interface BookingHistoryItem {
   status: BookingStatus;
   doctorName?: string;
   createdAt?: string;
+  assignedStaffId?: string;
+  assignedStaffName?: string;
+  assignedStaffRole?: StaffRole;
+  sampleCollectedAt?: string;
+  deliveredAt?: string;
+  notes?: string;
 }
 
 export interface ReportItem {
@@ -263,5 +269,39 @@ export interface DateSlotConfig {
   blockedDates: BlockedDateItem[]; // Specific dates closed
   slots: TimeSlotConfigItem[];
 }
+
+export type StaffRole = 'admin' | 'manager' | 'phlebotomist' | 'nurse' | 'delivery' | 'custom';
+
+export interface StaffPermissions {
+  canViewOrders: boolean;
+  canUpdateOrderStatus: boolean;
+  canAssignStaff: boolean;
+  canViewReports: boolean;
+  canUploadReports: boolean;
+  canViewTests: boolean; // View tests catalog
+  canEditTests: boolean; // Edit tests/packages/prices (Super Admin only)
+  canDeleteTests: boolean; // Delete tests/packages (Super Admin only)
+  canViewCustomers: boolean;
+  canViewLabs: boolean;
+  canManageSettings: boolean; // Super Admin only
+  canManageUsers: boolean; // Super Admin only
+  canManageSlots: boolean; // Super Admin only
+  canDeleteOrders: boolean; // Super Admin only
+  assignedOnly?: boolean; // Only view assigned tasks
+}
+
+export interface StaffUser {
+  id: string; // e.g. "MGR-101", "PHLEB-201", "NURSE-301", "DELIV-401"
+  name: string;
+  emailOrUsername: string;
+  password: string;
+  role: StaffRole;
+  phone: string;
+  avatar?: string;
+  isActive: boolean;
+  createdAt: string;
+  permissions: StaffPermissions;
+}
+
 
 
