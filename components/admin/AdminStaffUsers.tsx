@@ -24,9 +24,10 @@ import {
   AlertTriangle,
   RotateCcw,
   Sliders,
-  BadgePercent
+  BadgePercent,
+  MapPin
 } from 'lucide-react';
-import { ROLE_DEFAULT_PERMISSIONS, DEFAULT_STAFF_USERS } from '../../services/dataStorage';
+import { ROLE_DEFAULT_PERMISSIONS, DEFAULT_STAFF_USERS, POPULAR_AREAS } from '../../services/dataStorage';
 
 interface AdminStaffUsersProps {
   lang: Language;
@@ -56,6 +57,7 @@ export const AdminStaffUsers: React.FC<AdminStaffUsersProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState<StaffRole>('phlebotomist');
   const [phone, setPhone] = useState('');
+  const [assignedArea, setAssignedArea] = useState<string>('All Areas');
   const [isActive, setIsActive] = useState(true);
   const [permissions, setPermissions] = useState<StaffPermissions>(ROLE_DEFAULT_PERMISSIONS.phlebotomist);
 
@@ -67,6 +69,7 @@ export const AdminStaffUsers: React.FC<AdminStaffUsersProps> = ({
     setPassword('staff123');
     setRole('phlebotomist');
     setPhone('01700000000');
+    setAssignedArea('Dhanmondi');
     setIsActive(true);
     setPermissions(ROLE_DEFAULT_PERMISSIONS.phlebotomist);
     setIsModalOpen(true);
@@ -79,6 +82,7 @@ export const AdminStaffUsers: React.FC<AdminStaffUsersProps> = ({
     setPassword(staff.password);
     setRole(staff.role);
     setPhone(staff.phone);
+    setAssignedArea(staff.assignedArea || 'All Areas');
     setIsActive(staff.isActive);
     setPermissions(staff.permissions || ROLE_DEFAULT_PERMISSIONS[staff.role]);
     setIsModalOpen(true);
@@ -119,6 +123,7 @@ export const AdminStaffUsers: React.FC<AdminStaffUsersProps> = ({
               password: password.trim(),
               role,
               phone: phone.trim(),
+              assignedArea: assignedArea.trim() || 'All Areas',
               isActive,
               permissions: {
                 ...permissions,
@@ -145,6 +150,7 @@ export const AdminStaffUsers: React.FC<AdminStaffUsersProps> = ({
         password: password.trim(),
         role,
         phone: phone.trim(),
+        assignedArea: assignedArea.trim() || 'All Areas',
         isActive,
         createdAt: new Date().toISOString(),
         permissions: {
@@ -402,6 +408,11 @@ export const AdminStaffUsers: React.FC<AdminStaffUsersProps> = ({
                       <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
                         <Phone size={11} /> {staff.phone}
                       </p>
+                      <div className="flex items-center gap-1.5 mt-1.5 text-[11px] text-slate-700 bg-sky-50 px-2 py-0.5 rounded-lg border border-sky-100 font-semibold w-fit">
+                        <MapPin size={11} className="text-primary shrink-0" />
+                        <span>{isBn ? 'এরিয়া:' : 'Area:'}</span>
+                        <span className="font-bold text-primary">{staff.assignedArea || (isBn ? 'সকল এলাকা' : 'All Areas')}</span>
+                      </div>
                     </div>
                   </div>
 
@@ -574,7 +585,43 @@ export const AdminStaffUsers: React.FC<AdminStaffUsersProps> = ({
                   />
                 </div>
 
-                <div className="flex items-center gap-2 pt-5">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+                    <span className="flex items-center gap-1">
+                      <MapPin size={12} className="text-primary" />
+                      <span>{isBn ? 'নির্ধারিত সার্ভিস এরিয়া' : 'Assigned Area'} *</span>
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-normal">
+                      {isBn ? '(শুধু এই এলাকার অর্ডার দেখতে পাবে)' : '(Can only view this area)'}
+                    </span>
+                  </label>
+                  <div className="flex gap-2">
+                    <select
+                      value={POPULAR_AREAS.includes(assignedArea) ? assignedArea : 'Custom'}
+                      onChange={(e) => {
+                        if (e.target.value !== 'Custom') {
+                          setAssignedArea(e.target.value);
+                        }
+                      }}
+                      className="w-1/2 px-2.5 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900 outline-none bg-white cursor-pointer"
+                    >
+                      {POPULAR_AREAS.map(ar => (
+                        <option key={ar} value={ar}>{ar}</option>
+                      ))}
+                      <option value="Custom">{isBn ? 'অন্যান্য / কাস্টম' : 'Custom Area'}</option>
+                    </select>
+                    <input
+                      type="text"
+                      value={assignedArea}
+                      onChange={(e) => setAssignedArea(e.target.value)}
+                      placeholder={isBn ? 'এরিয়া নাম' : 'Area name'}
+                      className="w-1/2 px-2.5 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900 outline-none"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 pt-2 sm:pt-5">
                   <input
                     type="checkbox"
                     id="isActiveCheck"

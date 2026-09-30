@@ -181,6 +181,30 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Staff Area Indicator Banner */}
+      {!isSuperAdmin && currentStaff?.assignedArea && currentStaff.assignedArea !== 'All Areas' && (
+        <div className="bg-sky-50 border border-sky-200 rounded-2xl p-3.5 flex items-center justify-between text-xs text-sky-950">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-primary text-white flex items-center justify-center shrink-0 shadow-2xs font-bold text-xs">
+              📍
+            </div>
+            <div>
+              <span className="font-bold block text-primary">
+                {isBn ? `নির্ধারিত এরিয়া: ${currentStaff.assignedArea}` : `Assigned Area: ${currentStaff.assignedArea}`}
+              </span>
+              <span className="text-[11px] text-slate-600">
+                {isBn 
+                  ? `আপনি শুধুমাত্র "${currentStaff.assignedArea}" এলাকার গ্রাহকদের স্যাম্পল কালেকশন ও ডেলিভারি অর্ডার দেখতে পাচ্ছেন।` 
+                  : `You are viewing orders exclusively within "${currentStaff.assignedArea}" area.`}
+              </span>
+            </div>
+          </div>
+          <span className="px-2.5 py-1 bg-white border border-sky-200 text-primary font-black rounded-lg text-xs shrink-0">
+            {filtered.length} {isBn ? 'টি অর্ডার' : 'Orders'}
+          </span>
+        </div>
+      )}
+
       {/* Header and Controls */}
       <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>

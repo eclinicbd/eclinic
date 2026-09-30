@@ -32,7 +32,8 @@ import {
   getStoredStaffUsers,
   saveStoredStaffUsers,
   getStoredCurrentStaff,
-  setStoredCurrentStaff
+  setStoredCurrentStaff,
+  filterOrdersForStaff
 } from '../services/dataStorage';
 import { getLabs } from '../constants';
 
@@ -558,7 +559,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setDeleteTarget(null);
   };
 
-  const pendingCount = bookings.filter(b => b.status === 'pending').length;
+  // Filter bookings based on logged-in staff role and assigned area
+  const visibleBookings = filterOrdersForStaff(bookings, currentStaff);
+  const pendingCount = visibleBookings.filter(b => b.status === 'pending').length;
 
   const NavButton = ({ 
     id, 
@@ -677,20 +680,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* Staff Restricted Mode Warning Banner */}
       {!isSuperAdmin && (
         <div className="bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 text-white px-4 py-2.5 text-xs font-semibold flex items-center justify-between border-b border-purple-800">
-          <div className="max-w-7xl mx-auto w-full flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
+          <div className="max-w-7xl mx-auto w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="px-2 py-0.5 bg-purple-500/30 text-purple-200 rounded-md font-bold text-[10px] uppercase border border-purple-400/30">
-                Staff Restricted Access
+                {currentStaff?.role?.toUpperCase()} PORTAL
               </span>
-              <span className="text-slate-200 text-[11px]">
-                {lang === 'bn' 
-                  ? `আপনি ${currentStaff?.name} (${currentStaff?.role}) হিসেবে লগইন আছেন। টেস্ট বা প্রাইস এডিট ও যেকোনো কিছু ডিলিট করার এক্সেস ব্লক করা আছে।`
-                  : `Logged in as ${currentStaff?.name} (${currentStaff?.role}). Catalog modifications & record deletions are restricted.`}
+              <span className="text-slate-200 text-xs">
+                {currentStaff?.name}
+              </span>
+              <span className="bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-md border border-emerald-500/30 text-[11px] font-bold">
+                📍 {lang === 'bn' ? 'নির্ধারিত এরিয়া:' : 'Assigned Area:'} {currentStaff?.assignedArea || (lang === 'bn' ? 'সকল এলাকা' : 'All Areas')}
               </span>
             </div>
             <div className="flex items-center gap-1.5 text-[11px] text-purple-200 font-mono">
               <Lock size={12} />
-              <span>Read/Action Only</span>
+              <span>{lang === 'bn' ? `শুধুমাত্র আপনার এলাকার (${visibleBookings.length} টি) অর্ডার দৃশ্যমান` : `Showing your area (${visibleBookings.length}) orders`}</span>
             </div>
           </div>
         </div>
@@ -769,8 +773,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <strong className="text-slate-900">{labs.length} labs</strong>
             </div>
             <div className="flex justify-between text-slate-600">
-              <span>Total Orders:</span>
-              <strong className="text-slate-900">{bookings.length}</strong>
+              <span>{isSuperAdmin ? 'Total Orders:' : 'My Area Orders:'}</span>
+              <strong className="text-slate-900">{visibleBookings.length}</strong>
             </div>
           </div>
         </aside>
@@ -782,7 +786,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               lang={lang}
               tests={tests}
               labs={labs}
-              bookings={bookings}
+              bookings={visibleBookings}
               onNavigateTab={setActiveTab}
               onOpenAddTest={handleOpenAddTest}
               onOpenAddLab={handleOpenAddLab}
@@ -794,7 +798,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           {activeTab === 'orders' && (
             <AdminOrders 
               lang={lang}
-              bookings={bookings}
+              bookings={visibleBookings}
               labs={labs}
               onUpdateStatus={handleUpdateOrderStatus}
               onSelectOrder={setSelectedOrderForDetails}
@@ -807,7 +811,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           {activeTab === 'reports' && (
             <AdminReports
               lang={lang}
-              bookings={bookings}
+              bookings={visibleBookings}
               labs={labs}
               onSelectOrder={setSelectedOrderForDetails}
             />

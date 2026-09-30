@@ -85,6 +85,7 @@ export interface BookingHistoryItem {
   customerName?: string; // Added for Admin
   customerPhone?: string; // Added for Admin
   customerAddress?: string;
+  area?: string; // Specific city area e.g. "Dhanmondi", "Uttara", "Mirpur", "Gulshan"
   date: string;
   time: string;
   labId?: string;
@@ -297,6 +298,7 @@ export interface StaffUser {
   password: string;
   role: StaffRole;
   phone: string;
+  assignedArea?: string; // e.g. "Dhanmondi", "Uttara", "Mirpur", "Gulshan", "Mohakhali", "Mohammadpur", "All Areas"
   avatar?: string;
   isActive: boolean;
   createdAt: string;

@@ -74,7 +74,7 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<StaffRole, StaffPermissions> = {
     canManageUsers: false,
     canManageSlots: false,
     canDeleteOrders: false,
-    assignedOnly: false
+    assignedOnly: true // Only view area / assigned orders
   },
   nurse: {
     canViewOrders: true,
@@ -91,7 +91,7 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<StaffRole, StaffPermissions> = {
     canManageUsers: false,
     canManageSlots: false,
     canDeleteOrders: false,
-    assignedOnly: false
+    assignedOnly: true // Only view area / assigned orders
   },
   delivery: {
     canViewOrders: true,
@@ -108,7 +108,7 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<StaffRole, StaffPermissions> = {
     canManageUsers: false,
     canManageSlots: false,
     canDeleteOrders: false,
-    assignedOnly: false
+    assignedOnly: true // Only view area / assigned orders
   },
   custom: {
     canViewOrders: true,
@@ -125,9 +125,31 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<StaffRole, StaffPermissions> = {
     canManageUsers: false,
     canManageSlots: false,
     canDeleteOrders: false,
-    assignedOnly: false
+    assignedOnly: true
   }
 };
+
+export const POPULAR_AREAS = [
+  'All Areas',
+  'Dhanmondi',
+  'Mirpur',
+  'Uttara',
+  'Gulshan',
+  'Banani',
+  'Mohakhali',
+  'Mohammadpur',
+  'Badda',
+  'Bashundhara',
+  'Motijheel',
+  'Old Dhaka',
+  'Khilgaon',
+  'Malibagh',
+  'Rampura',
+  'Jatrabari',
+  'Savar',
+  'Gazipur',
+  'Narayanganj'
+];
 
 export const DEFAULT_STAFF_USERS: StaffUser[] = [
   {
@@ -137,6 +159,7 @@ export const DEFAULT_STAFF_USERS: StaffUser[] = [
     password: "manager123",
     role: "manager",
     phone: "01711223344",
+    assignedArea: "All Areas",
     avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100",
     isActive: true,
     createdAt: "2024-01-10T08:00:00Z",
@@ -149,6 +172,7 @@ export const DEFAULT_STAFF_USERS: StaffUser[] = [
     password: "phleb123",
     role: "phlebotomist",
     phone: "01822334455",
+    assignedArea: "Dhanmondi",
     avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=100",
     isActive: true,
     createdAt: "2024-01-12T10:00:00Z",
@@ -161,6 +185,7 @@ export const DEFAULT_STAFF_USERS: StaffUser[] = [
     password: "nurse123",
     role: "nurse",
     phone: "01933445566",
+    assignedArea: "Uttara",
     avatar: "https://images.unsplash.com/photo-1594824813511-209214739501?auto=format&fit=crop&q=80&w=100",
     isActive: true,
     createdAt: "2024-01-15T09:00:00Z",
@@ -173,12 +198,67 @@ export const DEFAULT_STAFF_USERS: StaffUser[] = [
     password: "delivery123",
     role: "delivery",
     phone: "01644556677",
+    assignedArea: "Mirpur",
     avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=100",
     isActive: true,
     createdAt: "2024-01-18T11:00:00Z",
     permissions: ROLE_DEFAULT_PERMISSIONS.delivery
   }
 ];
+
+export const filterOrdersForStaff = (bookings: BookingHistoryItem[], staff: StaffUser | null): BookingHistoryItem[] => {
+  if (!staff || staff.role === 'admin' || staff.role === 'manager') {
+    return bookings;
+  }
+
+  const staffArea = (staff.assignedArea || '').trim().toLowerCase();
+  const isAllAreas = !staffArea || staffArea === 'all areas' || staffArea === 'all' || staffArea === 'সকল এলাকা' || staffArea === 'সকল এরিয়া';
+
+  if (isAllAreas && !staff.permissions?.assignedOnly) {
+    return bookings;
+  }
+
+  return bookings.filter(b => {
+    // 1. Explicitly assigned to this staff member
+    if (b.assignedStaffId && b.assignedStaffId === staff.id) return true;
+    if (b.assignedStaffName && b.assignedStaffName.toLowerCase().includes(staff.name.toLowerCase())) return true;
+
+    // 2. If staff has an assigned area, check order address or area field
+    if (staffArea && !isAllAreas) {
+      if (b.area && b.area.toLowerCase().includes(staffArea)) return true;
+      if (b.customerAddress && b.customerAddress.toLowerCase().includes(staffArea)) return true;
+      
+      // Multi-lingual Bengali name matching
+      const areaAliases: Record<string, string[]> = {
+        'dhanmondi': ['ধানমন্ডি', 'dhanmondi'],
+        'mirpur': ['মিরপুর', 'mirpur'],
+        'uttara': ['উত্তরা', 'uttara'],
+        'gulshan': ['গুলশান', 'gulshan'],
+        'banani': ['বনানী', 'banani'],
+        'mohakhali': ['মহাখালী', 'mohakhali', 'মহাকালী'],
+        'mohammadpur': ['মোহাম্মদপুর', 'mohammadpur', 'মোহাম্মাদপুর'],
+        'badda': ['বাড্ডা', 'badda'],
+        'bashundhara': ['বসুন্ধরা', 'bashundhara'],
+        'motijheel': ['মতিঝিল', 'motijheel'],
+        'old dhaka': ['পুরান ঢাকা', 'old dhaka', 'পুরনো ঢাকা', 'সদরঘাট', 'চকবাজার'],
+        'khilgaon': ['খিলগাঁও', 'khilgaon'],
+        'malibagh': ['মালিবাগ', 'malibagh'],
+        'rampura': ['রামপুরা', 'rampura'],
+        'jatrabari': ['যাত্রাবাড়ী', 'jatrabari']
+      };
+
+      const aliases = areaAliases[staffArea] || [staffArea];
+      if (b.customerAddress) {
+        const addr = b.customerAddress.toLowerCase();
+        if (aliases.some(a => addr.includes(a.toLowerCase()))) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  });
+};
 
 export const getStoredStaffUsers = (): StaffUser[] => {
   try {
