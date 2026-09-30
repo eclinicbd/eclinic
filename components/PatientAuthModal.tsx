@@ -13,7 +13,6 @@ import {
   saveUserProfileToFirestore
 } from '../services/firebase';
 import { Button } from './Button';
-import { PRESET_AVATARS } from './ProfilePictureModal';
 import { 
   X, 
   User, 
@@ -29,8 +28,7 @@ import {
   Sparkles,
   ArrowRight,
   ShieldCheck,
-  Activity,
-  Camera
+  Activity
 } from 'lucide-react';
 
 interface PatientAuthModalProps {
@@ -68,7 +66,7 @@ export const PatientAuthModal: React.FC<PatientAuthModalProps> = ({
   const [signupGender, setSignupGender] = useState<'male' | 'female' | 'other'>('male');
   const [signupAge, setSignupAge] = useState('');
   const [signupBloodGroup, setSignupBloodGroup] = useState('B+');
-  const [signupAvatar, setSignupAvatar] = useState(PRESET_AVATARS[0]?.url || '');
+  const [signupAvatar, setSignupAvatar] = useState('');
   const [showSignupPassword, setShowSignupPassword] = useState(false);
 
   // Feedback states
@@ -182,7 +180,7 @@ export const PatientAuthModal: React.FC<PatientAuthModalProps> = ({
 
     const cleanPhone = signupPhone.replace(/[^0-9]/g, '');
     if (cleanPhone.length < 11) {
-      setErrorMsg(lang === 'bn' ? 'সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন (যেমন: 01712345678)' : 'Please enter a valid 11-digit mobile number (e.g. 01712345678)');
+      setErrorMsg(lang === 'bn' ? '১১ ডিজিটের কম মোবাইল নম্বর দিয়ে রেজিস্ট্রেশন হবে না (সঠিক ১১ ডিজিটের নম্বর দিন: যেমন 01712345678)।' : 'Mobile number must be at least 11 digits (e.g. 01712345678)');
       return;
     }
 
@@ -506,8 +504,11 @@ export const PatientAuthModal: React.FC<PatientAuthModalProps> = ({
               {/* Mobile Phone */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    {t.phoneLabel} <span className="text-red-500">*</span>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1 flex items-center justify-between">
+                    <span>{t.phoneLabel} <span className="text-red-500">*</span></span>
+                    <span className={`text-[10px] font-mono ${signupPhone.replace(/[^0-9]/g, '').length >= 11 ? 'text-emerald-600 font-bold' : 'text-slate-400'}`}>
+                      {signupPhone.replace(/[^0-9]/g, '').length}/11 {lang === 'bn' ? 'ডিজিট' : 'digits'}
+                    </span>
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -516,10 +517,12 @@ export const PatientAuthModal: React.FC<PatientAuthModalProps> = ({
                     <input
                       type="tel"
                       required
+                      minLength={11}
+                      maxLength={14}
                       value={signupPhone}
                       onChange={(e) => setSignupPhone(e.target.value)}
-                      placeholder="01700-000000"
-                      className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                      placeholder="017XXXXXXXX"
+                      className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all font-mono"
                     />
                   </div>
                 </div>
@@ -654,43 +657,6 @@ export const PatientAuthModal: React.FC<PatientAuthModalProps> = ({
                       <option key={bg} value={bg}>{bg}</option>
                     ))}
                   </select>
-                </div>
-              </div>
-
-              {/* Avatar Preset Selection */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-                  <span>{lang === 'bn' ? 'প্রোফাইল ছবি নির্বাচন করুন' : 'Choose Profile Picture'}</span>
-                  <span className="text-[10px] text-slate-400 font-normal">{lang === 'bn' ? '(পরে পরিবর্তনযোগ্য)' : '(Can change later)'}</span>
-                </label>
-                <div className="flex items-center gap-2 overflow-x-auto pb-1">
-                  {PRESET_AVATARS.slice(0, 6).map((preset) => {
-                    const isSelected = signupAvatar === preset.url;
-                    return (
-                      <button
-                        key={preset.id}
-                        type="button"
-                        onClick={() => setSignupAvatar(preset.url)}
-                        className={`relative rounded-full p-0.5 border-2 transition-all flex-shrink-0 ${
-                          isSelected 
-                            ? 'border-primary ring-2 ring-primary/30 scale-105' 
-                            : 'border-transparent hover:border-slate-300'
-                        }`}
-                        title={preset.label}
-                      >
-                        <img 
-                          src={preset.url} 
-                          alt={preset.label} 
-                          className="w-9 h-9 rounded-full object-cover" 
-                        />
-                        {isSelected && (
-                          <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-white rounded-full flex items-center justify-center text-[9px] shadow-xs">
-                            ✓
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
                 </div>
               </div>
 

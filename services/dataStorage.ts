@@ -785,6 +785,10 @@ export const registerPatient = (
   try {
     const patients = getStoredPatients();
     const cleanPhone = patientData.phone.replace(/[^0-9]/g, '');
+
+    if (cleanPhone.length < 11) {
+      return { success: false, message: '১১ ডিজিটের কম মোবাইল নম্বর দিয়ে রেজিস্ট্রেশন করা যাবে না।' };
+    }
     
     // Check if phone already registered
     const exists = patients.some(p => p.phone.replace(/[^0-9]/g, '') === cleanPhone);
