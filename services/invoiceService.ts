@@ -1,7 +1,14 @@
-import { BookingHistoryItem, Language } from '../types';
+import { BookingHistoryItem, Language, SiteSettings } from '../types';
+import { getStoredSiteSettings } from './dataStorage';
 
-export const generateInvoiceHtml = (order: BookingHistoryItem, lang: Language = 'bn'): string => {
+export const generateInvoiceHtml = (
+  order: BookingHistoryItem, 
+  lang: Language = 'bn',
+  customSettings?: SiteSettings
+): string => {
   const isBn = lang === 'bn';
+  const settings = customSettings || getStoredSiteSettings(lang);
+
   const issueDate = order.createdAt 
     ? new Date(order.createdAt).toLocaleString(isBn ? 'bn-BD' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' })
     : `${order.date} ${order.time}`;
@@ -16,12 +23,50 @@ export const generateInvoiceHtml = (order: BookingHistoryItem, lang: Language = 
 
   const cleanOrderId = (order.id || '').replace(/^#?EC-?/i, '').replace(/^#?BK-?/i, '').replace(/^#/, '');
 
+  // Brand / Organization Details from settings
+  const invoiceLogo = settings?.invoiceLogoUrl || settings?.logoUrl || '';
+  const orgName = settings?.invoiceOrgName || settings?.siteName || 'LabHome BD';
+  const orgSubtitle = settings?.invoiceOrgSubtitle || settings?.siteTagline || (isBn ? 'বিশ্বস্ত হোম ডায়াগনস্টিক ও ডিজিটাল ল্যাব কেয়ার নেটওয়ার্ক' : 'Trusted Digital Lab & Home Sample Collection');
+  const orgAddress = settings?.invoiceAddress || settings?.contactAddress || (isBn ? 'বাড়ি ১২, রোড ৫, ধানমন্ডি, ঢাকা - ১২০৫, বাংলাদেশ' : 'House #12, Road #5, Dhanmondi, Dhaka, Bangladesh');
+  const orgHotline = settings?.invoiceHotline || settings?.contactHotline || settings?.contactPhone || '+880 9613-828282';
+  const orgEmail = settings?.invoiceEmail || settings?.contactEmail || 'support@labhomebd.com';
+  const orgWebsite = settings?.invoiceWebsite || 'www.labhomebd.com';
+  const watermarkText = settings?.invoiceWatermark || orgName || 'LabHome BD';
+  const guidelinesTitle = settings?.invoiceTermsTitle || (isBn ? 'স্যাম্পল কালেকশন ও রিপোর্ট নির্দেশিকা (Important Guidelines):' : 'Sample Collection & Report Guidelines:');
+  const guidelinesList = (settings?.invoiceGuidelines && settings.invoiceGuidelines.length > 0)
+    ? settings.invoiceGuidelines
+    : [
+        isBn ? 'ফাস্টিং ব্লাড সুগার বা লিপিড প্রোফাইল টেস্ট থাকলে অনুগ্রহ করে ৮-১০ ঘণ্টা উপবাস থাকুন।' : 'For fasting tests (FBS, Lipid Profile), ensure 8-10 hours overnight fasting.',
+        isBn ? 'আমাদের প্রশিক্ষিত মেডিকেল টেকনোলজিস্ট জীবাণুমুক্ত কিট নিয়ে আপনার ঠিকানায় নির্ধারিত সময়ে পৌঁছাবেন।' : 'Our certified medical phlebotomist will arrive with sterilized collection kits at your selected slot.',
+        isBn ? 'ল্যাব টেস্ট সম্পন্ন হওয়ার পর আপনার পেশেন্ট ড্যাশবোর্ড ও এসএমএস/হোয়াটসঅ্যাপে ভেরিফাইড রিপোর্ট পাওয়া যাবে।' : 'Digital verified reports will be available on your dashboard and phone upon lab processing.',
+        isBn ? 'যেকোনো জরুরি জিজ্ঞাসা ও সহায়তায় আমাদের হেল্পলাইন নাম্বারে যোগাযোগ করুন।' : 'For any immediate assistance, contact our 24/7 customer helpline.'
+      ];
+  const footerNote = settings?.invoiceFooterNote || (isBn ? '✓ ভেরিফাইড ডিজিটাল মানি রিসিপ্ট' : '✓ Verified Digital Money Receipt');
+
+  const getPaymentMethodLabel = (pm?: string, trxId?: string) => {
+    switch (pm) {
+      case 'bkash':
+        return `bKash ${trxId ? `(Trx: ${trxId})` : '(বিকাশ)'}`;
+      case 'nagad':
+        return `Nagad ${trxId ? `(Trx: ${trxId})` : '(নগদ)'}`;
+      case 'rocket':
+        return `Rocket ${trxId ? `(Trx: ${trxId})` : '(রকেট)'}`;
+      case 'card':
+        return isBn ? 'ডেবিট / ক্রেডিট কার্ড (Card)' : 'Debit / Credit Card';
+      case 'cod':
+      default:
+        return isBn ? 'ক্যাশ অন কালেকশন (Cash on Delivery)' : 'Cash on Home Collection';
+    }
+  };
+
+  const paymentDisplay = getPaymentMethodLabel(order.paymentMethod, order.transactionId);
+
   return `
 <!DOCTYPE html>
 <html lang="${isBn ? 'bn' : 'en'}">
 <head>
   <meta charset="UTF-8">
-  <title>Invoice - ${cleanOrderId} | eClinic Bangladesh</title>
+  <title>Invoice - ${cleanOrderId} | ${orgName}</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
     
@@ -360,15 +405,19 @@ export const generateInvoiceHtml = (order: BookingHistoryItem, lang: Language = 
 <body>
 
   <div class="invoice-card">
-    <div class="watermark">eClinic BD</div>
+    <div class="watermark">${watermarkText}</div>
 
     <!-- Header -->
     <div class="header-row">
       <div class="brand-logo">
-        <div class="logo-icon">+</div>
+        ${invoiceLogo ? `
+          <img src="${invoiceLogo}" alt="${orgName}" style="max-height: 48px; max-width: 140px; object-fit: contain; border-radius: 8px; border: 1px solid #f1f5f9; background: #fff;" />
+        ` : `
+          <div class="logo-icon">+</div>
+        `}
         <div>
-          <div class="brand-title">eClinic<span>BD</span></div>
-          <div class="brand-sub">${isBn ? 'বিশ্বস্ত হোম ডায়াগনস্টিক ও ল্যাব কেয়ার নেটওয়ার্ক' : 'Trusted Digital Lab & Home Sample Collection'}</div>
+          <div class="brand-title">${orgName}</div>
+          <div class="brand-sub">${orgSubtitle}</div>
         </div>
       </div>
       <div class="invoice-badge">
@@ -439,7 +488,7 @@ export const generateInvoiceHtml = (order: BookingHistoryItem, lang: Language = 
         </div>
         <div class="summary-row">
           <span>${isBn ? 'পেমেন্ট মেথড:' : 'Payment Method:'}</span>
-          <span style="font-weight: 600;">${isBn ? 'ক্যাশ অন কালেকশন / অনলাইন' : 'Cash on Collection / Online'}</span>
+          <span style="font-weight: 700; color: #0f172a;">${paymentDisplay}</span>
         </div>
         <div class="summary-row total-row">
           <span>${isBn ? 'সর্বমোট প্রদেয় বিল:' : 'Total Payable:'}</span>
@@ -450,24 +499,23 @@ export const generateInvoiceHtml = (order: BookingHistoryItem, lang: Language = 
 
     <!-- Instructions / Notes -->
     <div class="instructions-box">
-      <h5>${isBn ? 'স্যাম্পল কালেকশন ও রিপোর্ট নির্দেশনা (Important Guidelines):' : 'Sample Collection & Report Guidelines:'}</h5>
+      <h5>${guidelinesTitle}</h5>
       <ul>
-        <li>${isBn ? 'ফাস্টিং ব্লাড সুগার বা লিপিড প্রোফাইল টেস্ট থাকলে অনুগ্রহ করে ৮-১০ ঘণ্টা উপবাস থাকুন।' : 'For fasting tests (FBS, Lipid Profile), ensure 8-10 hours overnight fasting.'}</li>
-        <li>${isBn ? 'আমাদের প্রশিক্ষিত মেডিকেল টেকনোলজিস্ট আপনার ঠিকানায় নির্ধারিত স্লটে পৌঁছাবেন।' : 'Our medical phlebotomist will arrive with sterilized collection kits at your selected slot.'}</li>
-        <li>${isBn ? 'টেস্ট সম্পন্ন হওয়ার পর আপনার ড্যাশবোর্ড ও হোয়াটসঅ্যাপ/এসএমএসে রিপোর্ট পাওয়া যাবে।' : 'Digital verified reports will be available on your dashboard and phone upon lab processing.'}</li>
+        ${guidelinesList.map(g => `<li>${g}</li>`).join('')}
       </ul>
     </div>
 
     <!-- Footer with Helpline & Official Stamp -->
     <div class="footer-row">
       <div class="contact-info">
-        <strong>eClinic Bangladesh Healthcare Services</strong><br/>
-        📞 Hotline: +880 9613-828282 | ✉️ support@eclinicbd.com<br/>
-        🌐 www.eclinicbd.com | Dhaka, Bangladesh
+        <strong>${orgName}</strong><br/>
+        📍 ${orgAddress}<br/>
+        📞 Hotline: ${orgHotline} | ✉️ ${orgEmail}<br/>
+        🌐 ${orgWebsite}
       </div>
       <div class="seal-box">
         <div class="digital-seal">
-          ✓ Verified Digital Money Receipt
+          ${footerNote}
         </div>
         <div style="font-size: 9px; color: #94a3b8; margin-top: 4px;">
           Computer Generated • No Physical Signature Required
@@ -484,8 +532,12 @@ export const generateInvoiceHtml = (order: BookingHistoryItem, lang: Language = 
 /**
  * Open print window and trigger print / PDF save
  */
-export const printOrDownloadInvoice = (order: BookingHistoryItem, lang: Language = 'bn'): void => {
-  const htmlContent = generateInvoiceHtml(order, lang);
+export const printOrDownloadInvoice = (
+  order: BookingHistoryItem, 
+  lang: Language = 'bn',
+  customSettings?: SiteSettings
+): void => {
+  const htmlContent = generateInvoiceHtml(order, lang, customSettings);
   const printWindow = window.open('', '_blank', 'width=900,height=900');
   
   if (printWindow) {

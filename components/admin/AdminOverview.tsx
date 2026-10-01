@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BookingHistoryItem, LabPartner, TestPackage, Language } from '../../types';
+import { BookingHistoryItem, LabPartner, TestPackage, Language, StaffUser } from '../../types';
 import { TRANSLATIONS } from '../../translations';
 import { 
   DollarSign, 
@@ -20,7 +20,9 @@ import {
   Download,
   BarChart3,
   TrendingUp,
-  ArrowUpRight
+  ArrowUpRight,
+  HeartPulse,
+  Truck
 } from 'lucide-react';
 import { Button } from '../Button';
 import { printOrDownloadInvoice } from '../../services/invoiceService';
@@ -31,6 +33,8 @@ interface AdminOverviewProps {
   tests: TestPackage[];
   labs: LabPartner[];
   bookings: BookingHistoryItem[];
+  canViewRevenue?: boolean;
+  currentStaff?: StaffUser | null;
   onNavigateTab: (tab: 'overview' | 'orders' | 'reports' | 'tests' | 'packages' | 'categories' | 'labs' | 'customers' | 'settings') => void;
   onOpenAddTest: () => void;
   onOpenAddLab: () => void;
@@ -43,6 +47,8 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
   tests,
   labs,
   bookings,
+  canViewRevenue = true,
+  currentStaff,
   onNavigateTab,
   onOpenAddTest,
   onOpenAddLab,
@@ -50,11 +56,13 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
   onSelectOrder
 }) => {
   const t = TRANSLATIONS[lang];
+  const isBn = lang === 'bn';
 
   const totalRevenue = bookings.reduce((sum, b) => b.status !== 'cancelled' ? sum + b.totalCost : sum, 0);
   const totalOrders = bookings.length;
   const pendingOrders = bookings.filter(b => b.status === 'pending').length;
   const completedOrders = bookings.filter(b => b.status === 'completed').length;
+  const inProgressOrders = bookings.filter(b => b.status === 'collected' || b.status === 'processing' || b.status === 'confirmed').length;
   const visibleLabs = labs.filter(l => !l.isHidden).length;
   const visibleTests = tests.filter(t => !t.isHidden).length;
 
@@ -82,48 +90,99 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
       {/* Top Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">{t.adminDashboard}</h1>
+          <h1 className="text-2xl font-bold text-slate-900">
+            {currentStaff?.role === 'phlebotomist' 
+              ? (isBn ? 'ফ্লেবোটোমিস্ট পোর্টাল' : 'Phlebotomist Portal')
+              : currentStaff?.role === 'nurse'
+              ? (isBn ? 'নার্সিং সার্ভিস পোর্টাল' : 'Nurse Care Portal')
+              : currentStaff?.role === 'delivery'
+              ? (isBn ? 'রিপোর্ট ডেলিভারি পোর্টাল' : 'Report Delivery Portal')
+              : t.adminDashboard}
+          </h1>
           <p className="text-slate-500 text-xs sm:text-sm mt-0.5">
-            সেন্টার ও টেস্টের মূল্য তালিকা, সার্ভিস চার্জ, গ্রাহকদের বুকিং এবং রিপোর্ট ম্যানেজ করুন।
+            {currentStaff?.assignedArea && currentStaff.assignedArea !== 'All Areas'
+              ? (isBn 
+                  ? `নির্ধারিত এরিয়া: "${currentStaff.assignedArea}" এর রোগীদের স্যাম্পল কালেকশন ও টেস্ট সেবা পরিচালনা করুন।` 
+                  : `Managing assigned healthcare tasks in "${currentStaff.assignedArea}" area.`)
+              : (isBn 
+                  ? 'সেন্টার ও টেস্টের তালিকা, গ্রাহকদের বুকিং এবং রিপোর্ট ম্যানেজ করুন।' 
+                  : 'Manage healthcare packages, sample collections, customer orders, and lab reports.')}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button onClick={onOpenAddOrder} className="!py-2 !px-3.5 text-xs font-semibold flex items-center gap-1.5 shadow-sm bg-emerald-600 hover:bg-emerald-700 text-white">
             <Plus size={15} /> {t.adminAddNewOrder}
           </Button>
-          <Button onClick={onOpenAddTest} className="!py-2 !px-3.5 text-xs font-semibold flex items-center gap-1.5 shadow-sm">
-            <Plus size={15} /> {t.adminAddNewTest}
-          </Button>
-          <button 
-            onClick={onOpenAddLab}
-            className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
-          >
-            <Building2 size={15} /> {t.adminAddNewLab}
-          </button>
+          {canViewRevenue && (
+            <>
+              <Button onClick={onOpenAddTest} className="!py-2 !px-3.5 text-xs font-semibold flex items-center gap-1.5 shadow-sm">
+                <Plus size={15} /> {t.adminAddNewTest}
+              </Button>
+              <button 
+                onClick={onOpenAddLab}
+                className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
+              >
+                <Building2 size={15} /> {t.adminAddNewLab}
+              </button>
+            </>
+          )}
         </div>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:border-slate-300 transition-all cursor-pointer" onClick={() => onNavigateTab('orders')}>
-          <div className="flex justify-between items-start mb-3">
-            <div className="bg-emerald-50 p-3 rounded-xl text-emerald-600">
-              <DollarSign size={22} />
+        {/* Card 1: Revenue for Admin/Managers OR Operational Task Queue for Phleb/Nurse/Delivery */}
+        {canViewRevenue ? (
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:border-slate-300 transition-all cursor-pointer" onClick={() => onNavigateTab('orders')}>
+            <div className="flex justify-between items-start mb-3">
+              <div className="bg-emerald-50 p-3 rounded-xl text-emerald-600">
+                <DollarSign size={22} />
+              </div>
+              <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">Live Revenue</span>
             </div>
-            <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">Live Revenue</span>
+            <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider">{t.adminTotalRev}</p>
+            <h3 className="text-2xl font-bold text-slate-900 mt-1">৳ {totalRevenue.toLocaleString()}</h3>
           </div>
-          <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider">{t.adminTotalRev}</p>
-          <h3 className="text-2xl font-bold text-slate-900 mt-1">৳ {totalRevenue.toLocaleString()}</h3>
-        </div>
+        ) : (
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:border-slate-300 transition-all cursor-pointer" onClick={() => onNavigateTab('orders')}>
+            <div className="flex justify-between items-start mb-3">
+              <div className="bg-indigo-50 p-3 rounded-xl text-indigo-600">
+                {currentStaff?.role === 'phlebotomist' && <FlaskConical size={22} />}
+                {currentStaff?.role === 'nurse' && <HeartPulse size={22} />}
+                {currentStaff?.role === 'delivery' && <Truck size={22} />}
+                {!['phlebotomist', 'nurse', 'delivery'].includes(currentStaff?.role || '') && <ShoppingBag size={22} />}
+              </div>
+              <span className="text-[11px] font-bold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-md">
+                {isBn ? 'কাজের স্ট্যাটাস' : 'Task Status'}
+              </span>
+            </div>
+            <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider">
+              {currentStaff?.role === 'phlebotomist' 
+                ? (isBn ? 'স্যাম্পল সংগ্রহ সম্পন্ন' : 'Samples Collected')
+                : currentStaff?.role === 'nurse'
+                ? (isBn ? 'নার্সিং সেবা সম্পন্ন' : 'Nursing Done')
+                : currentStaff?.role === 'delivery'
+                ? (isBn ? 'রিপোর্ট ডেলিভারি সম্পন্ন' : 'Reports Delivered')
+                : (isBn ? 'সম্পন্ন টাস্ক' : 'Completed Tasks')}
+            </p>
+            <h3 className="text-2xl font-bold text-slate-900 mt-1">
+              {completedOrders} / {totalOrders}
+            </h3>
+          </div>
+        )}
 
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:border-slate-300 transition-all cursor-pointer" onClick={() => onNavigateTab('orders')}>
           <div className="flex justify-between items-start mb-3">
             <div className="bg-blue-50 p-3 rounded-xl text-blue-600">
               <ShoppingBag size={22} />
             </div>
-            <span className="text-[11px] font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-md">{completedOrders} Completed</span>
+            <span className="text-[11px] font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-md">
+              {canViewRevenue ? `${completedOrders} Completed` : (isBn ? 'মোট অ্যাসাইনকৃত' : 'Total Assigned')}
+            </span>
           </div>
-          <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider">{t.adminTotalOrders}</p>
+          <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider">
+            {canViewRevenue ? t.adminTotalOrders : (isBn ? 'আমার এরিয়ার অর্ডার' : 'My Area Orders')}
+          </p>
           <h3 className="text-2xl font-bold text-slate-900 mt-1">{totalOrders}</h3>
         </div>
 
@@ -133,10 +192,14 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
               <AlertCircle size={22} />
             </div>
             {pendingOrders > 0 && (
-              <span className="text-[11px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-md animate-pulse">Action Needed</span>
+              <span className="text-[11px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-md animate-pulse">
+                {isBn ? 'অ্যাকশন প্রয়োজন' : 'Action Needed'}
+              </span>
             )}
           </div>
-          <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider">{t.adminPendingOrders}</p>
+          <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider">
+            {isBn ? 'অপেক্ষমান অর্ডার (Pending)' : t.adminPendingOrders}
+          </p>
           <h3 className="text-2xl font-bold text-slate-900 mt-1">{pendingOrders}</h3>
         </div>
 
@@ -147,49 +210,57 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
             </div>
             <span className="text-[11px] font-bold text-sky-700 bg-sky-100 px-2 py-0.5 rounded-md">{visibleLabs} Active Labs</span>
           </div>
-          <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider">Active Catalog Tests</p>
-          <h3 className="text-2xl font-bold text-slate-900 mt-1">{visibleTests} / {tests.length}</h3>
+          <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider">
+            {canViewRevenue ? 'Active Catalog Tests' : (isBn ? 'চলমান প্রসেসিং অর্ডার' : 'In Processing Queue')}
+          </p>
+          <h3 className="text-2xl font-bold text-slate-900 mt-1">
+            {canViewRevenue ? `${visibleTests} / ${tests.length}` : `${inProgressOrders}`}
+          </h3>
         </div>
       </div>
 
-      {/* Analytics & Financial Reports Shortcut Banner */}
-      <div className="bg-gradient-to-r from-slate-900 to-sky-950 text-white p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-sky-500/20 text-sky-400 border border-sky-400/30 flex items-center justify-center shrink-0">
-            <BarChart3 size={24} />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="font-extrabold text-base text-white">
-                {lang === 'bn' ? 'দৈনিক, সাপ্তাহিক, মাসিক ও বাৎসরিক রিপোর্ট' : 'Daily, Weekly, Monthly & Yearly Reports'}
-              </h3>
-              <span className="text-[10px] bg-sky-500 text-white font-black px-2 py-0.5 rounded-md uppercase">
-                Analytics
-              </span>
+      {/* Analytics & Financial Reports Shortcut Banner - Only show when canViewRevenue is true */}
+      {canViewRevenue && (
+        <div className="bg-gradient-to-r from-slate-900 to-sky-950 text-white p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-sky-500/20 text-sky-400 border border-sky-400/30 flex items-center justify-center shrink-0">
+              <BarChart3 size={24} />
             </div>
-            <p className="text-xs text-sky-200/80 mt-0.5">
-              {lang === 'bn' 
-                ? 'কোন সেন্টারে কত টাকার টেস্ট হয়েছে, কতগুলো টেস্ট সম্পন্ন হয়েছে তার পূর্ণাঙ্গ বিশ্লেষণ ও প্রিন্ট কপি।' 
-                : 'Center-wise revenue, tests volume, order breakdown, and downloadable PDF/CSV reports.'}
-            </p>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-extrabold text-base text-white">
+                  {lang === 'bn' ? 'দৈনিক, সাপ্তাহিক, মাসিক ও বাৎসরিক রিপোর্ট' : 'Daily, Weekly, Monthly & Yearly Reports'}
+                </h3>
+                <span className="text-[10px] bg-sky-500 text-white font-black px-2 py-0.5 rounded-md uppercase">
+                  Analytics
+                </span>
+              </div>
+              <p className="text-xs text-sky-200/80 mt-0.5">
+                {lang === 'bn' 
+                  ? 'কোন সেন্টারে কত টাকার টেস্ট হয়েছে, কতগুলো টেস্ট সম্পন্ন হয়েছে তার পূর্ণাঙ্গ বিশ্লেষণ ও প্রিন্ট কপি।' 
+                  : 'Center-wise revenue, tests volume, order breakdown, and downloadable PDF/CSV reports.'}
+              </p>
+            </div>
           </div>
-        </div>
 
-        <button
-          onClick={() => onNavigateTab('reports')}
-          className="px-4 py-2.5 bg-primary hover:bg-sky-500 text-white rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all shadow-md shrink-0 cursor-pointer"
-        >
-          <span>{lang === 'bn' ? 'রিপোর্ট ও অ্যানালিটিক্স দেখুন' : 'Open Full Analytics'}</span>
-          <ArrowUpRight size={15} />
-        </button>
-      </div>
+          <button
+            onClick={() => onNavigateTab('reports')}
+            className="px-4 py-2.5 bg-primary hover:bg-sky-500 text-white rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all shadow-md shrink-0 cursor-pointer"
+          >
+            <span>{lang === 'bn' ? 'রিপোর্ট ও অ্যানালিটিক্স দেখুন' : 'Open Full Analytics'}</span>
+            <ArrowUpRight size={15} />
+          </button>
+        </div>
+      )}
 
       {/* Recent Orders Section */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-5 border-b border-slate-100 flex justify-between items-center">
           <div className="flex items-center gap-2">
             <ShoppingBag size={18} className="text-slate-700" />
-            <h2 className="font-bold text-slate-900 text-base">{t.adminRecentOrders}</h2>
+            <h2 className="font-bold text-slate-900 text-base">
+              {canViewRevenue ? t.adminRecentOrders : (isBn ? 'সাম্প্রতিক নির্ধারিত অর্ডারসমূহ' : 'Recent Assigned Orders')}
+            </h2>
           </div>
           <Button variant="outline" className="!py-1.5 !px-3 !text-xs font-semibold" onClick={() => onNavigateTab('orders')}>
             View All Orders ({bookings.length})
@@ -204,14 +275,14 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
                 <th className="px-5 py-3">Diagnostic Center</th>
                 <th className="px-5 py-3">Tests Booked</th>
                 <th className="px-5 py-3">Status</th>
-                <th className="px-5 py-3 text-right">Amount</th>
+                {canViewRevenue && <th className="px-5 py-3 text-right">Amount</th>}
                 <th className="px-5 py-3 text-center">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {bookings.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-8 text-slate-400 text-xs">No orders recorded yet.</td>
+                  <td colSpan={canViewRevenue ? 7 : 6} className="text-center py-8 text-slate-400 text-xs">No orders recorded yet.</td>
                 </tr>
               ) : (
                 bookings.slice(0, 5).map(booking => (
@@ -231,7 +302,9 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
                       {booking.testNames.join(', ')}
                     </td>
                     <td className="px-5 py-3.5">{getStatusBadge(booking.status)}</td>
-                    <td className="px-5 py-3.5 text-right font-bold text-slate-900">৳ {booking.totalCost}</td>
+                    {canViewRevenue && (
+                      <td className="px-5 py-3.5 text-right font-bold text-slate-900">৳ {booking.totalCost}</td>
+                    )}
                     <td className="px-5 py-3.5 text-center">
                       <div className="flex items-center justify-center gap-1.5">
                         <button 

@@ -40,6 +40,7 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<StaffRole, StaffPermissions> = {
     canManageUsers: true,
     canManageSlots: true,
     canDeleteOrders: true,
+    canViewRevenue: true,
     assignedOnly: false
   },
   manager: {
@@ -57,6 +58,7 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<StaffRole, StaffPermissions> = {
     canManageUsers: false,
     canManageSlots: false,
     canDeleteOrders: false,
+    canViewRevenue: true,
     assignedOnly: false
   },
   phlebotomist: {
@@ -74,6 +76,7 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<StaffRole, StaffPermissions> = {
     canManageUsers: false,
     canManageSlots: false,
     canDeleteOrders: false,
+    canViewRevenue: false, // Hidden for phlebotomist
     assignedOnly: true // Only view area / assigned orders
   },
   nurse: {
@@ -91,6 +94,7 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<StaffRole, StaffPermissions> = {
     canManageUsers: false,
     canManageSlots: false,
     canDeleteOrders: false,
+    canViewRevenue: false, // Hidden for nurse
     assignedOnly: true // Only view area / assigned orders
   },
   delivery: {
@@ -108,6 +112,7 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<StaffRole, StaffPermissions> = {
     canManageUsers: false,
     canManageSlots: false,
     canDeleteOrders: false,
+    canViewRevenue: false, // Hidden for delivery
     assignedOnly: true // Only view area / assigned orders
   },
   custom: {
@@ -125,6 +130,7 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<StaffRole, StaffPermissions> = {
     canManageUsers: false,
     canManageSlots: false,
     canDeleteOrders: false,
+    canViewRevenue: false,
     assignedOnly: true
   }
 };

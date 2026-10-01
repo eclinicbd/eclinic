@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Language, SiteSettings, ServiceItem, AboutStat, HowItWorksStep, NursingCareService } from '../../types';
 import { TRANSLATIONS } from '../../translations';
 import { 
@@ -36,7 +36,10 @@ import {
   Tag,
   Search,
   UserCheck,
-  Award
+  Award,
+  Printer,
+  ListChecks,
+  FileCheck
 } from 'lucide-react';
 import { Button } from '../Button';
 import { 
@@ -47,6 +50,7 @@ import {
   DEFAULT_NURSING_SERVICES_BN,
   DEFAULT_NURSING_SERVICES_EN
 } from '../../constants';
+import { printOrDownloadInvoice } from '../../services/invoiceService';
 
 interface AdminCMSProps {
   lang: Language;
@@ -77,10 +81,11 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
   onToggleServiceActive,
   showToast
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'hero' | 'sections' | 'branding' | 'about' | 'contact' | 'services' | 'nursing'>('hero');
+  const [activeSubTab, setActiveSubTab] = useState<'hero' | 'sections' | 'branding' | 'about' | 'contact' | 'services' | 'nursing' | 'invoice'>('hero');
   const [formData, setFormData] = useState<SiteSettings>({ ...siteSettings });
   const [newHeroImageUrl, setNewHeroImageUrl] = useState('');
   const [previewHeroIndex, setPreviewHeroIndex] = useState(0);
+  const [newGuidelineInput, setNewGuidelineInput] = useState('');
 
   // Nursing care modal & form state
   const [isNursingModalOpen, setIsNursingModalOpen] = useState(false);
@@ -347,6 +352,84 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
     });
   };
 
+  // ==========================================
+  // INVOICE GUIDELINES HANDLERS
+  // ==========================================
+  const invoiceGuidelinesList = formData.invoiceGuidelines && formData.invoiceGuidelines.length > 0
+    ? formData.invoiceGuidelines
+    : (lang === 'en' ? DEFAULT_SITE_SETTINGS_EN.invoiceGuidelines! : DEFAULT_SITE_SETTINGS_BN.invoiceGuidelines!);
+
+  const handleAddGuideline = () => {
+    if (!newGuidelineInput.trim()) return;
+    const updated = [...invoiceGuidelinesList, newGuidelineInput.trim()];
+    setFormData({ ...formData, invoiceGuidelines: updated });
+    setNewGuidelineInput('');
+    showToast(lang === 'bn' ? 'নতুন নির্দেশিকা যোগ করা হয়েছে' : 'Guideline bullet added');
+  };
+
+  const handleRemoveGuideline = (index: number) => {
+    const updated = invoiceGuidelinesList.filter((_, idx) => idx !== index);
+    setFormData({ ...formData, invoiceGuidelines: updated });
+    showToast(lang === 'bn' ? 'নির্দেশিকা মুছে ফেলা হয়েছে' : 'Guideline removed');
+  };
+
+  const handleMoveGuideline = (index: number, direction: 'up' | 'down') => {
+    const newIdx = direction === 'up' ? index - 1 : index + 1;
+    if (newIdx < 0 || newIdx >= invoiceGuidelinesList.length) return;
+    const updated = [...invoiceGuidelinesList];
+    const temp = updated[index];
+    updated[index] = updated[newIdx];
+    updated[newIdx] = temp;
+    setFormData({ ...formData, invoiceGuidelines: updated });
+  };
+
+  const invoiceLogoInputRef = useRef<HTMLInputElement>(null);
+
+  const handleInvoiceLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      showToast(lang === 'bn' ? 'লোগোর সাইজ ২ MB এর চেয়ে ছোট হতে হবে' : 'Logo size must be less than 2MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64Url = event.target?.result as string;
+      if (base64Url) {
+        setFormData({ ...formData, invoiceLogoUrl: base64Url });
+        showToast(lang === 'bn' ? 'ইনভয়েস লোগো সফলভাবে আপলোড করা হয়েছে' : 'Invoice logo uploaded successfully');
+      }
+    };
+    reader.readAsDataURL(file);
+    if (invoiceLogoInputRef.current) invoiceLogoInputRef.current.value = '';
+  };
+
+  const handleTestPrintInvoice = () => {
+    const sampleOrder = {
+      id: 'EC-9901',
+      customerName: lang === 'bn' ? 'মোহাম্মদ করিম' : 'Mohammad Karim',
+      customerPhone: '01711223344',
+      customerAddress: lang === 'bn' ? 'বাড়ি ১৫, রোড ৭, ধানমন্ডি, ঢাকা' : 'House 15, Road 7, Dhanmondi, Dhaka',
+      area: 'Dhanmondi',
+      date: new Date().toISOString().slice(0, 10),
+      time: '09:00 AM',
+      labName: lang === 'bn' ? 'পপুলার ডায়াগনস্টিক সেন্টার' : 'Popular Diagnostic Centre',
+      testNames: [
+        lang === 'bn' ? 'কমপ্লিট ব্লাড কাউন্ট (CBC)' : 'Complete Blood Count (CBC)',
+        lang === 'bn' ? 'ফাস্টিং ব্লাড সুগার (FBS)' : 'Fasting Blood Sugar (FBS)',
+        lang === 'bn' ? 'লিপিড প্রোফাইল (Lipid Profile)' : 'Lipid Profile'
+      ],
+      totalCost: 2850,
+      status: 'confirmed' as const,
+      createdAt: new Date().toISOString(),
+      doctorName: lang === 'bn' ? 'ডাঃ মোঃ রফিকুল ইসলাম' : 'Dr. Md. Rafiqul Islam'
+    };
+
+    printOrDownloadInvoice(sampleOrder, lang, formData);
+  };
+
   const SelectedBrandIcon = BRAND_ICONS.find(i => i.id === (formData.logoIcon || 'FlaskConical'))?.icon || FlaskConical;
 
   return (
@@ -473,6 +556,18 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
         >
           <HeartPulse size={15} className={activeSubTab === 'nursing' ? 'text-rose-600' : ''} />
           <span>{lang === 'bn' ? 'নার্সিং ও কেয়ার' : 'Nursing & Care'} ({nursingServicesList.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveSubTab('invoice')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
+            activeSubTab === 'invoice'
+              ? 'bg-white text-emerald-600 shadow-sm border border-emerald-200'
+              : 'text-slate-600 hover:text-emerald-600'
+          }`}
+        >
+          <Printer size={15} className={activeSubTab === 'invoice' ? 'text-emerald-600' : ''} />
+          <span>{lang === 'bn' ? 'ইনভয়েস ও মানি রিসিপ্ট' : 'Invoice & Guidelines'}</span>
         </button>
       </div>
 
@@ -2040,6 +2135,404 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 8. INVOICE, MONEY RECEIPT & SAMPLE GUIDELINES MANAGEMENT                  */}
+      {/* ========================================================================= */}
+      {activeSubTab === 'invoice' && (
+        <div className="space-y-6">
+          {/* Header & Quick Action Bar */}
+          <div className="bg-gradient-to-r from-slate-900 to-sky-950 text-white p-6 rounded-2xl border border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 text-[10px] font-black uppercase tracking-wider border border-emerald-500/30">
+                  Official Money Receipt
+                </span>
+                <h2 className="text-xl font-bold text-white">
+                  {lang === 'bn' ? 'ইনভয়েস, প্রতিষ্ঠানের নাম-ঠিকানা ও নির্দেশিকা' : 'Invoice, Header & Sample Guidelines'}
+                </h2>
+              </div>
+              <p className="text-xs text-sky-200/80 mt-1 max-w-2xl leading-relaxed">
+                {lang === 'bn'
+                  ? 'গ্রাহকদের দেওয়া মানি রিসিপ্ট ও ইনভয়েসে প্রতিষ্ঠানের নাম, অফিস ঠিকানা, হেল্পলাইন, ওয়াটারমার্ক এবং স্যাম্পল কালেকশন ও রিপোর্ট নির্দেশিকা পরিবর্তন করুন।'
+                  : 'Customize the organization header, address, hotline, watermark, and sample collection & report guidelines on all customer invoices.'}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={handleTestPrintInvoice}
+                className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 transition-all shadow-md cursor-pointer"
+              >
+                <Printer size={15} />
+                <span>{lang === 'bn' ? 'টেস্ট ইনভয়েস প্রিভিউ ও প্রিন্ট' : 'Test Print Invoice'}</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Left 6 Columns: Organization Details & Header */}
+            <div className="lg:col-span-6 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                  <Building2 size={16} className="text-primary" />
+                  <span>{lang === 'bn' ? 'ইনভয়েস হেডার, লোগো ও প্রতিষ্ঠানের তথ্য' : 'Organization & Header Information'}</span>
+                </h3>
+                <span className="text-[11px] text-slate-400">Header & Footer</span>
+              </div>
+
+              {/* Invoice Logo Customization & Upload */}
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <ImageIcon size={14} className="text-primary" />
+                    <span>{lang === 'bn' ? 'ইনভয়েস ব্র্যান্ড লোগো (Invoice Logo)' : 'Invoice Brand Logo'}</span>
+                  </label>
+                  {formData.invoiceLogoUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, invoiceLogoUrl: '' })}
+                      className="text-[11px] text-rose-600 hover:text-rose-700 font-semibold cursor-pointer"
+                    >
+                      {lang === 'bn' ? 'লোগো মুছে ফেলুন' : 'Remove Logo'}
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                  {/* Logo Preview Thumbnail */}
+                  <div className="w-24 h-14 rounded-xl bg-white border border-slate-200 flex items-center justify-center p-1 shrink-0 overflow-hidden shadow-2xs">
+                    {formData.invoiceLogoUrl ? (
+                      <img
+                        src={formData.invoiceLogoUrl}
+                        alt="Invoice Logo Preview"
+                        className="max-h-full max-w-full object-contain"
+                      />
+                    ) : (
+                      <div className="text-center">
+                        <span className="text-primary font-black text-base leading-none block">+</span>
+                        <span className="text-[9px] text-slate-400 font-medium">{lang === 'bn' ? 'ডিফল্ট ব্যাজ' : 'Default Icon'}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Actions: File Upload & URL Input */}
+                  <div className="flex-1 space-y-2 w-full">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="file"
+                        ref={invoiceLogoInputRef}
+                        onChange={handleInvoiceLogoUpload}
+                        accept="image/*"
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => invoiceLogoInputRef.current?.click()}
+                        className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                      >
+                        <ImageIcon size={13} className="text-primary" />
+                        <span>{lang === 'bn' ? 'কম্পিউটার থেকে আপলোড' : 'Upload from Device'}</span>
+                      </button>
+
+                      {formData.logoUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, invoiceLogoUrl: formData.logoUrl })}
+                          className="px-3 py-1.5 bg-sky-50 border border-sky-100 hover:bg-sky-100 text-primary rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                        >
+                          {lang === 'bn' ? 'সাইটের লোগো ব্যবহার করুন' : 'Use Website Logo'}
+                        </button>
+                      )}
+                    </div>
+
+                    <input
+                      type="text"
+                      value={formData.invoiceLogoUrl || ''}
+                      onChange={e => setFormData({ ...formData, invoiceLogoUrl: e.target.value })}
+                      placeholder={lang === 'bn' ? 'অথবা লোগোর ইমেজ URL পেস্ট করুন (https://...)' : 'Or paste Logo Image URL (https://...)'}
+                      className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-slate-900 outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Preset Health Logos */}
+                <div>
+                  <span className="text-[11px] text-slate-400 font-medium block mb-1.5">
+                    {lang === 'bn' ? 'দ্রুত ব্যবহারের জন্য স্যাম্পল লোগো:' : 'Quick Sample Medical Logos:'}
+                  </span>
+                  <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+                    {[
+                      'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=200',
+                      'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=200',
+                      'https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&q=80&w=200'
+                    ].map((presetImg, pIdx) => (
+                      <img
+                        key={pIdx}
+                        src={presetImg}
+                        alt="Preset Logo"
+                        onClick={() => setFormData({ ...formData, invoiceLogoUrl: presetImg })}
+                        className={`w-10 h-7 object-cover rounded-lg border cursor-pointer transition-all ${
+                          formData.invoiceLogoUrl === presetImg ? 'border-primary ring-2 ring-primary/30 scale-105' : 'border-slate-200 opacity-60 hover:opacity-100'
+                        }`}
+                        title="Click to use this logo"
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Org Name */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  {lang === 'bn' ? 'প্রতিষ্ঠানের পূর্ণ নাম (Organization Name)' : 'Organization Name on Invoice'} *
+                </label>
+                <input
+                  type="text"
+                  value={formData.invoiceOrgName || formData.siteName || ''}
+                  onChange={e => setFormData({ ...formData, invoiceOrgName: e.target.value })}
+                  placeholder="e.g. LabHome BD - Smart Healthcare Services"
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-slate-900 outline-none"
+                />
+              </div>
+
+              {/* Org Subtitle */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  {lang === 'bn' ? 'সাবটাইটেল / স্লোগান (Subtitle / Tagline)' : 'Invoice Subtitle'}
+                </label>
+                <input
+                  type="text"
+                  value={formData.invoiceOrgSubtitle || formData.siteTagline || ''}
+                  onChange={e => setFormData({ ...formData, invoiceOrgSubtitle: e.target.value })}
+                  placeholder="e.g. বিশ্বস্ত হোম ডায়াগনস্টিক ও ডিজিটাল ল্যাব কেয়ার নেটওয়ার্ক"
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-slate-900 outline-none"
+                />
+              </div>
+
+              {/* Watermark */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  {lang === 'bn' ? 'ইনভয়েস ব্যাকগ্রাউন্ড ওয়াটারমার্ক (Watermark Text)' : 'Background Watermark Text'}
+                </label>
+                <input
+                  type="text"
+                  value={formData.invoiceWatermark || formData.siteName || ''}
+                  onChange={e => setFormData({ ...formData, invoiceWatermark: e.target.value })}
+                  placeholder="e.g. LabHome BD"
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-slate-900 outline-none font-mono"
+                />
+              </div>
+
+              {/* Office Address */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
+                  <MapPin size={12} className="text-primary" />
+                  <span>{lang === 'bn' ? 'প্রতিষ্ঠানের অফিস ঠিকানা (Organization Address)' : 'Official Address'} *</span>
+                </label>
+                <textarea
+                  rows={2}
+                  value={formData.invoiceAddress || formData.contactAddress || ''}
+                  onChange={e => setFormData({ ...formData, invoiceAddress: e.target.value })}
+                  placeholder="e.g. বাড়ি ১২, রোড ৫, ধানমন্ডি, ঢাকা - ১২০৫, বাংলাদেশ"
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-slate-900 outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Hotline */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
+                    <Phone size={12} className="text-emerald-600" />
+                    <span>{lang === 'bn' ? 'হেল্পলাইন / হটলাইন' : 'Hotline Number'}</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.invoiceHotline || formData.contactHotline || formData.contactPhone || ''}
+                    onChange={e => setFormData({ ...formData, invoiceHotline: e.target.value })}
+                    placeholder="e.g. +880 9613-828282"
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-slate-900 outline-none"
+                  />
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
+                    <Mail size={12} className="text-sky-600" />
+                    <span>{lang === 'bn' ? 'সাপোর্ট ইমেইল' : 'Support Email'}</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={formData.invoiceEmail || formData.contactEmail || ''}
+                    onChange={e => setFormData({ ...formData, invoiceEmail: e.target.value })}
+                    placeholder="support@labhomebd.com"
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-slate-900 outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Website */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
+                    <Globe size={12} className="text-indigo-600" />
+                    <span>{lang === 'bn' ? 'ওয়েবসাইট ইউআরএল' : 'Website URL'}</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.invoiceWebsite || 'www.labhomebd.com'}
+                    onChange={e => setFormData({ ...formData, invoiceWebsite: e.target.value })}
+                    placeholder="www.labhomebd.com"
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-slate-900 outline-none font-mono"
+                  />
+                </div>
+
+                {/* Digital Seal Note */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
+                    <ShieldCheck size={12} className="text-emerald-600" />
+                    <span>{lang === 'bn' ? 'ডিজিটাল সিল টেক্সট' : 'Digital Seal Note'}</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.invoiceFooterNote || (lang === 'bn' ? '✓ ভেরিফাইড ডিজিটাল মানি রিসিপ্ট' : '✓ Verified Digital Money Receipt')}
+                    onChange={e => setFormData({ ...formData, invoiceFooterNote: e.target.value })}
+                    placeholder="✓ Verified Digital Money Receipt"
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-slate-900 outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Right 6 Columns: Sample Collection & Report Guidelines */}
+            <div className="lg:col-span-6 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5 flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                    <ListChecks size={16} className="text-emerald-600" />
+                    <span>{lang === 'bn' ? 'স্যাম্পল কালেকশন ও রিপোর্ট নির্দেশিকা' : 'Sample Collection & Report Guidelines'}</span>
+                  </h3>
+                  <span className="text-[11px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-md">
+                    {invoiceGuidelinesList.length} {lang === 'bn' ? 'টি পয়েন্ট' : 'Points'}
+                  </span>
+                </div>
+
+                {/* Guidelines Section Title */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    {lang === 'bn' ? 'নির্দেশিকা বক্সের শিরোনাম (Guidelines Header)' : 'Guidelines Section Title'} *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.invoiceTermsTitle || (lang === 'bn' ? 'স্যাম্পল কালেকশন ও রিপোর্ট নির্দেশিকা (Important Guidelines):' : 'Sample Collection & Report Guidelines:')}
+                    onChange={e => setFormData({ ...formData, invoiceTermsTitle: e.target.value })}
+                    placeholder="e.g. স্যাম্পল কালেকশন ও রিপোর্ট নির্দেশিকা (Important Guidelines):"
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-bold focus:ring-2 focus:ring-slate-900 outline-none"
+                  />
+                </div>
+
+                {/* Add New Guideline Point Input */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    {lang === 'bn' ? 'নতুন নির্দেশিকা যোগ করুন' : 'Add New Guideline Bullet'}
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newGuidelineInput}
+                      onChange={e => setNewGuidelineInput(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddGuideline();
+                        }
+                      }}
+                      placeholder={lang === 'bn' ? 'যেমন: ফাস্টিং টেস্টের জন্য ৮-১০ ঘণ্টা খালি পেটে থাকুন...' : 'e.g. Ensure 8-10 hours fasting for blood sugar tests...'}
+                      className="flex-1 px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-slate-900 outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddGuideline}
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors shadow-2xs"
+                    >
+                      + Add
+                    </button>
+                  </div>
+                </div>
+
+                {/* Guidelines List */}
+                <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                  {invoiceGuidelinesList.map((guideline, gIdx) => (
+                    <div
+                      key={gIdx}
+                      className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-start justify-between gap-3 text-xs"
+                    >
+                      <div className="flex items-start gap-2.5 flex-1">
+                        <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">
+                          {gIdx + 1}
+                        </span>
+                        <p className="text-slate-700 leading-relaxed font-medium">{guideline}</p>
+                      </div>
+
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          disabled={gIdx === 0}
+                          onClick={() => handleMoveGuideline(gIdx, 'up')}
+                          className="p-1 text-slate-400 hover:text-slate-700 disabled:opacity-20 cursor-pointer rounded"
+                          title="Move Up"
+                        >
+                          <ArrowUp size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={gIdx === invoiceGuidelinesList.length - 1}
+                          onClick={() => handleMoveGuideline(gIdx, 'down')}
+                          className="p-1 text-slate-400 hover:text-slate-700 disabled:opacity-20 cursor-pointer rounded"
+                          title="Move Down"
+                        >
+                          <ArrowDown size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveGuideline(gIdx)}
+                          className="p-1 text-slate-400 hover:text-rose-600 cursor-pointer rounded ml-1"
+                          title="Remove Guideline"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Live Preview Box of Guidelines */}
+              <div className="p-4 rounded-2xl bg-slate-900 text-white border border-slate-800 text-xs space-y-2 mt-4">
+                <div className="flex items-center justify-between text-[11px] text-emerald-400 font-bold border-b border-slate-800 pb-2">
+                  <span className="flex items-center gap-1.5">
+                    <FileCheck size={14} />
+                    <span>{lang === 'bn' ? 'ইনভয়েস লাইভ প্রিভিউ' : 'Live Invoice Box Preview'}</span>
+                  </span>
+                  <span className="text-slate-400 font-normal">Customer Receipt Box</span>
+                </div>
+                <h5 className="font-bold text-slate-200 text-xs">
+                  {formData.invoiceTermsTitle || (lang === 'bn' ? 'স্যাম্পল কালেকশন ও রিপোর্ট নির্দেশিকা (Important Guidelines):' : 'Sample Collection & Report Guidelines:')}
+                </h5>
+                <ul className="list-disc pl-4 space-y-1 text-[11px] text-slate-300/90 leading-relaxed">
+                  {invoiceGuidelinesList.slice(0, 3).map((g, idx) => (
+                    <li key={idx}>{g}</li>
+                  ))}
+                  {invoiceGuidelinesList.length > 3 && (
+                    <li className="text-slate-400 italic font-mono">+ {invoiceGuidelinesList.length - 3} more guidelines...</li>
+                  )}
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
       )}

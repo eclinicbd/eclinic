@@ -58,6 +58,8 @@ export interface LabPartner {
   isHidden?: boolean; // When true, hidden from customer-facing booking and selector
 }
 
+export type PaymentMethod = 'cod' | 'bkash' | 'nagad' | 'rocket' | 'card';
+
 export interface BookingFormData {
   fullName: string;
   phoneNumber: string;
@@ -68,6 +70,13 @@ export interface BookingFormData {
   labId: string;
   doctorName?: string;
   prescription?: File | null;
+  paymentMethod?: PaymentMethod;
+  transactionId?: string;
+  senderPhone?: string;
+  cardNumber?: string;
+  cardExpiry?: string;
+  cardCvv?: string;
+  cardHolder?: string;
 }
 
 export interface ChatMessage {
@@ -101,6 +110,10 @@ export interface BookingHistoryItem {
   sampleCollectedAt?: string;
   deliveredAt?: string;
   notes?: string;
+  paymentMethod?: PaymentMethod;
+  paymentStatus?: 'unpaid' | 'paid' | 'pending_verification';
+  transactionId?: string;
+  senderPhone?: string;
 }
 
 export interface ReportItem {
@@ -238,6 +251,19 @@ export interface SiteSettings {
   workingHours?: string;
   facebookUrl?: string;
   services: ServiceItem[];
+
+  // Invoice & Money Receipt Customization
+  invoiceLogoUrl?: string;
+  invoiceOrgName?: string;
+  invoiceOrgSubtitle?: string;
+  invoiceAddress?: string;
+  invoiceHotline?: string;
+  invoiceEmail?: string;
+  invoiceWebsite?: string;
+  invoiceTermsTitle?: string;
+  invoiceGuidelines?: string[];
+  invoiceFooterNote?: string;
+  invoiceWatermark?: string;
 }
 
 // Admin Types
@@ -288,6 +314,7 @@ export interface StaffPermissions {
   canManageUsers: boolean; // Super Admin only
   canManageSlots: boolean; // Super Admin only
   canDeleteOrders: boolean; // Super Admin only
+  canViewRevenue: boolean; // View financial earnings/revenue (Super Admin & Manager only)
   assignedOnly?: boolean; // Only view assigned tasks
 }
 

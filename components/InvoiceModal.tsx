@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BookingHistoryItem, Language } from '../types';
 import { printOrDownloadInvoice } from '../services/invoiceService';
+import { getStoredSiteSettings } from '../services/dataStorage';
 import { formatOrderId } from './BookingModal';
 import { 
   X, 
@@ -38,9 +39,21 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
   if (!isOpen || !order) return null;
 
   const isBn = lang === 'bn';
+  const siteSettings = getStoredSiteSettings(lang);
+
+  const invoiceLogo = siteSettings.invoiceLogoUrl || siteSettings.logoUrl;
+  const orgName = siteSettings.invoiceOrgName || siteSettings.siteName || 'LabHome BD';
+  const orgHotline = siteSettings.invoiceHotline || siteSettings.contactHotline || siteSettings.contactPhone || '+880 9613-828282';
+  const guidelinesTitle = siteSettings.invoiceTermsTitle || (isBn ? 'স্যাম্পল কালেকশন ও রিপোর্ট নির্দেশিকা (Important Guidelines):' : 'Sample Collection & Report Guidelines:');
+  const guidelinesList = (siteSettings.invoiceGuidelines && siteSettings.invoiceGuidelines.length > 0)
+    ? siteSettings.invoiceGuidelines
+    : [
+        isBn ? 'ফাস্টিং টেস্টের ক্ষেত্রে ৮-১০ ঘণ্টা পূর্ব থেকে পানি ছাড়া অন্য কিছু খাওয়া থেকে বিরত থাকুন।' : 'For fasting tests, please fast for 8-10 hours prior to sample collection.',
+        isBn ? `যেকোনো সহযোগিতায় কল করুন আমাদের হটলাইনে: ${orgHotline}` : `For any assistance, please call our 24/7 helpline: ${orgHotline}`
+      ];
 
   const handlePrint = () => {
-    printOrDownloadInvoice(order, lang);
+    printOrDownloadInvoice(order, lang, siteSettings);
   };
 
   const handleCopyId = () => {
@@ -62,9 +75,13 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
         {/* Top Action Bar */}
         <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center font-black text-white text-lg">
-              +
-            </div>
+            {invoiceLogo ? (
+              <img src={invoiceLogo} alt={orgName} className="h-9 max-w-[120px] object-contain rounded-lg bg-white p-0.5" />
+            ) : (
+              <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center font-black text-white text-lg">
+                +
+              </div>
+            )}
             <div>
               <h3 className="font-extrabold text-sm sm:text-base tracking-tight text-white flex items-center gap-2">
                 {isBn ? 'অফিসিয়াল ইনভয়েস ও মানি রিসিপ্ট' : 'Official Invoice & Receipt'}
@@ -72,7 +89,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   {order.status.toUpperCase()}
                 </span>
               </h3>
-              <p className="text-slate-400 text-xs">eClinic Bangladesh Medical Services</p>
+              <p className="text-slate-400 text-xs">{orgName}</p>
             </div>
           </div>
 
@@ -216,10 +233,11 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
           </div>
 
           {/* Guidelines */}
-          <div className="p-3.5 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-[11px] text-slate-500 space-y-1">
-            <p className="font-bold text-slate-700">{isBn ? 'প্রয়োজনীয় নির্দেশনা:' : 'Preparation Guidelines:'}</p>
-            <p>• {isBn ? 'ফাস্টিং টেস্টের ক্ষেত্রে ৮-১০ ঘণ্টা পূর্ব থেকে পানি ছাড়া অন্য কিছু খাওয়া থেকে বিরত থাকুন।' : 'For fasting tests, please fast for 8-10 hours prior to sample collection.'}</p>
-            <p>• {isBn ? 'যেকোনো সহযোগিতায় কল করুন আমাদের হটলাইনে: +880 9613-828282' : 'For any assistance, please call our 24/7 helpline: +880 9613-828282'}</p>
+          <div className="p-3.5 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-[11px] text-slate-600 space-y-1">
+            <p className="font-bold text-slate-800">{guidelinesTitle}</p>
+            {guidelinesList.map((g, idx) => (
+              <p key={idx}>• {g}</p>
+            ))}
           </div>
         </div>
 

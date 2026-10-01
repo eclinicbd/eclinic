@@ -1417,7 +1417,24 @@ export const DEFAULT_SITE_SETTINGS_BN: SiteSettings = {
   emergencyNumber: '01800-000000',
   workingHours: 'সকাল ৭:০০ টা - রাত ১০:০০ টা (প্রতিদিন)',
   facebookUrl: 'https://facebook.com/labhomebd',
-  services: DEFAULT_SERVICES_BN
+  services: DEFAULT_SERVICES_BN,
+
+  // Invoice & Money Receipt Defaults
+  invoiceOrgName: 'LabHome BD - Smart Healthcare Services',
+  invoiceOrgSubtitle: 'বিশ্বস্ত হোম ডায়াগনস্টিক ও ডিজিটাল ল্যাব কেয়ার নেটওয়ার্ক',
+  invoiceAddress: 'বাড়ি ১২, রোড ৫, ধানমন্ডি, ঢাকা - ১২০৫, বাংলাদেশ',
+  invoiceHotline: '+880 9613-828282 / 01700-000000',
+  invoiceEmail: 'support@labhomebd.com',
+  invoiceWebsite: 'www.labhomebd.com',
+  invoiceTermsTitle: 'স্যাম্পল কালেকশন ও রিপোর্ট নির্দেশিকা (Important Guidelines):',
+  invoiceGuidelines: [
+    'ফাস্টিং ব্লাড সুগার বা লিপিড প্রোফাইল টেস্ট থাকলে অনুগ্রহ করে ৮-১০ ঘণ্টা উপবাস থাকুন।',
+    'আমাদের প্রশিক্ষিত মেডিকেল টেকনোলজিস্ট জীবাণুমুক্ত কিট নিয়ে আপনার ঠিকানায় নির্ধারিত সময়ে পৌঁছাবেন।',
+    'ল্যাব টেস্ট সম্পন্ন হওয়ার পর আপনার পেশেন্ট ড্যাশবোর্ড ও এসএমএস/হোয়াটসঅ্যাপে ভেরিফাইড রিপোর্ট পাওয়া যাবে।',
+    'যেকোনো সহায়তায় আমাদের হটলাইনে (+880 9613-828282) যোগাযোগ করুন।'
+  ],
+  invoiceFooterNote: '✓ Verified Digital Money Receipt • Computer Generated',
+  invoiceWatermark: 'LabHome BD'
 };
 
 export const DEFAULT_SITE_SETTINGS_EN: SiteSettings = {
@@ -1507,7 +1524,24 @@ export const DEFAULT_SITE_SETTINGS_EN: SiteSettings = {
   emergencyNumber: '01800-000000',
   workingHours: '7:00 AM - 10:00 PM (Everyday)',
   facebookUrl: 'https://facebook.com/labhomebd',
-  services: DEFAULT_SERVICES_EN
+  services: DEFAULT_SERVICES_EN,
+
+  // Invoice & Money Receipt Defaults
+  invoiceOrgName: 'LabHome BD - Healthcare Services',
+  invoiceOrgSubtitle: 'Trusted Digital Diagnostic & Home Sample Collection Network',
+  invoiceAddress: 'House #12, Road #5, Dhanmondi, Dhaka - 1205, Bangladesh',
+  invoiceHotline: '+880 9613-828282 / +880 1700-000000',
+  invoiceEmail: 'support@labhomebd.com',
+  invoiceWebsite: 'www.labhomebd.com',
+  invoiceTermsTitle: 'Sample Collection & Report Guidelines:',
+  invoiceGuidelines: [
+    'For fasting tests (FBS, Lipid Profile), ensure 8-10 hours overnight fasting.',
+    'Our certified medical phlebotomist will arrive with sterilized collection kits at your selected slot.',
+    'Digital verified reports will be available on your dashboard, SMS, and WhatsApp upon lab processing.',
+    'For any immediate queries or assistance, contact our 24/7 customer helpline.'
+  ],
+  invoiceFooterNote: '✓ Verified Digital Money Receipt • Computer Generated',
+  invoiceWatermark: 'LabHome BD'
 };
 
 export const DEFAULT_PACKAGES_BN: HealthPackage[] = [

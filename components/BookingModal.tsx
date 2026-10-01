@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { TestPackage, HealthPackage, LabPartner, Language, BookingHistoryItem, BookingFormData, PatientUser } from '../types';
+import { TestPackage, HealthPackage, LabPartner, Language, BookingHistoryItem, BookingFormData, PatientUser, PaymentMethod } from '../types';
 import { TRANSLATIONS } from '../translations';
 import { 
   X, 
@@ -26,7 +26,14 @@ import {
   Search,
   Upload,
   ArrowRight,
-  ShieldCheck
+  ShieldCheck,
+  CreditCard,
+  Wallet,
+  Banknote,
+  Smartphone,
+  CheckCircle2,
+  Lock,
+  QrCode
 } from 'lucide-react';
 import { Button } from './Button';
 import { getStoredDateSlotConfig, isSlotAvailable, DEFAULT_TIME_SLOTS } from '../services/dataStorage';
@@ -145,7 +152,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   onNavigateToTests
 }) => {
   const isBn = lang === 'bn';
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   
@@ -176,11 +183,25 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     testIds: [],
     labId: preSelectedLabId || (labs[0]?.id || 'lab_popular'),
     doctorName: '',
-    prescription: null
+    prescription: null,
+    paymentMethod: 'cod',
+    transactionId: '',
+    senderPhone: '',
+    cardNumber: '',
+    cardExpiry: '',
+    cardCvv: '',
+    cardHolder: ''
   });
 
   const [confirmedBookingId, setConfirmedBookingId] = useState<string>('');
   const [copiedId, setCopiedId] = useState(false);
+  const [copiedNumber, setCopiedNumber] = useState<string | null>(null);
+
+  const handleCopyPaymentNumber = (num: string) => {
+    navigator.clipboard.writeText(num);
+    setCopiedNumber(num);
+    setTimeout(() => setCopiedNumber(null), 2000);
+  };
 
   // Close search suggestions when clicking outside
   useEffect(() => {

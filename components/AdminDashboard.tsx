@@ -787,6 +787,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               tests={tests}
               labs={labs}
               bookings={visibleBookings}
+              canViewRevenue={isSuperAdmin || staffPermissions.canViewRevenue !== false}
+              currentStaff={currentStaff}
               onNavigateTab={setActiveTab}
               onOpenAddTest={handleOpenAddTest}
               onOpenAddLab={handleOpenAddLab}
