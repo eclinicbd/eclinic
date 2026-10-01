@@ -41,8 +41,14 @@ import {
   subscribeToTests,
   savePackagesToFirestore,
   subscribeToPackages,
-  subscribeToUsers
+  subscribeToUsers,
+  subscribeToPaymentConfig,
+  subscribeToAdminCredentials,
+  subscribeToStaffUsers,
+  subscribeToPatientsList,
+  subscribeToDateSlotConfig
 } from './services/firebase';
+import { saveStoredPaymentConfig } from './services/dataStorage';
 import { TestCard } from './components/TestCard';
 import { BookingModal } from './components/BookingModal';
 import { AIAssistant } from './components/AIAssistant';
@@ -375,6 +381,57 @@ export default function App() {
           saveStoredPatients(merged);
           return merged;
         });
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Real-time subscription to Payment Gateways API Configuration in Firestore
+  useEffect(() => {
+    const unsubscribe = subscribeToPaymentConfig((liveConfig) => {
+      if (liveConfig && Object.keys(liveConfig).length > 0) {
+        saveStoredPaymentConfig(liveConfig);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Real-time subscription to Super Admin Credentials in Firestore
+  useEffect(() => {
+    const unsubscribe = subscribeToAdminCredentials((liveCreds) => {
+      if (liveCreds && liveCreds.username && liveCreds.password) {
+        localStorage.setItem('labhome_admin_credentials_v1', JSON.stringify(liveCreds));
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Real-time subscription to Staff Users & Passwords in Firestore
+  useEffect(() => {
+    const unsubscribe = subscribeToStaffUsers((liveStaff) => {
+      if (liveStaff && liveStaff.length > 0) {
+        localStorage.setItem('labhome_staff_users_v1', JSON.stringify(liveStaff));
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Real-time subscription to Full Patients List in Firestore
+  useEffect(() => {
+    const unsubscribe = subscribeToPatientsList((livePatients) => {
+      if (livePatients && livePatients.length > 0) {
+        setPatients(livePatients);
+        localStorage.setItem('labhome_patients_v2', JSON.stringify(livePatients));
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Real-time subscription to Date Slot Config in Firestore
+  useEffect(() => {
+    const unsubscribe = subscribeToDateSlotConfig((liveSlotConfig) => {
+      if (liveSlotConfig && liveSlotConfig.slots && liveSlotConfig.slots.length > 0) {
+        localStorage.setItem('labhome_date_slot_config_v1', JSON.stringify(liveSlotConfig));
       }
     });
     return () => unsubscribe();

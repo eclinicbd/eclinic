@@ -35,7 +35,11 @@ import {
   HealthPackage, 
   LabPartner, 
   CategoryItem, 
-  Language 
+  Language,
+  PaymentGatewaysConfig,
+  AdminCredentials,
+  StaffUser,
+  DateSlotConfig
 } from '../types';
 
 // Initialize Firebase App
@@ -634,4 +638,187 @@ export const subscribeToPackages = (lang: Language, callback: (packages: HealthP
     return () => {};
   }
 };
+
+export const savePaymentConfigToFirestore = async (config: PaymentGatewaysConfig): Promise<boolean> => {
+  try {
+    const payDoc = doc(db, 'settings', 'payment_gateways');
+    await setDoc(payDoc, {
+      ...config,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+    return true;
+  } catch (error) {
+    console.error("Error saving payment config to Firestore:", error);
+    return false;
+  }
+};
+
+export const subscribeToPaymentConfig = (callback: (config: PaymentGatewaysConfig) => void) => {
+  try {
+    const payDoc = doc(db, 'settings', 'payment_gateways');
+    return onSnapshot(payDoc, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        if (data) {
+          callback(data as unknown as PaymentGatewaysConfig);
+        }
+      }
+    }, (error) => {
+      console.warn("Payment config subscription warning:", error);
+    });
+  } catch (error) {
+    console.error("Error subscribing to payment config:", error);
+    return () => {};
+  }
+};
+
+/**
+ * Super Admin Credentials Cloud Sync
+ */
+export const saveAdminCredentialsToFirestore = async (creds: AdminCredentials): Promise<boolean> => {
+  try {
+    const adminDoc = doc(db, 'settings', 'admin_credentials');
+    await setDoc(adminDoc, {
+      username: creds.username,
+      password: creds.password,
+      updatedAt: creds.updatedAt || new Date().toISOString()
+    }, { merge: true });
+    return true;
+  } catch (error) {
+    console.error("Error saving admin credentials to Firestore:", error);
+    return false;
+  }
+};
+
+export const subscribeToAdminCredentials = (callback: (creds: AdminCredentials) => void) => {
+  try {
+    const adminDoc = doc(db, 'settings', 'admin_credentials');
+    return onSnapshot(adminDoc, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        if (data && data.username && data.password) {
+          callback({
+            username: data.username,
+            password: data.password,
+            updatedAt: data.updatedAt
+          });
+        }
+      }
+    }, (error) => {
+      console.warn("Admin credentials subscription warning:", error);
+    });
+  } catch (error) {
+    console.error("Error subscribing to admin credentials:", error);
+    return () => {};
+  }
+};
+
+/**
+ * Staff Users & Passwords Cloud Sync
+ */
+export const saveStaffUsersToFirestore = async (staffList: StaffUser[]): Promise<boolean> => {
+  try {
+    const staffDoc = doc(db, 'settings', 'staff_users');
+    await setDoc(staffDoc, {
+      items: staffList,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+    return true;
+  } catch (error) {
+    console.error("Error saving staff users to Firestore:", error);
+    return false;
+  }
+};
+
+export const subscribeToStaffUsers = (callback: (staff: StaffUser[]) => void) => {
+  try {
+    const staffDoc = doc(db, 'settings', 'staff_users');
+    return onSnapshot(staffDoc, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        if (data && Array.isArray(data.items) && data.items.length > 0) {
+          callback(data.items as StaffUser[]);
+        }
+      }
+    }, (error) => {
+      console.warn("Staff users subscription warning:", error);
+    });
+  } catch (error) {
+    console.error("Error subscribing to staff users:", error);
+    return () => {};
+  }
+};
+
+/**
+ * Patients List & Accounts Cloud Sync
+ */
+export const savePatientsListToFirestore = async (patients: PatientUser[]): Promise<boolean> => {
+  try {
+    const patientsDoc = doc(db, 'settings', 'patients_list');
+    await setDoc(patientsDoc, {
+      items: patients,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+    return true;
+  } catch (error) {
+    console.error("Error saving patients list to Firestore:", error);
+    return false;
+  }
+};
+
+export const subscribeToPatientsList = (callback: (patients: PatientUser[]) => void) => {
+  try {
+    const patientsDoc = doc(db, 'settings', 'patients_list');
+    return onSnapshot(patientsDoc, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        if (data && Array.isArray(data.items) && data.items.length > 0) {
+          callback(data.items as PatientUser[]);
+        }
+      }
+    }, (error) => {
+      console.warn("Patients list subscription warning:", error);
+    });
+  } catch (error) {
+    console.error("Error subscribing to patients list:", error);
+    return () => {};
+  }
+};
+
+/**
+ * Appointment Date & Slot Configuration Cloud Sync
+ */
+export const saveDateSlotConfigToFirestore = async (config: DateSlotConfig): Promise<boolean> => {
+  try {
+    const slotDoc = doc(db, 'settings', 'date_slot_config');
+    await setDoc(slotDoc, {
+      ...config,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+    return true;
+  } catch (error) {
+    console.error("Error saving date slot config to Firestore:", error);
+    return false;
+  }
+};
+
+export const subscribeToDateSlotConfig = (callback: (config: DateSlotConfig) => void) => {
+  try {
+    const slotDoc = doc(db, 'settings', 'date_slot_config');
+    return onSnapshot(slotDoc, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        if (data && Array.isArray(data.slots) && data.slots.length > 0) {
+          callback(data as unknown as DateSlotConfig);
+        }
+      }
+    }, (error) => {
+      console.warn("Date slot config subscription warning:", error);
+    });
+  } catch (error) {
+    console.error("Error subscribing to date slot config:", error);
+    return () => {};
+  }
+};
+
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { TestPackage, HealthPackage, LabPartner, Language, BookingHistoryItem, BookingFormData, PatientUser, PaymentMethod } from '../types';
+import { TestPackage, LabPartner, Language, BookingHistoryItem, BookingFormData, PatientUser, PaymentMethod } from '../types';
 import { TRANSLATIONS } from '../translations';
 import { 
   X, 
@@ -21,40 +21,39 @@ import {
   AlertCircle,
   Copy,
   Printer,
-  Download,
   Stethoscope,
   Search,
-  Upload,
-  ArrowRight,
   ShieldCheck,
   CreditCard,
   Wallet,
   Banknote,
   Smartphone,
-  CheckCircle2,
   Lock,
-  QrCode
+  ArrowRight,
+  Info
 } from 'lucide-react';
 import { Button } from './Button';
-import { getStoredDateSlotConfig, isSlotAvailable, DEFAULT_TIME_SLOTS } from '../services/dataStorage';
+import { getStoredDateSlotConfig, isSlotAvailable, DEFAULT_TIME_SLOTS, getStoredSiteSettings, getStoredPaymentConfig } from '../services/dataStorage';
 import { getLabs } from '../constants';
 import { printOrDownloadInvoice } from '../services/invoiceService';
 
-// Helper to generate unique human-readable order ID: LH-YYMMDD-XXXX
+// Helper to generate unique human-readable order ID with numeric suffix only: LH-YYMMDD-XXXX (e.g. LH-261001-8492)
 export const generateUniqueOrderId = (): string => {
   const now = new Date();
   const year = now.getFullYear().toString().slice(-2);
   const month = (now.getMonth() + 1).toString().padStart(2, '0');
   const day = now.getDate().toString().padStart(2, '0');
-  const randomChars = Math.random().toString(36).substring(2, 6).toUpperCase();
-  return `LH-${year}${month}${day}-${randomChars}`;
+  // Generate 4-digit random number (1000 - 9999) - digits only, no capital letters
+  const randomNumeric = Math.floor(1000 + Math.random() * 9000).toString();
+  return `LH-${year}${month}${day}-${randomNumeric}`;
 };
 
-// Formats order ID display
+// Formats order ID display (e.g. #LH-261001-8492)
 export const formatOrderId = (id: string): string => {
   if (!id) return '#LH-0000';
-  if (id.startsWith('LH-') || id.startsWith('#')) return id;
-  return `#LH-${id.slice(-6).toUpperCase()}`;
+  if (id.startsWith('LH-')) return `#${id}`;
+  if (id.startsWith('#')) return id;
+  return `#LH-${id}`;
 };
 
 interface BookingModalProps {
@@ -152,6 +151,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   onNavigateToTests
 }) => {
   const isBn = lang === 'bn';
+  // 4 Steps: 1 = Lab & Tests, 2 = Schedule, 3 = Payment, 4 = Confirmed
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -163,6 +163,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const t = TRANSLATIONS[lang];
+  const siteSettings = getStoredSiteSettings(lang);
+  const paymentConfig = getStoredPaymentConfig();
   
   // Active Labs list
   const rawLabs = (labsList && labsList.length > 0 ? labsList : getLabs(lang)).filter(l => !l.isHidden);
@@ -252,6 +254,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         time: '',
         testIds: cartItems.map(t => t.id),
         labId: effectiveLabId, 
+        paymentMethod: prev.paymentMethod || 'cod',
       }));
       setIsSubmitting(false);
     }
@@ -285,7 +288,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     setValidationError(null);
   }, [step]);
 
-  // Reset time if selected date changes and current time is unavailable
+  // Reset time if selected date changes and current time is unavailable (e.g. minimum 3 hours lead time)
   useEffect(() => {
     if (formData.date && formData.time) {
       if (!isSlotAvailable(formData.date, formData.time)) {
@@ -334,6 +337,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       }).slice(0, 8)
     : availableToAddTests.slice(0, 6);
 
+  // Step 1 -> Step 2 validation
   const handleProceedToStep2 = () => {
     if (cartItems.length === 0) {
       setValidationError(isBn ? 'অনুগ্রহ করে অন্তত একটি টেস্ট কার্টে যোগ করুন।' : 'Please add at least one test to your cart.');
@@ -343,11 +347,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     setStep(2);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isSubmitting || step === 3) return;
-
-    // Friendly validation check
+  // Step 2 -> Step 3 validation
+  const handleProceedToStep3 = () => {
     if (!formData.fullName.trim()) {
       setValidationError(isBn ? 'অনুগ্রহ করে রোগীর পূর্ণ নাম লিখুন।' : 'Please enter patient full name.');
       return;
@@ -368,14 +369,72 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       setValidationError(isBn ? 'অনুগ্রহ করে একটি সময়সূচি (Time Slot) নির্বাচন করুন।' : 'Please select a preferred time slot.');
       return;
     }
+    if (!isSlotAvailable(formData.date, formData.time)) {
+      setValidationError(isBn ? 'নির্বাচিত সময়সূচিটি নূন্যতম ৩ ঘণ্টা আগের নিয়ম বা বুকিং সীমার কারণে অনুপলব্ধ। অন্য স্লট বেছে নিন।' : 'The selected slot is unavailable due to the 3-hour advance notice rule. Please choose another slot.');
+      return;
+    }
+
+    setValidationError(null);
+    setStep(3);
+  };
+
+  // Step 3 -> Step 4 Final Booking Confirmation
+  const handleSubmitBooking = async () => {
+    if (isSubmitting || step === 4) return;
+
+    // Validate payment method details if necessary
+    if (formData.paymentMethod === 'bkash' || formData.paymentMethod === 'nagad' || formData.paymentMethod === 'rocket') {
+      if (formData.senderPhone && formData.senderPhone.replace(/[^0-9]/g, '').length < 10) {
+        setValidationError(isBn ? 'অনুগ্রহ করে সঠিক প্রেরক মোবাইল নম্বর প্রদান করুন।' : 'Please provide a valid sender mobile number.');
+        return;
+      }
+    }
+
+    if (formData.paymentMethod === 'card') {
+      if (!formData.cardNumber || formData.cardNumber.replace(/\s/g, '').length < 15) {
+        setValidationError(isBn ? 'অনুগ্রহ করে সঠিক ১৬ ডিজিট কার্ড নম্বর লিখুন।' : 'Please enter a valid 16-digit card number.');
+        return;
+      }
+      if (!formData.cardExpiry || !formData.cardExpiry.includes('/')) {
+        setValidationError(isBn ? 'কার্ডের মেয়াদ (MM/YY) উল্লেখ করুন।' : 'Please enter card expiry date (MM/YY).');
+        return;
+      }
+      if (!formData.cardCvv || formData.cardCvv.length < 3) {
+        setValidationError(isBn ? '৩ বা ৪ ডিজিট CVV কোড লিখুন।' : 'Please enter 3 or 4 digit CVV code.');
+        return;
+      }
+    }
 
     setValidationError(null);
     setIsSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 400));
+    await new Promise(resolve => setTimeout(resolve, 500));
     
     const uniqueOrderId = generateUniqueOrderId();
     setConfirmedBookingId(uniqueOrderId);
     setCopiedId(false);
+
+    let paymentStatus: 'unpaid' | 'paid' | 'pending_verification' = 'unpaid';
+    if (formData.paymentMethod === 'card') {
+      paymentStatus = 'paid';
+    } else if (formData.paymentMethod === 'bkash' || formData.paymentMethod === 'nagad' || formData.paymentMethod === 'rocket') {
+      paymentStatus = formData.transactionId ? 'pending_verification' : 'unpaid';
+    } else {
+      paymentStatus = 'unpaid';
+    }
+
+    const bookingItemDetails = cartItems.map(item => {
+      const itemFinalPrice = getItemPrice(item);
+      const itemRegularPrice = getItemRegularPrice(item) || itemFinalPrice;
+      const itemDiscount = Math.max(0, itemRegularPrice - itemFinalPrice);
+      return {
+        id: item.id,
+        name: item.name,
+        category: item.category,
+        originalPrice: itemRegularPrice,
+        discountAmount: itemDiscount,
+        finalPrice: itemFinalPrice
+      };
+    });
 
     if (onBookingConfirmed) {
       const newBooking: BookingHistoryItem = {
@@ -388,16 +447,25 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         labId: formData.labId,
         labName: selectedLab?.name || 'Popular Diagnostic Centre',
         testNames: cartItems.map(t => t.name),
+        items: bookingItemDetails,
+        subtotal: regularSubTotal,
+        totalDiscount: totalSavings,
+        collectionFee: serviceCharge,
+        serviceCharge: serviceCharge,
         totalCost: totalBill,
         status: 'pending',
         doctorName: formData.doctorName?.trim() || '',
+        paymentMethod: formData.paymentMethod || 'cod',
+        paymentStatus,
+        transactionId: formData.transactionId?.trim() || undefined,
+        senderPhone: formData.senderPhone?.trim() || undefined,
         createdAt: new Date().toISOString()
       };
       onBookingConfirmed(newBooking);
     }
 
     setIsSubmitting(false);
-    setStep(3);
+    setStep(4);
   };
 
   const handleCopyOrderId = () => {
@@ -409,6 +477,20 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   };
 
   const handlePrint = () => {
+    const bookingItemDetails = cartItems.map(item => {
+      const itemFinalPrice = getItemPrice(item);
+      const itemRegularPrice = getItemRegularPrice(item) || itemFinalPrice;
+      const itemDiscount = Math.max(0, itemRegularPrice - itemFinalPrice);
+      return {
+        id: item.id,
+        name: item.name,
+        category: item.category,
+        originalPrice: itemRegularPrice,
+        discountAmount: itemDiscount,
+        finalPrice: itemFinalPrice
+      };
+    });
+
     const orderObj: BookingHistoryItem = {
       id: confirmedBookingId || generateUniqueOrderId(),
       customerName: formData.fullName || 'Valued Patient',
@@ -419,13 +501,66 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       labId: formData.labId,
       labName: selectedLab?.name || 'Popular Diagnostic Centre',
       testNames: cartItems.map(t => t.name),
+      items: bookingItemDetails,
+      subtotal: regularSubTotal,
+      totalDiscount: totalSavings,
+      collectionFee: serviceCharge,
+      serviceCharge: serviceCharge,
       totalCost: totalBill,
       status: 'pending',
       doctorName: formData.doctorName,
+      paymentMethod: formData.paymentMethod || 'cod',
+      paymentStatus: formData.paymentMethod === 'card' ? 'paid' : formData.transactionId ? 'pending_verification' : 'unpaid',
+      transactionId: formData.transactionId,
+      senderPhone: formData.senderPhone,
       createdAt: new Date().toISOString()
     };
     printOrDownloadInvoice(orderObj, lang);
   };
+
+  // Payment method options data
+  const paymentOptions: { id: PaymentMethod; title: string; subtitle: string; icon: any; color: string; badge?: string }[] = [
+    {
+      id: 'cod',
+      title: paymentConfig.cod.title || (isBn ? 'ক্যাশ অন কালেকশন (Cash on Delivery)' : 'Cash on Sample Collection'),
+      subtitle: isBn ? 'স্যাম্পল সংগ্রহের সময় ফ্লেবোটোমিস্টকে ক্যাশ পরিশোধ' : 'Pay cash to technician during home visit',
+      icon: Banknote,
+      color: 'emerald',
+      badge: isBn ? 'সর্বাধিক জনপ্রিয়' : 'Most Popular'
+    },
+    {
+      id: 'bkash',
+      title: isBn ? 'বিকাশ (bKash Payment)' : 'bKash Mobile Banking',
+      subtitle: isBn ? 'বিকাশ অ্যাপ অথবা ডায়াল করে ইনস্ট্যান্ট পেমেন্ট' : 'Direct Send Money / Merchant Payment',
+      icon: Smartphone,
+      color: 'pink',
+      badge: paymentConfig.bkash.merchantNumber || '01712-345678'
+    },
+    {
+      id: 'nagad',
+      title: isBn ? 'নগদ (Nagad Payment)' : 'Nagad Mobile Banking',
+      subtitle: isBn ? 'নগদ অ্যাপ অথবা ইউএসএসডি কোডে সহজ পেমেন্ট' : 'Fast payment via Nagad app',
+      icon: Smartphone,
+      color: 'orange',
+      badge: paymentConfig.nagad.merchantNumber || '01812-345678'
+    },
+    {
+      id: 'rocket',
+      title: isBn ? 'রকেট (Rocket / DBBL)' : 'DBBL Rocket Payment',
+      subtitle: isBn ? 'ডাচ-বাংলা রকেট একাউন্ট থেকে নিরাপদ পেমেন্ট' : 'DBBL Rocket Mobile Payment',
+      icon: Wallet,
+      color: 'purple',
+      badge: paymentConfig.rocket.accountNumber || '01912-345678-9'
+    },
+    {
+      id: 'card',
+      title: isBn ? 'কার্ড / অনলাইন পেমেন্ট (Debit/Credit Card)' : 'Debit / Credit Card (Online)',
+      subtitle: isBn ? 'ভিসা, মাস্টারকার্ড, এমেক্স ও নেক্সাস পে সুরক্ষিত গেটওয়ে' : 'Visa, MasterCard, AMEX, NexusPay',
+      icon: CreditCard,
+      color: 'sky',
+      badge: paymentConfig.card.provider?.toUpperCase() || 'Instant SSL'
+    }
+  ];
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200">
@@ -433,7 +568,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       {/* Modal Container: Full-width bottom sheet on mobile, rounded card on desktop */}
       <div className="bg-white w-full sm:max-w-xl rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[94vh] sm:max-h-[90vh] border border-slate-100 animate-in slide-in-from-bottom-5 sm:zoom-in-95 duration-200">
         
-        {/* Top Header & Step Indicator */}
+        {/* Top Header & 4-Step Indicator */}
         <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 text-white p-4 sm:p-5 flex-shrink-0 relative">
           <div className="flex justify-between items-center mb-3">
             <div className="flex items-center gap-2">
@@ -458,27 +593,28 @@ export const BookingModal: React.FC<BookingModalProps> = ({
             </button>
           </div>
 
-          {/* Clean Step Progress Bar */}
-          <div className="grid grid-cols-3 gap-2 pt-1">
+          {/* Clean 4-Step Progress Bar: 1. Lab & Tests -> 2. Schedule -> 3. Payment -> 4. Confirmed */}
+          <div className="grid grid-cols-4 gap-1.5 pt-1">
             {[
               { num: 1, title: isBn ? '১. ল্যাব ও টেস্ট' : '1. Lab & Tests' },
-              { num: 2, title: isBn ? '২. রোগী ও সময়' : '2. Schedule' },
-              { num: 3, title: isBn ? '৩. কনফার্মেশন' : '3. Confirmed' },
+              { num: 2, title: isBn ? '২. শিডিউল' : '2. Schedule' },
+              { num: 3, title: isBn ? '৩. পেমেন্ট' : '3. Payment' },
+              { num: 4, title: isBn ? '৪. নিশ্চিত' : '4. Confirmed' },
             ].map((sItem) => {
               const isCurrent = step === sItem.num;
               const isDone = step > sItem.num;
               return (
                 <div 
                   key={sItem.num}
-                  className={`py-1.5 px-2 rounded-xl text-center transition-all ${
+                  className={`py-1.5 px-1 rounded-xl text-center transition-all ${
                     isCurrent 
-                      ? 'bg-primary text-white font-bold shadow-xs' 
+                      ? 'bg-primary text-white font-bold shadow-xs ring-1 ring-white/30' 
                       : isDone
                       ? 'bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30'
                       : 'bg-white/5 text-slate-400 font-medium'
                   }`}
                 >
-                  <span className="text-[11px] truncate block">{sItem.title}</span>
+                  <span className="text-[10px] sm:text-[11px] truncate block">{sItem.title}</span>
                 </div>
               );
             })}
@@ -610,8 +746,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                             const hasDiscount = regPrice && regPrice > testPrice;
 
                             return (
-                              <div
-                                key={test.id}
+                              <div 
+                                key={test.id} 
                                 className="p-2.5 hover:bg-sky-50/70 transition-colors flex items-center justify-between gap-3"
                               >
                                 <div className="min-w-0 flex-1">
@@ -684,8 +820,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                           {allTests.slice(0, 4).map(test => {
                             const testPrice = getItemPrice(test);
                             return (
-                              <div
-                                key={test.id}
+                              <div 
+                                key={test.id} 
                                 className="p-2.5 rounded-xl border border-slate-200 bg-slate-50/60 hover:bg-white hover:border-primary/50 transition-all flex items-center justify-between gap-2"
                               >
                                 <div className="min-w-0 flex-1">
@@ -807,7 +943,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
           {/* STEP 2: PATIENT DETAILS, APPOINTMENT DATE & SLOTS   */}
           {/* ==================================================== */}
           {step === 2 && (
-            <form id="booking-form" onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-4">
               
               {/* Patient Information Section */}
               <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
@@ -922,24 +1058,34 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 </div>
               </div>
 
-              {/* Time Slot Selection */}
+              {/* Time Slot Selection with Minimum 3-Hour Notice Rule */}
               <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-2.5">
-                <label className="text-xs font-bold text-slate-900 flex items-center justify-between">
-                  <span className="flex items-center gap-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
                     <Clock size={15} className="text-primary" />
                     <span>{isBn ? 'সময়সূচি (Time Slot) নির্বাচন করুন:' : 'Select Time Slot:'}</span>
-                  </span>
+                  </label>
                   <span className="text-[10px] text-slate-500 font-mono">
                     {formData.time ? `Selected: ${formData.time}` : (isBn ? 'স্লট সিলেক্ট করুন' : 'Pick a slot')}
                   </span>
-                </label>
+                </div>
+
+                {/* 3-Hour Advance Notice Guidance Banner */}
+                <div className="flex items-center gap-2 px-3 py-2 bg-amber-50/90 border border-amber-200/80 rounded-xl text-[11px] text-amber-900">
+                  <Info size={14} className="text-amber-600 shrink-0" />
+                  <span>
+                    {isBn 
+                      ? 'নিয়মাবলী: স্যাম্পল কালেকশন কিট প্রস্তুতি ও টেকনোলজিস্ট পৌঁছানোর জন্য নূন্যতম ৩ ঘণ্টা আগে শিডিউল নির্বাচন করতে হবে।'
+                      : 'Notice: A minimum 3 hours advance notice is required for phlebotomist dispatch and sterile kit preparation.'}
+                  </span>
+                </div>
 
                 {activeTimeSlots.length === 0 ? (
                   <div className="text-center py-4 text-xs text-slate-400">
                     {isBn ? 'কোনো সক্রিয় সময়সূচি পাওয়া যায়নি' : 'No active time slots configured'}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-44 overflow-y-auto pr-1 custom-scrollbar">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
                     {activeTimeSlots.map((slotItem) => {
                       const slot = slotItem.time;
                       const available = isSlotAvailable(formData.date, slot);
@@ -950,8 +1096,13 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                           key={slotItem.id || slot}
                           type="button"
                           disabled={!available}
-                          onClick={() => setFormData({ ...formData, time: slot })}
-                          className={`p-2 rounded-xl text-[11px] font-semibold border transition-all text-center ${
+                          onClick={() => {
+                            if (available) {
+                              setFormData({ ...formData, time: slot });
+                              setValidationError(null);
+                            }
+                          }}
+                          className={`p-2 rounded-xl text-[11px] font-semibold border transition-all text-center relative ${
                             !available
                               ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-50'
                               : isSelected
@@ -960,6 +1111,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                           }`}
                         >
                           <span className="block truncate">{slot}</span>
+                          {!available && (
+                            <span className="text-[9px] text-rose-500 font-bold block mt-0.5">
+                              {isBn ? '< ৩ ঘণ্টা / বন্ধ' : 'Unavailable'}
+                            </span>
+                          )}
                         </button>
                       );
                     })}
@@ -973,7 +1129,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                   {isBn ? 'রেফারকারী চিকিৎসকের নাম (ঐচ্ছিক):' : 'Referring Doctor Name (Optional):'}
                 </label>
                 <input 
-                  type="text"
+                  type="text" 
                   placeholder={isBn ? 'e.g. ডাঃ এম এ বারী (ঐচ্ছিক)' : 'e.g. Dr. M A Bari (Optional)'}
                   value={formData.doctorName}
                   onChange={(e) => setFormData({ ...formData, doctorName: e.target.value })}
@@ -981,24 +1137,376 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 />
               </div>
 
-              {/* Order Summary & Payment Mode Reminder */}
+              {/* Bill Preview Banner */}
               <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between text-xs">
                 <div>
-                  <span className="text-[10px] text-emerald-800 font-bold uppercase block">{isBn ? 'পেমেন্ট পদ্ধতি' : 'Payment Mode'}</span>
-                  <span className="font-bold text-emerald-950">{isBn ? 'ক্যাশ অন স্যাম্পল কালেকশন / অনলাইন' : 'Cash on Sample Collection / Online'}</span>
+                  <span className="text-[10px] text-emerald-800 font-bold uppercase block">{isBn ? 'নির্বাচিত টেস্ট' : 'Selected Tests'}</span>
+                  <span className="font-bold text-emerald-950">{cartItems.length} {isBn ? 'টি টেস্ট' : 'Tests'} ({selectedLab?.name})</span>
                 </div>
                 <div className="text-right">
-                  <span className="text-[10px] text-emerald-800 font-bold uppercase block">{isBn ? 'মোট বিল' : 'Total Bill'}</span>
+                  <span className="text-[10px] text-emerald-800 font-bold uppercase block">{isBn ? 'মোট প্রদেয় বিল' : 'Total Payable'}</span>
                   <span className="text-base font-black text-emerald-700">৳{totalBill}</span>
                 </div>
               </div>
-            </form>
+            </div>
           )}
 
           {/* ==================================================== */}
-          {/* STEP 3: BOOKING CONFIRMED & INVOICE DOWNLOAD       */}
+          {/* STEP 3: PAYMENT METHOD (COD / BKASH / ROCKET / NAGAD / CARD) */}
           {/* ==================================================== */}
           {step === 3 && (
+            <div className="space-y-4">
+              
+              {/* Payment Header Total */}
+              <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white p-4 rounded-2xl shadow-md flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-slate-300 block">{isBn ? 'সর্বমোট পরিশোধযোগ্য বিল' : 'Total Amount Payable'}</span>
+                  <p className="text-xl font-black text-emerald-400">৳{totalBill}</p>
+                </div>
+                <div className="text-right text-[11px] text-slate-300">
+                  <span className="block font-semibold">{formData.fullName}</span>
+                  <span className="text-[10px] text-slate-400">{formData.date} • {formData.time}</span>
+                </div>
+              </div>
+
+              {/* Payment Methods Selector */}
+              <div className="space-y-2.5">
+                <label className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                  <Wallet size={15} className="text-primary" />
+                  <span>{isBn ? 'পেমেন্ট মাধ্যম নির্বাচন করুন (Payment Option):' : 'Select Payment Method:'}</span>
+                </label>
+
+                <div className="space-y-2">
+                  {paymentOptions.map((opt) => {
+                    const isSelected = formData.paymentMethod === opt.id;
+                    const IconComp = opt.icon;
+
+                    return (
+                      <div
+                        key={opt.id}
+                        onClick={() => setFormData({ ...formData, paymentMethod: opt.id })}
+                        className={`p-3 rounded-2xl border cursor-pointer transition-all ${
+                          isSelected
+                            ? 'border-primary bg-sky-50/70 ring-2 ring-primary/20 shadow-xs'
+                            : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/60'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
+                              isSelected ? 'bg-primary text-white' : 'bg-slate-100 text-slate-700'
+                            }`}>
+                              <IconComp size={18} />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h4 className="text-xs font-black text-slate-900 leading-tight">{opt.title}</h4>
+                                {opt.badge && (
+                                  <span className="text-[9px] font-bold bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded-md border border-slate-200">
+                                    {opt.badge}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[10px] text-slate-500 mt-0.5">{opt.subtitle}</p>
+                            </div>
+                          </div>
+
+                          <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${
+                            isSelected ? 'border-primary bg-primary text-white' : 'border-slate-300 bg-white'
+                          }`}>
+                            {isSelected && <Check size={12} strokeWidth={3} />}
+                          </div>
+                        </div>
+
+                        {/* Expandable Details based on selection */}
+                        {isSelected && (
+                          <div className="mt-3 pt-3 border-t border-slate-200/80 animate-in fade-in space-y-3 text-xs">
+                            
+                            {/* COD Instructions */}
+                            {opt.id === 'cod' && (
+                              <div className="p-3 bg-emerald-50/80 border border-emerald-200 rounded-xl text-emerald-950 space-y-1">
+                                <p className="font-bold flex items-center gap-1.5 text-emerald-800">
+                                  <ShieldCheck size={15} />
+                                  <span>{isBn ? 'ক্যাশ অন স্যাম্পল কালেকশন নিশ্চিতকরণ' : 'Cash on Sample Collection'}</span>
+                                </p>
+                                <p className="text-[11px] text-emerald-800">
+                                  {isBn 
+                                    ? 'আমাদের মেডিকেল টেকনোলজিস্ট আপনার বাসায় স্যাম্পল কালেকশন শেষ করার পর আপনি সরাসরি ৳' + totalBill + ' টাকা ক্যাশ প্রদান করবেন।'
+                                    : 'Please pay ৳' + totalBill + ' in cash to our technician upon successful doorstep sample collection.'}
+                                </p>
+                              </div>
+                            )}
+
+                            {/* bKash Instructions & Inputs */}
+                            {opt.id === 'bkash' && (
+                              <div className="space-y-2.5">
+                                <div className="p-3 bg-pink-50 border border-pink-200 rounded-xl text-pink-950 space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-bold text-xs text-pink-900">
+                                      {isBn ? 'বিকাশ পেমেন্ট / সেন্ড মানি নম্বর:' : 'bKash Number:'}
+                                    </span>
+                                    <div className="flex items-center gap-1">
+                                      <span className="font-mono font-black text-xs text-pink-900">
+                                        {paymentConfig.bkash.merchantNumber || '01712-345678'}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleCopyPaymentNumber((paymentConfig.bkash.merchantNumber || '01712345678').replace(/[^0-9]/g, ''))}
+                                        className="px-2 py-0.5 bg-pink-200/80 hover:bg-pink-300 text-pink-900 rounded-md text-[10px] font-bold cursor-pointer"
+                                      >
+                                        {copiedNumber === (paymentConfig.bkash.merchantNumber || '01712345678').replace(/[^0-9]/g, '') ? (isBn ? 'কপি হয়েছে' : 'Copied') : (isBn ? 'কপি' : 'Copy')}
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <ol className="list-decimal list-inside text-[11px] text-pink-800 space-y-0.5">
+                                    <li>{isBn ? 'বিকাশ অ্যাপে যান বা *247# ডায়াল করুন।' : 'Open bKash App or dial *247#.'}</li>
+                                    <li>{isBn ? `নম্বর ${paymentConfig.bkash.merchantNumber || '01712-345678'} এ মোট ৳${totalBill} টাকা Send Money / Payment করুন।` : `Send Money / Pay ৳${totalBill} to ${paymentConfig.bkash.merchantNumber || '01712-345678'}.`}</li>
+                                    <li>{isBn ? 'নিচে আপনার বিকাশ প্রেরক নম্বর ও TrxID প্রদান করুন।' : 'Enter your sender phone number and TrxID below.'}</li>
+                                  </ol>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                  <div>
+                                    <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                                      {isBn ? 'বিকাশ মোবাইল নম্বর:' : 'bKash Sender Phone:'}
+                                    </label>
+                                    <input 
+                                      type="tel"
+                                      placeholder="017XXXXXXXX"
+                                      value={formData.senderPhone || ''}
+                                      onChange={(e) => setFormData({ ...formData, senderPhone: e.target.value })}
+                                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono focus:border-primary outline-none"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                                      {isBn ? 'ট্রানজেকশন আইডি (TrxID):' : 'Transaction ID (TrxID):'}
+                                    </label>
+                                    <input 
+                                      type="text"
+                                      placeholder="e.g. 9J87AKL9"
+                                      value={formData.transactionId || ''}
+                                      onChange={(e) => setFormData({ ...formData, transactionId: e.target.value })}
+                                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono uppercase focus:border-primary outline-none"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Nagad Instructions & Inputs */}
+                            {opt.id === 'nagad' && (
+                              <div className="space-y-2.5">
+                                <div className="p-3 bg-orange-50 border border-orange-200 rounded-xl text-orange-950 space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-bold text-xs text-orange-900">
+                                      {isBn ? 'নগদ পেমেন্ট / সেন্ড মানি নম্বর:' : 'Nagad Number:'}
+                                    </span>
+                                    <div className="flex items-center gap-1">
+                                      <span className="font-mono font-black text-xs text-orange-900">
+                                        {paymentConfig.nagad.merchantNumber || '01812-345678'}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleCopyPaymentNumber((paymentConfig.nagad.merchantNumber || '01812345678').replace(/[^0-9]/g, ''))}
+                                        className="px-2 py-0.5 bg-orange-200/80 hover:bg-orange-300 text-orange-900 rounded-md text-[10px] font-bold cursor-pointer"
+                                      >
+                                        {copiedNumber === (paymentConfig.nagad.merchantNumber || '01812345678').replace(/[^0-9]/g, '') ? (isBn ? 'কপি হয়েছে' : 'Copied') : (isBn ? 'কপি' : 'Copy')}
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <ol className="list-decimal list-inside text-[11px] text-orange-800 space-y-0.5">
+                                    <li>{isBn ? 'নগদ অ্যাপ খুলুন বা *167# ডায়াল করুন।' : 'Open Nagad App or dial *167#.'}</li>
+                                    <li>{isBn ? `নম্বর ${paymentConfig.nagad.merchantNumber || '01812-345678'} এ মোট ৳${totalBill} টাকা Send Money / Payment করুন।` : `Send ৳${totalBill} to ${paymentConfig.nagad.merchantNumber || '01812-345678'}.`}</li>
+                                    <li>{isBn ? 'নিচে আপনার প্রেরক নম্বর ও TrxID লিখুন।' : 'Enter sender phone and TrxID below.'}</li>
+                                  </ol>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                  <div>
+                                    <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                                      {isBn ? 'নগদ মোবাইল নম্বর:' : 'Nagad Sender Phone:'}
+                                    </label>
+                                    <input 
+                                      type="tel"
+                                      placeholder="018XXXXXXXX"
+                                      value={formData.senderPhone || ''}
+                                      onChange={(e) => setFormData({ ...formData, senderPhone: e.target.value })}
+                                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono focus:border-primary outline-none"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                                      {isBn ? 'ট্রানজেকশন আইডি (TrxID):' : 'Transaction ID (TrxID):'}
+                                    </label>
+                                    <input 
+                                      type="text"
+                                      placeholder="e.g. 7K99NGD1"
+                                      value={formData.transactionId || ''}
+                                      onChange={(e) => setFormData({ ...formData, transactionId: e.target.value })}
+                                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono uppercase focus:border-primary outline-none"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Rocket Instructions & Inputs */}
+                            {opt.id === 'rocket' && (
+                              <div className="space-y-2.5">
+                                <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl text-purple-950 space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-bold text-xs text-purple-900">
+                                      {isBn ? 'রকেট একাউন্ট নম্বর:' : 'DBBL Rocket Number:'}
+                                    </span>
+                                    <div className="flex items-center gap-1">
+                                      <span className="font-mono font-black text-xs text-purple-900">
+                                        {paymentConfig.rocket.accountNumber || '01912-345678-9'}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleCopyPaymentNumber((paymentConfig.rocket.accountNumber || '019123456789').replace(/[^0-9]/g, ''))}
+                                        className="px-2 py-0.5 bg-purple-200/80 hover:bg-purple-300 text-purple-900 rounded-md text-[10px] font-bold cursor-pointer"
+                                      >
+                                        {copiedNumber === (paymentConfig.rocket.accountNumber || '019123456789').replace(/[^0-9]/g, '') ? (isBn ? 'কপি হয়েছে' : 'Copied') : (isBn ? 'কপি' : 'Copy')}
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <ol className="list-decimal list-inside text-[11px] text-purple-800 space-y-0.5">
+                                    <li>{isBn ? 'রকেট অ্যাপ খুলুন বা *322# ডায়াল করুন।' : 'Open Rocket App or dial *322#.'}</li>
+                                    <li>{isBn ? `রকেট একাউন্ট ${paymentConfig.rocket.accountNumber || '01912-345678-9'} এ মোট ৳${totalBill} টাকা সেন্ড মানি করুন।` : `Send ৳${totalBill} to ${paymentConfig.rocket.accountNumber || '01912-345678-9'}.`}</li>
+                                    <li>{isBn ? 'নিচে আপনার রকেট প্রেরক নম্বর ও TrxID প্রদান করুন।' : 'Enter sender phone and TrxID below.'}</li>
+                                  </ol>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                  <div>
+                                    <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                                      {isBn ? 'রকেট মোবাইল নম্বর:' : 'Rocket Sender Phone:'}
+                                    </label>
+                                    <input 
+                                      type="tel"
+                                      placeholder="019XXXXXXXX"
+                                      value={formData.senderPhone || ''}
+                                      onChange={(e) => setFormData({ ...formData, senderPhone: e.target.value })}
+                                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono focus:border-primary outline-none"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                                      {isBn ? 'ট্রানজেকশন আইডি (TrxID):' : 'Transaction ID (TrxID):'}
+                                    </label>
+                                    <input 
+                                      type="text"
+                                      placeholder="e.g. 8ROC7712"
+                                      value={formData.transactionId || ''}
+                                      onChange={(e) => setFormData({ ...formData, transactionId: e.target.value })}
+                                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono uppercase focus:border-primary outline-none"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Debit / Credit Card Form */}
+                            {opt.id === 'card' && (
+                              <div className="space-y-2.5">
+                                <div className="p-3 bg-sky-50 border border-sky-200 rounded-xl space-y-2">
+                                  <div className="flex items-center justify-between text-xs text-sky-950 font-bold">
+                                    <span>{isBn ? 'নিরাপদ কার্ড পেমেন্ট (Visa / MasterCard / AMEX)' : 'Secure Card Payment'}</span>
+                                    <span className="flex items-center gap-1 text-[10px] text-sky-700">
+                                      <Lock size={12} /> 256-bit SSL
+                                    </span>
+                                  </div>
+
+                                  <div className="space-y-2 pt-1">
+                                    <div>
+                                      <label className="text-[10px] font-bold text-slate-700 block mb-0.5">
+                                        {isBn ? 'কার্ড নম্বর (১৬ ডিজিট):' : 'Card Number (16-digit):'}
+                                      </label>
+                                      <input 
+                                        type="text"
+                                        maxLength={19}
+                                        placeholder="4123 •••• •••• 9876"
+                                        value={formData.cardNumber || ''}
+                                        onChange={(e) => {
+                                          const v = e.target.value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+                                          const matches = v.match(/\d{4,16}/g);
+                                          const match = matches && matches[0] || '';
+                                          const parts = [];
+                                          for (let i = 0, len = match.length; i < len; i += 4) {
+                                            parts.push(match.substring(i, i + 4));
+                                          }
+                                          const formatted = parts.length ? parts.join(' ') : v;
+                                          setFormData({ ...formData, cardNumber: formatted });
+                                        }}
+                                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-200 text-xs font-mono focus:border-primary outline-none"
+                                      />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <div>
+                                        <label className="text-[10px] font-bold text-slate-700 block mb-0.5">
+                                          {isBn ? 'মেয়াদ (MM/YY):' : 'Expiry (MM/YY):'}
+                                        </label>
+                                        <input 
+                                          type="text"
+                                          maxLength={5}
+                                          placeholder="12/28"
+                                          value={formData.cardExpiry || ''}
+                                          onChange={(e) => {
+                                            let v = e.target.value.replace(/[^0-9]/g, '');
+                                            if (v.length > 2) v = v.substring(0, 2) + '/' + v.substring(2, 4);
+                                            setFormData({ ...formData, cardExpiry: v });
+                                          }}
+                                          className="w-full px-3 py-2 bg-white rounded-xl border border-slate-200 text-xs font-mono focus:border-primary outline-none"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="text-[10px] font-bold text-slate-700 block mb-0.5">
+                                          {isBn ? 'সিভিভি (CVV/CVC):' : 'CVV / CVC:'}
+                                        </label>
+                                        <input 
+                                          type="password"
+                                          maxLength={4}
+                                          placeholder="•••"
+                                          value={formData.cardCvv || ''}
+                                          onChange={(e) => setFormData({ ...formData, cardCvv: e.target.value.replace(/[^0-9]/g, '') })}
+                                          className="w-full px-3 py-2 bg-white rounded-xl border border-slate-200 text-xs font-mono focus:border-primary outline-none"
+                                        />
+                                      </div>
+                                    </div>
+
+                                    <div>
+                                      <label className="text-[10px] font-bold text-slate-700 block mb-0.5">
+                                        {isBn ? 'কার্ডধারীর নাম:' : 'Cardholder Name:'}
+                                      </label>
+                                      <input 
+                                        type="text"
+                                        placeholder="e.g. MOHAMMAD RAHIM"
+                                        value={formData.cardHolder || ''}
+                                        onChange={(e) => setFormData({ ...formData, cardHolder: e.target.value.toUpperCase() })}
+                                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-200 text-xs uppercase focus:border-primary outline-none"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ==================================================== */}
+          {/* STEP 4: BOOKING CONFIRMED & INVOICE DOWNLOAD       */}
+          {/* ==================================================== */}
+          {step === 4 && (
             <div className="py-4 text-center space-y-5">
               
               {/* Success Icon */}
@@ -1012,8 +1520,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 </h3>
                 <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
                   {isBn 
-                    ? 'আমাদের প্রতিনিধি দ্রুত আপনার সাথে যোগাযোগ করে স্যাম্পল কালেকশনের বিষয়টি নিশ্চিত করবেন।' 
-                    : 'Our representative will call you shortly to confirm sample collection.'}
+                    ? 'আমাদের মেডিকেল প্রতিনিধি দ্রুত আপনার সাথে যোগাযোগ করে স্যাম্পল কালেকশন নিশ্চিত করবেন।' 
+                    : 'Our medical representative will call you shortly to confirm sample collection.'}
                 </p>
               </div>
 
@@ -1052,11 +1560,25 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                   <strong className="text-slate-900">{formData.date} ({formData.time})</strong>
                 </div>
                 <div className="flex justify-between border-b border-slate-100 pb-2">
+                  <span className="text-slate-500">{isBn ? 'পেমেন্ট পদ্ধতি:' : 'Payment Method:'}</span>
+                  <strong className="text-slate-900 capitalize">
+                    {formData.paymentMethod === 'cod' 
+                      ? (isBn ? 'ক্যাশ অন কালেকশন' : 'Cash on Delivery')
+                      : formData.paymentMethod === 'bkash'
+                      ? `bKash ${formData.transactionId ? `(Trx: ${formData.transactionId})` : ''}`
+                      : formData.paymentMethod === 'nagad'
+                      ? `Nagad ${formData.transactionId ? `(Trx: ${formData.transactionId})` : ''}`
+                      : formData.paymentMethod === 'rocket'
+                      ? `Rocket ${formData.transactionId ? `(Trx: ${formData.transactionId})` : ''}`
+                      : (isBn ? 'অনলাইন কার্ড পেমেন্ট' : 'Credit/Debit Card')}
+                  </strong>
+                </div>
+                <div className="flex justify-between border-b border-slate-100 pb-2">
                   <span className="text-slate-500">{isBn ? 'ঠিকানা:' : 'Address:'}</span>
                   <span className="text-slate-800 text-right max-w-[200px] truncate">{formData.address}</span>
                 </div>
                 <div className="flex justify-between pt-1">
-                  <span className="text-slate-900 font-bold">{isBn ? 'মোট পরিশোধযোগ্য:' : 'Total Payable:'}</span>
+                  <span className="text-slate-900 font-bold">{isBn ? 'মোট বিল:' : 'Total Bill:'}</span>
                   <strong className="text-emerald-600 font-black text-sm">৳{totalBill}</strong>
                 </div>
               </div>
@@ -1086,10 +1608,12 @@ export const BookingModal: React.FC<BookingModalProps> = ({
           )}
         </div>
 
-        {/* Modal Sticky Bottom Actions (For Step 1 and Step 2) */}
-        {step !== 3 && (
+        {/* Modal Sticky Bottom Actions (For Step 1, Step 2, and Step 3) */}
+        {step !== 4 && (
           <div className="bg-white border-t border-slate-200 p-3 sm:p-4 flex items-center justify-between gap-3 shadow-lg flex-shrink-0">
-            {step === 1 ? (
+            
+            {/* Step 1 Actions: Proceed to Step 2 */}
+            {step === 1 && (
               <>
                 <div className="min-w-0">
                   <span className="text-[10px] uppercase font-bold text-slate-400 block">{isBn ? 'মোট প্রদেয়' : 'Total Bill'}</span>
@@ -1100,11 +1624,14 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                   disabled={cartItems.length === 0}
                   className="px-5 py-3 text-xs sm:text-sm font-bold shadow-md flex items-center gap-1.5 cursor-pointer"
                 >
-                  <span>{isBn ? 'পরবর্তী: রোগী ও সময়সূচি' : 'Next: Schedule'}</span>
+                  <span>{isBn ? 'পরবর্তী: শিডিউল ও সময়' : 'Next: Schedule'}</span>
                   <ChevronRight size={16} />
                 </Button>
               </>
-            ) : (
+            )}
+
+            {/* Step 2 Actions: Back to Step 1 or Proceed to Step 3 */}
+            {step === 2 && (
               <>
                 <button
                   type="button"
@@ -1121,9 +1648,36 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 </div>
 
                 <Button
-                  type="submit"
-                  form="booking-form"
-                  disabled={isSubmitting || !formData.time || !formData.fullName || !formData.phoneNumber || !formData.address}
+                  onClick={handleProceedToStep3}
+                  disabled={!formData.time || !formData.fullName || !formData.phoneNumber || !formData.address}
+                  className="px-5 py-3 text-xs sm:text-sm font-bold shadow-md flex items-center gap-1.5 cursor-pointer bg-primary hover:bg-sky-600 text-white"
+                >
+                  <span>{isBn ? 'পরবর্তী: পেমেন্ট পদ্ধতি' : 'Next: Payment'}</span>
+                  <ChevronRight size={16} />
+                </Button>
+              </>
+            )}
+
+            {/* Step 3 Actions: Back to Step 2 or Confirm Booking */}
+            {step === 3 && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setStep(2)}
+                  className="px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-100 transition-colors flex items-center gap-1 cursor-pointer"
+                >
+                  <ChevronLeft size={15} />
+                  <span>{isBn ? 'পেছনে' : 'Back'}</span>
+                </button>
+
+                <div className="hidden sm:block text-right">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block">{isBn ? 'পেমেন্ট মেথড' : 'Payment'}</span>
+                  <span className="text-xs font-bold text-slate-800 capitalize">{formData.paymentMethod} (৳{totalBill})</span>
+                </div>
+
+                <Button
+                  onClick={handleSubmitBooking}
+                  disabled={isSubmitting}
                   className="px-5 py-3 text-xs sm:text-sm font-bold shadow-md flex items-center gap-1.5 cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white"
                 >
                   {isSubmitting ? (
@@ -1137,6 +1691,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 </Button>
               </>
             )}
+
           </div>
         )}
       </div>

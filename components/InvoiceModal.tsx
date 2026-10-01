@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { BookingHistoryItem, Language } from '../types';
 import { printOrDownloadInvoice } from '../services/invoiceService';
-import { getStoredSiteSettings } from '../services/dataStorage';
+import { getStoredSiteSettings, getStoredTests, getStoredPackages } from '../services/dataStorage';
 import { formatOrderId } from './BookingModal';
 import { 
   X, 
@@ -17,7 +17,10 @@ import {
   Copy, 
   Check, 
   FileText,
-  ShieldCheck
+  ShieldCheck,
+  Tag,
+  Truck,
+  CreditCard
 } from 'lucide-react';
 import { Button } from './Button';
 
@@ -62,11 +65,91 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const testsList = order.testNames && order.testNames.length > 0
-    ? order.testNames
-    : ['General Diagnostic Laboratory Test'];
+  // Resolve itemized breakdown (test-wise main rate, discount, final rate)
+  const allCatalogItems = [...getStoredTests(lang), ...getStoredPackages(lang)];
+  
+  interface DisplayInvoiceItem {
+    name: string;
+    category?: string;
+    originalPrice: number;
+    discountAmount: number;
+    finalPrice: number;
+  }
 
-  const avgCost = Math.round(order.totalCost / testsList.length);
+  let resolvedItems: DisplayInvoiceItem[] = [];
+
+  if (order.items && order.items.length > 0) {
+    resolvedItems = order.items.map(item => ({
+      name: item.name,
+      category: item.category,
+      originalPrice: item.originalPrice ?? item.finalPrice,
+      discountAmount: item.discountAmount ?? Math.max(0, (item.originalPrice ?? item.finalPrice) - item.finalPrice),
+      finalPrice: item.finalPrice
+    }));
+  } else {
+    const rawTests = order.testNames && order.testNames.length > 0 
+      ? order.testNames 
+      : ['General Diagnostic Laboratory Test'];
+    
+    resolvedItems = rawTests.map(testName => {
+      const matched = allCatalogItems.find(c => 
+        c.name?.trim().toLowerCase() === testName.trim().toLowerCase() ||
+        c.id === testName
+      );
+      if (matched) {
+        const itemFinal = (order.labId && matched.priceByLab?.[order.labId] !== undefined)
+          ? matched.priceByLab[order.labId]
+          : matched.price;
+        const itemRegular = (order.labId && matched.originalPriceByLab?.[order.labId] !== undefined)
+          ? matched.originalPriceByLab[order.labId]
+          : (matched.originalPrice || itemFinal);
+        const discount = Math.max(0, itemRegular - itemFinal);
+        return {
+          name: matched.name,
+          category: matched.category,
+          originalPrice: itemRegular,
+          discountAmount: discount,
+          finalPrice: itemFinal
+        };
+      } else {
+        const avg = Math.round(order.totalCost / rawTests.length);
+        return {
+          name: testName,
+          category: isBn ? 'ডায়াগনস্টিক টেস্ট' : 'Diagnostic Test',
+          originalPrice: avg,
+          discountAmount: 0,
+          finalPrice: avg
+        };
+      }
+    });
+  }
+
+  const itemsMainSum = resolvedItems.reduce((sum, item) => sum + item.originalPrice, 0);
+  const itemsDiscountSum = resolvedItems.reduce((sum, item) => sum + item.discountAmount, 0);
+  const itemsFinalSum = resolvedItems.reduce((sum, item) => sum + item.finalPrice, 0);
+
+  // Home Sample Collection Fee
+  const collectionFee = order.collectionFee !== undefined 
+    ? order.collectionFee 
+    : (order.serviceCharge !== undefined 
+        ? order.serviceCharge 
+        : (order.totalCost > itemsFinalSum ? order.totalCost - itemsFinalSum : 0));
+
+  const getPaymentMethodBadge = () => {
+    switch (order.paymentMethod) {
+      case 'bkash':
+        return `bKash ${order.transactionId ? `(Trx: ${order.transactionId})` : '(বিকাশ)'}`;
+      case 'nagad':
+        return `Nagad ${order.transactionId ? `(Trx: ${order.transactionId})` : '(নগদ)'}`;
+      case 'rocket':
+        return `Rocket ${order.transactionId ? `(Trx: ${order.transactionId})` : '(রকেট)'}`;
+      case 'card':
+        return isBn ? 'কার্ড পেমেন্ট (Card)' : 'Card Payment';
+      case 'cod':
+      default:
+        return isBn ? 'ক্যাশ অন স্যাম্পল কালেকশন (Cash)' : 'Cash on Sample Collection';
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
@@ -187,43 +270,86 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
             </div>
           </div>
 
-          {/* Itemized Tests Breakdown */}
+          {/* Itemized Tests Breakdown Table with Main Rate, Discount and Final Rate */}
           <div>
             <div className="flex justify-between items-center mb-2.5">
               <span className="font-extrabold text-slate-900 text-xs uppercase tracking-wide flex items-center gap-1.5">
                 <FileText size={14} className="text-primary" />
-                {isBn ? 'নির্বাচিত টেস্ট ও হেলথ প্যাকেজ সমূহ' : 'Booked Tests & Health Packages'}
+                {isBn ? 'নির্বাচিত টেস্ট সমূহ ও ফি বিভাজন' : 'Booked Tests & Price Breakdown'}
               </span>
               <span className="text-slate-500 font-semibold text-[11px]">
-                {testsList.length} {isBn ? 'টি টেস্ট' : 'items'}
+                {resolvedItems.length} {isBn ? 'টি টেস্ট' : 'items'}
               </span>
             </div>
-            <div className="border border-slate-200 rounded-2xl overflow-hidden divide-y divide-slate-100">
-              {testsList.map((test, idx) => (
-                <div key={idx} className="p-3 bg-white flex justify-between items-center hover:bg-slate-50 transition-colors">
-                  <div className="flex items-center gap-2.5">
-                    <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center font-bold text-[10px]">
+
+            <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white">
+              {/* Header */}
+              <div className="grid grid-cols-12 bg-slate-100/90 text-slate-700 font-bold text-[11px] uppercase tracking-wider p-2.5 border-b border-slate-200">
+                <div className="col-span-1 text-center">#</div>
+                <div className="col-span-5">{isBn ? 'টেস্টের বিবরণ' : 'Test Description'}</div>
+                <div className="col-span-2 text-right">{isBn ? 'মূল রেট' : 'Main Rate'}</div>
+                <div className="col-span-2 text-right">{isBn ? 'ডিসকাউন্ট' : 'Discount'}</div>
+                <div className="col-span-2 text-right">{isBn ? 'চূড়ান্ত রেট' : 'Final Rate'}</div>
+              </div>
+
+              {/* Rows */}
+              <div className="divide-y divide-slate-100">
+                {resolvedItems.map((item, idx) => (
+                  <div key={idx} className="grid grid-cols-12 p-3 items-center hover:bg-slate-50/70 transition-colors text-xs">
+                    <div className="col-span-1 text-center text-slate-400 font-bold text-[11px]">
                       {idx + 1}
-                    </span>
-                    <span className="font-bold text-slate-800 text-xs">{test}</span>
+                    </div>
+                    <div className="col-span-5 pr-2">
+                      <p className="font-bold text-slate-800">{item.name}</p>
+                      {item.category && (
+                        <span className="text-[10px] text-slate-400 block font-normal">{item.category}</span>
+                      )}
+                    </div>
+                    <div className="col-span-2 text-right text-slate-500 font-medium">
+                      ৳ {item.originalPrice}
+                    </div>
+                    <div className="col-span-2 text-right">
+                      {item.discountAmount > 0 ? (
+                        <span className="inline-block bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold px-1.5 py-0.5 rounded">
+                          -৳ {item.discountAmount}
+                        </span>
+                      ) : (
+                        <span className="text-slate-300 text-[11px]">৳ ০</span>
+                      )}
+                    </div>
+                    <div className="col-span-2 text-right font-black text-slate-900">
+                      ৳ {item.finalPrice}
+                    </div>
                   </div>
-                  <span className="font-bold text-slate-900">৳ {avgCost}</span>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Pricing & Bill Summary */}
+          {/* Pricing & Bill Summary (Subtotal, Discount, Collection Fee, Total) */}
           <div className="bg-slate-900 text-white p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="space-y-1">
-              <p className="text-slate-400 text-xs">{isBn ? 'পেমেন্ট স্ট্যাটাস:' : 'Payment Method:'}</p>
-              <p className="text-xs font-bold text-emerald-400 flex items-center gap-1">
-                <CheckCircle2 size={13} /> {isBn ? 'ক্যাশ অন কালেকশন / অনলাইন' : 'Cash on Home Collection / Online'}
-              </p>
-              <p className="text-[11px] text-slate-400">
-                {isBn ? 'হোম কালেকশন ফি সম্পূর্ণ ফ্রি' : 'Home sample collection is included for free'}
-              </p>
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1.5 text-xs text-slate-300 font-medium">
+                <CreditCard size={14} className="text-primary" />
+                <span>{isBn ? 'পেমেন্ট মেথড:' : 'Payment Method:'}</span>
+                <span className="text-white font-bold">{getPaymentMethodBadge()}</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-slate-300 font-medium">
+                <Truck size={14} className="text-emerald-400" />
+                <span>{isBn ? 'হোম স্যাম্পল কালেকশন ফি:' : 'Sample Collection:'}</span>
+                <span className={collectionFee === 0 ? 'text-emerald-400 font-bold' : 'text-white font-bold'}>
+                  {collectionFee === 0 ? (isBn ? '৳ ০ (ফ্রি / Free)' : '৳ 0 (FREE)') : `৳ ${collectionFee}`}
+                </span>
+              </div>
+              {itemsDiscountSum > 0 && (
+                <div className="flex items-center gap-1.5 text-xs text-amber-300 font-medium">
+                  <Tag size={13} />
+                  <span>{isBn ? 'সর্বমোট সাশ্রয় / ছাড়:' : 'Total Discount Savings:'}</span>
+                  <span className="font-bold">৳ {itemsDiscountSum}</span>
+                </div>
+              )}
             </div>
+
             <div className="text-left sm:text-right border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-800 w-full sm:w-auto">
               <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider block">
                 {isBn ? 'সর্বমোট প্রদেয় বিল' : 'Total Payable'}

@@ -22,7 +22,8 @@ import {
   BarChart3,
   CalendarClock,
   UserCheck,
-  Lock
+  Lock,
+  CreditCard
 } from 'lucide-react';
 import { Button } from './Button';
 import { 
@@ -49,6 +50,7 @@ import { AdminSlots } from './admin/AdminSlots';
 import { AdminStaffUsers } from './admin/AdminStaffUsers';
 import { AdminCustomers } from './admin/AdminCustomers';
 import { AdminSettings } from './admin/AdminSettings';
+import { AdminPaymentSettings } from './admin/AdminPaymentSettings';
 import { AdminCMS } from './admin/AdminCMS';
 import { 
   TestFormModal, 
@@ -102,7 +104,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onResetAllData,
   onLogout
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'reports' | 'tests' | 'packages' | 'categories' | 'labs' | 'slots' | 'staff' | 'customers' | 'cms' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'reports' | 'tests' | 'packages' | 'categories' | 'labs' | 'slots' | 'staff' | 'payments' | 'customers' | 'cms' | 'settings'>('overview');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Active Staff / RBAC Session State
@@ -743,6 +745,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <NavButton id="cms" icon={Globe} label={t.adminSiteCMS} />
             )}
 
+            {(isSuperAdmin || staffPermissions.canManageSettings) && (
+              <NavButton id="payments" icon={CreditCard} label={lang === 'bn' ? 'পেমেন্ট গেটওয়ে ও API' : 'Payment & Gateway APIs'} />
+            )}
+
             {staffPermissions.canViewCustomers && (
               <NavButton id="customers" icon={Users} label={t.adminCustomers} badge={patients.length} />
             )}
@@ -915,6 +921,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               onDeleteService={(srv) => setDeleteTarget({ type: 'service', id: srv.id, name: srv.title })}
               onToggleServiceActive={handleToggleServiceActive}
               showToast={showToast}
+            />
+          )}
+
+          {activeTab === 'payments' && (
+            <AdminPaymentSettings 
+              lang={lang}
+              onShowToast={showToast}
             />
           )}
 

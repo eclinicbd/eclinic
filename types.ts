@@ -60,6 +60,71 @@ export interface LabPartner {
 
 export type PaymentMethod = 'cod' | 'bkash' | 'nagad' | 'rocket' | 'card';
 
+export interface BkashApiConfig {
+  isActive: boolean;
+  mode: 'manual' | 'api';
+  merchantNumber: string; // e.g. "01712-345678"
+  appKey: string;
+  appSecret: string;
+  username: string;
+  password: string;
+  isSandbox: boolean;
+  callbackUrl?: string;
+  instructions?: string;
+}
+
+export interface NagadApiConfig {
+  isActive: boolean;
+  mode: 'manual' | 'api';
+  merchantNumber: string; // e.g. "01812-345678"
+  merchantId: string;
+  publicKey: string;
+  privateKey: string;
+  isSandbox: boolean;
+  callbackUrl?: string;
+  instructions?: string;
+}
+
+export interface RocketApiConfig {
+  isActive: boolean;
+  mode: 'manual' | 'api';
+  accountNumber: string; // e.g. "01912-345678-9"
+  billerId: string;
+  apiKey: string;
+  secretPin?: string;
+  isSandbox: boolean;
+  instructions?: string;
+}
+
+export interface CardGatewayConfig {
+  isActive: boolean;
+  provider: 'sslcommerz' | 'shurjopay' | 'aamarpay' | 'stripe' | 'custom';
+  storeId: string;
+  storePassword: string;
+  apiKey?: string;
+  isSandbox: boolean;
+  currency: string;
+  successUrl?: string;
+  failUrl?: string;
+  cancelUrl?: string;
+  instructions?: string;
+}
+
+export interface CodConfig {
+  isActive: boolean;
+  title: string;
+  instructions: string;
+  extraFee?: number;
+}
+
+export interface PaymentGatewaysConfig {
+  cod: CodConfig;
+  bkash: BkashApiConfig;
+  nagad: NagadApiConfig;
+  rocket: RocketApiConfig;
+  card: CardGatewayConfig;
+}
+
 export interface BookingFormData {
   fullName: string;
   phoneNumber: string;
@@ -89,6 +154,15 @@ export interface ChatMessage {
 // Dashboard Types
 export type BookingStatus = 'pending' | 'confirmed' | 'collected' | 'processing' | 'completed' | 'cancelled';
 
+export interface BookingItemDetail {
+  id?: string;
+  name: string;
+  category?: string;
+  originalPrice: number; // Main / regular rate before discount
+  discountAmount: number; // Discount amount (in BDT)
+  finalPrice: number; // Final net price
+}
+
 export interface BookingHistoryItem {
   id: string;
   customerName?: string; // Added for Admin
@@ -100,6 +174,11 @@ export interface BookingHistoryItem {
   labId?: string;
   labName: string;
   testNames: string[];
+  items?: BookingItemDetail[]; // Itemized breakdown with main rate, discount and final rate
+  subtotal?: number; // Main rate subtotal
+  totalDiscount?: number; // Total savings/discount
+  collectionFee?: number; // Home sample collection fee (serviceCharge)
+  serviceCharge?: number;
   totalCost: number;
   status: BookingStatus;
   doctorName?: string;
@@ -316,6 +395,12 @@ export interface StaffPermissions {
   canDeleteOrders: boolean; // Super Admin only
   canViewRevenue: boolean; // View financial earnings/revenue (Super Admin & Manager only)
   assignedOnly?: boolean; // Only view assigned tasks
+}
+
+export interface AdminCredentials {
+  username: string;
+  password: string;
+  updatedAt?: string;
 }
 
 export interface StaffUser {

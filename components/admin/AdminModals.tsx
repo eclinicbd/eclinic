@@ -1064,6 +1064,22 @@ export const OrderFormModal: React.FC<OrderModalProps> = ({
     if (!customerPhone.trim() || selectedTestIds.length === 0) return;
 
     const selectedTestsList = tests.filter(t => selectedTestIds.includes(t.id));
+    const bookingItems = selectedTestsList.map(t => {
+      const finalPrice = t.priceByLab?.[selectedLabId] ?? t.price;
+      const originalPrice = t.originalPriceByLab?.[selectedLabId] ?? t.originalPrice ?? finalPrice;
+      const discount = Math.max(0, originalPrice - finalPrice);
+      return {
+        id: t.id,
+        name: t.name,
+        category: t.category,
+        originalPrice,
+        discountAmount: discount,
+        finalPrice
+      };
+    });
+
+    const mainRateSum = bookingItems.reduce((sum, item) => sum + item.originalPrice, 0);
+    const discountSum = bookingItems.reduce((sum, item) => sum + item.discountAmount, 0);
 
     const orderToSave: BookingHistoryItem = {
       id: editingOrder ? editingOrder.id : generateUniqueOrderId(),
@@ -1075,6 +1091,11 @@ export const OrderFormModal: React.FC<OrderModalProps> = ({
       labId: currentLab?.id,
       labName: currentLab?.name || 'Selected Diagnostic Center',
       testNames: selectedTestsList.map(t => t.name),
+      items: bookingItems,
+      subtotal: mainRateSum,
+      totalDiscount: discountSum,
+      collectionFee: serviceCharge,
+      serviceCharge: serviceCharge,
       totalCost: totalCost,
       status: status,
       doctorName: doctorName.trim() || undefined,
@@ -1343,26 +1364,75 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
             </div>
           </div>
 
-          {/* Tests List */}
+          {/* Tests List & Itemized Breakdown */}
           <div>
-            <span className="text-[10px] text-slate-400 uppercase font-bold block mb-1.5">Booked Laboratory Tests</span>
-            <div className="space-y-1.5">
-              {order.testNames.map((testName, i) => (
-                <div key={i} className="flex justify-between items-center p-2.5 bg-slate-50 rounded-lg border border-slate-100 text-xs">
-                  <span className="font-semibold text-slate-800">{testName}</span>
-                  <span className="text-emerald-700 font-bold">Included</span>
-                </div>
-              ))}
+            <div className="flex justify-between items-center mb-1.5">
+              <span className="text-[10px] text-slate-400 uppercase font-bold">
+                {lang === 'bn' ? 'বুকিংকৃত টেস্ট ও ফি বিভাজন' : 'Booked Tests & Price Breakdown'}
+              </span>
+              <span className="text-[10px] text-slate-500 font-bold">
+                {order.testNames.length} {lang === 'bn' ? 'টি টেস্ট' : 'Items'}
+              </span>
+            </div>
+
+            <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
+              <div className="grid grid-cols-12 bg-slate-100 text-slate-700 font-bold text-[10px] uppercase p-2 border-b border-slate-200">
+                <div className="col-span-6">{lang === 'bn' ? 'টেস্টের বিবরণ' : 'Test Name'}</div>
+                <div className="col-span-2 text-right">{lang === 'bn' ? 'মূল রেট' : 'Main Rate'}</div>
+                <div className="col-span-2 text-right">{lang === 'bn' ? 'ডিসকাউন্ট' : 'Discount'}</div>
+                <div className="col-span-2 text-right">{lang === 'bn' ? 'চূড়ান্ত রেট' : 'Final Rate'}</div>
+              </div>
+              <div className="divide-y divide-slate-100 max-h-48 overflow-y-auto">
+                {(order.items && order.items.length > 0 ? order.items : order.testNames.map(tName => ({
+                  name: tName,
+                  originalPrice: Math.round(order.totalCost / (order.testNames.length || 1)),
+                  discountAmount: 0,
+                  finalPrice: Math.round(order.totalCost / (order.testNames.length || 1))
+                }))).map((item, i) => (
+                  <div key={i} className="grid grid-cols-12 p-2.5 items-center text-xs hover:bg-slate-50">
+                    <div className="col-span-6 font-bold text-slate-800 truncate pr-1">
+                      {item.name}
+                    </div>
+                    <div className="col-span-2 text-right text-slate-500 font-medium">
+                      ৳ {item.originalPrice}
+                    </div>
+                    <div className="col-span-2 text-right">
+                      {item.discountAmount > 0 ? (
+                        <span className="text-[10px] text-amber-700 bg-amber-50 px-1 py-0.5 rounded font-bold border border-amber-200">
+                          -৳ {item.discountAmount}
+                        </span>
+                      ) : (
+                        <span className="text-slate-300 text-[10px]">৳ ০</span>
+                      )}
+                    </div>
+                    <div className="col-span-2 text-right font-black text-slate-900">
+                      ৳ {item.finalPrice}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Total & Status Selector */}
-          <div className="p-4 bg-slate-900 text-white rounded-xl flex items-center justify-between mt-4">
-            <div>
-              <span className="text-[10px] text-slate-400 uppercase font-bold block">Total Payable Amount</span>
-              <span className="text-xs text-slate-400">Includes home collection service fee</span>
+          {/* Home Sample Collection Fee & Total */}
+          <div className="p-4 bg-slate-900 text-white rounded-xl space-y-2">
+            <div className="flex justify-between items-center text-xs text-slate-300 border-b border-slate-800 pb-2">
+              <span>{lang === 'bn' ? 'হোম স্যাম্পল কালেকশন ফি:' : 'Home Sample Collection Fee:'}</span>
+              <span className={(order.collectionFee ?? order.serviceCharge ?? 0) === 0 ? 'text-emerald-400 font-bold' : 'text-white font-bold'}>
+                {(order.collectionFee ?? order.serviceCharge ?? 0) === 0 ? (lang === 'bn' ? '৳ ০ (ফ্রি / Free)' : '৳ 0 (FREE)') : `৳ ${order.collectionFee ?? order.serviceCharge}`}
+              </span>
             </div>
-            <span className="text-2xl font-black text-emerald-400">৳ {order.totalCost}</span>
+            <div className="flex justify-between items-center">
+              <div>
+                <span className="text-[10px] text-slate-400 uppercase font-bold block">
+                  {lang === 'bn' ? 'সর্বমোট প্রদেয় বিল' : 'Total Payable Amount'}
+                </span>
+                <span className="text-xs text-slate-400">
+                  {order.paymentMethod ? `Payment: ${order.paymentMethod.toUpperCase()}` : 'Cash on Sample Collection'}
+                </span>
+              </div>
+              <span className="text-2xl font-black text-emerald-400">৳ {order.totalCost}</span>
+            </div>
           </div>
 
           {/* Quick Status & Assigned Staff */}

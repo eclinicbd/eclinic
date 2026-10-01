@@ -1,10 +1,17 @@
-import { TestPackage, LabPartner, Language, BookingHistoryItem, SiteSettings, PatientUser, HealthPackage, CategoryItem, DateSlotConfig, TimeSlotConfigItem, StaffUser, StaffRole, StaffPermissions } from '../types';
+import { TestPackage, LabPartner, Language, BookingHistoryItem, SiteSettings, PatientUser, HealthPackage, CategoryItem, DateSlotConfig, TimeSlotConfigItem, StaffUser, StaffRole, StaffPermissions, PaymentGatewaysConfig, AdminCredentials } from '../types';
 import { 
   getTests as getDefaultTests, 
   getLabs as getDefaultLabs, 
   getSiteSettings as getDefaultSiteSettings,
   getPackages as getDefaultPackages
 } from '../constants';
+import { 
+  saveAdminCredentialsToFirestore, 
+  saveStaffUsersToFirestore, 
+  savePatientsListToFirestore, 
+  saveDateSlotConfigToFirestore,
+  saveUserProfileToFirestore 
+} from './firebase';
 
 const STORAGE_KEYS = {
   TESTS_BN: 'labhome_tests_bn_v3',
@@ -21,7 +28,8 @@ const STORAGE_KEYS = {
   CURRENT_PATIENT: 'labhome_current_patient_v2',
   DATE_SLOT_CONFIG: 'labhome_date_slot_config_v1',
   STAFF_USERS: 'labhome_staff_users_v1',
-  CURRENT_STAFF: 'labhome_current_staff_session_v1'
+  CURRENT_STAFF: 'labhome_current_staff_session_v1',
+  PAYMENT_CONFIG: 'labhome_payment_gateways_v1'
 };
 
 export const ROLE_DEFAULT_PERMISSIONS: Record<StaffRole, StaffPermissions> = {
@@ -284,6 +292,7 @@ export const getStoredStaffUsers = (): StaffUser[] => {
 export const saveStoredStaffUsers = (staff: StaffUser[]): void => {
   try {
     localStorage.setItem(STORAGE_KEYS.STAFF_USERS, JSON.stringify(staff));
+    saveStaffUsersToFirestore(staff);
   } catch (e) {
     console.error("Error saving staff users:", e);
   }
@@ -360,8 +369,31 @@ export const getStoredDateSlotConfig = (): DateSlotConfig => {
 export const setStoredDateSlotConfig = (config: DateSlotConfig): void => {
   try {
     localStorage.setItem(STORAGE_KEYS.DATE_SLOT_CONFIG, JSON.stringify(config));
+    saveDateSlotConfigToFirestore(config);
   } catch (e) {
     console.error("Failed to save date slot config:", e);
+  }
+};
+
+export const parseSlotStartTime = (dateStr: string, slotTime: string): Date | null => {
+  try {
+    const startTimePart = slotTime.split('-')[0]?.trim(); // e.g. "08:00 AM"
+    if (!startTimePart) return null;
+    const match = startTimePart.match(/(\d+):(\d+)\s*(AM|PM)/i);
+    if (!match) return null;
+    let hours = parseInt(match[1], 10);
+    const minutes = parseInt(match[2], 10);
+    const ampm = match[3].toUpperCase();
+
+    if (ampm === 'PM' && hours < 12) hours += 12;
+    if (ampm === 'AM' && hours === 12) hours = 0;
+
+    const [year, month, day] = dateStr.split('-').map(Number);
+    if (!year || !month || !day) return null;
+    
+    return new Date(year, month - 1, day, hours, minutes, 0, 0);
+  } catch {
+    return null;
   }
 };
 
@@ -369,12 +401,25 @@ export const isSlotAvailable = (dateStr?: string, slotTime?: string): boolean =>
   if (!dateStr || !slotTime) return false;
   
   const config = getStoredDateSlotConfig();
+  // Minimum 3 hours lead time strictly enforced as requested
+  const leadHours = Math.max(config.leadTimeHours || 3, 3);
   
-  // Check if date is blocked
+  // 1. Check minimum 3 hours advance lead time
+  const slotDate = parseSlotStartTime(dateStr, slotTime);
+  if (slotDate) {
+    const now = new Date();
+    const diffMs = slotDate.getTime() - now.getTime();
+    const minDiffMs = leadHours * 60 * 60 * 1000;
+    if (diffMs < minDiffMs) {
+      return false;
+    }
+  }
+  
+  // 2. Check if date is blocked
   const isBlocked = (config.blockedDates || []).some(b => b.date === dateStr);
   if (isBlocked) return false;
 
-  // Check weekly off
+  // 3. Check weekly off
   try {
     const d = new Date(dateStr);
     const dayOfWeek = d.getDay();
@@ -383,11 +428,11 @@ export const isSlotAvailable = (dateStr?: string, slotTime?: string): boolean =>
     // ignore
   }
 
-  // Check if slot itself is active
+  // 4. Check if slot itself is active
   const slotItem = (config.slots || DEFAULT_TIME_SLOTS).find(s => s.time === slotTime);
   if (slotItem && !slotItem.isActive) return false;
 
-  // Check bookings count against slot capacity
+  // 5. Check bookings count against slot capacity
   try {
     const bookings = getStoredBookings();
     const sameSlotBookings = bookings.filter(b => b.date === dateStr && b.time === slotTime && b.status !== 'cancelled');
@@ -833,6 +878,7 @@ export const getStoredPatients = (): PatientUser[] => {
 export const saveStoredPatients = (patients: PatientUser[]): void => {
   try {
     localStorage.setItem(STORAGE_KEYS.PATIENTS, JSON.stringify(patients));
+    savePatientsListToFirestore(patients);
   } catch (e) {
     console.error("Failed to save patients to storage:", e);
   }
@@ -988,11 +1034,7 @@ export const resetAllDataToDefaults = (): void => {
 export const ADMIN_STORAGE_KEY = 'labhome_admin_credentials_v1';
 export const ADMIN_SESSION_KEY = 'labhome_admin_session_auth';
 
-export interface AdminCredentials {
-  username: string;
-  password: string;
-  updatedAt?: string;
-}
+export type { AdminCredentials } from '../types';
 
 export const getStoredAdminCredentials = (): AdminCredentials => {
   try {
@@ -1014,10 +1056,12 @@ export const getStoredAdminCredentials = (): AdminCredentials => {
 
 export const saveStoredAdminCredentials = (credentials: AdminCredentials): void => {
   try {
-    localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify({
+    const credObj = {
       ...credentials,
       updatedAt: new Date().toISOString()
-    }));
+    };
+    localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(credObj));
+    saveAdminCredentialsToFirestore(credObj);
   } catch (e) {
     console.error("Error saving admin credentials:", e);
   }
@@ -1114,9 +1158,92 @@ export const setAdminSessionActive = (active: boolean): void => {
   }
 };
 
+export const DEFAULT_PAYMENT_CONFIG: PaymentGatewaysConfig = {
+  cod: {
+    isActive: true,
+    title: 'ক্যাশ অন স্যাম্পল কালেকশন (Cash on Delivery)',
+    instructions: 'হোম স্যাম্পল কালেকশনের পর আমাদের মেডিকেল টেকনোলজিস্ট / ফ্লেবোটোমিস্টকে সরাসরি ক্যাশ টাকা পরিশোধ করুন।',
+    extraFee: 0
+  },
+  bkash: {
+    isActive: true,
+    mode: 'manual',
+    merchantNumber: '01712-345678',
+    appKey: '',
+    appSecret: '',
+    username: '',
+    password: '',
+    isSandbox: false,
+    callbackUrl: 'https://labhomebd.com/api/payment/bkash/callback',
+    instructions: 'বিকাশ অ্যাপ বা *247# এ গিয়ে 01712-345678 নম্বরে Send Money বা Make Payment করুন। এরপর ট্রানজেকশন আইডি (TrxID) প্রদান করুন।'
+  },
+  nagad: {
+    isActive: true,
+    mode: 'manual',
+    merchantNumber: '01812-345678',
+    merchantId: '',
+    publicKey: '',
+    privateKey: '',
+    isSandbox: false,
+    callbackUrl: 'https://labhomebd.com/api/payment/nagad/callback',
+    instructions: 'নগদ অ্যাপ বা *167# ডায়াল করে 01812-345678 নম্বরে টাকা সেন্ড মানি বা মার্চেন্ট পে করুন।'
+  },
+  rocket: {
+    isActive: true,
+    mode: 'manual',
+    accountNumber: '01912-345678-9',
+    billerId: '',
+    apiKey: '',
+    isSandbox: false,
+    instructions: 'রকেট অ্যাপ বা *322# ডায়াল করে 01912-345678-9 একাউন্টে টাকা পাঠান।'
+  },
+  card: {
+    isActive: true,
+    provider: 'sslcommerz',
+    storeId: '',
+    storePassword: '',
+    apiKey: '',
+    isSandbox: false,
+    currency: 'BDT',
+    successUrl: 'https://labhomebd.com/api/payment/success',
+    failUrl: 'https://labhomebd.com/api/payment/fail',
+    cancelUrl: 'https://labhomebd.com/api/payment/cancel',
+    instructions: 'ভিসা, মাস্টারকার্ড, এমেক্স বা নেক্সাসপে কার্ড দিয়ে সরাসরি পেমেন্ট গেটওয়েতে সুরক্ষিতভাবে পে করুন।'
+  }
+};
+
+export const getStoredPaymentConfig = (): PaymentGatewaysConfig => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEYS.PAYMENT_CONFIG);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (parsed && typeof parsed === 'object') {
+        return {
+          cod: { ...DEFAULT_PAYMENT_CONFIG.cod, ...(parsed.cod || {}) },
+          bkash: { ...DEFAULT_PAYMENT_CONFIG.bkash, ...(parsed.bkash || {}) },
+          nagad: { ...DEFAULT_PAYMENT_CONFIG.nagad, ...(parsed.nagad || {}) },
+          rocket: { ...DEFAULT_PAYMENT_CONFIG.rocket, ...(parsed.rocket || {}) },
+          card: { ...DEFAULT_PAYMENT_CONFIG.card, ...(parsed.card || {}) }
+        };
+      }
+    }
+  } catch (e) {
+    console.error("Error reading stored payment config:", e);
+  }
+  return DEFAULT_PAYMENT_CONFIG;
+};
+
+export const saveStoredPaymentConfig = (config: PaymentGatewaysConfig): void => {
+  try {
+    localStorage.setItem(STORAGE_KEYS.PAYMENT_CONFIG, JSON.stringify(config));
+  } catch (e) {
+    console.error("Error saving payment config to storage:", e);
+  }
+};
+
 export const exportAllDataBackup = () => {
   return {
-    version: '2.6',
+    version: '2.7',
     exportedAt: new Date().toISOString(),
     tests_bn: getStoredTests('bn'),
     tests_en: getStoredTests('en'),
@@ -1127,7 +1254,8 @@ export const exportAllDataBackup = () => {
     bookings: getStoredBookings(),
     patients: getStoredPatients(),
     site_settings_bn: getStoredSiteSettings('bn'),
-    site_settings_en: getStoredSiteSettings('en')
+    site_settings_en: getStoredSiteSettings('en'),
+    payment_config: getStoredPaymentConfig()
   };
 };
 
@@ -1144,6 +1272,7 @@ export const importAllDataBackup = (data: any): boolean => {
     if (Array.isArray(data.patients)) localStorage.setItem(STORAGE_KEYS.PATIENTS, JSON.stringify(data.patients));
     if (data.site_settings_bn) localStorage.setItem(STORAGE_KEYS.SITE_SETTINGS_BN, JSON.stringify(data.site_settings_bn));
     if (data.site_settings_en) localStorage.setItem(STORAGE_KEYS.SITE_SETTINGS_EN, JSON.stringify(data.site_settings_en));
+    if (data.payment_config) localStorage.setItem(STORAGE_KEYS.PAYMENT_CONFIG, JSON.stringify(data.payment_config));
     return true;
   } catch (e) {
     console.error("Failed to import backup:", e);

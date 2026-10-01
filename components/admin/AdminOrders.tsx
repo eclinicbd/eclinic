@@ -477,8 +477,29 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({
                         <option value="cancelled">✕ Cancelled</option>
                       </select>
                     </td>
-                    <td className="px-2.5 py-3 text-right font-black text-slate-900 whitespace-nowrap text-xs">
-                      ৳ {booking.totalCost}
+                    <td className="px-2.5 py-3 text-right whitespace-nowrap text-xs">
+                      <div className="font-black text-slate-900">৳ {booking.totalCost}</div>
+                      <span className={`inline-block text-[9px] font-bold px-1.5 py-0.5 rounded uppercase mt-0.5 ${
+                        booking.paymentMethod === 'bkash'
+                          ? 'bg-pink-100 text-pink-700'
+                          : booking.paymentMethod === 'nagad'
+                          ? 'bg-orange-100 text-orange-700'
+                          : booking.paymentMethod === 'rocket'
+                          ? 'bg-purple-100 text-purple-700'
+                          : booking.paymentMethod === 'card'
+                          ? 'bg-sky-100 text-sky-700'
+                          : 'bg-emerald-100 text-emerald-700'
+                      }`}>
+                        {booking.paymentMethod === 'bkash'
+                          ? (booking.transactionId ? `bKash • ${booking.transactionId.slice(-4)}` : 'bKash')
+                          : booking.paymentMethod === 'nagad'
+                          ? (booking.transactionId ? `Nagad • ${booking.transactionId.slice(-4)}` : 'Nagad')
+                          : booking.paymentMethod === 'rocket'
+                          ? (booking.transactionId ? `Rocket • ${booking.transactionId.slice(-4)}` : 'Rocket')
+                          : booking.paymentMethod === 'card'
+                          ? 'Card Paid'
+                          : (isBn ? 'ক্যাশ অন ডেলিভারি' : 'COD')}
+                      </span>
                     </td>
                     <td className="px-2.5 py-3 text-center whitespace-nowrap">
                       <button 

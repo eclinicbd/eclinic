@@ -1,5 +1,5 @@
 import { BookingHistoryItem, Language, SiteSettings } from '../types';
-import { getStoredSiteSettings } from './dataStorage';
+import { getStoredSiteSettings, getStoredTests, getStoredPackages } from './dataStorage';
 
 export const generateInvoiceHtml = (
   order: BookingHistoryItem, 
@@ -13,13 +13,75 @@ export const generateInvoiceHtml = (
     ? new Date(order.createdAt).toLocaleString(isBn ? 'bn-BD' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' })
     : `${order.date} ${order.time}`;
 
-  const testsList = order.testNames && order.testNames.length > 0
-    ? order.testNames
-    : ['Diagnostic Health Package / General Test'];
+  // Resolve itemized breakdown (test wise main rate, discount, final rate)
+  const allCatalogItems = [...getStoredTests(lang), ...getStoredPackages(lang)];
+  
+  interface ResolvedInvoiceItem {
+    name: string;
+    category?: string;
+    originalPrice: number; // Main Rate
+    discountAmount: number; // Discount Amount
+    finalPrice: number; // Final Rate
+  }
 
-  // Calculate rough per-test breakdown or show itemized
-  const testCount = testsList.length;
-  const avgCost = Math.round(order.totalCost / testCount);
+  let resolvedItems: ResolvedInvoiceItem[] = [];
+
+  if (order.items && order.items.length > 0) {
+    resolvedItems = order.items.map(item => ({
+      name: item.name,
+      category: item.category,
+      originalPrice: item.originalPrice ?? item.finalPrice,
+      discountAmount: item.discountAmount ?? Math.max(0, (item.originalPrice ?? item.finalPrice) - item.finalPrice),
+      finalPrice: item.finalPrice
+    }));
+  } else {
+    const rawTests = order.testNames && order.testNames.length > 0 
+      ? order.testNames 
+      : ['Diagnostic Health Test / Package'];
+    
+    resolvedItems = rawTests.map(testName => {
+      const matched = allCatalogItems.find(c => 
+        c.name?.trim().toLowerCase() === testName.trim().toLowerCase() ||
+        c.id === testName
+      );
+      if (matched) {
+        const itemFinal = (order.labId && matched.priceByLab?.[order.labId] !== undefined)
+          ? matched.priceByLab[order.labId]
+          : matched.price;
+        const itemRegular = (order.labId && matched.originalPriceByLab?.[order.labId] !== undefined)
+          ? matched.originalPriceByLab[order.labId]
+          : (matched.originalPrice || itemFinal);
+        const discount = Math.max(0, itemRegular - itemFinal);
+        return {
+          name: matched.name,
+          category: matched.category,
+          originalPrice: itemRegular,
+          discountAmount: discount,
+          finalPrice: itemFinal
+        };
+      } else {
+        const avg = Math.round(order.totalCost / rawTests.length);
+        return {
+          name: testName,
+          category: isBn ? 'ল্যাব টেস্ট' : 'Lab Test',
+          originalPrice: avg,
+          discountAmount: 0,
+          finalPrice: avg
+        };
+      }
+    });
+  }
+
+  const itemsFinalSum = resolvedItems.reduce((sum, item) => sum + item.finalPrice, 0);
+  const itemsMainSum = resolvedItems.reduce((sum, item) => sum + item.originalPrice, 0);
+  const itemsDiscountSum = resolvedItems.reduce((sum, item) => sum + item.discountAmount, 0);
+
+  // Home Sample Collection Fee
+  const collectionFee = order.collectionFee !== undefined 
+    ? order.collectionFee 
+    : (order.serviceCharge !== undefined 
+        ? order.serviceCharge 
+        : (order.totalCost > itemsFinalSum ? order.totalCost - itemsFinalSum : 0));
 
   const cleanOrderId = (order.id || '').replace(/^#?EC-?/i, '').replace(/^#?BK-?/i, '').replace(/^#/, '');
 
@@ -52,10 +114,10 @@ export const generateInvoiceHtml = (
       case 'rocket':
         return `Rocket ${trxId ? `(Trx: ${trxId})` : '(রকেট)'}`;
       case 'card':
-        return isBn ? 'ডেবিট / ক্রেডিট কার্ড (Card)' : 'Debit / Credit Card';
+        return isBn ? 'ডেবিট / ক্রেডিট কার্ড (Card Payment)' : 'Debit / Credit Card';
       case 'cod':
       default:
-        return isBn ? 'ক্যাশ অন কালেকশন (Cash on Delivery)' : 'Cash on Home Collection';
+        return isBn ? 'ক্যাশ অন স্যাম্পল কালেকশন (Cash on Delivery)' : 'Cash on Sample Collection';
     }
   };
 
@@ -86,7 +148,7 @@ export const generateInvoiceHtml = (
     }
 
     .invoice-card {
-      max-width: 800px;
+      max-width: 820px;
       margin: 0 auto;
       background: #ffffff;
       border: 1px solid #e2e8f0;
@@ -270,13 +332,13 @@ export const generateInvoiceHtml = (
 
     table.items-table th {
       background: #f1f5f9;
-      color: #475569;
+      color: #334155;
       font-size: 11px;
       text-transform: uppercase;
       font-weight: 700;
-      padding: 10px 14px;
+      padding: 10px 12px;
       text-align: left;
-      border-bottom: 1px solid #cbd5e1;
+      border-bottom: 2px solid #cbd5e1;
     }
 
     table.items-table th.text-right {
@@ -284,7 +346,7 @@ export const generateInvoiceHtml = (
     }
 
     table.items-table td {
-      padding: 12px 14px;
+      padding: 11px 12px;
       font-size: 13px;
       color: #1e293b;
       border-bottom: 1px solid #f1f5f9;
@@ -292,7 +354,35 @@ export const generateInvoiceHtml = (
 
     table.items-table td.text-right {
       text-align: right;
+    }
+
+    .item-cat {
+      display: block;
+      font-size: 10px;
+      color: #64748b;
+      font-weight: normal;
+      margin-top: 1px;
+    }
+
+    .main-rate {
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    .discount-pill {
+      display: inline-block;
+      background: #fff7ed;
+      color: #c2410c;
+      border: 1px solid #ffedd5;
+      font-size: 11px;
       font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+
+    .final-rate {
+      font-weight: 800;
+      color: #0f172a;
     }
 
     table.items-table tbody tr:last-child td {
@@ -306,22 +396,27 @@ export const generateInvoiceHtml = (
     }
 
     .summary-table {
-      width: 320px;
+      width: 360px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 14px 16px;
     }
 
     .summary-row {
       display: flex;
       justify-content: space-between;
-      padding: 6px 0;
-      font-size: 13px;
+      align-items: center;
+      padding: 5px 0;
+      font-size: 12px;
       color: #475569;
     }
 
     .summary-row.total-row {
-      border-top: 2px solid #0f172a;
+      border-top: 2px solid #cbd5e1;
       padding-top: 10px;
       margin-top: 6px;
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 800;
       color: #0f172a;
     }
@@ -329,6 +424,7 @@ export const generateInvoiceHtml = (
     .total-amount {
       color: #0284c7;
       font-size: 18px;
+      font-weight: 900;
     }
 
     .instructions-box {
@@ -453,42 +549,64 @@ export const generateInvoiceHtml = (
       </div>
     </div>
 
-    <!-- Itemized Test Table -->
+    <!-- Itemized Test Table with Main Rate, Discount and Final Rate -->
     <table class="items-table">
       <thead>
         <tr>
-          <th style="width: 40px;">#</th>
-          <th>${isBn ? 'ল্যাব টেস্ট / হেলথ প্যাকেজের বিবরণ' : 'Test / Package Description'}</th>
-          <th>${isBn ? 'টাইপ' : 'Category'}</th>
-          <th class="text-right">${isBn ? 'মূল্য (টাকা)' : 'Amount (BDT)'}</th>
+          <th style="width: 32px;">#</th>
+          <th>${isBn ? 'ল্যাব টেস্ট / প্যাকেজের নাম ও বিবরণ' : 'Test / Package Description'}</th>
+          <th class="text-right" style="width: 100px;">${isBn ? 'মূল রেট' : 'Main Rate'}</th>
+          <th class="text-right" style="width: 110px;">${isBn ? 'ডিসকাউন্ট' : 'Discount'}</th>
+          <th class="text-right" style="width: 110px;">${isBn ? 'চূড়ান্ত রেট' : 'Final Rate'}</th>
         </tr>
       </thead>
       <tbody>
-        ${testsList.map((test, index) => `
+        ${resolvedItems.map((item, index) => `
           <tr>
-            <td>${index + 1}</td>
-            <td><strong>${test}</strong></td>
-            <td style="color: #64748b;">${isBn ? 'ডায়াগনস্টিক টেস্ট' : 'Diagnostic Test'}</td>
-            <td class="text-right">৳ ${avgCost}</td>
+            <td style="color: #64748b;">${index + 1}</td>
+            <td>
+              <strong>${item.name}</strong>
+              ${item.category ? `<span class="item-cat">${item.category}</span>` : ''}
+            </td>
+            <td class="text-right main-rate">৳ ${item.originalPrice}</td>
+            <td class="text-right">
+              ${item.discountAmount > 0 
+                ? `<span class="discount-pill">-৳ ${item.discountAmount}</span>` 
+                : `<span style="color: #94a3b8; font-size: 11px;">৳ ০</span>`
+              }
+            </td>
+            <td class="text-right final-rate">৳ ${item.finalPrice}</td>
           </tr>
         `).join('')}
       </tbody>
     </table>
 
-    <!-- Bill Summary -->
+    <!-- Bill Summary with Home Sample Collection Fee, Discounts and Total -->
     <div class="summary-section">
       <div class="summary-table">
         <div class="summary-row">
-          <span>${isBn ? 'সাবটোটাল (Subtotal):' : 'Subtotal:'}</span>
-          <span style="font-weight: 600;">৳ ${order.totalCost}</span>
+          <span>${isBn ? 'মোট মূল মূল্য (Main Subtotal):' : 'Main Rate Subtotal:'}</span>
+          <span style="font-weight: 600; color: #64748b;">৳ ${itemsMainSum}</span>
+        </div>
+        ${itemsDiscountSum > 0 ? `
+        <div class="summary-row">
+          <span style="color: #c2410c;">${isBn ? 'মোট ডিসকাউন্ট ছাড় (Total Savings):' : 'Total Discount:'}</span>
+          <span style="color: #c2410c; font-weight: 700;">-৳ ${itemsDiscountSum}</span>
+        </div>
+        ` : ''}
+        <div class="summary-row" style="border-top: 1px dashed #e2e8f0; padding-top: 5px; margin-top: 3px;">
+          <span>${isBn ? 'টেস্টের নেট ফি (Net Tests Fee):' : 'Net Tests Fee:'}</span>
+          <span style="font-weight: 700; color: #0f172a;">৳ ${itemsFinalSum}</span>
         </div>
         <div class="summary-row">
-          <span>${isBn ? 'হোম স্যাম্পল কালেকশন ফি:' : 'Home Sample Collection:'}</span>
-          <span style="color: #16a34a; font-weight: 700;">${isBn ? 'ফ্রি / অন্তর্ভুক্ত' : 'FREE / Included'}</span>
+          <span>${isBn ? 'হোম স্যাম্পল কালেকশন ফি:' : 'Home Sample Collection Fee:'}</span>
+          <span style="${collectionFee === 0 ? 'color: #16a34a; font-weight: 700;' : 'font-weight: 700; color: #0f172a;'}">
+            ${collectionFee === 0 ? (isBn ? '৳ ০ (ফ্রি / Free)' : '৳ 0 (FREE)') : `৳ ${collectionFee}`}
+          </span>
         </div>
         <div class="summary-row">
           <span>${isBn ? 'পেমেন্ট মেথড:' : 'Payment Method:'}</span>
-          <span style="font-weight: 700; color: #0f172a;">${paymentDisplay}</span>
+          <span style="font-weight: 700; color: #0f172a; font-size: 11px;">${paymentDisplay}</span>
         </div>
         <div class="summary-row total-row">
           <span>${isBn ? 'সর্বমোট প্রদেয় বিল:' : 'Total Payable:'}</span>
