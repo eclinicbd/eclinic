@@ -104,20 +104,38 @@ import { DEFAULT_HERO_IMAGES, DEFAULT_NURSING_SERVICES_BN, DEFAULT_NURSING_SERVI
 
 const CATEGORIES = ['All', 'General', 'Diabetes', 'Heart', 'Thyroid', 'Vitamin'];
 
-// Helper to determine if current URL is accessing the Admin Portal route
-const isPathAdmin = () => {
-  if (typeof window === 'undefined') return false;
+// Helper to determine active view based on URL path or hash
+const getViewFromLocation = (): 'home' | 'tests' | 'packages' | 'dashboard' | 'admin' => {
+  if (typeof window === 'undefined') return 'home';
   const path = window.location.pathname.toLowerCase();
   const hash = window.location.hash.toLowerCase();
   const search = window.location.search.toLowerCase();
-  return (
+
+  if (
     path === '/admin' || 
     path.startsWith('/admin/') || 
     hash === '#admin' || 
     hash.startsWith('#/admin') || 
     search.includes('view=admin') ||
     search.includes('admin=true')
-  );
+  ) {
+    return 'admin';
+  }
+  if (hash === '#tests' || hash.startsWith('#tests') || hash.startsWith('#/tests')) {
+    return 'tests';
+  }
+  if (hash === '#packages' || hash.startsWith('#packages') || hash.startsWith('#/packages')) {
+    return 'packages';
+  }
+  if (hash === '#dashboard' || hash.startsWith('#dashboard') || hash.startsWith('#/dashboard')) {
+    return 'dashboard';
+  }
+  return 'home';
+};
+
+// Helper to determine if current URL is accessing the Admin Portal route
+const isPathAdmin = () => {
+  return getViewFromLocation() === 'admin';
 };
 
 export default function App() {
@@ -126,7 +144,7 @@ export default function App() {
     return (saved === 'bn' || saved === 'en') ? saved : 'en';
   });
   const [currentView, setCurrentView] = useState<'home' | 'tests' | 'packages' | 'dashboard' | 'admin'>(() => {
-    return isPathAdmin() ? 'admin' : 'home';
+    return getViewFromLocation();
   });
   const [currentPatient, setCurrentPatient] = useState<PatientUser | null>(() => getStoredCurrentPatient());
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -136,6 +154,7 @@ export default function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [currentHeroImage, setCurrentHeroImage] = useState(0);
+  const [highlightedTestId, setHighlightedTestId] = useState<string | null>(null);
   
   // Real-time editable state synchronized with LocalStorage
   const [tests, setTests] = useState<TestPackage[]>(() => getStoredTests(language));
@@ -151,10 +170,60 @@ export default function App() {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => getIsAdminSessionActive());
   const [isAdminLoginModalOpen, setIsAdminLoginModalOpen] = useState(() => isPathAdmin() && !getIsAdminSessionActive());
 
-  // Listen to URL changes (e.g. user types /admin or uses browser back/forward buttons)
+  // Dynamic Browser Favicon & Title synchronization
   useEffect(() => {
-    const handleUrlRoute = () => {
-      if (isPathAdmin()) {
+    if (siteSettings) {
+      const faviconUrl = siteSettings.faviconUrl || siteSettings.logoUrl || 'https://cdn-icons-png.flaticon.com/512/2966/2966327.png';
+      const linkIds = ['app-favicon', 'app-shortcut-icon', 'app-apple-icon'];
+      
+      linkIds.forEach(id => {
+        let el = document.getElementById(id) as HTMLLinkElement | null;
+        if (!el) {
+          el = document.createElement('link');
+          el.id = id;
+          el.rel = id === 'app-apple-icon' ? 'apple-touch-icon' : (id === 'app-shortcut-icon' ? 'shortcut icon' : 'icon');
+          document.head.appendChild(el);
+        }
+        el.href = faviconUrl;
+      });
+
+      if (siteSettings.siteName) {
+        document.title = `${siteSettings.siteName} - ${siteSettings.siteTagline || (language === 'bn' ? 'স্মার্ট হেলথকেয়ার' : 'Smart Healthcare')}`;
+      }
+    }
+  }, [siteSettings, language]);
+
+  // Listen to browser Back/Forward buttons and URL changes without abruptly kicking the user out of the site
+  useEffect(() => {
+    const currentLocView = getViewFromLocation();
+    if (!window.history.state) {
+      window.history.replaceState({ view: currentLocView }, '', window.location.href);
+    }
+
+    const handlePopState = (e: PopStateEvent) => {
+      // 1. If any modal is open, close the modal first instead of navigating away
+      if (isBookingModalOpen) {
+        setIsBookingModalOpen(false);
+        return;
+      }
+      if (selectedPackageForDetail) {
+        setSelectedPackageForDetail(null);
+        return;
+      }
+      if (isAuthModalOpen) {
+        setIsAuthModalOpen(false);
+        return;
+      }
+      if (isAdminLoginModalOpen && currentView !== 'admin') {
+        setIsAdminLoginModalOpen(false);
+        return;
+      }
+
+      // 2. Otherwise navigate to the target view from history state or URL
+      const targetView: 'home' | 'tests' | 'packages' | 'dashboard' | 'admin' = 
+        (e.state && e.state.view) ? e.state.view : getViewFromLocation();
+      
+      if (targetView === 'admin') {
         const hasSession = getIsAdminSessionActive();
         setIsAdminAuthenticated(hasSession);
         if (!hasSession) {
@@ -163,17 +232,17 @@ export default function App() {
         setCurrentView('admin');
       } else {
         setIsAdminLoginModalOpen(false);
-        setCurrentView(prev => (prev === 'admin' ? 'home' : prev));
+        setCurrentView(targetView);
       }
     };
 
-    window.addEventListener('popstate', handleUrlRoute);
-    window.addEventListener('hashchange', handleUrlRoute);
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('hashchange', handlePopState);
     return () => {
-      window.removeEventListener('popstate', handleUrlRoute);
-      window.removeEventListener('hashchange', handleUrlRoute);
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('hashchange', handlePopState);
     };
-  }, []);
+  }, [isBookingModalOpen, selectedPackageForDetail, isAuthModalOpen, isAdminLoginModalOpen, currentView]);
 
   const [isLabPaused, setIsLabPaused] = useState(false);
   const labScrollRef = useRef<HTMLDivElement>(null);
@@ -567,12 +636,12 @@ export default function App() {
     saveStoredCurrentPatient(null);
     setCurrentPatient(null);
     logoutFirebase();
-    setCurrentView('home');
+    navigateToHome();
   };
 
   const handleOpenAdminPortal = () => {
-    if (window.location.pathname !== '/admin') {
-      window.history.pushState(null, '', '/admin');
+    if (window.location.pathname !== '/admin' && window.location.hash !== '#admin') {
+      window.history.pushState({ view: 'admin' }, '', '/admin');
     }
     if (isAdminAuthenticated) {
       setCurrentView('admin');
@@ -584,8 +653,8 @@ export default function App() {
   const handleAdminLoginSuccess = () => {
     setIsAdminAuthenticated(true);
     setIsAdminLoginModalOpen(false);
-    if (window.location.pathname !== '/admin') {
-      window.history.pushState(null, '', '/admin');
+    if (window.location.pathname !== '/admin' && window.location.hash !== '#admin') {
+      window.history.pushState({ view: 'admin' }, '', '/admin');
     }
     setCurrentView('admin');
   };
@@ -594,7 +663,7 @@ export default function App() {
     setAdminSessionActive(false);
     setIsAdminAuthenticated(false);
     if (window.location.pathname === '/admin' || window.location.hash.includes('admin')) {
-      window.history.pushState(null, '', '/');
+      window.history.pushState({ view: 'home' }, '', '/');
     }
     setCurrentView('home');
   };
@@ -612,12 +681,16 @@ export default function App() {
   const handlePatientNavClick = () => {
     if (currentPatient) {
       setCurrentView('dashboard');
+      if (window.location.hash !== '#dashboard') {
+        window.history.pushState({ view: 'dashboard' }, '', `${window.location.pathname}#dashboard`);
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
       handleOpenAuth('login');
     }
   };
 
-  const navigateToTests = (categoryId?: string, labId?: string, search?: string) => {
+  const navigateToTests = (categoryId?: string, labId?: string, search?: string, highlightTestId?: string, pushHistory = true) => {
     setActiveCategory(categoryId || 'All');
     if (labId !== undefined) {
       setSelectedLabId(labId);
@@ -625,17 +698,31 @@ export default function App() {
       setSelectedLabId('');
     }
     setSearchTerm(search !== undefined ? search : '');
+    setHighlightedTestId(highlightTestId || null);
     setCurrentView('tests');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    if (pushHistory && window.location.hash !== '#tests') {
+      window.history.pushState({ view: 'tests' }, '', `${window.location.pathname}#tests`);
+    }
+
+    if (!highlightTestId) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
-  const navigateToPackages = () => {
+  const navigateToPackages = (pushHistory = true) => {
     setCurrentView('packages');
+    if (pushHistory && window.location.hash !== '#packages') {
+      window.history.pushState({ view: 'packages' }, '', `${window.location.pathname}#packages`);
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const navigateToHome = () => {
+  const navigateToHome = (pushHistory = true) => {
     setCurrentView('home');
+    if (pushHistory && (window.location.hash || window.location.pathname === '/admin')) {
+      window.history.pushState({ view: 'home' }, '', '/');
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -957,6 +1044,8 @@ export default function App() {
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
           onBackToHome={navigateToHome}
+          highlightedTestId={highlightedTestId}
+          setHighlightedTestId={setHighlightedTestId}
         />
       ) : (
         <>

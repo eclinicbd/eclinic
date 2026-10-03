@@ -1335,6 +1335,7 @@ export const DEFAULT_SITE_SETTINGS_BN: SiteSettings = {
   siteTagline: 'বাংলাদেশের বিশ্বস্ত হোম স্যাম্পল কালেকশন ও ডিজিটাল ডায়াগনস্টিক প্ল্যাটফর্ম',
   logoUrl: '',
   logoIcon: 'FlaskConical',
+  faviconUrl: 'https://cdn-icons-png.flaticon.com/512/2966/2966327.png',
   
   // Hero Section
   heroBadge: '🚀 বাংলাদেশের বিশ্বস্ত হোম স্যাম্পল কালেকশন সার্ভিস',
@@ -1442,6 +1443,7 @@ export const DEFAULT_SITE_SETTINGS_EN: SiteSettings = {
   siteTagline: 'Trusted Home Sample Collection & Digital Diagnostic Platform in Bangladesh',
   logoUrl: '',
   logoIcon: 'FlaskConical',
+  faviconUrl: 'https://cdn-icons-png.flaticon.com/512/2966/2966327.png',
 
   // Hero Section
   heroBadge: '🚀 Trusted Home Sample Collection Service in BD',

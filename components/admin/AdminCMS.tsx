@@ -39,7 +39,8 @@ import {
   Award,
   Printer,
   ListChecks,
-  FileCheck
+  FileCheck,
+  Upload
 } from 'lucide-react';
 import { Button } from '../Button';
 import { 
@@ -86,6 +87,55 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
   const [newHeroImageUrl, setNewHeroImageUrl] = useState('');
   const [previewHeroIndex, setPreviewHeroIndex] = useState(0);
   const [newGuidelineInput, setNewGuidelineInput] = useState('');
+  const faviconInputRef = useRef<HTMLInputElement>(null);
+
+  // Preset medical favicons
+  const PRESET_FAVICONS = [
+    {
+      name: lang === 'bn' ? 'মেডিকেল ফ্ল্যাঙ্ক (ডিফল্ট)' : 'Medical Flask (Default)',
+      url: 'https://cdn-icons-png.flaticon.com/512/2966/2966327.png'
+    },
+    {
+      name: lang === 'bn' ? 'রেড ক্রস সাইন' : 'Red Cross Sign',
+      url: 'https://cdn-icons-png.flaticon.com/512/2966/2966486.png'
+    },
+    {
+      name: lang === 'bn' ? 'স্টেথোস্কোপ ব্লু' : 'Stethoscope Blue',
+      url: 'https://cdn-icons-png.flaticon.com/512/2966/2966338.png'
+    },
+    {
+      name: lang === 'bn' ? 'হার্টবিট ও ইসিজি' : 'Heartbeat & ECG',
+      url: 'https://cdn-icons-png.flaticon.com/512/2966/2966440.png'
+    },
+    {
+      name: lang === 'bn' ? 'মেডিকেল শিল্ড ও সুরক্ষা' : 'Medical Shield & Care',
+      url: 'https://cdn-icons-png.flaticon.com/512/2966/2966378.png'
+    },
+    {
+      name: lang === 'bn' ? 'ব্লাড টেস্ট টিউব' : 'Blood Test Tube',
+      url: 'https://cdn-icons-png.flaticon.com/512/2966/2966334.png'
+    }
+  ];
+
+  const handleFaviconUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      showToast(lang === 'bn' ? 'ফাইলের আকার ২ মেগাবাইট (2MB)-এর কম হতে হবে' : 'Favicon file size must be less than 2MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      if (dataUrl) {
+        setFormData(prev => ({ ...prev, faviconUrl: dataUrl }));
+        showToast(lang === 'bn' ? 'ব্রাউজার আইকন সফলভাবে আপলোড করা হয়েছে' : 'Browser icon uploaded successfully');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Nursing care modal & form state
   const [isNursingModalOpen, setIsNursingModalOpen] = useState(false);
@@ -1458,49 +1508,192 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                 </div>
               </div>
 
-              <div className="pt-3">
-                <Button onClick={() => handleSaveAll()} className="px-5 py-2 text-xs font-bold">
-                  <Check size={14} className="mr-1 inline" /> Save Branding
+              {/* ========================================================================= */}
+              {/* BROWSER ICON / FAVICON CUSTOMIZATION & UPLOAD SECTION                     */}
+              {/* ========================================================================= */}
+              <div className="pt-4 border-t border-slate-100 space-y-3 bg-slate-50/70 p-4 rounded-2xl border border-slate-200/80">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <Globe size={15} className="text-primary" />
+                    <span>{lang === 'bn' ? 'ব্রাউজার ট্যাব আইকন / ফেভিকন (Browser Favicon)' : 'Browser Tab Icon / Favicon'}</span>
+                  </label>
+                  {formData.faviconUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, faviconUrl: '' })}
+                      className="text-[11px] text-rose-600 hover:underline font-semibold"
+                    >
+                      {lang === 'bn' ? 'রিসেট' : 'Reset'}
+                    </button>
+                  )}
+                </div>
+
+                {/* Upload or Link Input */}
+                <div className="flex flex-col sm:flex-row gap-2.5 items-start sm:items-center">
+                  {/* Current Favicon Icon Preview Badge */}
+                  <div className="w-12 h-12 rounded-xl bg-white border border-slate-200 p-2 flex items-center justify-center flex-shrink-0 shadow-2xs">
+                    <img
+                      src={formData.faviconUrl || 'https://cdn-icons-png.flaticon.com/512/2966/2966327.png'}
+                      alt="Browser Favicon"
+                      className="w-8 h-8 object-contain"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://cdn-icons-png.flaticon.com/512/2966/2966327.png';
+                      }}
+                    />
+                  </div>
+
+                  <div className="flex-1 w-full space-y-2">
+                    {/* Hidden File Input */}
+                    <input
+                      type="file"
+                      ref={faviconInputRef}
+                      onChange={handleFaviconUpload}
+                      accept="image/png, image/jpeg, image/x-icon, image/svg+xml, image/webp"
+                      className="hidden"
+                    />
+
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        onClick={() => faviconInputRef.current?.click()}
+                        variant="outline"
+                        className="!text-xs !py-2 font-bold flex items-center gap-1.5 bg-white shadow-2xs"
+                      >
+                        <Upload size={14} className="text-primary" />
+                        <span>{lang === 'bn' ? 'ডিভাইস থেকে আইকন আপলোড করুন' : 'Upload Icon from Device'}</span>
+                      </Button>
+
+                      <input
+                        type="url"
+                        value={formData.faviconUrl || ''}
+                        onChange={e => setFormData({ ...formData, faviconUrl: e.target.value })}
+                        placeholder={lang === 'bn' ? 'অথবা ফেভিকন ইমেজ URL লিখুন...' : 'Or enter direct Favicon image URL...'}
+                        className="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-primary outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-slate-500">
+                  {lang === 'bn' 
+                    ? 'সাপোর্টেড ফরম্যাট: PNG, ICO, SVG, JPG, WEBP (সর্বোচ্চ ২ মেগাবাইট)। এটি ব্রাউজারের উপরে ট্যাব বারে আপনার ওয়েবসাইটের পরিচিতি হিসেবে শো করবে।' 
+                    : 'Supported formats: PNG, ICO, SVG, JPG, WEBP (Max 2MB). This icon will appear on browser tabs and shortcuts.'}
+                </p>
+
+                {/* Quick Presets for Medical Favicons */}
+                <div className="pt-2 border-t border-slate-200/60">
+                  <span className="text-[11px] font-bold text-slate-600 block mb-2">
+                    {lang === 'bn' ? '⚡ দ্রুত মেডিকেল প্রিসেট আইকন বেছে নিন:' : '⚡ Quick Medical Preset Favicons:'}
+                  </span>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {PRESET_FAVICONS.map((preset, pIdx) => {
+                      const isSelected = formData.faviconUrl === preset.url;
+                      return (
+                        <button
+                          type="button"
+                          key={pIdx}
+                          onClick={() => {
+                            setFormData({ ...formData, faviconUrl: preset.url });
+                            showToast(lang === 'bn' ? `${preset.name} আইকন নির্বাচন করা হয়েছে` : `${preset.name} selected as favicon`);
+                          }}
+                          className={`p-2 rounded-xl border text-left flex items-center gap-2 bg-white transition-all ${
+                            isSelected 
+                              ? 'border-primary ring-2 ring-primary/20 bg-sky-50 text-primary font-bold shadow-2xs' 
+                              : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700'
+                          }`}
+                        >
+                          <img src={preset.url} alt={preset.name} className="w-5 h-5 object-contain flex-shrink-0" />
+                          <span className="text-[11px] truncate">{preset.name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-3 flex items-center justify-between">
+                <Button onClick={() => handleSaveAll()} className="px-5 py-2.5 text-xs font-bold shadow-md shadow-sky-100">
+                  <Check size={14} className="mr-1 inline" /> {lang === 'bn' ? 'ব্র্যান্ডিং ও ফেভিকন সেভ করুন' : 'Save Branding & Favicon'}
                 </Button>
               </div>
             </div>
 
             {/* Live Preview Box (1 col) */}
-            <div className="bg-slate-900 text-white p-6 rounded-2xl shadow-xl flex flex-col justify-between">
+            <div className="bg-slate-900 text-white p-6 rounded-2xl shadow-xl flex flex-col justify-between space-y-6">
               <div>
                 <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-400 block mb-4">
-                  Live Header Preview
+                  Live Previews
                 </span>
 
-                {/* Simulated Header Card */}
-                <div className="bg-slate-800/90 p-4 rounded-xl border border-slate-700 space-y-3">
-                  <div className="flex items-center gap-2.5">
-                    {formData.logoUrl ? (
-                      <img 
-                        src={formData.logoUrl} 
-                        alt="Logo" 
-                        className="w-9 h-9 object-contain rounded-lg bg-white p-1"
-                        onError={(e) => {
-                          (e.target as HTMLElement).style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <div className="bg-primary p-2 rounded-xl text-white shadow-xs">
-                        <SelectedBrandIcon size={20} />
+                {/* Simulated Real Browser Tab Preview Mockup */}
+                <div className="mb-5">
+                  <span className="text-[11px] text-slate-400 font-semibold block mb-1.5 flex items-center gap-1">
+                    <Globe size={13} className="text-sky-400" />
+                    <span>{lang === 'bn' ? 'ব্রাউজার ট্যাব প্রিভিউ (Browser Tab)' : 'Live Browser Tab Simulation:'}</span>
+                  </span>
+                  
+                  {/* Browser Top Window Simulation */}
+                  <div className="bg-slate-950 rounded-xl border border-slate-800 p-2.5 shadow-inner">
+                    <div className="flex items-center gap-1.5 mb-2 px-1">
+                      <div className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                    </div>
+
+                    {/* The Active Browser Tab */}
+                    <div className="bg-slate-800/95 rounded-lg px-3 py-1.5 border border-slate-700/80 flex items-center justify-between gap-2 max-w-[260px] shadow-sm">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <img 
+                          src={formData.faviconUrl || 'https://cdn-icons-png.flaticon.com/512/2966/2966327.png'} 
+                          alt="Tab Favicon" 
+                          className="w-4 h-4 object-contain flex-shrink-0"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://cdn-icons-png.flaticon.com/512/2966/2966327.png';
+                          }}
+                        />
+                        <span className="text-xs font-semibold text-slate-100 truncate">
+                          {formData.siteName || 'LabHome BD'} - {formData.siteTagline || 'Smart Healthcare'}
+                        </span>
                       </div>
-                    )}
-                    <div>
-                      <span className="font-bold text-base text-white block leading-tight">
-                        {formData.siteName || 'LabHome BD'}
-                      </span>
-                      <span className="text-[10px] text-slate-400 block truncate max-w-[180px]">
-                        {formData.siteTagline || 'Home Diagnostic Service'}
-                      </span>
+                      <span className="text-slate-400 hover:text-white text-[11px] font-bold cursor-pointer">×</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-6 space-y-2 text-xs text-slate-300">
+                {/* Simulated Header Card */}
+                <div>
+                  <span className="text-[11px] text-slate-400 font-semibold block mb-1.5">
+                    {lang === 'bn' ? 'ওয়েবসাইট হেডার লোগো প্রিভিউ:' : 'Website Header Logo Preview:'}
+                  </span>
+                  <div className="bg-slate-800/90 p-4 rounded-xl border border-slate-700 space-y-3">
+                    <div className="flex items-center gap-2.5">
+                      {formData.logoUrl ? (
+                        <img 
+                          src={formData.logoUrl} 
+                          alt="Logo" 
+                          className="w-9 h-9 object-contain rounded-lg bg-white p-1"
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <div className="bg-primary p-2 rounded-xl text-white shadow-xs">
+                          <SelectedBrandIcon size={20} />
+                        </div>
+                      )}
+                      <div>
+                        <span className="font-bold text-base text-white block leading-tight">
+                          {formData.siteName || 'LabHome BD'}
+                        </span>
+                        <span className="text-[10px] text-slate-400 block truncate max-w-[180px]">
+                          {formData.siteTagline || 'Home Diagnostic Service'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 space-y-2 text-xs text-slate-300">
                   <p className="font-semibold text-white">Contact Pill on Top Bar:</p>
                   <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-bold">
                     <Phone size={13} />
@@ -1509,8 +1702,8 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                 </div>
               </div>
 
-              <div className="pt-6 border-t border-slate-800 text-[11px] text-slate-400">
-                এই পরিবর্তনগুলো হোমপেজের হেডার, ফুটার এবং ব্রাউজার মেটা তথ্যে তাৎক্ষণিকভাবে প্রতিফলিত হবে।
+              <div className="pt-4 border-t border-slate-800 text-[11px] text-slate-400">
+                এই পরিবর্তনগুলো হোমপেজের হেডার, ব্রাউজার ফেভিকন (Tab Icon), ফুটার এবং ব্রাউজার মেটা তথ্যে তাৎক্ষণিকভাবে প্রতিফলিত হবে।
               </div>
             </div>
 

@@ -18,7 +18,10 @@ import {
   XCircle,
   Sparkles,
   Sliders,
-  Info
+  Info,
+  Edit2,
+  Minus,
+  Users
 } from 'lucide-react';
 import { DEFAULT_DATE_SLOT_CONFIG, DEFAULT_TIME_SLOTS } from '../../services/dataStorage';
 
@@ -55,6 +58,17 @@ export const AdminSlots: React.FC<AdminSlotsProps> = ({
   const [newSlotPeriod, setNewSlotPeriod] = useState<SlotPeriod>('morning');
   const [newSlotCapacity, setNewSlotCapacity] = useState<number>(5);
 
+  // Edit Slot Modal State
+  const [editingSlot, setEditingSlot] = useState<TimeSlotConfigItem | null>(null);
+  const [editSlotTime, setEditSlotTime] = useState('');
+  const [editSlotPeriod, setEditSlotPeriod] = useState<SlotPeriod>('morning');
+  const [editSlotCapacity, setEditSlotCapacity] = useState<number>(5);
+  const [editSlotIsActive, setEditSlotIsActive] = useState<boolean>(true);
+
+  // Bulk Capacity State
+  const [isBulkCapacityOpen, setIsBulkCapacityOpen] = useState(false);
+  const [bulkCapacityValue, setBulkCapacityValue] = useState<number>(5);
+
   // New Blocked Date Form State
   const [newBlockedDate, setNewBlockedDate] = useState('');
   const [newBlockedReason, setNewBlockedReason] = useState('');
@@ -77,6 +91,87 @@ export const AdminSlots: React.FC<AdminSlotsProps> = ({
     const updatedSlots = config.slots.filter(s => s.id !== slotId);
     onUpdateConfig({ ...config, slots: updatedSlots });
     showToast(isBn ? 'স্লটটি মুছে ফেলা হয়েছে!' : 'Slot deleted successfully!');
+  };
+
+  const handleOpenEditSlot = (slot: TimeSlotConfigItem) => {
+    setEditingSlot(slot);
+    setEditSlotTime(slot.time);
+    setEditSlotPeriod(slot.period);
+    setEditSlotCapacity(slot.maxCapacity || 5);
+    setEditSlotIsActive(slot.isActive);
+  };
+
+  const handleSaveEditSlot = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingSlot) return;
+    if (!editSlotTime.trim()) {
+      showToast(isBn ? 'অনুগ্রহ করে স্লটের সময়সীমা লিখুন' : 'Please provide slot time range');
+      return;
+    }
+
+    const validCapacity = Math.max(1, editSlotCapacity || 5);
+
+    const updatedSlots = config.slots.map(s => {
+      if (s.id === editingSlot.id) {
+        return {
+          ...s,
+          time: editSlotTime.trim(),
+          period: editSlotPeriod,
+          maxCapacity: validCapacity,
+          isActive: editSlotIsActive
+        };
+      }
+      return s;
+    });
+
+    onUpdateConfig({ ...config, slots: updatedSlots });
+    setEditingSlot(null);
+    showToast(isBn 
+      ? `স্লট সফলভাবে আপডেট হয়েছে (ধারণক্ষমতা: ${validCapacity} জন)!` 
+      : `Slot updated successfully (Capacity: ${validCapacity} bookings)!`);
+  };
+
+  const handleAdjustSlotCapacity = (slotId: string, delta: number) => {
+    const targetSlot = config.slots.find(s => s.id === slotId);
+    if (!targetSlot) return;
+
+    const currentCap = targetSlot.maxCapacity || 5;
+    const newCap = Math.max(1, Math.min(100, currentCap + delta));
+
+    if (newCap === currentCap) return;
+
+    const updatedSlots = config.slots.map(s => 
+      s.id === slotId ? { ...s, maxCapacity: newCap } : s
+    );
+
+    onUpdateConfig({ ...config, slots: updatedSlots });
+    showToast(isBn 
+      ? `স্লটের ধারণক্ষমতা ${newCap} জন করা হয়েছে` 
+      : `Slot capacity updated to ${newCap} bookings`);
+  };
+
+  const handleDirectSetSlotCapacity = (slotId: string, capacity: number) => {
+    const validCap = Math.max(1, Math.min(100, capacity || 1));
+    const updatedSlots = config.slots.map(s => 
+      s.id === slotId ? { ...s, maxCapacity: validCap } : s
+    );
+    onUpdateConfig({ ...config, slots: updatedSlots });
+    showToast(isBn 
+      ? `ধারণক্ষমতা ${validCap} জনে সেট করা হয়েছে` 
+      : `Capacity set to ${validCap} bookings`);
+  };
+
+  const handleApplyBulkCapacity = () => {
+    const validCap = Math.max(1, Math.min(100, bulkCapacityValue || 5));
+    const updatedSlots = config.slots.map(s => ({
+      ...s,
+      maxCapacity: validCap
+    }));
+    onUpdateConfig({ ...config, slots: updatedSlots });
+    setIsBulkCapacityOpen(false);
+    showToast(isBn 
+      ? `সকল স্লটের ধারণক্ষমতা ${validCap} জন করা হয়েছে!` 
+      : `All slots capacity set to ${validCap} bookings!`);
   };
 
   const handleAddSlot = (e: React.FormEvent) => {
@@ -391,8 +486,8 @@ export const AdminSlots: React.FC<AdminSlotsProps> = ({
             </div>
           )}
 
-          {/* Filter Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200">
+          {/* Filter Bar & Bulk Capacity Tool */}
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
             <div className="flex items-center gap-1.5 overflow-x-auto">
               {(['all', 'morning', 'afternoon', 'evening', 'night'] as const).map(p => (
                 <button
@@ -400,7 +495,7 @@ export const AdminSlots: React.FC<AdminSlotsProps> = ({
                   onClick={() => setFilterPeriod(p)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-semibold capitalize transition-all cursor-pointer ${
                     filterPeriod === p
-                      ? 'bg-slate-900 text-white'
+                      ? 'bg-slate-900 text-white shadow-xs'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
@@ -411,64 +506,400 @@ export const AdminSlots: React.FC<AdminSlotsProps> = ({
               ))}
             </div>
 
-            <div className="text-xs text-slate-500">
-              {isBn ? 'মোট স্লট:' : 'Total slots:'} <span className="font-bold text-slate-900">{filteredSlots.length}</span>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setIsBulkCapacityOpen(true)}
+                className="px-3 py-1.5 bg-sky-50 text-primary hover:bg-sky-100 border border-sky-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                title="Bulk update capacity for all slots"
+              >
+                <Users size={14} />
+                <span>{isBn ? 'সব স্লটের ক্যাপাসিটি সেট করুন' : 'Bulk Set Capacity'}</span>
+              </button>
+
+              <div className="text-xs text-slate-500 font-medium">
+                {isBn ? 'মোট স্লট:' : 'Total slots:'} <span className="font-bold text-slate-900">{filteredSlots.length}</span>
+              </div>
             </div>
           </div>
 
           {/* Slots Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-            {filteredSlots.map(slot => (
-              <div 
-                key={slot.id} 
-                className={`p-4 rounded-2xl border transition-all ${
-                  slot.isActive 
-                    ? 'bg-white border-slate-200 shadow-xs hover:border-primary/50' 
-                    : 'bg-slate-50/70 border-dashed border-slate-300 opacity-60'
-                }`}
-              >
-                <div className="flex items-start justify-between gap-2">
+            {filteredSlots.map(slot => {
+              const currentCap = slot.maxCapacity || 5;
+
+              return (
+                <div 
+                  key={slot.id} 
+                  className={`p-4 rounded-2xl border transition-all flex flex-col justify-between ${
+                    slot.isActive 
+                      ? 'bg-white border-slate-200 shadow-xs hover:border-primary/50 hover:shadow-md' 
+                      : 'bg-slate-50/70 border-dashed border-slate-300 opacity-70'
+                  }`}
+                >
                   <div>
-                    <div className="flex items-center gap-2 mb-1.5">
-                      {getPeriodBadge(slot.period)}
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
-                        slot.isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
-                      }`}>
-                        {slot.isActive ? (isBn ? 'সক্রিয়' : 'Active') : (isBn ? 'নিষ্ক্রিয়' : 'Disabled')}
-                      </span>
+                    {/* Top Row: Period Badge & Status */}
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-1.5">
+                        {getPeriodBadge(slot.period)}
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                          slot.isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                        }`}>
+                          {slot.isActive ? (isBn ? 'সক্রিয়' : 'Active') : (isBn ? 'নিষ্ক্রিয়' : 'Disabled')}
+                        </span>
+                      </div>
+
+                      {/* Card Action Buttons (Edit, Active Toggle, Delete) */}
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleOpenEditSlot(slot)}
+                          className="p-1.5 bg-slate-100 hover:bg-sky-50 hover:text-primary text-slate-600 rounded-lg transition-colors cursor-pointer"
+                          title={isBn ? 'স্লট ও ক্যাপাসিটি এডিট করুন' : 'Edit slot & capacity'}
+                        >
+                          <Edit2 size={13} />
+                        </button>
+                        <button
+                          onClick={() => handleToggleSlotActive(slot.id)}
+                          className={`p-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                            slot.isActive
+                              ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
+                              : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
+                          }`}
+                          title={slot.isActive ? "Click to disable slot" : "Click to enable slot"}
+                        >
+                          {slot.isActive ? <Check size={13} /> : <XCircle size={13} />}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteSlot(slot.id)}
+                          className="p-1.5 bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-400 rounded-lg transition-colors cursor-pointer"
+                          title="Delete slot"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
                     </div>
-                    <p className="font-mono font-bold text-slate-900 text-sm">
+
+                    {/* Slot Time */}
+                    <p className="font-mono font-bold text-slate-900 text-sm mb-3">
                       {slot.time}
-                    </p>
-                    <p className="text-[11px] text-slate-400 mt-1">
-                      {isBn ? 'ধারণক্ষমতা:' : 'Capacity:'} <span className="font-semibold text-slate-600">{slot.maxCapacity || 5} {isBn ? 'জন' : 'bookings'}</span>
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={() => handleToggleSlotActive(slot.id)}
-                      className={`p-2 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
-                        slot.isActive
-                          ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
-                          : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
-                      }`}
-                      title={slot.isActive ? "Click to disable slot" : "Click to enable slot"}
+                  {/* Capacity Control Bar (কম/বেশী Stepper & Direct Edit) */}
+                  <div className="pt-2.5 border-t border-slate-100 bg-slate-50/60 -mx-4 -mb-4 p-3 rounded-b-2xl flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1 text-[11px] font-bold text-slate-600">
+                      <Users size={13} className="text-primary" />
+                      <span>{isBn ? 'ক্যাপাসিটি:' : 'Capacity:'}</span>
+                    </div>
+
+                    {/* Stepper Buttons: Decrease (-) / Input / Increase (+) */}
+                    <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-0.5 shadow-2xs">
+                      {/* Decrease button (কম) */}
+                      <button
+                        type="button"
+                        onClick={() => handleAdjustSlotCapacity(slot.id, -1)}
+                        disabled={currentCap <= 1}
+                        className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors cursor-pointer ${
+                          currentCap <= 1 
+                            ? 'text-slate-300 cursor-not-allowed' 
+                            : 'text-slate-600 hover:bg-rose-50 hover:text-rose-600 active:scale-95'
+                        }`}
+                        title={isBn ? 'ধারণক্ষমতা ১ কমান' : 'Decrease capacity by 1'}
+                      >
+                        <Minus size={12} />
+                      </button>
+
+                      {/* Direct Numeric Input with quick inline update */}
+                      <input
+                        type="number"
+                        min="1"
+                        max="100"
+                        value={currentCap}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value);
+                          if (!isNaN(val) && val >= 1) {
+                            handleDirectSetSlotCapacity(slot.id, val);
+                          }
+                        }}
+                        className="w-10 text-center text-xs font-black text-slate-900 border-none outline-none py-0.5 bg-transparent focus:bg-sky-50 rounded"
+                        title={isBn ? 'ক্লিক করে ধারণক্ষমতা টাইপ করুন' : 'Click to type capacity'}
+                      />
+
+                      <span className="text-[10px] text-slate-400 font-semibold pr-1">
+                        {isBn ? 'জন' : 'bk'}
+                      </span>
+
+                      {/* Increase button (বেশী) */}
+                      <button
+                        type="button"
+                        onClick={() => handleAdjustSlotCapacity(slot.id, 1)}
+                        disabled={currentCap >= 100}
+                        className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors cursor-pointer ${
+                          currentCap >= 100 
+                            ? 'text-slate-300 cursor-not-allowed' 
+                            : 'text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 active:scale-95'
+                        }`}
+                        title={isBn ? 'ধারণক্ষমতা ১ বাড়ান' : 'Increase capacity by 1'}
+                      >
+                        <Plus size={12} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* EDIT SLOT MODAL */}
+          {editingSlot && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
+              <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-xl bg-primary/10 text-primary">
+                      <Edit2 size={18} />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-slate-900 text-base">
+                        {isBn ? 'স্লট ও ধারণক্ষমতা এডিট করুন' : 'Edit Slot & Capacity'}
+                      </h3>
+                      <p className="text-xs text-slate-500">
+                        {isBn ? 'সময়সূচি ও রোগীর ধারণক্ষমতা পরিবর্তন করুন' : 'Modify appointment timing and max capacity'}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setEditingSlot(null)}
+                    className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-sm cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <form onSubmit={handleSaveEditSlot} className="space-y-4">
+                  {/* Slot Time */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      {isBn ? 'সময়সীমা (Time Slot)' : 'Time Range'} *
+                    </label>
+                    <input
+                      type="text"
+                      value={editSlotTime}
+                      onChange={(e) => setEditSlotTime(e.target.value)}
+                      placeholder="e.g. 09:00 AM - 10:00 AM"
+                      className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-primary outline-none"
+                      required
+                    />
+                  </div>
+
+                  {/* Period Selection */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      {isBn ? 'বেলা / পর্ব (Period)' : 'Period'}
+                    </label>
+                    <select
+                      value={editSlotPeriod}
+                      onChange={(e) => setEditSlotPeriod(e.target.value as SlotPeriod)}
+                      className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-primary outline-none cursor-pointer"
                     >
-                      {slot.isActive ? <Check size={14} /> : <XCircle size={14} />}
+                      <option value="morning">{isBn ? 'সকাল (Morning)' : 'Morning'}</option>
+                      <option value="afternoon">{isBn ? 'দুপুর (Afternoon)' : 'Afternoon'}</option>
+                      <option value="evening">{isBn ? 'সন্ধ্যা (Evening)' : 'Evening'}</option>
+                      <option value="night">{isBn ? 'রাত (Night)' : 'Night'}</option>
+                    </select>
+                  </div>
+
+                  {/* Capacity Stepper & Presets */}
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/80 space-y-3">
+                    <label className="block text-xs font-bold text-slate-800 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <Users size={14} className="text-primary" />
+                        <span>{isBn ? 'রোগী ধারণক্ষমতা (Max Capacity / Bookings)' : 'Max Booking Capacity'} *</span>
+                      </span>
+                      <span className="text-primary text-sm font-black">
+                        {editSlotCapacity} {isBn ? 'জন' : 'bookings'}
+                      </span>
+                    </label>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setEditSlotCapacity(prev => Math.max(1, prev - 1))}
+                        className="w-10 h-10 rounded-xl bg-white border border-slate-200 hover:bg-rose-50 hover:text-rose-600 font-bold text-lg flex items-center justify-center cursor-pointer active:scale-95 shadow-2xs"
+                      >
+                        -
+                      </button>
+
+                      <input
+                        type="number"
+                        min="1"
+                        max="100"
+                        value={editSlotCapacity}
+                        onChange={(e) => setEditSlotCapacity(Math.max(1, parseInt(e.target.value) || 1))}
+                        className="flex-1 text-center py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-black text-slate-900 focus:ring-2 focus:ring-primary outline-none shadow-2xs"
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => setEditSlotCapacity(prev => Math.min(100, prev + 1))}
+                        className="w-10 h-10 rounded-xl bg-white border border-slate-200 hover:bg-emerald-50 hover:text-emerald-600 font-bold text-lg flex items-center justify-center cursor-pointer active:scale-95 shadow-2xs"
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    {/* Quick Capacity Presets */}
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1.5">
+                        {isBn ? 'কুইক প্রিসেট ধারণক্ষমতা:' : 'Quick Capacity Presets:'}
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {[2, 3, 5, 8, 10, 15, 20].map(val => (
+                          <button
+                            type="button"
+                            key={val}
+                            onClick={() => setEditSlotCapacity(val)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                              editSlotCapacity === val
+                                ? 'bg-primary text-white shadow-xs'
+                                : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                            }`}
+                          >
+                            {val} {isBn ? 'জন' : 'bks'}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Active Toggle */}
+                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200/80">
+                    <span className="text-xs font-bold text-slate-700">
+                      {isBn ? 'স্লটের বর্তমান অবস্থা (Status)' : 'Slot Status'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setEditSlotIsActive(!editSlotIsActive)}
+                      className={`px-3 py-1 rounded-full text-xs font-bold transition-colors cursor-pointer ${
+                        editSlotIsActive 
+                          ? 'bg-emerald-100 text-emerald-800' 
+                          : 'bg-rose-100 text-rose-800'
+                      }`}
+                    >
+                      {editSlotIsActive ? (isBn ? '✓ সক্রিয় (Active)' : '✓ Active') : (isBn ? '✕ নিষ্ক্রিয় (Disabled)' : '✕ Disabled')}
+                    </button>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditingSlot(null)}
+                      className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                    >
+                      {isBn ? 'বাতিল' : 'Cancel'}
                     </button>
                     <button
-                      onClick={() => handleDeleteSlot(slot.id)}
-                      className="p-2 bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-400 rounded-xl transition-colors cursor-pointer"
-                      title="Delete slot"
+                      type="submit"
+                      className="flex-1 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl text-xs font-bold shadow-md shadow-sky-100 transition-all cursor-pointer"
                     >
-                      <Trash2 size={14} />
+                      {isBn ? 'আপডেট সংরক্ষণ করুন' : 'Save Changes'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* BULK SET CAPACITY MODAL */}
+          {isBulkCapacityOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
+              <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-xl bg-sky-50 text-primary">
+                      <Users size={18} />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-slate-900 text-sm">
+                        {isBn ? 'সকল স্লটের ধারণক্ষমতা সেট করুন' : 'Bulk Set Slot Capacity'}
+                      </h3>
+                      <p className="text-[11px] text-slate-500">
+                        {isBn ? 'এক ক্লিকেই সব স্লটে একই ক্যাপাসিটি প্রয়োগ করুন' : 'Apply identical capacity across all time slots'}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsBulkCapacityOpen(false)}
+                    className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center text-xs font-bold cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 justify-center">
+                    <button
+                      type="button"
+                      onClick={() => setBulkCapacityValue(prev => Math.max(1, prev - 1))}
+                      className="w-10 h-10 rounded-xl bg-slate-100 hover:bg-rose-50 hover:text-rose-600 font-bold text-lg flex items-center justify-center cursor-pointer active:scale-95"
+                    >
+                      -
+                    </button>
+                    <input
+                      type="number"
+                      min="1"
+                      max="100"
+                      value={bulkCapacityValue}
+                      onChange={(e) => setBulkCapacityValue(Math.max(1, parseInt(e.target.value) || 1))}
+                      className="w-24 text-center py-2 bg-slate-50 border border-slate-200 rounded-xl text-base font-black text-slate-900 focus:ring-2 focus:ring-primary outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setBulkCapacityValue(prev => Math.min(100, prev + 1))}
+                      className="w-10 h-10 rounded-xl bg-slate-100 hover:bg-emerald-50 hover:text-emerald-600 font-bold text-lg flex items-center justify-center cursor-pointer active:scale-95"
+                    >
+                      +
+                    </button>
+                  </div>
+
+                  {/* Presets */}
+                  <div className="flex flex-wrap justify-center gap-1.5">
+                    {[3, 5, 8, 10, 15, 20].map(val => (
+                      <button
+                        type="button"
+                        key={val}
+                        onClick={() => setBulkCapacityValue(val)}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                          bulkCapacityValue === val
+                            ? 'bg-primary text-white shadow-xs'
+                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                        }`}
+                      >
+                        {val} {isBn ? 'জন' : 'bks'}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsBulkCapacityOpen(false)}
+                      className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold cursor-pointer"
+                    >
+                      {isBn ? 'বাতিল' : 'Cancel'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleApplyBulkCapacity}
+                      className="flex-1 py-2 bg-primary hover:bg-primary-dark text-white rounded-xl text-xs font-bold shadow-sm cursor-pointer"
+                    >
+                      {isBn ? 'সকল স্লটে প্রয়োগ করুন' : 'Apply to All'}
                     </button>
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          )}
         </div>
       )}
 

@@ -35,6 +35,8 @@ interface TestsViewProps {
   searchTerm: string;
   setSearchTerm: (term: string) => void;
   onBackToHome: () => void;
+  highlightedTestId?: string | null;
+  setHighlightedTestId?: (id: string | null) => void;
 }
 
 export const TestsView: React.FC<TestsViewProps> = ({
@@ -52,9 +54,24 @@ export const TestsView: React.FC<TestsViewProps> = ({
   setActiveCategory,
   searchTerm,
   setSearchTerm,
-  onBackToHome
+  onBackToHome,
+  highlightedTestId,
+  setHighlightedTestId
 }) => {
   const t = TRANSLATIONS[lang];
+
+  // Auto-scroll to highlighted test smoothly
+  React.useEffect(() => {
+    if (highlightedTestId) {
+      const timer = setTimeout(() => {
+        const element = document.getElementById(`test-card-${highlightedTestId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [highlightedTestId]);
 
   // Derive visible categories list
   const activeCategoriesList = ['All', ...Array.from(new Set([
@@ -282,6 +299,7 @@ export const TestsView: React.FC<TestsViewProps> = ({
                     lang={lang} 
                     labName={selectedLabId ? labs.find(l => l.id === selectedLabId)?.name : t.allCenters}
                     selectedLabId={selectedLabId}
+                    isHighlighted={highlightedTestId === test.id}
                   />
                 </div>
               ))}

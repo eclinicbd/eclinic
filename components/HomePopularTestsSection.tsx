@@ -26,7 +26,7 @@ interface HomePopularTestsSectionProps {
   cart: string[];
   labs: LabPartner[];
   selectedLabId?: string;
-  onNavigateToTests: (categoryId?: string, labId?: string, search?: string) => void;
+  onNavigateToTests: (categoryId?: string, labId?: string, search?: string, highlightTestId?: string) => void;
   badge?: string;
   title?: string;
   description?: string;
@@ -183,8 +183,8 @@ export const HomePopularTestsSection: React.FC<HomePopularTestsSectionProps> = (
             return (
               <div
                 key={test.id}
-                onClick={() => onNavigateToTests(test.category, selectedLabId, test.name)}
-                className="w-72 sm:w-80 flex-shrink-0 bg-white rounded-2xl border border-slate-200/90 hover:border-primary hover:shadow-xl transition-all duration-300 flex flex-col group relative overflow-hidden cursor-pointer"
+                onClick={() => onNavigateToTests('All', selectedLabId, '', test.id)}
+                className="w-72 sm:w-80 flex-shrink-0 bg-white rounded-2xl border border-slate-200/90 hover:border-primary hover:shadow-xl transition-all duration-300 flex flex-col group relative overflow-hidden cursor-pointer active:scale-[0.99]"
               >
                 {/* Ranking Tag on Top Left Corner */}
                 <div className="absolute top-0 left-0 pointer-events-none">

@@ -11,9 +11,10 @@ interface TestCardProps {
   lang: Language;
   labName?: string;
   selectedLabId?: string;
+  isHighlighted?: boolean;
 }
 
-export const TestCard: React.FC<TestCardProps> = ({ test, onToggleCart, isInCart, lang, labName, selectedLabId }) => {
+export const TestCard: React.FC<TestCardProps> = ({ test, onToggleCart, isInCart, lang, labName, selectedLabId, isHighlighted }) => {
   const t = TRANSLATIONS[lang];
 
   // Determine current discounted selling price
@@ -34,7 +35,23 @@ export const TestCard: React.FC<TestCardProps> = ({ test, onToggleCart, isInCart
     : 0;
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/80 hover:border-primary hover:shadow-lg transition-all duration-200 overflow-hidden flex flex-col h-full group relative">
+    <div 
+      id={`test-card-${test.id}`}
+      className={`bg-white rounded-2xl border transition-all duration-300 overflow-hidden flex flex-col h-full group relative ${
+        isHighlighted
+          ? 'border-primary ring-4 ring-primary/30 shadow-xl scale-[1.01] bg-gradient-to-b from-sky-50/40 via-white to-white'
+          : 'border-slate-200/80 hover:border-primary hover:shadow-lg'
+      }`}
+    >
+      {/* Prominent Highlight Badge if selected from popular diagnostics */}
+      {isHighlighted && (
+        <div className="absolute top-0 right-0 z-10 pointer-events-none">
+          <span className="inline-flex items-center gap-1 bg-gradient-to-r from-primary to-sky-600 text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-bl-xl shadow-xs animate-pulse">
+            <span>✨</span>
+            <span>{lang === 'bn' ? 'বাছাইকৃত টেস্ট' : 'Selected Test'}</span>
+          </span>
+        </div>
+      )}
       
       {/* Top Row: Category, Discount Badge & Turnaround Time */}
       <div className="p-4 pb-2 flex justify-between items-center gap-2">

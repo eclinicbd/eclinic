@@ -269,6 +269,7 @@ export interface SiteSettings {
   siteTagline: string;
   logoUrl?: string;
   logoIcon?: string; // e.g. 'FlaskConical', 'Activity', 'HeartPulse', 'ShieldCheck', 'Stethoscope'
+  faviconUrl?: string; // Custom browser tab icon / favicon URL or Data URI
   
   // Hero Section Customization
   heroBadge?: string;
