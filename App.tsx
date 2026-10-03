@@ -617,9 +617,14 @@ export default function App() {
     }
   };
 
-  const navigateToTests = (categoryId?: string, labId?: string) => {
-    if (categoryId) setActiveCategory(categoryId);
-    if (labId !== undefined) setSelectedLabId(labId);
+  const navigateToTests = (categoryId?: string, labId?: string, search?: string) => {
+    setActiveCategory(categoryId || 'All');
+    if (labId !== undefined) {
+      setSelectedLabId(labId);
+    } else {
+      setSelectedLabId('');
+    }
+    setSearchTerm(search !== undefined ? search : '');
     setCurrentView('tests');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -1081,7 +1086,7 @@ export default function App() {
                 {labs.filter(l => !l.isHidden).map((lab) => (
                   <div
                     key={lab.id}
-                    onClick={() => navigateToTests(undefined, lab.id)}
+                    onClick={() => navigateToTests('All', lab.id, '')}
                     className="w-48 sm:w-56 flex-shrink-0 bg-white rounded-2xl border border-slate-200 hover:border-primary hover:shadow-lg transition-all duration-200 p-4 flex flex-col items-center justify-between text-center cursor-pointer group relative overflow-hidden"
                   >
                     {/* Optional Discount Tag on Corner */}

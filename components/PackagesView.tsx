@@ -384,12 +384,12 @@ export const PackagesView: React.FC<PackagesViewProps> = ({
                           {isInCart ? (
                             <span className="flex items-center justify-center gap-1">
                               <Check size={14} />
-                              {lang === 'bn' ? 'কার্টে যুক্ত' : 'In Cart'}
+                              {lang === 'bn' ? 'বুকিংয়ে যুক্ত' : 'In Booking'}
                             </span>
                           ) : (
                             <span className="flex items-center justify-center gap-1">
                               <ShoppingCart size={14} />
-                              {lang === 'bn' ? 'কার্টে যোগ' : 'Add to Cart'}
+                              <span>Add to Booking</span>
                             </span>
                           )}
                         </Button>

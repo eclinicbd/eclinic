@@ -52,7 +52,7 @@ export const TRANSLATIONS = {
     },
     // Test Card
     cost: "খরচ",
-    bookBtn: "Add to Cart",
+    bookBtn: "Add to Booking",
     addedBtn: "Added",
     // Cart & Modal
     cartTitle: "আপনার কার্ট",
@@ -292,7 +292,7 @@ export const TRANSLATIONS = {
     },
     // Test Card
     cost: "Cost",
-    bookBtn: "Add to Cart",
+    bookBtn: "Add to Booking",
     addedBtn: "Added",
     // Cart & Modal
     cartTitle: "Your Cart",

@@ -296,12 +296,12 @@ export const HomePackagesSection: React.FC<HomePackagesSectionProps> = ({
                           {isInCart ? (
                             <span className="flex items-center justify-center gap-1">
                               <Check size={13} />
-                              {lang === 'bn' ? 'যুক্ত' : 'In Cart'}
+                              {lang === 'bn' ? 'যুক্ত' : 'Added'}
                             </span>
                           ) : (
                             <span className="flex items-center justify-center gap-1">
                               <ShoppingCart size={13} />
-                              {lang === 'bn' ? 'কার্টে যোগ' : 'Add'}
+                              <span>Add to Booking</span>
                             </span>
                           )}
                         </Button>

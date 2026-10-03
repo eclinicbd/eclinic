@@ -304,12 +304,12 @@ export const PackageDetailModal: React.FC<PackageDetailModalProps> = ({
               {isInCart ? (
                 <span className="flex items-center gap-1.5 text-emerald-600">
                   <Check size={15} />
-                  {lang === 'bn' ? 'কার্টে যুক্ত' : 'In Cart'}
+                  {lang === 'bn' ? 'বুকিংয়ে যুক্ত' : 'In Booking'}
                 </span>
               ) : (
                 <span className="flex items-center gap-1.5">
                   <ShoppingCart size={15} />
-                  {lang === 'bn' ? 'কার্ট এ রাখুন' : 'Add to Cart'}
+                  <span>Add to Booking</span>
                 </span>
               )}
             </Button>

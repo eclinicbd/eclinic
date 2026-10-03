@@ -326,7 +326,7 @@ export const TestsView: React.FC<TestsViewProps> = ({
                   <FlaskConical size={40} className="mx-auto text-slate-300 mb-2 opacity-60" />
                   <p className="text-xs text-slate-500 font-medium">{t.noTestsSelected}</p>
                   <p className="text-[11px] text-slate-400 mt-1">
-                    {lang === 'bn' ? 'টেস্ট কার্ড থেকে Add to Cart করুন' : 'Click Add to Cart on any test'}
+                    {lang === 'bn' ? 'টেস্ট কার্ড থেকে Add to Booking করুন' : 'Click Add to Booking on any test'}
                   </p>
                 </div>
               ) : (

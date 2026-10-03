@@ -26,7 +26,7 @@ interface HomePopularTestsSectionProps {
   cart: string[];
   labs: LabPartner[];
   selectedLabId?: string;
-  onNavigateToTests: () => void;
+  onNavigateToTests: (categoryId?: string, labId?: string, search?: string) => void;
   badge?: string;
   title?: string;
   description?: string;
@@ -183,10 +183,11 @@ export const HomePopularTestsSection: React.FC<HomePopularTestsSectionProps> = (
             return (
               <div
                 key={test.id}
-                className="w-72 sm:w-80 flex-shrink-0 bg-white rounded-2xl border border-slate-200/90 hover:border-primary hover:shadow-xl transition-all duration-300 flex flex-col group relative overflow-hidden"
+                onClick={() => onNavigateToTests(test.category, selectedLabId, test.name)}
+                className="w-72 sm:w-80 flex-shrink-0 bg-white rounded-2xl border border-slate-200/90 hover:border-primary hover:shadow-xl transition-all duration-300 flex flex-col group relative overflow-hidden cursor-pointer"
               >
                 {/* Ranking Tag on Top Left Corner */}
-                <div className="absolute top-0 left-0">
+                <div className="absolute top-0 left-0 pointer-events-none">
                   <span className="inline-flex items-center gap-1 bg-gradient-to-r from-amber-500 to-rose-500 text-white text-[10px] font-black px-2.5 py-0.5 rounded-br-xl shadow-xs">
                     <span>#{index + 1}</span>
                     <span className="font-bold text-[9px] uppercase tracking-wider">
@@ -237,7 +238,10 @@ export const HomePopularTestsSection: React.FC<HomePopularTestsSectionProps> = (
                 </div>
 
                 {/* Footer / Price & Action Buttons */}
-                <div className="p-4 pt-3 border-t border-slate-100 bg-slate-50/50 flex flex-col gap-2.5 mt-auto">
+                <div 
+                  onClick={(e) => e.stopPropagation()}
+                  className="p-4 pt-3 border-t border-slate-100 bg-slate-50/50 flex flex-col gap-2.5 mt-auto"
+                >
                   <div className="flex items-end justify-between">
                     <div className="flex flex-col">
                       {hasDiscount && (
@@ -253,8 +257,11 @@ export const HomePopularTestsSection: React.FC<HomePopularTestsSectionProps> = (
                     {/* Quick 1-Click Direct Book Button if handler exists */}
                     {onDirectBook && (
                       <button
-                        onClick={() => onDirectBook(test.id, selectedLabId)}
-                        className="text-[11px] font-bold text-sky-700 hover:text-sky-900 underline flex items-center gap-0.5"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDirectBook(test.id, selectedLabId);
+                        }}
+                        className="text-[11px] font-bold text-sky-700 hover:text-sky-900 underline flex items-center gap-0.5 cursor-pointer"
                       >
                         <span>{lang === 'bn' ? 'ইনস্ট্যান্ট বুক' : 'Direct Book'}</span>
                         <ArrowRight size={11} />
@@ -262,11 +269,14 @@ export const HomePopularTestsSection: React.FC<HomePopularTestsSectionProps> = (
                     )}
                   </div>
 
-                  {/* Add to Cart / Added Toggle Button */}
+                  {/* Add to Booking / Added Toggle Button */}
                   <Button
-                    onClick={() => onToggleCart(test)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleCart(test);
+                    }}
                     variant={isInCart ? 'secondary' : 'primary'}
-                    className={`w-full !py-2.5 !text-xs font-bold justify-center transition-all ${
+                    className={`w-full !py-2.5 !text-xs font-bold justify-center transition-all cursor-pointer ${
                       isInCart
                         ? 'bg-emerald-50 text-emerald-700 border border-emerald-300 hover:bg-emerald-100'
                         : 'shadow-sm shadow-sky-100 hover:shadow-md'
@@ -275,12 +285,12 @@ export const HomePopularTestsSection: React.FC<HomePopularTestsSectionProps> = (
                     {isInCart ? (
                       <>
                         <Check size={14} className="mr-1.5 text-emerald-600" />
-                        <span>{lang === 'bn' ? 'কার্টে যুক্ত রয়েছে' : 'Added to Cart'}</span>
+                        <span>{lang === 'bn' ? 'বুকিংয়ে যুক্ত রয়েছে' : 'Added to Booking'}</span>
                       </>
                     ) : (
                       <>
                         <ShoppingCart size={14} className="mr-1.5" />
-                        <span>{lang === 'bn' ? 'কার্টে যোগ করুন' : 'Add to Cart'}</span>
+                        <span>Add to Booking</span>
                       </>
                     )}
                   </Button>
@@ -290,13 +300,13 @@ export const HomePopularTestsSection: React.FC<HomePopularTestsSectionProps> = (
           })}
         </div>
 
-        {/* Bottom CTA Button */}
+        {/* Bottom CTA Button - Show all 100+ tests */}
         <div className="mt-8 flex justify-center pt-3 border-t border-slate-100">
           <Button 
-            onClick={onNavigateToTests} 
-            className="px-8 py-3 shadow-sm text-xs sm:text-sm font-bold"
+            onClick={() => onNavigateToTests('All', '', '')} 
+            className="px-8 py-3 shadow-sm text-xs sm:text-sm font-bold cursor-pointer"
           >
-            {btnText || (lang === 'bn' ? 'ডায়াগনস্টিক সেন্টারের সকল টেস্ট ক্যাটালগ দেখুন' : 'View Full Diagnostic Tests Catalogue')} &rarr;
+            {btnText || (lang === 'bn' ? 'ডায়াগনস্টিক সেন্টারের সকল টেস্ট ক্যাটালগ দেখুন' : 'Browse All 100+ Tests')} &rarr;
           </Button>
         </div>
 
