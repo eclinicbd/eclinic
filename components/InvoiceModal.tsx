@@ -128,6 +128,11 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
   const itemsMainSum = resolvedItems.reduce((sum, item) => sum + item.originalPrice, 0);
   const itemsDiscountSum = resolvedItems.reduce((sum, item) => sum + item.discountAmount, 0);
   const itemsFinalSum = resolvedItems.reduce((sum, item) => sum + item.finalPrice, 0);
+  const totalDiscountSavings = order.totalDiscount !== undefined 
+    ? order.totalDiscount 
+    : (itemsDiscountSum > 0 
+        ? itemsDiscountSum 
+        : Math.max(0, itemsMainSum - itemsFinalSum));
 
   // Home Sample Collection Fee
   const collectionFee = order.collectionFee !== undefined 
@@ -318,25 +323,37 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
             </div>
           </div>
 
-          {/* Pricing & Bill Summary (Subtotal, Collection Fee, Tube Fee, Total) */}
+          {/* Pricing & Bill Summary: 1. Tests Subtotal -> 2. Discount Savings -> 3. Tube & Accessories -> 4. Home Collection Fee -> 5. Payment Method -> 6. Total */}
           <div className="bg-slate-900 text-white p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <div className="flex items-center gap-1.5 text-xs text-slate-300 font-medium">
-                <CreditCard size={14} className="text-primary" />
-                <span>{isBn ? 'পেমেন্ট মেথড:' : 'Payment Method:'}</span>
-                <span className="text-white font-bold">{getPaymentMethodBadge()}</span>
+                <FileText size={14} className="text-sky-400" />
+                <span>{isBn ? 'মোট টেস্টের মূল্য (Tests Subtotal):' : 'Tests Subtotal:'}</span>
+                <span className="text-white font-bold">৳ {itemsMainSum}</span>
+              </div>
+              {totalDiscountSavings > 0 && (
+                <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-medium">
+                  <Tag size={14} className="text-emerald-400" />
+                  <span>{isBn ? 'মোট ডিসকাউন্ট / সাশ্রয় (Total Discount Savings):' : 'Total Discount Savings:'}</span>
+                  <span className="text-emerald-400 font-bold">- ৳ {totalDiscountSavings}</span>
+                </div>
+              )}
+              <div className="flex items-center gap-1.5 text-xs text-slate-300 font-medium">
+                <FlaskConical size={14} className="text-sky-400" />
+                <span>{isBn ? 'টিউব, নিডল ও এক্সেসরিজ:' : 'Tube, Needle & Accessories:'}</span>
+                <span className="text-white font-bold">৳ {accessoriesFee}</span>
               </div>
               <div className="flex items-center gap-1.5 text-xs text-slate-300 font-medium">
                 <Truck size={14} className="text-emerald-400" />
-                <span>{isBn ? 'হোম স্যাম্পল কালেকশন ফি:' : 'Sample Collection:'}</span>
+                <span>{isBn ? 'হোম স্যাম্পল কালেকশন ফি:' : 'Home Sample Collection Fee:'}</span>
                 <span className={collectionFee === 0 ? 'text-emerald-400 font-bold' : 'text-white font-bold'}>
                   {collectionFee === 0 ? (isBn ? '৳ ০ (ফ্রি / Free)' : '৳ 0 (FREE)') : `৳ ${collectionFee}`}
                 </span>
               </div>
               <div className="flex items-center gap-1.5 text-xs text-slate-300 font-medium">
-                <FlaskConical size={14} className="text-sky-400" />
-                <span>{isBn ? 'টিউব, নিডল ও এক্সেসরিজ:' : 'Tube, Needle & Accessories:'}</span>
-                <span className="text-white font-bold">৳ {accessoriesFee}</span>
+                <CreditCard size={14} className="text-primary" />
+                <span>{isBn ? 'পেমেন্ট মেথড:' : 'Payment Method:'}</span>
+                <span className="text-white font-bold">{getPaymentMethodBadge()}</span>
               </div>
             </div>
 

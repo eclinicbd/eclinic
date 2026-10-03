@@ -1402,18 +1402,30 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
             </div>
           </div>
 
-          {/* Home Sample Collection Fee, Accessories & Total */}
+          {/* Bill Calculation Summary: 1. Subtotal -> 2. Discount Savings -> 3. Tube & Accessories -> 4. Home Collection Fee -> 5. Total */}
           <div className="p-4 bg-slate-900 text-white rounded-xl space-y-2">
-            <div className="flex justify-between items-center text-xs text-slate-300 border-b border-slate-800 pb-1.5">
-              <span>{lang === 'bn' ? 'হোম স্যাম্পল কালেকশন ফি:' : 'Home Sample Collection Fee:'}</span>
-              <span className={(order.collectionFee ?? order.serviceCharge ?? 0) === 0 ? 'text-emerald-400 font-bold' : 'text-white font-bold'}>
-                {(order.collectionFee ?? order.serviceCharge ?? 0) === 0 ? (lang === 'bn' ? '৳ ০ (ফ্রি / Free)' : '৳ 0 (FREE)') : `৳ ${order.collectionFee ?? order.serviceCharge}`}
-              </span>
-            </div>
+            {order.subtotal !== undefined && (
+              <div className="flex justify-between items-center text-xs text-slate-300 border-b border-slate-800 pb-1.5">
+                <span>{lang === 'bn' ? 'মোট টেস্টের মূল্য (Tests Subtotal):' : 'Tests Subtotal:'}</span>
+                <span className="text-white font-bold">৳ {order.subtotal}</span>
+              </div>
+            )}
+            {(order.totalDiscount ?? 0) > 0 && (
+              <div className="flex justify-between items-center text-xs text-emerald-400 border-b border-slate-800 pb-1.5 font-bold">
+                <span>{lang === 'bn' ? 'মোট ডিসকাউন্ট / সাশ্রয়:' : 'Total Discount Savings:'}</span>
+                <span>- ৳ {order.totalDiscount}</span>
+              </div>
+            )}
             <div className="flex justify-between items-center text-xs text-slate-300 border-b border-slate-800 pb-1.5">
               <span>{lang === 'bn' ? 'টিউব, নিডল ও এক্সেসরিজ ফি:' : 'Tube, Needle & Accessories Fee:'}</span>
               <span className="text-white font-bold">
                 ৳ {order.accessoriesFee !== undefined ? order.accessoriesFee : calculateAccessoriesFee(order.testNames.length)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center text-xs text-slate-300 border-b border-slate-800 pb-1.5">
+              <span>{lang === 'bn' ? 'হোম স্যাম্পল কালেকশন ফি:' : 'Home Sample Collection Fee:'}</span>
+              <span className={(order.collectionFee ?? order.serviceCharge ?? 0) === 0 ? 'text-emerald-400 font-bold' : 'text-white font-bold'}>
+                {(order.collectionFee ?? order.serviceCharge ?? 0) === 0 ? (lang === 'bn' ? '৳ ০ (ফ্রি / Free)' : '৳ 0 (FREE)') : `৳ ${order.collectionFee ?? order.serviceCharge}`}
               </span>
             </div>
             <div className="flex justify-between items-center pt-0.5">

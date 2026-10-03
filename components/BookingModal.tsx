@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { TestPackage, LabPartner, Language, BookingHistoryItem, BookingFormData, PatientUser, PaymentMethod } from '../types';
+import { TestPackage, LabPartner, Language, BookingHistoryItem, BookingFormData, PatientUser, PaymentMethod, PaymentGatewaysConfig } from '../types';
 import { TRANSLATIONS } from '../translations';
 import { 
   X, 
@@ -173,7 +173,14 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
   const t = TRANSLATIONS[lang];
   const siteSettings = getStoredSiteSettings(lang);
-  const paymentConfig = getStoredPaymentConfig();
+  const [paymentConfig, setPaymentConfig] = useState<PaymentGatewaysConfig>(getStoredPaymentConfig);
+  
+  // Sync latest payment config whenever modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setPaymentConfig(getStoredPaymentConfig());
+    }
+  }, [isOpen]);
   
   // Active Labs list
   const rawLabs = (labsList && labsList.length > 0 ? labsList : getLabs(lang)).filter(l => !l.isHidden);
@@ -306,8 +313,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     }
   }, [formData.date]);
 
-  if (!isOpen) return null;
-
   // Calculate bill based on selected lab
   const getItemPrice = (item: TestPackage, labId?: string) => {
     const targetLab = labId || formData.labId;
@@ -392,25 +397,52 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const handleSubmitBooking = async () => {
     if (isSubmitting || step === 4) return;
 
-    // Validate payment method details if necessary
+    // Validate payment method details (Mandatory for bKash, Nagad, Rocket, Card)
     if (formData.paymentMethod === 'bkash' || formData.paymentMethod === 'nagad' || formData.paymentMethod === 'rocket') {
-      if (formData.senderPhone && formData.senderPhone.replace(/[^0-9]/g, '').length < 10) {
-        setValidationError(isBn ? 'অনুগ্রহ করে সঠিক প্রেরক মোবাইল নম্বর প্রদান করুন।' : 'Please provide a valid sender mobile number.');
+      const methodName = formData.paymentMethod === 'bkash' 
+        ? (isBn ? 'বিকাশ' : 'bKash') 
+        : formData.paymentMethod === 'nagad' 
+        ? (isBn ? 'নগদ' : 'Nagad') 
+        : (isBn ? 'রকেট' : 'Rocket');
+
+      const rawSender = (formData.senderPhone || '').trim();
+      const cleanSender = rawSender.replace(/[^0-9]/g, '');
+      if (!rawSender) {
+        setValidationError(isBn ? `অনুগ্রহ করে আপনার ${methodName} প্রেরক মোবাইল নম্বর (Sender Phone) প্রদান করুন।` : `Please provide your ${methodName} sender phone number.`);
+        return;
+      }
+      if (cleanSender.length < 11) {
+        setValidationError(isBn ? `অনুগ্রহ করে সঠিক ১১ ডিজিটের ${methodName} প্রেরক মোবাইল নম্বর লিখুন (e.g. 017XXXXXXXX)।` : `Please enter a valid 11-digit ${methodName} sender phone number.`);
+        return;
+      }
+
+      const rawTrx = (formData.transactionId || '').trim();
+      if (!rawTrx) {
+        setValidationError(isBn ? `অনুগ্রহ করে ${methodName} পেমেন্টের ট্রানজেকশন আইডি (TrxID) প্রদান করুন।` : `Please provide the ${methodName} Transaction ID (TrxID).`);
+        return;
+      }
+      if (rawTrx.length < 4) {
+        setValidationError(isBn ? `অনুগ্রহ করে সঠিক ট্রানজেকশন আইডি (TrxID) লিখুন।` : `Please enter a valid Transaction ID (TrxID).`);
         return;
       }
     }
 
     if (formData.paymentMethod === 'card') {
-      if (!formData.cardNumber || formData.cardNumber.replace(/\s/g, '').length < 15) {
+      const cleanCardNum = (formData.cardNumber || '').replace(/\s/g, '');
+      if (!cleanCardNum || cleanCardNum.length < 15) {
         setValidationError(isBn ? 'অনুগ্রহ করে সঠিক ১৬ ডিজিট কার্ড নম্বর লিখুন।' : 'Please enter a valid 16-digit card number.');
         return;
       }
-      if (!formData.cardExpiry || !formData.cardExpiry.includes('/')) {
-        setValidationError(isBn ? 'কার্ডের মেয়াদ (MM/YY) উল্লেখ করুন।' : 'Please enter card expiry date (MM/YY).');
+      if (!formData.cardExpiry || !formData.cardExpiry.includes('/') || formData.cardExpiry.trim().length < 5) {
+        setValidationError(isBn ? 'কার্ডের মেয়াদ (MM/YY) সঠিকভাবে উল্লেখ করুন।' : 'Please enter valid card expiry date (MM/YY).');
         return;
       }
-      if (!formData.cardCvv || formData.cardCvv.length < 3) {
-        setValidationError(isBn ? '৩ বা ৪ ডিজিট CVV কোড লিখুন।' : 'Please enter 3 or 4 digit CVV code.');
+      if (!formData.cardCvv || formData.cardCvv.trim().length < 3) {
+        setValidationError(isBn ? 'অনুগ্রহ করে ৩ বা ৪ ডিজিট CVV কোড লিখুন।' : 'Please enter 3 or 4 digit CVV code.');
+        return;
+      }
+      if (!formData.cardHolder || !formData.cardHolder.trim()) {
+        setValidationError(isBn ? 'অনুগ্রহ করে কার্ডধারীর নাম (Cardholder Name) লিখুন।' : 'Please enter the Cardholder Name.');
         return;
       }
     }
@@ -530,11 +562,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     printOrDownloadInvoice(orderObj, lang);
   };
 
-  // Payment method options data
-  const paymentOptions: { id: PaymentMethod; title: string; subtitle: string; icon: any; color: string; badge?: string }[] = [
+  // Payment method options data - filtered to only active payment gateways enabled in Admin Settings
+  const allPaymentOptions: { id: PaymentMethod; title: string; subtitle: string; icon: any; color: string; badge?: string }[] = [
     {
       id: 'cod',
-      title: paymentConfig.cod.title || (isBn ? 'ক্যাশ অন কালেকশন (Cash on Delivery)' : 'Cash on Sample Collection'),
+      title: paymentConfig?.cod?.title || (isBn ? 'ক্যাশ অন কালেকশন (Cash on Delivery)' : 'Cash on Sample Collection'),
       subtitle: isBn ? 'স্যাম্পল সংগ্রহের সময় ফ্লেবোটোমিস্টকে ক্যাশ পরিশোধ' : 'Pay cash to technician during home visit',
       icon: Banknote,
       color: 'emerald',
@@ -546,7 +578,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       subtitle: isBn ? 'বিকাশ অ্যাপ অথবা ডায়াল করে ইনস্ট্যান্ট পেমেন্ট' : 'Direct Send Money / Merchant Payment',
       icon: Smartphone,
       color: 'pink',
-      badge: paymentConfig.bkash.merchantNumber || '01712-345678'
+      badge: paymentConfig?.bkash?.merchantNumber || '01712-345678'
     },
     {
       id: 'nagad',
@@ -554,7 +586,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       subtitle: isBn ? 'নগদ অ্যাপ অথবা ইউএসএসডি কোডে সহজ পেমেন্ট' : 'Fast payment via Nagad app',
       icon: Smartphone,
       color: 'orange',
-      badge: paymentConfig.nagad.merchantNumber || '01812-345678'
+      badge: paymentConfig?.nagad?.merchantNumber || '01812-345678'
     },
     {
       id: 'rocket',
@@ -562,7 +594,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       subtitle: isBn ? 'ডাচ-বাংলা রকেট একাউন্ট থেকে নিরাপদ পেমেন্ট' : 'DBBL Rocket Mobile Payment',
       icon: Wallet,
       color: 'purple',
-      badge: paymentConfig.rocket.accountNumber || '01912-345678-9'
+      badge: paymentConfig?.rocket?.accountNumber || '01912-345678-9'
     },
     {
       id: 'card',
@@ -570,9 +602,26 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       subtitle: isBn ? 'ভিসা, মাস্টারকার্ড, এমেক্স ও নেক্সাস পে সুরক্ষিত গেটওয়ে' : 'Visa, MasterCard, AMEX, NexusPay',
       icon: CreditCard,
       color: 'sky',
-      badge: paymentConfig.card.provider?.toUpperCase() || 'Instant SSL'
+      badge: paymentConfig?.card?.provider?.toUpperCase() || 'Instant SSL'
     }
   ];
+
+  // Strictly filter out any payment method disabled in Admin Settings
+  const paymentOptions = allPaymentOptions.filter(opt => {
+    const gateway = paymentConfig?.[opt.id];
+    return gateway ? gateway.isActive !== false : true;
+  });
+
+  // Ensure formData.paymentMethod always stays on an enabled payment method
+  useEffect(() => {
+    if (paymentOptions.length > 0) {
+      if (!paymentOptions.some(opt => opt.id === formData.paymentMethod)) {
+        setFormData(prev => ({ ...prev, paymentMethod: paymentOptions[0].id }));
+      }
+    }
+  }, [paymentOptions, formData.paymentMethod]);
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200">
@@ -920,27 +969,20 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 )}
               </div>
 
-              {/* 4. Bill Summary Card */}
+              {/* 4. Bill Summary Card: 1. Tests Subtotal -> 2. Discount Savings -> 3. Tube & Accessories -> 4. Home Collection Charge -> 5. Total */}
               {cartItems.length > 0 && (
                 <div className="bg-slate-900 text-white p-4 rounded-2xl shadow-sm space-y-2 text-xs">
                   <div className="flex justify-between text-slate-300">
-                    <span>{isBn ? 'টেস্টের মোট মূল্য (Subtotal):' : 'Tests Subtotal:'}</span>
+                    <span>{isBn ? 'টেস্টের মোট মূল্য (Tests Subtotal):' : 'Tests Subtotal:'}</span>
                     <span className="font-bold text-white">৳{subTotal}</span>
                   </div>
 
                   {totalSavings > 0 && (
                     <div className="flex justify-between text-emerald-300 bg-emerald-950/60 px-2.5 py-1 rounded-lg border border-emerald-500/30">
-                      <span>{isBn ? 'মোট ডিসকাউন্ট সাশ্রয়:' : 'Total Discount Savings:'}</span>
+                      <span>{isBn ? 'মোট ডিসকাউন্ট সাশ্রয় (Total Discount Savings):' : 'Total Discount Savings:'}</span>
                       <span className="font-black">- ৳{totalSavings}</span>
                     </div>
                   )}
-
-                  <div className="flex justify-between text-slate-300">
-                    <span>{isBn ? 'হোম স্যাম্পল কালেকশন ফি:' : 'Home Collection Charge:'}</span>
-                    <span className="font-bold text-emerald-400">
-                      {serviceCharge === 0 ? (isBn ? 'ফ্রি (Free)' : 'Free') : `+ ৳${serviceCharge}`}
-                    </span>
-                  </div>
 
                   <div className="flex justify-between text-slate-300">
                     <span className="flex items-center gap-1.5">
@@ -950,6 +992,13 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                       </span>
                     </span>
                     <span className="font-bold text-white">+ ৳{accessoriesFee}</span>
+                  </div>
+
+                  <div className="flex justify-between text-slate-300">
+                    <span>{isBn ? 'হোম স্যাম্পল কালেকশন ফি:' : 'Home Sample Collection Fee:'}</span>
+                    <span className="font-bold text-emerald-400">
+                      {serviceCharge === 0 ? (isBn ? 'ফ্রি (Free)' : 'Free') : `+ ৳${serviceCharge}`}
+                    </span>
                   </div>
 
                   <div className="flex justify-between items-center border-t border-slate-700 pt-2 font-bold">
@@ -1289,27 +1338,37 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                   <div>
-                                    <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                                      {isBn ? 'বিকাশ মোবাইল নম্বর:' : 'bKash Sender Phone:'}
+                                    <label className="text-[11px] font-bold text-slate-700 flex items-center justify-between mb-1">
+                                      <span>{isBn ? 'বিকাশ মোবাইল নম্বর (Sender Phone):' : 'bKash Sender Phone:'}</span>
+                                      <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* বাধ্যতামূলক' : '* Required'}</span>
                                     </label>
                                     <input 
                                       type="tel"
+                                      required
                                       placeholder="017XXXXXXXX"
                                       value={formData.senderPhone || ''}
-                                      onChange={(e) => setFormData({ ...formData, senderPhone: e.target.value })}
-                                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono focus:border-primary outline-none"
+                                      onChange={(e) => {
+                                        setFormData({ ...formData, senderPhone: e.target.value });
+                                        if (validationError) setValidationError(null);
+                                      }}
+                                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 outline-none"
                                     />
                                   </div>
                                   <div>
-                                    <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                                      {isBn ? 'ট্রানজেকশন আইডি (TrxID):' : 'Transaction ID (TrxID):'}
+                                    <label className="text-[11px] font-bold text-slate-700 flex items-center justify-between mb-1">
+                                      <span>{isBn ? 'ট্রানজেকশন আইডি (TrxID):' : 'Transaction ID (TrxID):'}</span>
+                                      <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* বাধ্যতামূলক' : '* Required'}</span>
                                     </label>
                                     <input 
                                       type="text"
+                                      required
                                       placeholder="e.g. 9J87AKL9"
                                       value={formData.transactionId || ''}
-                                      onChange={(e) => setFormData({ ...formData, transactionId: e.target.value })}
-                                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono uppercase focus:border-primary outline-none"
+                                      onChange={(e) => {
+                                        setFormData({ ...formData, transactionId: e.target.value });
+                                        if (validationError) setValidationError(null);
+                                      }}
+                                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono uppercase focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 outline-none"
                                     />
                                   </div>
                                 </div>
@@ -1346,27 +1405,37 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                   <div>
-                                    <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                                      {isBn ? 'নগদ মোবাইল নম্বর:' : 'Nagad Sender Phone:'}
+                                    <label className="text-[11px] font-bold text-slate-700 flex items-center justify-between mb-1">
+                                      <span>{isBn ? 'নগদ মোবাইল নম্বর (Sender Phone):' : 'Nagad Sender Phone:'}</span>
+                                      <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* বাধ্যতামূলক' : '* Required'}</span>
                                     </label>
                                     <input 
                                       type="tel"
+                                      required
                                       placeholder="018XXXXXXXX"
                                       value={formData.senderPhone || ''}
-                                      onChange={(e) => setFormData({ ...formData, senderPhone: e.target.value })}
-                                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono focus:border-primary outline-none"
+                                      onChange={(e) => {
+                                        setFormData({ ...formData, senderPhone: e.target.value });
+                                        if (validationError) setValidationError(null);
+                                      }}
+                                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 outline-none"
                                     />
                                   </div>
                                   <div>
-                                    <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                                      {isBn ? 'ট্রানজেকশন আইডি (TrxID):' : 'Transaction ID (TrxID):'}
+                                    <label className="text-[11px] font-bold text-slate-700 flex items-center justify-between mb-1">
+                                      <span>{isBn ? 'ট্রানজেকশন আইডি (TrxID):' : 'Transaction ID (TrxID):'}</span>
+                                      <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* বাধ্যতামূলক' : '* Required'}</span>
                                     </label>
                                     <input 
                                       type="text"
+                                      required
                                       placeholder="e.g. 7K99NGD1"
                                       value={formData.transactionId || ''}
-                                      onChange={(e) => setFormData({ ...formData, transactionId: e.target.value })}
-                                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono uppercase focus:border-primary outline-none"
+                                      onChange={(e) => {
+                                        setFormData({ ...formData, transactionId: e.target.value });
+                                        if (validationError) setValidationError(null);
+                                      }}
+                                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono uppercase focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 outline-none"
                                     />
                                   </div>
                                 </div>
@@ -1403,27 +1472,37 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                   <div>
-                                    <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                                      {isBn ? 'রকেট মোবাইল নম্বর:' : 'Rocket Sender Phone:'}
+                                    <label className="text-[11px] font-bold text-slate-700 flex items-center justify-between mb-1">
+                                      <span>{isBn ? 'রকেট মোবাইল নম্বর (Sender Phone):' : 'Rocket Sender Phone:'}</span>
+                                      <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* বাধ্যতামূলক' : '* Required'}</span>
                                     </label>
                                     <input 
                                       type="tel"
+                                      required
                                       placeholder="019XXXXXXXX"
                                       value={formData.senderPhone || ''}
-                                      onChange={(e) => setFormData({ ...formData, senderPhone: e.target.value })}
-                                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono focus:border-primary outline-none"
+                                      onChange={(e) => {
+                                        setFormData({ ...formData, senderPhone: e.target.value });
+                                        if (validationError) setValidationError(null);
+                                      }}
+                                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 outline-none"
                                     />
                                   </div>
                                   <div>
-                                    <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                                      {isBn ? 'ট্রানজেকশন আইডি (TrxID):' : 'Transaction ID (TrxID):'}
+                                    <label className="text-[11px] font-bold text-slate-700 flex items-center justify-between mb-1">
+                                      <span>{isBn ? 'ট্রানজেকশন আইডি (TrxID):' : 'Transaction ID (TrxID):'}</span>
+                                      <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* বাধ্যতামূলক' : '* Required'}</span>
                                     </label>
                                     <input 
                                       type="text"
+                                      required
                                       placeholder="e.g. 8ROC7712"
                                       value={formData.transactionId || ''}
-                                      onChange={(e) => setFormData({ ...formData, transactionId: e.target.value })}
-                                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono uppercase focus:border-primary outline-none"
+                                      onChange={(e) => {
+                                        setFormData({ ...formData, transactionId: e.target.value });
+                                        if (validationError) setValidationError(null);
+                                      }}
+                                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono uppercase focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 outline-none"
                                     />
                                   </div>
                                 </div>
@@ -1443,11 +1522,13 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
                                   <div className="space-y-2 pt-1">
                                     <div>
-                                      <label className="text-[10px] font-bold text-slate-700 block mb-0.5">
-                                        {isBn ? 'কার্ড নম্বর (১৬ ডিজিট):' : 'Card Number (16-digit):'}
+                                      <label className="text-[10px] font-bold text-slate-700 flex items-center justify-between mb-0.5">
+                                        <span>{isBn ? 'কার্ড নম্বর (১৬ ডিজিট):' : 'Card Number (16-digit):'}</span>
+                                        <span className="text-[9px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* বাধ্যতামূলক' : '* Required'}</span>
                                       </label>
                                       <input 
                                         type="text"
+                                        required
                                         maxLength={19}
                                         placeholder="4123 •••• •••• 9876"
                                         value={formData.cardNumber || ''}
@@ -1461,18 +1542,21 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                                           }
                                           const formatted = parts.length ? parts.join(' ') : v;
                                           setFormData({ ...formData, cardNumber: formatted });
+                                          if (validationError) setValidationError(null);
                                         }}
-                                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-200 text-xs font-mono focus:border-primary outline-none"
+                                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 text-xs font-mono focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 outline-none"
                                       />
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-2">
                                       <div>
-                                        <label className="text-[10px] font-bold text-slate-700 block mb-0.5">
-                                          {isBn ? 'মেয়াদ (MM/YY):' : 'Expiry (MM/YY):'}
+                                        <label className="text-[10px] font-bold text-slate-700 flex items-center justify-between mb-0.5">
+                                          <span>{isBn ? 'মেয়াদ (MM/YY):' : 'Expiry (MM/YY):'}</span>
+                                          <span className="text-[9px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* আবশ্যক' : '* Required'}</span>
                                         </label>
                                         <input 
                                           type="text"
+                                          required
                                           maxLength={5}
                                           placeholder="12/28"
                                           value={formData.cardExpiry || ''}
@@ -1480,35 +1564,46 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                                             let v = e.target.value.replace(/[^0-9]/g, '');
                                             if (v.length > 2) v = v.substring(0, 2) + '/' + v.substring(2, 4);
                                             setFormData({ ...formData, cardExpiry: v });
+                                            if (validationError) setValidationError(null);
                                           }}
-                                          className="w-full px-3 py-2 bg-white rounded-xl border border-slate-200 text-xs font-mono focus:border-primary outline-none"
+                                          className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 text-xs font-mono focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 outline-none"
                                         />
                                       </div>
                                       <div>
-                                        <label className="text-[10px] font-bold text-slate-700 block mb-0.5">
-                                          {isBn ? 'সিভিভি (CVV/CVC):' : 'CVV / CVC:'}
+                                        <label className="text-[10px] font-bold text-slate-700 flex items-center justify-between mb-0.5">
+                                          <span>{isBn ? 'সিভিভি (CVV/CVC):' : 'CVV / CVC:'}</span>
+                                          <span className="text-[9px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* আবশ্যক' : '* Required'}</span>
                                         </label>
                                         <input 
                                           type="password"
+                                          required
                                           maxLength={4}
                                           placeholder="•••"
                                           value={formData.cardCvv || ''}
-                                          onChange={(e) => setFormData({ ...formData, cardCvv: e.target.value.replace(/[^0-9]/g, '') })}
-                                          className="w-full px-3 py-2 bg-white rounded-xl border border-slate-200 text-xs font-mono focus:border-primary outline-none"
+                                          onChange={(e) => {
+                                            setFormData({ ...formData, cardCvv: e.target.value.replace(/[^0-9]/g, '') });
+                                            if (validationError) setValidationError(null);
+                                          }}
+                                          className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 text-xs font-mono focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 outline-none"
                                         />
                                       </div>
                                     </div>
 
                                     <div>
-                                      <label className="text-[10px] font-bold text-slate-700 block mb-0.5">
-                                        {isBn ? 'কার্ডধারীর নাম:' : 'Cardholder Name:'}
+                                      <label className="text-[10px] font-bold text-slate-700 flex items-center justify-between mb-0.5">
+                                        <span>{isBn ? 'কার্ডধারীর নাম:' : 'Cardholder Name:'}</span>
+                                        <span className="text-[9px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* আবশ্যক' : '* Required'}</span>
                                       </label>
                                       <input 
                                         type="text"
+                                        required
                                         placeholder="e.g. MOHAMMAD RAHIM"
                                         value={formData.cardHolder || ''}
-                                        onChange={(e) => setFormData({ ...formData, cardHolder: e.target.value.toUpperCase() })}
-                                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-200 text-xs uppercase focus:border-primary outline-none"
+                                        onChange={(e) => {
+                                          setFormData({ ...formData, cardHolder: e.target.value.toUpperCase() });
+                                          if (validationError) setValidationError(null);
+                                        }}
+                                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 text-xs uppercase focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 outline-none"
                                       />
                                     </div>
                                   </div>

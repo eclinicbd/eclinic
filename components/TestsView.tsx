@@ -356,16 +356,16 @@ export const TestsView: React.FC<TestsViewProps> = ({
                       <span>{t.cartSubtotal}</span>
                       <span className="font-semibold text-slate-800">৳ {subTotal}</span>
                     </div>
-                    {serviceCharge > 0 && (
-                      <div className="flex justify-between text-slate-600">
-                        <span>{t.serviceCharge}</span>
-                        <span className="font-semibold text-slate-800">৳ {serviceCharge}</span>
-                      </div>
-                    )}
                     {accessoriesFee > 0 && (
                       <div className="flex justify-between text-slate-600">
                         <span>{t.accessoriesFee || (lang === 'bn' ? 'টিউব, নিডল ও এক্সেসরিজ' : 'Tube, Needle & Accessories')}</span>
                         <span className="font-semibold text-slate-800">৳ {accessoriesFee}</span>
+                      </div>
+                    )}
+                    {serviceCharge > 0 && (
+                      <div className="flex justify-between text-slate-600">
+                        <span>{t.serviceCharge}</span>
+                        <span className="font-semibold text-slate-800">৳ {serviceCharge}</span>
                       </div>
                     )}
                     <div className="flex justify-between text-sm font-bold text-slate-900 pt-2 border-t border-slate-100">

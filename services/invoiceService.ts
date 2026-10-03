@@ -75,6 +75,11 @@ export const generateInvoiceHtml = (
   const itemsFinalSum = resolvedItems.reduce((sum, item) => sum + item.finalPrice, 0);
   const itemsMainSum = resolvedItems.reduce((sum, item) => sum + item.originalPrice, 0);
   const itemsDiscountSum = resolvedItems.reduce((sum, item) => sum + item.discountAmount, 0);
+  const totalDiscountSavings = order.totalDiscount !== undefined 
+    ? order.totalDiscount 
+    : (itemsDiscountSum > 0 
+        ? itemsDiscountSum 
+        : Math.max(0, itemsMainSum - itemsFinalSum));
 
   // Home Sample Collection Fee
   const collectionFee = order.collectionFee !== undefined 
@@ -605,18 +610,24 @@ export const generateInvoiceHtml = (
     <div class="summary-section">
       <div class="summary-table">
         <div class="summary-row">
-          <span>${isBn ? 'মোট টেস্টের মূল্য (Subtotal):' : 'Tests Subtotal:'}</span>
+          <span>${isBn ? 'মোট টেস্টের মূল্য (Tests Subtotal):' : 'Tests Subtotal:'}</span>
           <span style="font-weight: 700; color: #0f172a;">৳ ${itemsMainSum}</span>
+        </div>
+        ${totalDiscountSavings > 0 ? `
+        <div class="summary-row" style="color: #16a34a;">
+          <span>${isBn ? 'মোট ডিসকাউন্ট / সাশ্রয় (Total Discount Savings):' : 'Total Discount Savings:'}</span>
+          <span style="font-weight: 700; color: #16a34a;">- ৳ ${totalDiscountSavings}</span>
+        </div>
+        ` : ''}
+        <div class="summary-row">
+          <span>${isBn ? 'টিউব, নিডল ও এক্সেসরিজ:' : 'Tube, Needle & Accessories:'}</span>
+          <span style="font-weight: 700; color: #0f172a;">৳ ${accessoriesFee}</span>
         </div>
         <div class="summary-row">
           <span>${isBn ? 'হোম স্যাম্পল কালেকশন ফি:' : 'Home Sample Collection Fee:'}</span>
           <span style="${collectionFee === 0 ? 'color: #16a34a; font-weight: 700;' : 'font-weight: 700; color: #0f172a;'}">
             ${collectionFee === 0 ? (isBn ? '৳ ০ (ফ্রি / Free)' : '৳ 0 (FREE)') : `৳ ${collectionFee}`}
           </span>
-        </div>
-        <div class="summary-row">
-          <span>${isBn ? 'টিউব, নিডল ও এক্সেসরিজ:' : 'Tube, Needle & Accessories:'}</span>
-          <span style="font-weight: 700; color: #0f172a;">৳ ${accessoriesFee}</span>
         </div>
         <div class="summary-row">
           <span>${isBn ? 'পেমেন্ট মেথড:' : 'Payment Method:'}</span>

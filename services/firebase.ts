@@ -54,6 +54,28 @@ export const db = firebaseConfig.firestoreDatabaseId && firebaseConfig.firestore
 export const auth = getAuth(app);
 export { onAuthStateChanged };
 
+/**
+ * Deep sanitization for Firestore documents.
+ * Automatically removes `undefined` properties from objects/arrays to prevent
+ * "Function setDoc() called with invalid data. Unsupported field value: undefined"
+ */
+export const cleanFirestoreData = <T>(data: T): T => {
+  if (data === null || data === undefined) return null as unknown as T;
+  if (Array.isArray(data)) {
+    return data.map(item => cleanFirestoreData(item)) as unknown as T;
+  }
+  if (typeof data === 'object' && data !== null) {
+    const cleaned: Record<string, any> = {};
+    for (const [key, value] of Object.entries(data as Record<string, any>)) {
+      if (value !== undefined) {
+        cleaned[key] = cleanFirestoreData(value);
+      }
+    }
+    return cleaned as T;
+  }
+  return data;
+};
+
 // Google Auth Provider
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({
@@ -297,7 +319,7 @@ export const saveUserProfileToFirestore = async (user: PatientUser): Promise<boo
   try {
     if (!user.id) return false;
     const userRef = doc(db, 'users', user.id);
-    await setDoc(userRef, {
+    const dataToSave = cleanFirestoreData({
       name: user.name,
       phone: user.phone,
       email: user.email || '',
@@ -309,7 +331,8 @@ export const saveUserProfileToFirestore = async (user: PatientUser): Promise<boo
       emergencyContact: user.emergencyContact || '',
       createdAt: user.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString()
-    }, { merge: true });
+    });
+    await setDoc(userRef, dataToSave, { merge: true });
     return true;
   } catch (error) {
     console.error("Error saving user profile to Firestore:", error);
@@ -353,10 +376,10 @@ export const getUserProfileFromFirestore = async (userId: string): Promise<Patie
 export const saveBookingToFirestore = async (booking: BookingHistoryItem): Promise<boolean> => {
   try {
     const bookingDoc = doc(db, 'bookings', booking.id);
-    await setDoc(bookingDoc, {
+    await setDoc(bookingDoc, cleanFirestoreData({
       ...booking,
       createdAt: booking.createdAt || new Date().toISOString()
-    }, { merge: true });
+    }), { merge: true });
     return true;
   } catch (error) {
     console.error("Error saving booking to Firestore:", error);
@@ -471,10 +494,10 @@ export const getBookingsFromFirestore = async (): Promise<BookingHistoryItem[]> 
 export const saveSiteSettingsToFirestore = async (lang: Language, settings: SiteSettings): Promise<boolean> => {
   try {
     const settingsDoc = doc(db, 'site_settings', `config_${lang}`);
-    await setDoc(settingsDoc, {
+    await setDoc(settingsDoc, cleanFirestoreData({
       ...settings,
       updatedAt: new Date().toISOString()
-    }, { merge: true });
+    }), { merge: true });
     return true;
   } catch (error) {
     console.error("Error saving site settings to Firestore:", error);
@@ -507,10 +530,10 @@ export const subscribeToSiteSettings = (lang: Language, callback: (settings: Sit
 export const saveCategoriesToFirestore = async (categories: CategoryItem[]): Promise<boolean> => {
   try {
     const catDoc = doc(db, 'categories', 'master_list');
-    await setDoc(catDoc, {
+    await setDoc(catDoc, cleanFirestoreData({
       items: categories,
       updatedAt: new Date().toISOString()
-    }, { merge: true });
+    }), { merge: true });
     return true;
   } catch (error) {
     console.error("Error saving categories to Firestore:", error);
@@ -539,10 +562,10 @@ export const subscribeToCategories = (callback: (categories: CategoryItem[]) => 
 export const saveLabsToFirestore = async (lang: Language, labs: LabPartner[]): Promise<boolean> => {
   try {
     const labsDoc = doc(db, 'labs', `list_${lang}`);
-    await setDoc(labsDoc, {
+    await setDoc(labsDoc, cleanFirestoreData({
       items: labs,
       updatedAt: new Date().toISOString()
-    }, { merge: true });
+    }), { merge: true });
     return true;
   } catch (error) {
     console.error("Error saving labs to Firestore:", error);
@@ -571,10 +594,10 @@ export const subscribeToLabs = (lang: Language, callback: (labs: LabPartner[]) =
 export const saveTestsToFirestore = async (lang: Language, tests: TestPackage[]): Promise<boolean> => {
   try {
     const testsDoc = doc(db, 'tests', `list_${lang}`);
-    await setDoc(testsDoc, {
+    await setDoc(testsDoc, cleanFirestoreData({
       items: tests,
       updatedAt: new Date().toISOString()
-    }, { merge: true });
+    }), { merge: true });
     return true;
   } catch (error) {
     console.error("Error saving tests to Firestore:", error);
@@ -603,10 +626,10 @@ export const subscribeToTests = (lang: Language, callback: (tests: TestPackage[]
 export const savePackagesToFirestore = async (lang: Language, packages: HealthPackage[]): Promise<boolean> => {
   try {
     const pkgsDoc = doc(db, 'packages', `list_${lang}`);
-    await setDoc(pkgsDoc, {
+    await setDoc(pkgsDoc, cleanFirestoreData({
       items: packages,
       updatedAt: new Date().toISOString()
-    }, { merge: true });
+    }), { merge: true });
     return true;
   } catch (error) {
     console.error("Error saving packages to Firestore:", error);
@@ -635,10 +658,10 @@ export const subscribeToPackages = (lang: Language, callback: (packages: HealthP
 export const savePaymentConfigToFirestore = async (config: PaymentGatewaysConfig): Promise<boolean> => {
   try {
     const payDoc = doc(db, 'settings', 'payment_gateways');
-    await setDoc(payDoc, {
+    await setDoc(payDoc, cleanFirestoreData({
       ...config,
       updatedAt: new Date().toISOString()
-    }, { merge: true });
+    }), { merge: true });
     return true;
   } catch (error) {
     console.error("Error saving payment config to Firestore:", error);
@@ -670,11 +693,11 @@ export const subscribeToPaymentConfig = (callback: (config: PaymentGatewaysConfi
 export const saveAdminCredentialsToFirestore = async (creds: AdminCredentials): Promise<boolean> => {
   try {
     const adminDoc = doc(db, 'settings', 'admin_credentials');
-    await setDoc(adminDoc, {
+    await setDoc(adminDoc, cleanFirestoreData({
       username: creds.username,
       password: creds.password,
       updatedAt: creds.updatedAt || new Date().toISOString()
-    }, { merge: true });
+    }), { merge: true });
     return true;
   } catch (error) {
     console.error("Error saving admin credentials to Firestore:", error);
@@ -710,10 +733,10 @@ export const subscribeToAdminCredentials = (callback: (creds: AdminCredentials) 
 export const saveStaffUsersToFirestore = async (staffList: StaffUser[]): Promise<boolean> => {
   try {
     const staffDoc = doc(db, 'settings', 'staff_users');
-    await setDoc(staffDoc, {
+    await setDoc(staffDoc, cleanFirestoreData({
       items: staffList,
       updatedAt: new Date().toISOString()
-    }, { merge: true });
+    }), { merge: true });
     return true;
   } catch (error) {
     console.error("Error saving staff users to Firestore:", error);
@@ -745,10 +768,10 @@ export const subscribeToStaffUsers = (callback: (staff: StaffUser[]) => void) =>
 export const savePatientsListToFirestore = async (patients: PatientUser[]): Promise<boolean> => {
   try {
     const patientsDoc = doc(db, 'settings', 'patients_list');
-    await setDoc(patientsDoc, {
+    await setDoc(patientsDoc, cleanFirestoreData({
       items: patients,
       updatedAt: new Date().toISOString()
-    }, { merge: true });
+    }), { merge: true });
     return true;
   } catch (error) {
     console.error("Error saving patients list to Firestore:", error);
@@ -780,10 +803,10 @@ export const subscribeToPatientsList = (callback: (patients: PatientUser[]) => v
 export const saveDateSlotConfigToFirestore = async (config: DateSlotConfig): Promise<boolean> => {
   try {
     const slotDoc = doc(db, 'settings', 'date_slot_config');
-    await setDoc(slotDoc, {
+    await setDoc(slotDoc, cleanFirestoreData({
       ...config,
       updatedAt: new Date().toISOString()
-    }, { merge: true });
+    }), { merge: true });
     return true;
   } catch (error) {
     console.error("Error saving date slot config to Firestore:", error);
