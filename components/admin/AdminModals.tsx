@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { TestPackage, HealthPackage, LabPartner, BookingHistoryItem, BookingStatus, Language, ServiceItem, CategoryItem } from '../../types';
 import { TRANSLATIONS } from '../../translations';
-import { generateUniqueOrderId, formatOrderId } from '../BookingModal';
+import { generateUniqueOrderId, formatOrderId, calculateAccessoriesFee } from '../BookingModal';
 import { getStoredDateSlotConfig, DEFAULT_TIME_SLOTS, getStoredStaffUsers } from '../../services/dataStorage';
 import { LabLogo } from '../LabLogo';
 import { 
@@ -1047,7 +1047,8 @@ export const OrderFormModal: React.FC<OrderModalProps> = ({
     const price = test.priceByLab?.[selectedLabId] ?? test.price;
     return sum + price;
   }, 0);
-  const totalCost = testsCost + serviceCharge;
+  const accessoriesFee = calculateAccessoriesFee(selectedTestIds.length);
+  const totalCost = testsCost + serviceCharge + accessoriesFee;
 
   const handleToggleTest = (tid: string) => {
     if (selectedTestIds.includes(tid)) {
@@ -1095,6 +1096,7 @@ export const OrderFormModal: React.FC<OrderModalProps> = ({
       subtotal: mainRateSum,
       totalDiscount: discountSum,
       collectionFee: serviceCharge,
+      accessoriesFee: accessoriesFee,
       serviceCharge: serviceCharge,
       totalCost: totalCost,
       status: status,
@@ -1259,8 +1261,8 @@ export const OrderFormModal: React.FC<OrderModalProps> = ({
           {/* Bill Calculation Box */}
           <div className="p-3 bg-slate-900 text-white rounded-xl flex items-center justify-between">
             <div>
-              <span className="text-[11px] text-slate-400 block">Total Calculated Bill (Tests + Home Fee)</span>
-              <span className="text-xs text-slate-300">{selectedTestIds.length} tests + ৳{serviceCharge} home fee</span>
+              <span className="text-[11px] text-slate-400 block">Total Calculated Bill (Tests + Home Fee + Accessories)</span>
+              <span className="text-xs text-slate-300">{selectedTestIds.length} tests + ৳{serviceCharge} home fee + ৳{accessoriesFee} tube/needle</span>
             </div>
             <span className="text-xl font-extrabold text-emerald-400">৳ {totalCost}</span>
           </div>
@@ -1364,11 +1366,11 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
             </div>
           </div>
 
-          {/* Tests List & Itemized Breakdown */}
+          {/* Tests List & Rates */}
           <div>
             <div className="flex justify-between items-center mb-1.5">
               <span className="text-[10px] text-slate-400 uppercase font-bold">
-                {lang === 'bn' ? 'বুকিংকৃত টেস্ট ও ফি বিভাজন' : 'Booked Tests & Price Breakdown'}
+                {lang === 'bn' ? 'বুকিংকৃত টেস্ট ও রেট' : 'Booked Tests & Rates'}
               </span>
               <span className="text-[10px] text-slate-500 font-bold">
                 {order.testNames.length} {lang === 'bn' ? 'টি টেস্ট' : 'Items'}
@@ -1377,10 +1379,8 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
 
             <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
               <div className="grid grid-cols-12 bg-slate-100 text-slate-700 font-bold text-[10px] uppercase p-2 border-b border-slate-200">
-                <div className="col-span-6">{lang === 'bn' ? 'টেস্টের বিবরণ' : 'Test Name'}</div>
-                <div className="col-span-2 text-right">{lang === 'bn' ? 'মূল রেট' : 'Main Rate'}</div>
-                <div className="col-span-2 text-right">{lang === 'bn' ? 'ডিসকাউন্ট' : 'Discount'}</div>
-                <div className="col-span-2 text-right">{lang === 'bn' ? 'চূড়ান্ত রেট' : 'Final Rate'}</div>
+                <div className="col-span-8">{lang === 'bn' ? 'টেস্টের বিবরণ' : 'Test Name'}</div>
+                <div className="col-span-4 text-right">{lang === 'bn' ? 'রেট' : 'Rate'}</div>
               </div>
               <div className="divide-y divide-slate-100 max-h-48 overflow-y-auto">
                 {(order.items && order.items.length > 0 ? order.items : order.testNames.map(tName => ({
@@ -1390,23 +1390,11 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                   finalPrice: Math.round(order.totalCost / (order.testNames.length || 1))
                 }))).map((item, i) => (
                   <div key={i} className="grid grid-cols-12 p-2.5 items-center text-xs hover:bg-slate-50">
-                    <div className="col-span-6 font-bold text-slate-800 truncate pr-1">
+                    <div className="col-span-8 font-bold text-slate-800 truncate pr-1">
                       {item.name}
                     </div>
-                    <div className="col-span-2 text-right text-slate-500 font-medium">
+                    <div className="col-span-4 text-right font-black text-slate-900">
                       ৳ {item.originalPrice}
-                    </div>
-                    <div className="col-span-2 text-right">
-                      {item.discountAmount > 0 ? (
-                        <span className="text-[10px] text-amber-700 bg-amber-50 px-1 py-0.5 rounded font-bold border border-amber-200">
-                          -৳ {item.discountAmount}
-                        </span>
-                      ) : (
-                        <span className="text-slate-300 text-[10px]">৳ ০</span>
-                      )}
-                    </div>
-                    <div className="col-span-2 text-right font-black text-slate-900">
-                      ৳ {item.finalPrice}
                     </div>
                   </div>
                 ))}
@@ -1414,15 +1402,21 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
             </div>
           </div>
 
-          {/* Home Sample Collection Fee & Total */}
+          {/* Home Sample Collection Fee, Accessories & Total */}
           <div className="p-4 bg-slate-900 text-white rounded-xl space-y-2">
-            <div className="flex justify-between items-center text-xs text-slate-300 border-b border-slate-800 pb-2">
+            <div className="flex justify-between items-center text-xs text-slate-300 border-b border-slate-800 pb-1.5">
               <span>{lang === 'bn' ? 'হোম স্যাম্পল কালেকশন ফি:' : 'Home Sample Collection Fee:'}</span>
               <span className={(order.collectionFee ?? order.serviceCharge ?? 0) === 0 ? 'text-emerald-400 font-bold' : 'text-white font-bold'}>
                 {(order.collectionFee ?? order.serviceCharge ?? 0) === 0 ? (lang === 'bn' ? '৳ ০ (ফ্রি / Free)' : '৳ 0 (FREE)') : `৳ ${order.collectionFee ?? order.serviceCharge}`}
               </span>
             </div>
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center text-xs text-slate-300 border-b border-slate-800 pb-1.5">
+              <span>{lang === 'bn' ? 'টিউব, নিডল ও এক্সেসরিজ ফি:' : 'Tube, Needle & Accessories Fee:'}</span>
+              <span className="text-white font-bold">
+                ৳ {order.accessoriesFee !== undefined ? order.accessoriesFee : calculateAccessoriesFee(order.testNames.length)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center pt-0.5">
               <div>
                 <span className="text-[10px] text-slate-400 uppercase font-bold block">
                   {lang === 'bn' ? 'সর্বমোট প্রদেয় বিল' : 'Total Payable Amount'}

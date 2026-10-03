@@ -50,5 +50,13 @@ service cloud.firestore {
     match /settings/{docId} {
       allow read, write: if true;
     }
+
+    match /payment_config/{docId} {
+      allow read, write: if true;
+    }
+
+    match /admin_credentials/{docId} {
+      allow read, write: if true;
+    }
   }
 }

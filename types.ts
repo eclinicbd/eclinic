@@ -178,6 +178,7 @@ export interface BookingHistoryItem {
   subtotal?: number; // Main rate subtotal
   totalDiscount?: number; // Total savings/discount
   collectionFee?: number; // Home sample collection fee (serviceCharge)
+  accessoriesFee?: number; // Tube, Needle & Accessories charge (1-2 tests: 45tk, 3-4 tests: 65tk, 4+ tests: 85tk)
   serviceCharge?: number;
   totalCost: number;
   status: BookingStatus;

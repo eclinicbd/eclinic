@@ -56,6 +56,15 @@ export const formatOrderId = (id: string): string => {
   return `#LH-${id}`;
 };
 
+// Helper to calculate Tube, Needle & Accessories Charge based on test count:
+// 1 to 2 tests: 45 TK, 3 to 4 tests: 65 TK, 4 to More tests (5 or more): 85 TK
+export const calculateAccessoriesFee = (testCount: number): number => {
+  if (testCount <= 0) return 0;
+  if (testCount <= 2) return 45;
+  if (testCount <= 4) return 65;
+  return 85;
+};
+
 interface BookingModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -322,7 +331,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const subTotal = cartItems.reduce((sum, item) => sum + getItemPrice(item), 0);
   const regularSubTotal = cartItems.reduce((sum, item) => sum + (getItemRegularPrice(item) || getItemPrice(item)), 0);
   const totalSavings = regularSubTotal > subTotal ? regularSubTotal - subTotal : 0;
-  const totalBill = subTotal + (cartItems.length > 0 ? serviceCharge : 0);
+  const accessoriesFee = calculateAccessoriesFee(cartItems.length);
+  const totalBill = subTotal + (cartItems.length > 0 ? serviceCharge : 0) + accessoriesFee;
 
   // Suggestions search logic
   const cleanSearch = searchTerm.trim().toLowerCase();
@@ -451,6 +461,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         subtotal: regularSubTotal,
         totalDiscount: totalSavings,
         collectionFee: serviceCharge,
+        accessoriesFee: accessoriesFee,
         serviceCharge: serviceCharge,
         totalCost: totalBill,
         status: 'pending',
@@ -505,6 +516,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       subtotal: regularSubTotal,
       totalDiscount: totalSavings,
       collectionFee: serviceCharge,
+      accessoriesFee: accessoriesFee,
       serviceCharge: serviceCharge,
       totalCost: totalBill,
       status: 'pending',
@@ -928,6 +940,16 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     <span className="font-bold text-emerald-400">
                       {serviceCharge === 0 ? (isBn ? 'ফ্রি (Free)' : 'Free') : `+ ৳${serviceCharge}`}
                     </span>
+                  </div>
+
+                  <div className="flex justify-between text-slate-300">
+                    <span className="flex items-center gap-1.5">
+                      <span>{isBn ? 'টিউব, নিডল ও এক্সেসরিজ:' : 'Tube, Needle & Accessories:'}</span>
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        ({cartItems.length <= 2 ? (isBn ? '১-২ টেস্ট: ৳৪৫' : '1-2 tests: ৳45') : cartItems.length <= 4 ? (isBn ? '৩-৪ টেস্ট: ৳৬৫' : '3-4 tests: ৳65') : (isBn ? '৪+ টেস্ট: ৳৮৫' : '4+ tests: ৳85')})
+                      </span>
+                    </span>
+                    <span className="font-bold text-white">+ ৳{accessoriesFee}</span>
                   </div>
 
                   <div className="flex justify-between items-center border-t border-slate-700 pt-2 font-bold">

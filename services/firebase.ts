@@ -282,11 +282,10 @@ export const subscribeToUsers = (callback: (users: PatientUser[]) => void) => {
         });
       });
       callback(users);
-    }, (error) => {
-      console.warn("Users subscription warning:", error);
+    }, (_error) => {
+      // Offline / permission subscription fallback
     });
-  } catch (error) {
-    console.error("Error setting up users subscription:", error);
+  } catch (_error) {
     return () => {};
   }
 };
@@ -414,11 +413,10 @@ export const subscribeToBookings = (callback: (bookings: BookingHistoryItem[]) =
         }
       });
       callback(bookings);
-    }, (error) => {
-      console.warn("Bookings subscription warning:", error);
+    }, (_error) => {
+      // Offline fallback
     });
-  } catch (error) {
-    console.error("Error setting up bookings subscription:", error);
+  } catch (_error) {
     return () => {};
   }
 };
@@ -492,11 +490,10 @@ export const subscribeToSiteSettings = (lang: Language, callback: (settings: Sit
         const data = snapshot.data() as SiteSettings;
         callback(data);
       }
-    }, (error) => {
-      console.warn("Site settings subscription warning:", error);
+    }, (_error) => {
+      // Handled quietly
     });
-  } catch (error) {
-    console.error("Error subscribing to site settings:", error);
+  } catch (_error) {
     return () => {};
   }
 };
@@ -531,11 +528,10 @@ export const subscribeToCategories = (callback: (categories: CategoryItem[]) => 
           callback(data.items as CategoryItem[]);
         }
       }
-    }, (error) => {
-      console.warn("Categories subscription warning:", error);
+    }, (_error) => {
+      // Handled quietly
     });
-  } catch (error) {
-    console.error("Error subscribing to categories:", error);
+  } catch (_error) {
     return () => {};
   }
 };
@@ -564,11 +560,10 @@ export const subscribeToLabs = (lang: Language, callback: (labs: LabPartner[]) =
           callback(data.items as LabPartner[]);
         }
       }
-    }, (error) => {
-      console.warn("Labs subscription warning:", error);
+    }, (_error) => {
+      // Handled quietly
     });
-  } catch (error) {
-    console.error("Error subscribing to labs:", error);
+  } catch (_error) {
     return () => {};
   }
 };
@@ -597,11 +592,10 @@ export const subscribeToTests = (lang: Language, callback: (tests: TestPackage[]
           callback(data.items as TestPackage[]);
         }
       }
-    }, (error) => {
-      console.warn("Tests subscription warning:", error);
+    }, (_error) => {
+      // Handled quietly
     });
-  } catch (error) {
-    console.error("Error subscribing to tests:", error);
+  } catch (_error) {
     return () => {};
   }
 };
@@ -630,11 +624,10 @@ export const subscribeToPackages = (lang: Language, callback: (packages: HealthP
           callback(data.items as HealthPackage[]);
         }
       }
-    }, (error) => {
-      console.warn("Packages subscription warning:", error);
+    }, (_error) => {
+      // Handled quietly
     });
-  } catch (error) {
-    console.error("Error subscribing to packages:", error);
+  } catch (_error) {
     return () => {};
   }
 };
@@ -663,11 +656,10 @@ export const subscribeToPaymentConfig = (callback: (config: PaymentGatewaysConfi
           callback(data as unknown as PaymentGatewaysConfig);
         }
       }
-    }, (error) => {
-      console.warn("Payment config subscription warning:", error);
+    }, (_error) => {
+      // Handled quietly
     });
-  } catch (error) {
-    console.error("Error subscribing to payment config:", error);
+  } catch (_error) {
     return () => {};
   }
 };
@@ -704,11 +696,10 @@ export const subscribeToAdminCredentials = (callback: (creds: AdminCredentials) 
           });
         }
       }
-    }, (error) => {
-      console.warn("Admin credentials subscription warning:", error);
+    }, (_error) => {
+      // Handled quietly
     });
-  } catch (error) {
-    console.error("Error subscribing to admin credentials:", error);
+  } catch (_error) {
     return () => {};
   }
 };
@@ -740,11 +731,10 @@ export const subscribeToStaffUsers = (callback: (staff: StaffUser[]) => void) =>
           callback(data.items as StaffUser[]);
         }
       }
-    }, (error) => {
-      console.warn("Staff users subscription warning:", error);
+    }, (_error) => {
+      // Handled quietly
     });
-  } catch (error) {
-    console.error("Error subscribing to staff users:", error);
+  } catch (_error) {
     return () => {};
   }
 };
@@ -776,11 +766,10 @@ export const subscribeToPatientsList = (callback: (patients: PatientUser[]) => v
           callback(data.items as PatientUser[]);
         }
       }
-    }, (error) => {
-      console.warn("Patients list subscription warning:", error);
+    }, (_error) => {
+      // Handled quietly
     });
-  } catch (error) {
-    console.error("Error subscribing to patients list:", error);
+  } catch (_error) {
     return () => {};
   }
 };
@@ -812,11 +801,10 @@ export const subscribeToDateSlotConfig = (callback: (config: DateSlotConfig) => 
           callback(data as unknown as DateSlotConfig);
         }
       }
-    }, (error) => {
-      console.warn("Date slot config subscription warning:", error);
+    }, (_error) => {
+      // Handled quietly
     });
-  } catch (error) {
-    console.error("Error subscribing to date slot config:", error);
+  } catch (_error) {
     return () => {};
   }
 };

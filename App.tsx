@@ -50,8 +50,7 @@ import {
 } from './services/firebase';
 import { saveStoredPaymentConfig } from './services/dataStorage';
 import { TestCard } from './components/TestCard';
-import { BookingModal } from './components/BookingModal';
-import { AIAssistant } from './components/AIAssistant';
+import { BookingModal, calculateAccessoriesFee } from './components/BookingModal';
 import { UserDashboard } from './components/UserDashboard';
 import { AdminDashboard } from './components/AdminDashboard';
 import { AdminLoginModal } from './components/AdminLoginModal';
@@ -691,7 +690,8 @@ export default function App() {
     setIsBookingModalOpen(true);
   };
 
-  const totalBill = subTotal + (cartItems.length > 0 ? serviceCharge : 0);
+  const accessoriesFee = calculateAccessoriesFee(cartItems.length);
+  const totalBill = subTotal + (cartItems.length > 0 ? serviceCharge : 0) + accessoriesFee;
 
   const renderBrandLogo = () => {
     if (siteSettings.logoUrl) {
@@ -1474,8 +1474,6 @@ export default function App() {
         onSuccess={handleAdminLoginSuccess}
         lang={language}
       />
-      
-      {currentView !== 'admin' && <AIAssistant lang={language} />}
       
       {/* Dynamic Footer with CMS Data */}
       {currentView !== 'dashboard' && currentView !== 'admin' && (

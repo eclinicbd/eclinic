@@ -1,6 +1,7 @@
 import React from 'react';
 import { TestPackage, LabPartner, Language, CategoryItem } from '../types';
 import { TRANSLATIONS } from '../translations';
+import { calculateAccessoriesFee } from './BookingModal';
 import { TestCard } from './TestCard';
 import { LabLogo } from './LabLogo';
 import { Button } from './Button';
@@ -81,7 +82,8 @@ export const TestsView: React.FC<TestsViewProps> = ({
     return sum + item.price;
   }, 0);
 
-  const totalBill = subTotal + (cartItems.length > 0 ? serviceCharge : 0);
+  const accessoriesFee = calculateAccessoriesFee(cartItems.length);
+  const totalBill = subTotal + (cartItems.length > 0 ? serviceCharge : 0) + accessoriesFee;
   const visibleLabs = labs.filter(l => !l.isHidden);
 
   return (
@@ -150,8 +152,8 @@ export const TestsView: React.FC<TestsViewProps> = ({
         {/* 3-Column Layout */}
         <div className="flex flex-col lg:flex-row gap-6">
           
-          {/* LEFT SIDEBAR: FILTERS */}
-          <div className="w-full lg:w-64 flex-shrink-0 space-y-6">
+          {/* LEFT SIDEBAR: FILTERS (Hidden on mobile, visible on desktop/laptop) */}
+          <div className="hidden lg:block lg:w-64 flex-shrink-0 space-y-6">
             
             {/* Lab Partner Filter */}
             <div className="bg-white p-5 rounded-2xl shadow-xs border border-slate-200">
@@ -358,6 +360,12 @@ export const TestsView: React.FC<TestsViewProps> = ({
                       <div className="flex justify-between text-slate-600">
                         <span>{t.serviceCharge}</span>
                         <span className="font-semibold text-slate-800">৳ {serviceCharge}</span>
+                      </div>
+                    )}
+                    {accessoriesFee > 0 && (
+                      <div className="flex justify-between text-slate-600">
+                        <span>{t.accessoriesFee || (lang === 'bn' ? 'টিউব, নিডল ও এক্সেসরিজ' : 'Tube, Needle & Accessories')}</span>
+                        <span className="font-semibold text-slate-800">৳ {accessoriesFee}</span>
                       </div>
                     )}
                     <div className="flex justify-between text-sm font-bold text-slate-900 pt-2 border-t border-slate-100">

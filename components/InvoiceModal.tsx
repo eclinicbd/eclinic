@@ -20,7 +20,8 @@ import {
   ShieldCheck,
   Tag,
   Truck,
-  CreditCard
+  CreditCard,
+  FlaskConical
 } from 'lucide-react';
 import { Button } from './Button';
 
@@ -133,7 +134,12 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
     ? order.collectionFee 
     : (order.serviceCharge !== undefined 
         ? order.serviceCharge 
-        : (order.totalCost > itemsFinalSum ? order.totalCost - itemsFinalSum : 0));
+        : 0);
+
+  // Tube, Needle & Accessories Charge (1-2 tests: 45tk, 3-4 tests: 65tk, 4+ tests: 85tk)
+  const accessoriesFee = order.accessoriesFee !== undefined
+    ? order.accessoriesFee
+    : (resolvedItems.length > 0 ? (resolvedItems.length <= 2 ? 45 : resolvedItems.length <= 4 ? 65 : 85) : 0);
 
   const getPaymentMethodBadge = () => {
     switch (order.paymentMethod) {
@@ -270,12 +276,12 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
             </div>
           </div>
 
-          {/* Itemized Tests Breakdown Table with Main Rate, Discount and Final Rate */}
+          {/* Itemized Tests Table with Rate only */}
           <div>
-            <div className="flex justify-between items-center mb-2.5">
+            <div className="flex justify-between items-center mb-2">
               <span className="font-extrabold text-slate-900 text-xs uppercase tracking-wide flex items-center gap-1.5">
                 <FileText size={14} className="text-primary" />
-                {isBn ? 'নির্বাচিত টেস্ট সমূহ ও ফি বিভাজন' : 'Booked Tests & Price Breakdown'}
+                {isBn ? 'নির্বাচিত টেস্ট সমূহ ও রেট' : 'Booked Tests & Rates'}
               </span>
               <span className="text-slate-500 font-semibold text-[11px]">
                 {resolvedItems.length} {isBn ? 'টি টেস্ট' : 'items'}
@@ -286,39 +292,25 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
               {/* Header */}
               <div className="grid grid-cols-12 bg-slate-100/90 text-slate-700 font-bold text-[11px] uppercase tracking-wider p-2.5 border-b border-slate-200">
                 <div className="col-span-1 text-center">#</div>
-                <div className="col-span-5">{isBn ? 'টেস্টের বিবরণ' : 'Test Description'}</div>
-                <div className="col-span-2 text-right">{isBn ? 'মূল রেট' : 'Main Rate'}</div>
-                <div className="col-span-2 text-right">{isBn ? 'ডিসকাউন্ট' : 'Discount'}</div>
-                <div className="col-span-2 text-right">{isBn ? 'চূড়ান্ত রেট' : 'Final Rate'}</div>
+                <div className="col-span-8">{isBn ? 'টেস্টের বিবরণ' : 'Test Description'}</div>
+                <div className="col-span-3 text-right">{isBn ? 'রেট' : 'Rate'}</div>
               </div>
 
               {/* Rows */}
-              <div className="divide-y divide-slate-100">
+              <div className="divide-y divide-slate-100 max-h-56 overflow-y-auto">
                 {resolvedItems.map((item, idx) => (
-                  <div key={idx} className="grid grid-cols-12 p-3 items-center hover:bg-slate-50/70 transition-colors text-xs">
+                  <div key={idx} className="grid grid-cols-12 p-2.5 items-center hover:bg-slate-50/70 transition-colors text-xs">
                     <div className="col-span-1 text-center text-slate-400 font-bold text-[11px]">
                       {idx + 1}
                     </div>
-                    <div className="col-span-5 pr-2">
+                    <div className="col-span-8 pr-2">
                       <p className="font-bold text-slate-800">{item.name}</p>
                       {item.category && (
                         <span className="text-[10px] text-slate-400 block font-normal">{item.category}</span>
                       )}
                     </div>
-                    <div className="col-span-2 text-right text-slate-500 font-medium">
+                    <div className="col-span-3 text-right font-black text-slate-900">
                       ৳ {item.originalPrice}
-                    </div>
-                    <div className="col-span-2 text-right">
-                      {item.discountAmount > 0 ? (
-                        <span className="inline-block bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold px-1.5 py-0.5 rounded">
-                          -৳ {item.discountAmount}
-                        </span>
-                      ) : (
-                        <span className="text-slate-300 text-[11px]">৳ ০</span>
-                      )}
-                    </div>
-                    <div className="col-span-2 text-right font-black text-slate-900">
-                      ৳ {item.finalPrice}
                     </div>
                   </div>
                 ))}
@@ -326,9 +318,9 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
             </div>
           </div>
 
-          {/* Pricing & Bill Summary (Subtotal, Discount, Collection Fee, Total) */}
-          <div className="bg-slate-900 text-white p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="space-y-1.5">
+          {/* Pricing & Bill Summary (Subtotal, Collection Fee, Tube Fee, Total) */}
+          <div className="bg-slate-900 text-white p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div className="space-y-1">
               <div className="flex items-center gap-1.5 text-xs text-slate-300 font-medium">
                 <CreditCard size={14} className="text-primary" />
                 <span>{isBn ? 'পেমেন্ট মেথড:' : 'Payment Method:'}</span>
@@ -341,16 +333,14 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   {collectionFee === 0 ? (isBn ? '৳ ০ (ফ্রি / Free)' : '৳ 0 (FREE)') : `৳ ${collectionFee}`}
                 </span>
               </div>
-              {itemsDiscountSum > 0 && (
-                <div className="flex items-center gap-1.5 text-xs text-amber-300 font-medium">
-                  <Tag size={13} />
-                  <span>{isBn ? 'সর্বমোট সাশ্রয় / ছাড়:' : 'Total Discount Savings:'}</span>
-                  <span className="font-bold">৳ {itemsDiscountSum}</span>
-                </div>
-              )}
+              <div className="flex items-center gap-1.5 text-xs text-slate-300 font-medium">
+                <FlaskConical size={14} className="text-sky-400" />
+                <span>{isBn ? 'টিউব, নিডল ও এক্সেসরিজ:' : 'Tube, Needle & Accessories:'}</span>
+                <span className="text-white font-bold">৳ {accessoriesFee}</span>
+              </div>
             </div>
 
-            <div className="text-left sm:text-right border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-800 w-full sm:w-auto">
+            <div className="text-left sm:text-right border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-800 w-full sm:w-auto">
               <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider block">
                 {isBn ? 'সর্বমোট প্রদেয় বিল' : 'Total Payable'}
               </span>

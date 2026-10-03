@@ -81,7 +81,12 @@ export const generateInvoiceHtml = (
     ? order.collectionFee 
     : (order.serviceCharge !== undefined 
         ? order.serviceCharge 
-        : (order.totalCost > itemsFinalSum ? order.totalCost - itemsFinalSum : 0));
+        : 0);
+
+  // Tube, Needle & Accessories Charge (1-2 tests: 45tk, 3-4 tests: 65tk, 4+ tests: 85tk)
+  const accessoriesFee = order.accessoriesFee !== undefined
+    ? order.accessoriesFee
+    : (resolvedItems.length > 0 ? (resolvedItems.length <= 2 ? 45 : resolvedItems.length <= 4 ? 65 : 85) : 0);
 
   const cleanOrderId = (order.id || '').replace(/^#?EC-?/i, '').replace(/^#?BK-?/i, '').replace(/^#/, '');
 
@@ -123,6 +128,12 @@ export const generateInvoiceHtml = (
 
   const paymentDisplay = getPaymentMethodLabel(order.paymentMethod, order.transactionId);
 
+  const count = resolvedItems.length;
+  const tablePadding = count > 12 ? '2px 5px' : (count > 6 ? '3.5px 7px' : '5px 10px');
+  const tableFontSize = count > 12 ? '9.5px' : (count > 6 ? '11px' : '12px');
+  const sectionMargin = count > 10 ? '5px' : (count > 5 ? '8px' : '11px');
+  const cardPadding = count > 10 ? '10px 14px' : (count > 5 ? '16px 20px' : '20px 24px');
+
   return `
 <!DOCTYPE html>
 <html lang="${isBn ? 'bn' : 'en'}">
@@ -138,39 +149,46 @@ export const generateInvoiceHtml = (
       padding: 0;
     }
     
-    body {
+    html, body {
       font-family: 'Plus Jakarta Sans', 'Hind Siliguri', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background-color: #f8fafc;
       color: #1e293b;
-      padding: 24px;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
     }
 
+    body {
+      padding: 12px;
+    }
+
     .invoice-card {
-      max-width: 820px;
+      max-width: 800px;
       margin: 0 auto;
       background: #ffffff;
       border: 1px solid #e2e8f0;
-      border-radius: 16px;
-      padding: 36px 40px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      border-radius: 12px;
+      padding: ${cardPadding};
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
       position: relative;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+      page-break-after: avoid !important;
+      page-break-before: avoid !important;
     }
 
     .watermark {
       position: absolute;
       top: 50%;
       left: 50%;
-      transform: translate(-50%, -50%) rotate(-30deg);
-      font-size: 80px;
+      transform: translate(-50%, -50%) rotate(-25deg);
+      font-size: 65px;
       font-weight: 900;
-      color: rgba(2, 132, 199, 0.04);
+      color: rgba(2, 132, 199, 0.03);
       text-transform: uppercase;
       pointer-events: none;
       user-select: none;
       white-space: nowrap;
-      letter-spacing: 6px;
+      letter-spacing: 5px;
     }
 
     .header-row {
@@ -178,34 +196,35 @@ export const generateInvoiceHtml = (
       justify-content: space-between;
       align-items: flex-start;
       border-bottom: 2px solid #f1f5f9;
-      padding-bottom: 24px;
-      margin-bottom: 24px;
+      padding-bottom: 8px;
+      margin-bottom: ${sectionMargin};
     }
 
     .brand-logo {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 8px;
     }
 
     .logo-icon {
-      width: 44px;
-      height: 44px;
+      width: 32px;
+      height: 32px;
       background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
-      border-radius: 12px;
+      border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
       color: white;
-      font-size: 22px;
+      font-size: 18px;
       font-weight: 900;
     }
 
     .brand-title {
-      font-size: 22px;
+      font-size: 17px;
       font-weight: 800;
       color: #0f172a;
       letter-spacing: -0.5px;
+      line-height: 1.1;
     }
 
     .brand-title span {
@@ -213,7 +232,7 @@ export const generateInvoiceHtml = (
     }
 
     .brand-sub {
-      font-size: 11px;
+      font-size: 9.5px;
       color: #64748b;
       font-weight: 500;
     }
@@ -223,90 +242,91 @@ export const generateInvoiceHtml = (
     }
 
     .invoice-title {
-      font-size: 20px;
+      font-size: 15px;
       font-weight: 800;
       text-transform: uppercase;
       color: #0284c7;
-      letter-spacing: 1px;
+      letter-spacing: 0.5px;
+      line-height: 1.1;
     }
 
     .order-id {
       font-family: monospace;
-      font-size: 13px;
+      font-size: 11px;
       font-weight: 700;
       color: #334155;
       background: #f1f5f9;
-      padding: 3px 8px;
-      border-radius: 6px;
+      padding: 2px 6px;
+      border-radius: 5px;
       display: inline-block;
-      margin-top: 4px;
+      margin-top: 2px;
     }
 
     .meta-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 20px;
+      gap: 10px;
       background: #f8fafc;
       border: 1px solid #e2e8f0;
-      border-radius: 12px;
-      padding: 18px 20px;
-      margin-bottom: 24px;
+      border-radius: 8px;
+      padding: 7px 10px;
+      margin-bottom: ${sectionMargin};
     }
 
     .meta-col h4 {
-      font-size: 11px;
+      font-size: 9px;
       text-transform: uppercase;
       font-weight: 700;
       color: #64748b;
-      margin-bottom: 6px;
+      margin-bottom: 2px;
       letter-spacing: 0.5px;
     }
 
     .meta-col p {
-      font-size: 13px;
+      font-size: 11px;
       color: #1e293b;
       font-weight: 600;
-      line-height: 1.4;
+      line-height: 1.3;
     }
 
     .meta-col span.sub-text {
-      font-size: 12px;
+      font-size: 10px;
       color: #64748b;
       font-weight: 400;
       display: block;
-      margin-top: 2px;
+      margin-top: 1px;
     }
 
     .lab-box {
       background: #f0f9ff;
       border: 1px solid #bae6fd;
-      border-radius: 12px;
-      padding: 14px 18px;
+      border-radius: 8px;
+      padding: 6px 10px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 24px;
+      margin-bottom: ${sectionMargin};
     }
 
     .lab-info h3 {
-      font-size: 14px;
+      font-size: 12px;
       font-weight: 800;
       color: #0369a1;
     }
 
     .lab-info p {
-      font-size: 11px;
+      font-size: 9.5px;
       color: #0284c7;
       font-weight: 600;
-      margin-top: 2px;
+      margin-top: 1px;
     }
 
     .status-tag {
-      font-size: 11px;
+      font-size: 9px;
       font-weight: 700;
       text-transform: uppercase;
-      padding: 4px 10px;
-      border-radius: 20px;
+      padding: 2px 6px;
+      border-radius: 12px;
       background: #dcfce7;
       color: #15803d;
       border: 1px solid #86efac;
@@ -327,16 +347,18 @@ export const generateInvoiceHtml = (
     table.items-table {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 24px;
+      margin-bottom: ${sectionMargin};
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
     }
 
     table.items-table th {
       background: #f1f5f9;
       color: #334155;
-      font-size: 11px;
+      font-size: 9.5px;
       text-transform: uppercase;
       font-weight: 700;
-      padding: 10px 12px;
+      padding: 5px 8px;
       text-align: left;
       border-bottom: 2px solid #cbd5e1;
     }
@@ -346,10 +368,11 @@ export const generateInvoiceHtml = (
     }
 
     table.items-table td {
-      padding: 11px 12px;
-      font-size: 13px;
+      padding: ${tablePadding};
+      font-size: ${tableFontSize};
       color: #1e293b;
       border-bottom: 1px solid #f1f5f9;
+      line-height: 1.25;
     }
 
     table.items-table td.text-right {
@@ -358,31 +381,16 @@ export const generateInvoiceHtml = (
 
     .item-cat {
       display: block;
-      font-size: 10px;
+      font-size: 8.5px;
       color: #64748b;
       font-weight: normal;
       margin-top: 1px;
     }
 
-    .main-rate {
-      color: #64748b;
-      font-weight: 600;
-    }
-
-    .discount-pill {
-      display: inline-block;
-      background: #fff7ed;
-      color: #c2410c;
-      border: 1px solid #ffedd5;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 1px 6px;
-      border-radius: 4px;
-    }
-
-    .final-rate {
-      font-weight: 800;
+    .rate-cell {
       color: #0f172a;
+      font-weight: 700;
+      font-size: ${tableFontSize};
     }
 
     table.items-table tbody tr:last-child td {
@@ -392,63 +400,67 @@ export const generateInvoiceHtml = (
     .summary-section {
       display: flex;
       justify-content: flex-end;
-      margin-bottom: 28px;
+      margin-bottom: ${sectionMargin};
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
     }
 
     .summary-table {
-      width: 360px;
+      width: 310px;
       background: #f8fafc;
       border: 1px solid #e2e8f0;
-      border-radius: 12px;
-      padding: 14px 16px;
+      border-radius: 8px;
+      padding: 6px 10px;
     }
 
     .summary-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 5px 0;
-      font-size: 12px;
+      padding: 2px 0;
+      font-size: 10.5px;
       color: #475569;
     }
 
     .summary-row.total-row {
       border-top: 2px solid #cbd5e1;
-      padding-top: 10px;
-      margin-top: 6px;
-      font-size: 15px;
+      padding-top: 4px;
+      margin-top: 3px;
+      font-size: 12px;
       font-weight: 800;
       color: #0f172a;
     }
 
     .total-amount {
       color: #0284c7;
-      font-size: 18px;
+      font-size: 14.5px;
       font-weight: 900;
     }
 
     .instructions-box {
       border: 1px dashed #cbd5e1;
-      border-radius: 12px;
-      padding: 14px 18px;
+      border-radius: 8px;
+      padding: 6px 10px;
       background: #fafafa;
-      margin-bottom: 30px;
+      margin-bottom: ${sectionMargin};
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
     }
 
     .instructions-box h5 {
-      font-size: 11px;
+      font-size: 9px;
       font-weight: 700;
       text-transform: uppercase;
       color: #475569;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
     }
 
     .instructions-box ul {
       list-style-type: disc;
-      padding-left: 18px;
-      font-size: 11px;
+      padding-left: 14px;
+      font-size: 9px;
       color: #64748b;
-      line-height: 1.5;
+      line-height: 1.35;
     }
 
     .footer-row {
@@ -456,13 +468,15 @@ export const generateInvoiceHtml = (
       justify-content: space-between;
       align-items: flex-end;
       border-top: 1px solid #f1f5f9;
-      padding-top: 20px;
+      padding-top: 6px;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
     }
 
     .contact-info {
-      font-size: 11px;
+      font-size: 9px;
       color: #64748b;
-      line-height: 1.5;
+      line-height: 1.35;
     }
 
     .seal-box {
@@ -471,26 +485,41 @@ export const generateInvoiceHtml = (
 
     .digital-seal {
       display: inline-block;
-      border: 2px dashed #0284c7;
-      border-radius: 8px;
-      padding: 6px 12px;
+      border: 1.5px dashed #0284c7;
+      border-radius: 5px;
+      padding: 3px 6px;
       color: #0284c7;
-      font-size: 10px;
+      font-size: 8.5px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
 
+    @page {
+      size: A4 portrait;
+      margin: 4mm 6mm 4mm 6mm;
+    }
+
     @media print {
-      body {
-        background: transparent;
-        padding: 0;
+      html, body {
+        width: 100%;
+        height: 100%;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+        overflow: hidden !important;
       }
       .invoice-card {
-        border: none;
-        box-shadow: none;
-        padding: 20px;
-        max-width: 100%;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 6px 10px !important;
+        max-width: 100% !important;
+        width: 100% !important;
+        margin: 0 !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        page-break-after: avoid !important;
+        page-break-before: avoid !important;
       }
       .no-print {
         display: none !important;
@@ -507,7 +536,7 @@ export const generateInvoiceHtml = (
     <div class="header-row">
       <div class="brand-logo">
         ${invoiceLogo ? `
-          <img src="${invoiceLogo}" alt="${orgName}" style="max-height: 48px; max-width: 140px; object-fit: contain; border-radius: 8px; border: 1px solid #f1f5f9; background: #fff;" />
+          <img src="${invoiceLogo}" alt="${orgName}" style="max-height: 40px; max-width: 130px; object-fit: contain; border-radius: 6px; border: 1px solid #f1f5f9; background: #fff;" />
         ` : `
           <div class="logo-icon">+</div>
         `}
@@ -549,54 +578,35 @@ export const generateInvoiceHtml = (
       </div>
     </div>
 
-    <!-- Itemized Test Table with Main Rate, Discount and Final Rate -->
+    <!-- Itemized Test Table with Rate only -->
     <table class="items-table">
       <thead>
         <tr>
-          <th style="width: 32px;">#</th>
+          <th style="width: 32px; text-align: center;">#</th>
           <th>${isBn ? 'ল্যাব টেস্ট / প্যাকেজের নাম ও বিবরণ' : 'Test / Package Description'}</th>
-          <th class="text-right" style="width: 100px;">${isBn ? 'মূল রেট' : 'Main Rate'}</th>
-          <th class="text-right" style="width: 110px;">${isBn ? 'ডিসকাউন্ট' : 'Discount'}</th>
-          <th class="text-right" style="width: 110px;">${isBn ? 'চূড়ান্ত রেট' : 'Final Rate'}</th>
+          <th class="text-right" style="width: 100px;">${isBn ? 'রেট' : 'Rate'}</th>
         </tr>
       </thead>
       <tbody>
         ${resolvedItems.map((item, index) => `
           <tr>
-            <td style="color: #64748b;">${index + 1}</td>
+            <td style="color: #64748b; text-align: center;">${index + 1}</td>
             <td>
-              <strong>${item.name}</strong>
+              <strong style="color: #0f172a;">${item.name}</strong>
               ${item.category ? `<span class="item-cat">${item.category}</span>` : ''}
             </td>
-            <td class="text-right main-rate">৳ ${item.originalPrice}</td>
-            <td class="text-right">
-              ${item.discountAmount > 0 
-                ? `<span class="discount-pill">-৳ ${item.discountAmount}</span>` 
-                : `<span style="color: #94a3b8; font-size: 11px;">৳ ০</span>`
-              }
-            </td>
-            <td class="text-right final-rate">৳ ${item.finalPrice}</td>
+            <td class="text-right rate-cell">৳ ${item.originalPrice}</td>
           </tr>
         `).join('')}
       </tbody>
     </table>
 
-    <!-- Bill Summary with Home Sample Collection Fee, Discounts and Total -->
+    <!-- Bill Summary with Home Sample Collection Fee, Tube Fee and Total -->
     <div class="summary-section">
       <div class="summary-table">
         <div class="summary-row">
-          <span>${isBn ? 'মোট মূল মূল্য (Main Subtotal):' : 'Main Rate Subtotal:'}</span>
-          <span style="font-weight: 600; color: #64748b;">৳ ${itemsMainSum}</span>
-        </div>
-        ${itemsDiscountSum > 0 ? `
-        <div class="summary-row">
-          <span style="color: #c2410c;">${isBn ? 'মোট ডিসকাউন্ট ছাড় (Total Savings):' : 'Total Discount:'}</span>
-          <span style="color: #c2410c; font-weight: 700;">-৳ ${itemsDiscountSum}</span>
-        </div>
-        ` : ''}
-        <div class="summary-row" style="border-top: 1px dashed #e2e8f0; padding-top: 5px; margin-top: 3px;">
-          <span>${isBn ? 'টেস্টের নেট ফি (Net Tests Fee):' : 'Net Tests Fee:'}</span>
-          <span style="font-weight: 700; color: #0f172a;">৳ ${itemsFinalSum}</span>
+          <span>${isBn ? 'মোট টেস্টের মূল্য (Subtotal):' : 'Tests Subtotal:'}</span>
+          <span style="font-weight: 700; color: #0f172a;">৳ ${itemsMainSum}</span>
         </div>
         <div class="summary-row">
           <span>${isBn ? 'হোম স্যাম্পল কালেকশন ফি:' : 'Home Sample Collection Fee:'}</span>
@@ -605,8 +615,12 @@ export const generateInvoiceHtml = (
           </span>
         </div>
         <div class="summary-row">
+          <span>${isBn ? 'টিউব, নিডল ও এক্সেসরিজ:' : 'Tube, Needle & Accessories:'}</span>
+          <span style="font-weight: 700; color: #0f172a;">৳ ${accessoriesFee}</span>
+        </div>
+        <div class="summary-row">
           <span>${isBn ? 'পেমেন্ট মেথড:' : 'Payment Method:'}</span>
-          <span style="font-weight: 700; color: #0f172a; font-size: 11px;">${paymentDisplay}</span>
+          <span style="font-weight: 700; color: #0f172a; font-size: 10.5px;">${paymentDisplay}</span>
         </div>
         <div class="summary-row total-row">
           <span>${isBn ? 'সর্বমোট প্রদেয় বিল:' : 'Total Payable:'}</span>
@@ -619,7 +633,7 @@ export const generateInvoiceHtml = (
     <div class="instructions-box">
       <h5>${guidelinesTitle}</h5>
       <ul>
-        ${guidelinesList.map(g => `<li>${g}</li>`).join('')}
+        ${guidelinesList.slice(0, count > 8 ? 2 : guidelinesList.length).map(g => `<li>${g}</li>`).join('')}
       </ul>
     </div>
 
@@ -628,15 +642,14 @@ export const generateInvoiceHtml = (
       <div class="contact-info">
         <strong>${orgName}</strong><br/>
         📍 ${orgAddress}<br/>
-        📞 Hotline: ${orgHotline} | ✉️ ${orgEmail}<br/>
-        🌐 ${orgWebsite}
+        📞 Hotline: ${orgHotline} | ✉️ ${orgEmail}
       </div>
       <div class="seal-box">
         <div class="digital-seal">
           ${footerNote}
         </div>
-        <div style="font-size: 9px; color: #94a3b8; margin-top: 4px;">
-          Computer Generated • No Physical Signature Required
+        <div style="font-size: 8px; color: #94a3b8; margin-top: 2px;">
+          Computer Generated • No Signature Required
         </div>
       </div>
     </div>
