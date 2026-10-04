@@ -88,6 +88,9 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
   const [previewHeroIndex, setPreviewHeroIndex] = useState(0);
   const [newGuidelineInput, setNewGuidelineInput] = useState('');
   const faviconInputRef = useRef<HTMLInputElement>(null);
+  const heroFileInputRef = useRef<HTMLInputElement>(null);
+  const heroReplaceInputRef = useRef<HTMLInputElement>(null);
+  const [replacingHeroIndex, setReplacingHeroIndex] = useState<number | null>(null);
 
   // Preset medical favicons
   const PRESET_FAVICONS = [
@@ -179,7 +182,56 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
     const updated = [...heroImages, newHeroImageUrl.trim()];
     setFormData({ ...formData, heroImages: updated });
     setNewHeroImageUrl('');
+    setPreviewHeroIndex(updated.length - 1);
     showToast(lang === 'bn' ? 'নতুন হিরো ইমেজ যোগ করা হয়েছে' : 'New hero slider image added');
+  };
+
+  const handleHeroFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      showToast(lang === 'bn' ? 'ফাইলের আকার ৫ মেগাবাইট (5MB)-এর কম হতে হবে' : 'Image file size must be less than 5MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      if (dataUrl) {
+        const updated = [...heroImages, dataUrl];
+        setFormData(prev => ({ ...prev, heroImages: updated }));
+        setPreviewHeroIndex(updated.length - 1);
+        showToast(lang === 'bn' ? 'কম্পিউটার থেকে ছবি সফলভাবে স্লাইডারে আপলোড করা হয়েছে' : 'Hero slider image uploaded successfully from device');
+      }
+    };
+    reader.readAsDataURL(file);
+    if (heroFileInputRef.current) heroFileInputRef.current.value = '';
+  };
+
+  const handleHeroFileReplace = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || replacingHeroIndex === null) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      showToast(lang === 'bn' ? 'ফাইলের আকার ৫ মেগাবাইট (5MB)-এর কম হতে হবে' : 'Image file size must be less than 5MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      if (dataUrl) {
+        const updated = [...heroImages];
+        updated[replacingHeroIndex] = dataUrl;
+        setFormData(prev => ({ ...prev, heroImages: updated }));
+        setPreviewHeroIndex(replacingHeroIndex);
+        showToast(lang === 'bn' ? 'ছবিটি সফলভাবে পরিবর্তন করা হয়েছে' : 'Hero slider image replaced successfully');
+        setReplacingHeroIndex(null);
+      }
+    };
+    reader.readAsDataURL(file);
+    if (heroReplaceInputRef.current) heroReplaceInputRef.current.value = '';
   };
 
   const handleAddPresetImage = (url: string) => {
@@ -834,34 +886,88 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
               </button>
             </div>
 
-            {/* Add Custom Image URL Form */}
-            <div className="p-4 bg-sky-50/60 rounded-2xl border border-sky-100 space-y-3">
-              <label className="block text-xs font-bold text-slate-800">
-                {lang === 'bn' ? 'নতুন ছবির লিঙ্ক (Image URL) যোগ করুন:' : 'Add Custom Hero Image URL:'}
-              </label>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <input
-                  type="url"
-                  value={newHeroImageUrl}
-                  onChange={e => setNewHeroImageUrl(e.target.value)}
-                  placeholder="https://images.unsplash.com/... or https://your-server.com/banner.jpg"
-                  className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-primary outline-none"
-                />
-                <Button 
-                  type="button" 
-                  onClick={handleAddHeroImage} 
-                  className="px-4 py-2 text-xs font-bold whitespace-nowrap flex items-center justify-center gap-1"
-                >
-                  <Plus size={14} /> <span>{lang === 'bn' ? 'স্লাইডারে যোগ করুন' : 'Add to Slider'}</span>
-                </Button>
+            {/* Hidden file inputs for uploading & replacing hero images */}
+            <input 
+              type="file" 
+              ref={heroFileInputRef} 
+              accept="image/png,image/jpeg,image/webp,image/svg+xml" 
+              onChange={handleHeroFileUpload} 
+              className="hidden" 
+            />
+            <input 
+              type="file" 
+              ref={heroReplaceInputRef} 
+              accept="image/png,image/jpeg,image/webp,image/svg+xml" 
+              onChange={handleHeroFileReplace} 
+              className="hidden" 
+            />
+
+            {/* Add Image Options: URL & Upload from Computer */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Option 1: URL input */}
+              <div className="p-4 bg-sky-50/60 rounded-2xl border border-sky-100 space-y-3 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 mb-1">
+                    <Globe size={14} className="text-primary" />
+                    <span>{lang === 'bn' ? '১. ইমেজ URL লিঙ্ক দিয়ে যুক্ত করুন:' : '1. Add via Image URL:'}</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 mb-2">
+                    {lang === 'bn' ? 'ইন্টারনেট বা ক্লাউড হোস্টেড ছবির সরাসরি লিংক দিন' : 'Enter direct image URL from web/cloud'}
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="url"
+                    value={newHeroImageUrl}
+                    onChange={e => setNewHeroImageUrl(e.target.value)}
+                    placeholder="https://images.unsplash.com/..."
+                    className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-primary outline-none"
+                  />
+                  <Button 
+                    type="button" 
+                    onClick={handleAddHeroImage} 
+                    className="px-4 py-2 text-xs font-bold whitespace-nowrap flex items-center justify-center gap-1"
+                  >
+                    <Plus size={14} /> <span>{lang === 'bn' ? 'যোগ করুন' : 'Add URL'}</span>
+                  </Button>
+                </div>
+              </div>
+
+              {/* Option 2: Upload from Computer */}
+              <div className="p-4 bg-emerald-50/60 rounded-2xl border border-emerald-100 space-y-3 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-900 mb-1">
+                    <Upload size={14} className="text-emerald-600" />
+                    <span>{lang === 'bn' ? '২. কম্পিউটার বা মোবাইল থেকে আপলোড করুন:' : '2. Upload Image from Computer:'}</span>
+                  </div>
+                  <p className="text-[11px] text-emerald-700/80 mb-2">
+                    {lang === 'bn' ? 'সরাসরি আপনার ডিভাইস থেকে PNG, JPG, WebP ছবি আপলোড করুন (সর্বোচ্চ ৫MB)' : 'Upload local PNG, JPG, WebP image (Max 5MB)'}
+                  </p>
+                </div>
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => heroFileInputRef.current?.click()}
+                    className="w-full px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer active:scale-95"
+                  >
+                    <Upload size={15} />
+                    <span>{lang === 'bn' ? 'কম্পিউটার থেকে ছবি নির্বাচন করুন' : 'Choose & Upload from Device'}</span>
+                  </button>
+                </div>
               </div>
             </div>
 
             {/* Current Active Slider Images Grid */}
             <div>
-              <h4 className="text-xs font-bold text-slate-800 mb-3">
-                {lang === 'bn' ? 'বর্তমান সক্রিয় স্লাইডার ইমেজসমূহ (সাজান ও ডিলিট করুন):' : 'Active Slider Images (Reorder & Remove):'}
-              </h4>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <ImageIcon size={14} className="text-primary" />
+                  <span>{lang === 'bn' ? 'বর্তমান সক্রিয় স্লাইডার ইমেজসমূহ (সাজান, পরিবর্তন ও ডিলিট করুন):' : 'Active Slider Images (Reorder, Replace & Remove):'}</span>
+                </h4>
+                <span className="text-[11px] text-slate-500 font-semibold">
+                  {heroImages.length} {lang === 'bn' ? 'টি স্লাইড' : 'slides'}
+                </span>
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 {heroImages.map((imgUrl, index) => (
@@ -878,11 +984,26 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                       </span>
                     </div>
 
-                    {/* Delete Button */}
-                    <div className="absolute top-2 right-2 z-10">
+                    {/* Top Action Buttons (Replace & Delete) */}
+                    <div className="absolute top-2 right-2 z-10 flex items-center gap-1">
                       <button
                         type="button"
-                        onClick={() => handleRemoveHeroImage(index)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setReplacingHeroIndex(index);
+                          heroReplaceInputRef.current?.click();
+                        }}
+                        className="p-1.5 rounded-lg bg-slate-900/80 text-white hover:bg-primary shadow-sm transition-colors backdrop-blur-xs"
+                        title={lang === 'bn' ? 'এই ছবিটি কম্পিউটার থেকে পরিবর্তন করুন' : 'Replace with new image from computer'}
+                      >
+                        <Upload size={13} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveHeroImage(index);
+                        }}
                         className="p-1.5 rounded-lg bg-rose-600/90 text-white hover:bg-rose-700 shadow-sm transition-colors"
                         title="Remove image from slider"
                       >
@@ -1007,15 +1128,86 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
       {/* ========================================================================= */}
       {activeSubTab === 'sections' && (
         <div className="space-y-6">
-          {/* Section 1: Partner Diagnostic Centers */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                <Building2 size={16} className="text-primary" />
-                <span>{lang === 'bn' ? '১. অনুমোদিত ডায়াগনস্টিক পার্টনার্স সেকশন' : '1. Diagnostic Lab Partners Section'}</span>
-              </h3>
-              <span className="text-[11px] text-slate-400">Home Page Section 2</span>
+          {/* Quick Header Info Banner */}
+          <div className="p-4 bg-sky-50 rounded-2xl border border-sky-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div>
+              <h4 className="text-xs font-bold text-sky-900 flex items-center gap-1.5">
+                <Sliders size={15} className="text-primary" />
+                <span>{lang === 'bn' ? 'হোমপেজ সেকশন অ্যাক্টিভেশন ও টেক্সট কন্ট্রোল' : 'Homepage Section Activation & Content Management'}</span>
+              </h4>
+              <p className="text-[11px] text-sky-700/80 mt-0.5">
+                {lang === 'bn' 
+                  ? 'প্রতিটি সেকশনের ডানদিকের সুইচ থেকে সেকশনটি হোমপেজে চালু (Active) বা বন্ধ (Inactive) করতে পারবেন।' 
+                  : 'Toggle any section Active/Inactive to control its public visibility on the homepage.'}
+              </p>
             </div>
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 text-[11px] font-bold rounded-lg flex items-center gap-1 border border-emerald-200">
+                <Eye size={12} />
+                <span>
+                  {[
+                    formData.showPartnerSection !== false,
+                    formData.showPopularTestsSection !== false,
+                    formData.showPackagesSection !== false,
+                    formData.showNursingSection !== false,
+                    formData.showHowItWorksSection !== false,
+                    formData.showServicesSection !== false
+                  ].filter(Boolean).length} / 6 {lang === 'bn' ? 'সক্রিয়' : 'Active'}
+                </span>
+              </span>
+            </div>
+          </div>
+
+          {/* Section 1: Partner Diagnostic Centers (Home Page Section 2) */}
+          <div className={`bg-white p-6 rounded-2xl border shadow-sm space-y-4 transition-all ${
+            formData.showPartnerSection !== false ? 'border-slate-200' : 'border-slate-200/60 bg-slate-50/50 opacity-90'
+          }`}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className={`p-2 rounded-xl ${formData.showPartnerSection !== false ? 'bg-sky-100 text-primary' : 'bg-slate-200 text-slate-500'}`}>
+                  <Building2 size={18} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                    <span>{lang === 'bn' ? '১. অনুমোদিত ডায়াগনস্টিক পার্টনার্স সেকশন' : '1. Diagnostic Lab Partners Section'}</span>
+                  </h3>
+                  <span className="text-[11px] text-slate-400 font-medium">Home Page Section 2</span>
+                </div>
+              </div>
+
+              {/* Active / Inactive Toggle Button */}
+              <button
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, showPartnerSection: !(prev.showPartnerSection !== false) }))}
+                className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border cursor-pointer self-start sm:self-auto ${
+                  formData.showPartnerSection !== false 
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100 shadow-xs' 
+                    : 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200'
+                }`}
+                title={formData.showPartnerSection !== false ? 'Click to set Inactive (Hide from Homepage)' : 'Click to set Active (Show on Homepage)'}
+              >
+                {formData.showPartnerSection !== false ? (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <Eye size={13} className="text-emerald-600" />
+                    <span>{lang === 'bn' ? 'Active (সক্রিয়)' : 'Active (Visible)'}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+                    <EyeOff size={13} className="text-slate-400" />
+                    <span>{lang === 'bn' ? 'Inactive (লুকানো)' : 'Inactive (Hidden)'}</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {formData.showPartnerSection === false && (
+              <div className="px-3.5 py-2 bg-amber-50 border border-amber-200/80 rounded-xl text-[11px] text-amber-800 flex items-center gap-2">
+                <EyeOff size={14} className="text-amber-600 shrink-0" />
+                <span>{lang === 'bn' ? '⚠️ এই সেকশনটি বর্তমানে হোমপেজে লুকানো রয়েছে (Inactive)। আপনি চাইলে টেক্সট এডিট করে রাখতে পারেন।' : '⚠️ This section is currently hidden from homepage (Inactive).'}</span>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -1027,7 +1219,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                   value={formData.partnerBadge || ''}
                   onChange={e => setFormData({ ...formData, partnerBadge: e.target.value })}
                   placeholder="e.g. বিশ্বস্ত ডায়াগনস্টিক নেটওয়ার্ক"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none bg-white"
                 />
               </div>
 
@@ -1040,7 +1232,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                   value={formData.partnerTitle || ''}
                   onChange={e => setFormData({ ...formData, partnerTitle: e.target.value })}
                   placeholder="e.g. আমাদের অনুমোদিত ডায়াগনস্টিক পার্টনার্স"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-primary outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-primary outline-none bg-white"
                 />
               </div>
 
@@ -1053,7 +1245,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                   value={formData.partnerDesc || ''}
                   onChange={e => setFormData({ ...formData, partnerDesc: e.target.value })}
                   placeholder="e.g. ল্যাব সিলেক্ট করে সহজেই টেস্ট ও ক্যাটালগ ব্রাউজ করুন"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none bg-white"
                 />
               </div>
 
@@ -1066,21 +1258,62 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                   value={formData.partnerBtnText || ''}
                   onChange={e => setFormData({ ...formData, partnerBtnText: e.target.value })}
                   placeholder="e.g. সব দেখুন"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none bg-white"
                 />
               </div>
             </div>
           </div>
 
-          {/* Section 2: Popular Diagnostic Tests */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                <FlaskConical size={16} className="text-primary" />
-                <span>{lang === 'bn' ? '২. জনপ্রিয় ডায়াগনস্টিক টেস্ট সেকশন' : '2. Popular Diagnostic Tests Section'}</span>
-              </h3>
-              <span className="text-[11px] text-slate-400">Home Page Section 3</span>
+          {/* Section 2: Popular Diagnostic Tests (Home Page Section 3) */}
+          <div className={`bg-white p-6 rounded-2xl border shadow-sm space-y-4 transition-all ${
+            formData.showPopularTestsSection !== false ? 'border-slate-200' : 'border-slate-200/60 bg-slate-50/50 opacity-90'
+          }`}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className={`p-2 rounded-xl ${formData.showPopularTestsSection !== false ? 'bg-sky-100 text-primary' : 'bg-slate-200 text-slate-500'}`}>
+                  <FlaskConical size={18} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                    <span>{lang === 'bn' ? '২. জনপ্রিয় ডায়াগনস্টিক টেস্ট সেকশন' : '2. Popular Diagnostic Tests Section'}</span>
+                  </h3>
+                  <span className="text-[11px] text-slate-400 font-medium">Home Page Section 3</span>
+                </div>
+              </div>
+
+              {/* Active / Inactive Toggle Button */}
+              <button
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, showPopularTestsSection: !(prev.showPopularTestsSection !== false) }))}
+                className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border cursor-pointer self-start sm:self-auto ${
+                  formData.showPopularTestsSection !== false 
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100 shadow-xs' 
+                    : 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200'
+                }`}
+                title={formData.showPopularTestsSection !== false ? 'Click to set Inactive (Hide from Homepage)' : 'Click to set Active (Show on Homepage)'}
+              >
+                {formData.showPopularTestsSection !== false ? (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <Eye size={13} className="text-emerald-600" />
+                    <span>{lang === 'bn' ? 'Active (সক্রিয়)' : 'Active (Visible)'}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+                    <EyeOff size={13} className="text-slate-400" />
+                    <span>{lang === 'bn' ? 'Inactive (লুকানো)' : 'Inactive (Hidden)'}</span>
+                  </>
+                )}
+              </button>
             </div>
+
+            {formData.showPopularTestsSection === false && (
+              <div className="px-3.5 py-2 bg-amber-50 border border-amber-200/80 rounded-xl text-[11px] text-amber-800 flex items-center gap-2">
+                <EyeOff size={14} className="text-amber-600 shrink-0" />
+                <span>{lang === 'bn' ? '⚠️ এই সেকশনটি বর্তমানে হোমপেজে লুকানো রয়েছে (Inactive)। আপনি চাইলে টেক্সট এডিট করে রাখতে পারেন।' : '⚠️ This section is currently hidden from homepage (Inactive).'}</span>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -1092,7 +1325,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                   value={formData.popularTestsBadge || ''}
                   onChange={e => setFormData({ ...formData, popularTestsBadge: e.target.value })}
                   placeholder="e.g. জনপ্রিয় স্বাস্থ্য পরীক্ষা"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none bg-white"
                 />
               </div>
 
@@ -1105,7 +1338,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                   value={formData.popularTestsTitle || ''}
                   onChange={e => setFormData({ ...formData, popularTestsTitle: e.target.value })}
                   placeholder="e.g. জনপ্রিয় ডায়াগনস্টিক টেস্টসমূহ"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-primary outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-primary outline-none bg-white"
                 />
               </div>
 
@@ -1118,7 +1351,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                   value={formData.popularTestsDesc || ''}
                   onChange={e => setFormData({ ...formData, popularTestsDesc: e.target.value })}
                   placeholder="e.g. একক টেস্টের বিস্তারিত তালিকা। অর্ডার করুন এবং দক্ষ স্যাম্পল কালেক্টরকে বাসায় ডাকুন।"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none bg-white"
                 />
               </div>
 
@@ -1131,21 +1364,62 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                   value={formData.popularTestsBtnText || ''}
                   onChange={e => setFormData({ ...formData, popularTestsBtnText: e.target.value })}
                   placeholder="e.g. সকল টেস্ট দেখুন (১০০+)"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none bg-white"
                 />
               </div>
             </div>
           </div>
 
-          {/* Section 3: Essential Health Packages */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                <Tag size={16} className="text-amber-500" />
-                <span>{lang === 'bn' ? '৩. হেলথ প্যাকেজ স্লাইডার সেকশন' : '3. Essential Health Packages Section'}</span>
-              </h3>
-              <span className="text-[11px] text-slate-400">Home Page Section 4</span>
+          {/* Section 3: Essential Health Packages (Home Page Section 4) */}
+          <div className={`bg-white p-6 rounded-2xl border shadow-sm space-y-4 transition-all ${
+            formData.showPackagesSection !== false ? 'border-slate-200' : 'border-slate-200/60 bg-slate-50/50 opacity-90'
+          }`}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className={`p-2 rounded-xl ${formData.showPackagesSection !== false ? 'bg-amber-100 text-amber-600' : 'bg-slate-200 text-slate-500'}`}>
+                  <Tag size={18} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                    <span>{lang === 'bn' ? '৩. হেলথ প্যাকেজ স্লাইডার সেকশন' : '3. Essential Health Packages Section'}</span>
+                  </h3>
+                  <span className="text-[11px] text-slate-400 font-medium">Home Page Section 4</span>
+                </div>
+              </div>
+
+              {/* Active / Inactive Toggle Button */}
+              <button
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, showPackagesSection: !(prev.showPackagesSection !== false) }))}
+                className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border cursor-pointer self-start sm:self-auto ${
+                  formData.showPackagesSection !== false 
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100 shadow-xs' 
+                    : 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200'
+                }`}
+                title={formData.showPackagesSection !== false ? 'Click to set Inactive (Hide from Homepage)' : 'Click to set Active (Show on Homepage)'}
+              >
+                {formData.showPackagesSection !== false ? (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <Eye size={13} className="text-emerald-600" />
+                    <span>{lang === 'bn' ? 'Active (সক্রিয়)' : 'Active (Visible)'}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+                    <EyeOff size={13} className="text-slate-400" />
+                    <span>{lang === 'bn' ? 'Inactive (লুকানো)' : 'Inactive (Hidden)'}</span>
+                  </>
+                )}
+              </button>
             </div>
+
+            {formData.showPackagesSection === false && (
+              <div className="px-3.5 py-2 bg-amber-50 border border-amber-200/80 rounded-xl text-[11px] text-amber-800 flex items-center gap-2">
+                <EyeOff size={14} className="text-amber-600 shrink-0" />
+                <span>{lang === 'bn' ? '⚠️ এই সেকশনটি বর্তমানে হোমপেজে লুকানো রয়েছে (Inactive)। আপনি চাইলে টেক্সট এডিট করে রাখতে পারেন।' : '⚠️ This section is currently hidden from homepage (Inactive).'}</span>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -1157,7 +1431,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                   value={formData.packagesBadge || ''}
                   onChange={e => setFormData({ ...formData, packagesBadge: e.target.value })}
                   placeholder="e.g. বিশেষ সাশ্রয়ী প্যাকেজ"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none bg-white"
                 />
               </div>
 
@@ -1170,7 +1444,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                   value={formData.packagesTitle || ''}
                   onChange={e => setFormData({ ...formData, packagesTitle: e.target.value })}
                   placeholder="e.g. এসেনশিয়াল হোম ডায়াগনস্টিক প্যাকেজ"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-primary outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-primary outline-none bg-white"
                 />
               </div>
 
@@ -1183,7 +1457,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                   value={formData.packagesDesc || ''}
                   onChange={e => setFormData({ ...formData, packagesDesc: e.target.value })}
                   placeholder="e.g. একক টেস্টের চেয়ে প্যাকেজে খরচ বাঁচান ৪০% পর্যন্ত..."
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none bg-white"
                 />
               </div>
 
@@ -1196,21 +1470,62 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                   value={formData.packagesBtnText || ''}
                   onChange={e => setFormData({ ...formData, packagesBtnText: e.target.value })}
                   placeholder="e.g. সকল প্যাকেজ দেখুন"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none bg-white"
                 />
               </div>
             </div>
           </div>
 
-          {/* Section 4: Nursing & Care Services Section Texts */}
-          <div className="bg-white p-6 rounded-2xl border border-rose-100 shadow-sm space-y-4">
-            <div className="flex items-center justify-between border-b border-rose-50 pb-3">
-              <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                <HeartPulse size={16} className="text-rose-500" />
-                <span>{lang === 'bn' ? '৪. হোম নার্সিং ও পেশেন্ট কেয়ার সেকশন' : '4. Home Nursing & Patient Care Section'}</span>
-              </h3>
-              <span className="text-[11px] text-rose-500 font-bold bg-rose-50 px-2 py-0.5 rounded-md">Home Page (Below Packages)</span>
+          {/* Section 4: Nursing & Care Services Section Texts (Home Page (Below Packages)) */}
+          <div className={`bg-white p-6 rounded-2xl border shadow-sm space-y-4 transition-all ${
+            formData.showNursingSection !== false ? 'border-rose-100' : 'border-slate-200/60 bg-slate-50/50 opacity-90'
+          }`}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-rose-50 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className={`p-2 rounded-xl ${formData.showNursingSection !== false ? 'bg-rose-100 text-rose-500' : 'bg-slate-200 text-slate-500'}`}>
+                  <HeartPulse size={18} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                    <span>{lang === 'bn' ? '৪. হোম নার্সিং ও পেশেন্ট কেয়ার সেকশন' : '4. Home Nursing & Patient Care Section'}</span>
+                  </h3>
+                  <span className="text-[11px] text-rose-600 font-bold bg-rose-50 px-2 py-0.5 rounded-md">Home Page (Below Packages)</span>
+                </div>
+              </div>
+
+              {/* Active / Inactive Toggle Button */}
+              <button
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, showNursingSection: !(prev.showNursingSection !== false) }))}
+                className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border cursor-pointer self-start sm:self-auto ${
+                  formData.showNursingSection !== false 
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100 shadow-xs' 
+                    : 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200'
+                }`}
+                title={formData.showNursingSection !== false ? 'Click to set Inactive (Hide from Homepage)' : 'Click to set Active (Show on Homepage)'}
+              >
+                {formData.showNursingSection !== false ? (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <Eye size={13} className="text-emerald-600" />
+                    <span>{lang === 'bn' ? 'Active (সক্রিয়)' : 'Active (Visible)'}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+                    <EyeOff size={13} className="text-slate-400" />
+                    <span>{lang === 'bn' ? 'Inactive (লুকানো)' : 'Inactive (Hidden)'}</span>
+                  </>
+                )}
+              </button>
             </div>
+
+            {formData.showNursingSection === false && (
+              <div className="px-3.5 py-2 bg-amber-50 border border-amber-200/80 rounded-xl text-[11px] text-amber-800 flex items-center gap-2">
+                <EyeOff size={14} className="text-amber-600 shrink-0" />
+                <span>{lang === 'bn' ? '⚠️ এই সেকশনটি বর্তমানে হোমপেজে লুকানো রয়েছে (Inactive)। আপনি চাইলে টেক্সট এডিট করে রাখতে পারেন।' : '⚠️ This section is currently hidden from homepage (Inactive).'}</span>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
@@ -1222,7 +1537,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                   value={formData.nursingBadge || ''}
                   onChange={e => setFormData({ ...formData, nursingBadge: e.target.value })}
                   placeholder="e.g. বিশেষ হোম কেয়ার সেবা"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-rose-400 outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-rose-400 outline-none bg-white"
                 />
               </div>
 
@@ -1235,7 +1550,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                   value={formData.nursingTitle || ''}
                   onChange={e => setFormData({ ...formData, nursingTitle: e.target.value })}
                   placeholder="e.g. নার্সিং ও পেশেন্ট কেয়ার সার্ভিস"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-rose-400 outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-rose-400 outline-none bg-white"
                 />
               </div>
 
@@ -1248,7 +1563,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                   value={formData.nursingDesc || ''}
                   onChange={e => setFormData({ ...formData, nursingDesc: e.target.value })}
                   placeholder="e.g. রেজিস্টার্ড নার্স ও দক্ষ ব্রাদারদের সরাসরি আপনার বাসায়..."
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-rose-400 outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-rose-400 outline-none bg-white"
                 />
               </div>
 
@@ -1261,7 +1576,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                   value={formData.nursingHotline || ''}
                   onChange={e => setFormData({ ...formData, nursingHotline: e.target.value })}
                   placeholder="e.g. 09612-889900"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-rose-400 outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-rose-400 outline-none bg-white"
                 />
               </div>
 
@@ -1274,7 +1589,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                   value={formData.nursingWhatsApp || ''}
                   onChange={e => setFormData({ ...formData, nursingWhatsApp: e.target.value })}
                   placeholder="e.g. 01700-112233"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-rose-400 outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-rose-400 outline-none bg-white"
                 />
               </div>
 
@@ -1290,15 +1605,56 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
             </div>
           </div>
 
-          {/* Section 5: How It Works in 3 Steps */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                <ShieldCheck size={16} className="text-primary" />
-                <span>{lang === 'bn' ? '৪. কিভাবে সেবা নিবেন (৩টি ধাপ)' : '4. How It Works (3 Steps Workflow)'}</span>
-              </h3>
-              <span className="text-[11px] text-slate-400">Home Page Steps</span>
+          {/* Section 5: How It Works in 3 Steps (Home Page Steps) */}
+          <div className={`bg-white p-6 rounded-2xl border shadow-sm space-y-4 transition-all ${
+            formData.showHowItWorksSection !== false ? 'border-slate-200' : 'border-slate-200/60 bg-slate-50/50 opacity-90'
+          }`}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className={`p-2 rounded-xl ${formData.showHowItWorksSection !== false ? 'bg-sky-100 text-primary' : 'bg-slate-200 text-slate-500'}`}>
+                  <ShieldCheck size={18} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                    <span>{lang === 'bn' ? '৫. কিভাবে সেবা নিবেন (৩টি ধাপ)' : '5. How It Works (3 Steps Workflow)'}</span>
+                  </h3>
+                  <span className="text-[11px] text-slate-400 font-medium">Home Page Steps</span>
+                </div>
+              </div>
+
+              {/* Active / Inactive Toggle Button */}
+              <button
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, showHowItWorksSection: !(prev.showHowItWorksSection !== false) }))}
+                className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border cursor-pointer self-start sm:self-auto ${
+                  formData.showHowItWorksSection !== false 
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100 shadow-xs' 
+                    : 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200'
+                }`}
+                title={formData.showHowItWorksSection !== false ? 'Click to set Inactive (Hide from Homepage)' : 'Click to set Active (Show on Homepage)'}
+              >
+                {formData.showHowItWorksSection !== false ? (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <Eye size={13} className="text-emerald-600" />
+                    <span>{lang === 'bn' ? 'Active (সক্রিয়)' : 'Active (Visible)'}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+                    <EyeOff size={13} className="text-slate-400" />
+                    <span>{lang === 'bn' ? 'Inactive (লুকানো)' : 'Inactive (Hidden)'}</span>
+                  </>
+                )}
+              </button>
             </div>
+
+            {formData.showHowItWorksSection === false && (
+              <div className="px-3.5 py-2 bg-amber-50 border border-amber-200/80 rounded-xl text-[11px] text-amber-800 flex items-center gap-2">
+                <EyeOff size={14} className="text-amber-600 shrink-0" />
+                <span>{lang === 'bn' ? '⚠️ এই সেকশনটি বর্তমানে হোমপেজে লুকানো রয়েছে (Inactive)। আপনি চাইলে ধাপগুলো এডিট করে রাখতে পারেন।' : '⚠️ This section is currently hidden from homepage (Inactive).'}</span>
+              </div>
+            )}
 
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
@@ -1309,7 +1665,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                 value={formData.howItWorksTitle || ''}
                 onChange={e => setFormData({ ...formData, howItWorksTitle: e.target.value })}
                 placeholder="e.g. সহজ ৩টি ধাপে ঘরে বসে ল্যাব টেস্ট"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-primary outline-none"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-primary outline-none bg-white"
               />
             </div>
 
@@ -1348,15 +1704,56 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
             </div>
           </div>
 
-          {/* Section 5: Services Header Texts */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                <Layers size={16} className="text-primary" />
-                <span>{lang === 'bn' ? '৫. স্বাস্থ্যসেবা সমূহ সেকশন হেডার' : '5. Healthcare Services Section Header'}</span>
-              </h3>
-              <span className="text-[11px] text-slate-400">Home Page Services Header</span>
+          {/* Section 6: Healthcare Services Header (Home Page Services Header) */}
+          <div className={`bg-white p-6 rounded-2xl border shadow-sm space-y-4 transition-all ${
+            formData.showServicesSection !== false ? 'border-slate-200' : 'border-slate-200/60 bg-slate-50/50 opacity-90'
+          }`}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className={`p-2 rounded-xl ${formData.showServicesSection !== false ? 'bg-sky-100 text-primary' : 'bg-slate-200 text-slate-500'}`}>
+                  <Layers size={18} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                    <span>{lang === 'bn' ? '৬. স্বাস্থ্যসেবা সমূহ সেকশন হেডার' : '6. Healthcare Services Section Header'}</span>
+                  </h3>
+                  <span className="text-[11px] text-slate-400 font-medium">Home Page Services Header</span>
+                </div>
+              </div>
+
+              {/* Active / Inactive Toggle Button */}
+              <button
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, showServicesSection: !(prev.showServicesSection !== false) }))}
+                className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border cursor-pointer self-start sm:self-auto ${
+                  formData.showServicesSection !== false 
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100 shadow-xs' 
+                    : 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200'
+                }`}
+                title={formData.showServicesSection !== false ? 'Click to set Inactive (Hide from Homepage)' : 'Click to set Active (Show on Homepage)'}
+              >
+                {formData.showServicesSection !== false ? (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <Eye size={13} className="text-emerald-600" />
+                    <span>{lang === 'bn' ? 'Active (সক্রিয়)' : 'Active (Visible)'}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+                    <EyeOff size={13} className="text-slate-400" />
+                    <span>{lang === 'bn' ? 'Inactive (লুকানো)' : 'Inactive (Hidden)'}</span>
+                  </>
+                )}
+              </button>
             </div>
+
+            {formData.showServicesSection === false && (
+              <div className="px-3.5 py-2 bg-amber-50 border border-amber-200/80 rounded-xl text-[11px] text-amber-800 flex items-center gap-2">
+                <EyeOff size={14} className="text-amber-600 shrink-0" />
+                <span>{lang === 'bn' ? '⚠️ এই সেকশনটি বর্তমানে হোমপেজে লুকানো রয়েছে (Inactive)। আপনি চাইলে টেক্সট এডিট করে রাখতে পারেন।' : '⚠️ This section is currently hidden from homepage (Inactive).'}</span>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
@@ -1368,7 +1765,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                   value={formData.servicesBadge || ''}
                   onChange={e => setFormData({ ...formData, servicesBadge: e.target.value })}
                   placeholder="e.g. আমাদের সেবাসমূহ"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none bg-white"
                 />
               </div>
 
@@ -1381,7 +1778,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                   value={formData.servicesTitle || ''}
                   onChange={e => setFormData({ ...formData, servicesTitle: e.target.value })}
                   placeholder="e.g. আমাদের স্বাস্থ্যসেবা সমূহ"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-primary outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-primary outline-none bg-white"
                 />
               </div>
 
@@ -1394,7 +1791,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                   value={formData.servicesDesc || ''}
                   onChange={e => setFormData({ ...formData, servicesDesc: e.target.value })}
                   placeholder="e.g. ঘরে বসেই উন্নত মানের ডায়াগনস্টিক ও ল্যাব টেস্ট সেবা নিশ্চিত করতে..."
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none bg-white"
                 />
               </div>
             </div>
@@ -1402,7 +1799,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
 
           <div className="pt-2 flex justify-end">
             <Button onClick={() => handleSaveAll()} className="px-6 py-2.5 text-xs font-bold shadow-md shadow-sky-100">
-              <Check size={14} className="mr-1.5 inline" /> {lang === 'bn' ? 'সকল সেকশন টেক্সট সেভ করুন' : 'Save Section Texts'}
+              <Check size={14} className="mr-1.5 inline" /> {lang === 'bn' ? 'সকল সেকশন সেটিংস ও টেক্সট সেভ করুন' : 'Save Section Settings & Texts'}
             </Button>
           </div>
         </div>

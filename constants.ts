@@ -1346,24 +1346,28 @@ export const DEFAULT_SITE_SETTINGS_BN: SiteSettings = {
   heroImages: [...DEFAULT_HERO_IMAGES],
 
   // Partner Diagnostic Centers Section
+  showPartnerSection: true,
   partnerBadge: 'বিশ্বস্ত ডায়াগনস্টিক নেটওয়ার্ক',
   partnerTitle: 'আমাদের অনুমোদিত ডায়াগনস্টিক পার্টনার্স',
   partnerDesc: 'ল্যাব সিলেক্ট করে সহজেই টেস্ট ও ক্যাটালগ ব্রাউজ করুন',
   partnerBtnText: 'সব দেখুন',
 
   // Popular Tests Section
+  showPopularTestsSection: true,
   popularTestsBadge: 'জনপ্রিয় স্বাস্থ্য পরীক্ষা',
   popularTestsTitle: 'জনপ্রিয় ডায়াগনস্টিক টেস্টসমূহ',
   popularTestsDesc: 'একক টেস্টের বিস্তারিত তালিকা। অর্ডার করুন এবং দক্ষ স্যাম্পল কালেক্টরকে বাসায় ডাকুন।',
   popularTestsBtnText: 'সকল টেস্ট দেখুন (১০০+)',
 
   // Health Packages Section
+  showPackagesSection: true,
   packagesBadge: 'বিশেষ সাশ্রয়ী প্যাকেজ',
   packagesTitle: 'এসেনশিয়াল হোম ডায়াগনস্টিক প্যাকেজ',
   packagesDesc: 'একক টেস্টের চেয়ে প্যাকেজে খরচ বাঁচান ৪০% পর্যন্ত। ৪টি টেস্টের প্রাথমিক স্ক্রিনিং থেকে ১০টি টেস্টের সম্পূর্ণ ফুল বডি চেকআপ।',
   packagesBtnText: 'সকল প্যাকেজ দেখুন',
 
   // Nursing & Care Section
+  showNursingSection: true,
   nursingBadge: 'হোম নার্সিং ও পেশেন্ট কেয়ার',
   nursingTitle: 'প্রফেশনাল নার্সিং ও হোম কেয়ার সার্ভিস',
   nursingDesc: 'দক্ষ রেজিস্টার্ড নার্স ও কেয়ারগিভারের মাধ্যমে আপনার প্রিয়জনের জন্য বাসায় বিশেষায়িত সেবা, পোস্ট-সার্জারি কেয়ার ও স্বাস্থ্য পরিচর্যা।',
@@ -1372,6 +1376,7 @@ export const DEFAULT_SITE_SETTINGS_BN: SiteSettings = {
   nursingServices: DEFAULT_NURSING_SERVICES_BN,
 
   // How It Works / Steps
+  showHowItWorksSection: true,
   howItWorksTitle: 'সহজ ৩টি ধাপে ঘরে বসে ল্যাব টেস্ট',
   howItWorksSteps: [
     {
@@ -1392,6 +1397,7 @@ export const DEFAULT_SITE_SETTINGS_BN: SiteSettings = {
   ],
 
   // Services Section
+  showServicesSection: true,
   servicesBadge: 'আমাদের সেবাসমূহ',
   servicesTitle: 'আমাদের স্বাস্থ্যসেবা সমূহ',
   servicesDesc: 'ঘরে বসেই উন্নত মানের ডায়াগনস্টিক ও ল্যাব টেস্ট সেবা নিশ্চিত করতে আমরা প্রতিজ্ঞাবদ্ধ।',
@@ -1454,24 +1460,28 @@ export const DEFAULT_SITE_SETTINGS_EN: SiteSettings = {
   heroImages: [...DEFAULT_HERO_IMAGES],
 
   // Partner Diagnostic Centers Section
+  showPartnerSection: true,
   partnerBadge: 'Trusted Diagnostic Network',
   partnerTitle: 'Accredited Diagnostic Lab Partners',
   partnerDesc: 'Select any partner lab to explore tests and diagnostic packages',
   partnerBtnText: 'View All',
 
   // Popular Tests Section
+  showPopularTestsSection: true,
   popularTestsBadge: 'Popular Diagnostics',
   popularTestsTitle: 'Popular Diagnostic Tests',
   popularTestsDesc: 'Browse individual diagnostics with certified blood collection right at your home.',
   popularTestsBtnText: 'Browse All 100+ Tests',
 
   // Health Packages Section
+  showPackagesSection: true,
   packagesBadge: 'Special Value Bundles',
   packagesTitle: 'Essential Home Diagnostic Packages',
   packagesDesc: 'Save up to 40% on standard packages. From 4-test routine screenings to 10-test full body diagnostic panels.',
   packagesBtnText: 'Explore All Packages',
 
   // Nursing & Care Section
+  showNursingSection: true,
   nursingBadge: 'Home Nursing & Care',
   nursingTitle: 'Professional Nursing & Home Care Services',
   nursingDesc: 'Certified registered nurses and compassionate caregivers providing clinical home care, post-surgery recovery, and elderly support.',
@@ -1480,6 +1490,7 @@ export const DEFAULT_SITE_SETTINGS_EN: SiteSettings = {
   nursingServices: DEFAULT_NURSING_SERVICES_EN,
 
   // How It Works / Steps
+  showHowItWorksSection: true,
   howItWorksTitle: 'How It Works in 3 Simple Steps',
   howItWorksSteps: [
     {
@@ -1500,6 +1511,7 @@ export const DEFAULT_SITE_SETTINGS_EN: SiteSettings = {
   ],
 
   // Services Section
+  showServicesSection: true,
   servicesBadge: 'Our Services',
   servicesTitle: 'Our Specialized Healthcare Services',
   servicesDesc: 'Reliable, hospital-grade sample collection and diagnostics delivered right at your doorstep.',

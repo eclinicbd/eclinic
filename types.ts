@@ -280,24 +280,28 @@ export interface SiteSettings {
   heroImages?: string[];
 
   // Partner Diagnostic Centers Section
+  showPartnerSection?: boolean; // Section 2 visibility toggle
   partnerBadge?: string;
   partnerTitle?: string;
   partnerDesc?: string;
   partnerBtnText?: string;
 
   // Popular Tests Section
+  showPopularTestsSection?: boolean; // Section 3 visibility toggle
   popularTestsBadge?: string;
   popularTestsTitle?: string;
   popularTestsDesc?: string;
   popularTestsBtnText?: string;
 
   // Health Packages Section
+  showPackagesSection?: boolean; // Section 4 visibility toggle
   packagesBadge?: string;
   packagesTitle?: string;
   packagesDesc?: string;
   packagesBtnText?: string;
 
   // Nursing & Care Section
+  showNursingSection?: boolean; // Below Packages visibility toggle
   nursingBadge?: string;
   nursingTitle?: string;
   nursingDesc?: string;
@@ -306,10 +310,12 @@ export interface SiteSettings {
   nursingServices?: NursingCareService[];
 
   // How It Works / Steps Section
+  showHowItWorksSection?: boolean; // Steps visibility toggle
   howItWorksTitle?: string;
   howItWorksSteps?: HowItWorksStep[];
 
   // Services Section Header Text
+  showServicesSection?: boolean; // Services Header visibility toggle
   servicesBadge?: string;
   servicesTitle?: string;
   servicesDesc?: string;
