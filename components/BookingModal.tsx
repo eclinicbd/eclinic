@@ -740,9 +740,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                         </div>
                         
                         <div className="flex items-center justify-between text-[10px] text-slate-500 font-semibold border-t border-slate-100 pt-1">
-                          <span className="text-amber-600">⭐ {lab.rating}</span>
-                          <span className={lab.serviceCharge === 0 ? 'text-emerald-600 font-bold' : 'text-slate-600'}>
-                            {lab.serviceCharge === 0 ? (isBn ? 'ফ্রি ভিজিট' : 'Free') : `+৳${lab.serviceCharge}`}
+                          <span className="text-slate-500 truncate">{lab.location?.split(',')[0] || (isBn ? 'ঢাকা' : 'Dhaka')}</span>
+                          <span className={lab.serviceCharge === 0 ? 'text-emerald-600 font-bold' : 'text-slate-700 font-bold'}>
+                            {lab.serviceCharge === 0 ? (isBn ? 'ফ্রি হোম সার্ভিস' : 'Free') : `+৳${lab.serviceCharge}`}
                           </span>
                         </div>
                       </div>

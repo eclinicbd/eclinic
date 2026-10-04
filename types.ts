@@ -47,7 +47,7 @@ export interface HealthPackage extends TestPackage {
 export interface LabPartner {
   id: string;
   name: string;
-  rating: number;
+  rating?: number;
   logo: string;
   serviceCharge: number; // Service charge / home collection fee
   location?: string;

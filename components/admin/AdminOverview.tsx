@@ -355,7 +355,7 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
                   <img src={lab.logo} alt={lab.name} className="w-8 h-8 rounded-lg object-cover bg-white border border-slate-200" />
                   <div>
                     <p className="font-bold text-xs text-slate-900">{lab.name}</p>
-                    <p className="text-[10px] text-slate-500">⭐ {lab.rating} | 📍 {lab.location || 'Dhaka'}</p>
+                    <p className="text-[10px] text-slate-500">📍 {lab.location || 'Dhaka'}</p>
                   </div>
                 </div>
                 <div className="text-right">

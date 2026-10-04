@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BookingHistoryItem, Language } from '../types';
-import { printOrDownloadInvoice } from '../services/invoiceService';
+import { printOrDownloadInvoice, resolveOrderCollectionFee } from '../services/invoiceService';
 import { getStoredSiteSettings, getStoredTests, getStoredPackages } from '../services/dataStorage';
 import { formatOrderId } from './BookingModal';
 import { 
@@ -92,6 +92,10 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
       ? order.testNames 
       : ['General Diagnostic Laboratory Test'];
     
+    const preservedSubtotal = order.subtotal && order.subtotal > 0 
+      ? order.subtotal 
+      : (order.totalCost ? Math.max(0, order.totalCost - (order.accessoriesFee || 45) - (order.collectionFee || order.serviceCharge || 150)) : 0);
+
     resolvedItems = rawTests.map(testName => {
       const matched = allCatalogItems.find(c => 
         c.name?.trim().toLowerCase() === testName.trim().toLowerCase() ||
@@ -113,7 +117,9 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
           finalPrice: itemFinal
         };
       } else {
-        const avg = Math.round(order.totalCost / rawTests.length);
+        const avg = preservedSubtotal > 0 
+          ? Math.round(preservedSubtotal / rawTests.length) 
+          : Math.round((order.totalCost || 500) / rawTests.length);
         return {
           name: testName,
           category: isBn ? 'ডায়াগনস্টিক টেস্ট' : 'Diagnostic Test',
@@ -125,26 +131,36 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
     });
   }
 
-  const itemsMainSum = resolvedItems.reduce((sum, item) => sum + item.originalPrice, 0);
-  const itemsDiscountSum = resolvedItems.reduce((sum, item) => sum + item.discountAmount, 0);
-  const itemsFinalSum = resolvedItems.reduce((sum, item) => sum + item.finalPrice, 0);
+  // Preserve stored financial snapshot amounts
+  const computedMainSum = resolvedItems.reduce((sum, item) => sum + item.originalPrice, 0);
+  const itemsMainSum = (order.subtotal !== undefined && order.subtotal > 0)
+    ? order.subtotal
+    : computedMainSum;
+
+  const computedDiscountSum = resolvedItems.reduce((sum, item) => sum + item.discountAmount, 0);
   const totalDiscountSavings = order.totalDiscount !== undefined 
     ? order.totalDiscount 
-    : (itemsDiscountSum > 0 
-        ? itemsDiscountSum 
-        : Math.max(0, itemsMainSum - itemsFinalSum));
+    : (computedDiscountSum > 0 
+        ? computedDiscountSum 
+        : Math.max(0, itemsMainSum - resolvedItems.reduce((sum, item) => sum + item.finalPrice, 0)));
 
-  // Home Sample Collection Fee
-  const collectionFee = order.collectionFee !== undefined 
-    ? order.collectionFee 
-    : (order.serviceCharge !== undefined 
-        ? order.serviceCharge 
-        : 0);
+  const computedFinalSum = resolvedItems.reduce((sum, item) => sum + item.finalPrice, 0);
+  const itemsFinalSum = (order.subtotal !== undefined && order.totalDiscount !== undefined)
+    ? Math.max(0, order.subtotal - order.totalDiscount)
+    : computedFinalSum;
 
-  // Tube, Needle & Accessories Charge (1-2 tests: 45tk, 3-4 tests: 65tk, 4+ tests: 85tk)
+  // Tube, Needle & Accessories Charge (Historical preservation)
   const accessoriesFee = order.accessoriesFee !== undefined
     ? order.accessoriesFee
     : (resolvedItems.length > 0 ? (resolvedItems.length <= 2 ? 45 : resolvedItems.length <= 4 ? 65 : 85) : 0);
+
+  // Home Sample Collection Fee (Historical preservation)
+  const collectionFee = resolveOrderCollectionFee(order, lang, itemsFinalSum, accessoriesFee);
+
+  // Total Payable calculation (Strictly frozen to order.totalCost)
+  const totalPayable = order.totalCost && order.totalCost > 0
+    ? order.totalCost
+    : (itemsFinalSum + accessoriesFee + collectionFee);
 
   const getPaymentMethodBadge = () => {
     switch (order.paymentMethod) {
@@ -361,7 +377,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
               <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider block">
                 {isBn ? 'সর্বমোট প্রদেয় বিল' : 'Total Payable'}
               </span>
-              <span className="text-2xl font-black text-emerald-400">৳ {order.totalCost}</span>
+              <span className="text-2xl font-black text-emerald-400">৳ {totalPayable}</span>
             </div>
           </div>
 

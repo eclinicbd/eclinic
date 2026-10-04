@@ -527,7 +527,11 @@ const INITIAL_BOOKINGS: BookingHistoryItem[] = [
     labId: "lab_popular",
     labName: "পপুলার ডায়াগনস্টিক সেন্টার লিঃ",
     testNames: ["কমপ্লিট ব্লাড কাউন্ট (CBC)", "লিপিড প্রোফাইল"],
+    subtotal: 1955,
+    accessoriesFee: 45,
+    collectionFee: 150,
     totalCost: 2150,
+    paymentMethod: "cod",
     status: "pending",
     doctorName: "Dr. K. M. Rahman",
     createdAt: "2024-03-20T10:30:00Z"
@@ -542,7 +546,12 @@ const INITIAL_BOOKINGS: BookingHistoryItem[] = [
     labId: "lab_labaid",
     labName: "ল্যাবএইড ডায়াগনস্টিক সেন্টার",
     testNames: ["ডায়াবেটিস চেকআপ (HbA1c)"],
+    subtotal: 1055,
+    accessoriesFee: 45,
+    collectionFee: 150,
     totalCost: 1250,
+    paymentMethod: "bkash",
+    transactionId: "TRX93847291",
     status: "confirmed",
     createdAt: "2024-03-21T08:15:00Z"
   },
@@ -556,7 +565,11 @@ const INITIAL_BOOKINGS: BookingHistoryItem[] = [
     labId: "lab_birdem",
     labName: "বারডেম জেনারেল হাসপাতাল",
     testNames: ["ভিটামিন ডি টেস্ট", "থাইরয়েড প্রোফাইল (T3, T4, TSH)"],
+    subtotal: 3385,
+    accessoriesFee: 45,
+    collectionFee: 120,
     totalCost: 3550,
+    paymentMethod: "cod",
     status: "completed",
     doctorName: "Prof. Dr. Nazmul Huda",
     createdAt: "2024-03-19T14:20:00Z"
@@ -571,7 +584,11 @@ const INITIAL_BOOKINGS: BookingHistoryItem[] = [
     labId: "lab_bsmmu",
     labName: "বিএসএমএমইউ (পিজি হাসপাতাল)",
     testNames: ["কমপ্লিট ব্লাড কাউন্ট (CBC)"],
+    subtotal: 255,
+    accessoriesFee: 45,
+    collectionFee: 100,
     totalCost: 400,
+    paymentMethod: "cod",
     status: "cancelled",
     createdAt: "2024-03-18T16:45:00Z"
   }

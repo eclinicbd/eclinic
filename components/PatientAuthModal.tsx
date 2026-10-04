@@ -151,24 +151,6 @@ export const PatientAuthModal: React.FC<PatientAuthModalProps> = ({
     }, 300);
   };
 
-  const handleDemoLogin = (phone: string, name: string) => {
-    setErrorMsg(null);
-    setIsLoading(true);
-    setTimeout(() => {
-      const result = loginPatient(phone, 'password123');
-      setIsLoading(false);
-      if (result.success && result.patient) {
-        setSuccessMsg(`${t.authLoginSuccess} (${name})`);
-        setTimeout(() => {
-          onSuccess(result.patient!);
-          onClose();
-        }, 500);
-      } else {
-        setErrorMsg(result.message || t.authErrorInvalid);
-      }
-    }, 300);
-  };
-
   const handleSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
@@ -400,9 +382,6 @@ export const PatientAuthModal: React.FC<PatientAuthModalProps> = ({
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
                     {t.authPassword}
                   </label>
-                  <span className="text-[11px] text-slate-400">
-                    {lang === 'bn' ? '(ডিফল্ট ডেমো: password123)' : '(Default demo: password123)'}
-                  </span>
                 </div>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -418,7 +397,7 @@ export const PatientAuthModal: React.FC<PatientAuthModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowLoginPassword(!showLoginPassword)}
-                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600"
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
                   >
                     {showLoginPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
@@ -439,42 +418,6 @@ export const PatientAuthModal: React.FC<PatientAuthModalProps> = ({
                   </>
                 )}
               </Button>
-
-              {/* Fast 1-Click Demo Accounts */}
-              <div className="pt-3 border-t border-slate-100">
-                <span className="text-[11px] font-bold text-slate-400 block uppercase tracking-wider mb-2 text-center">
-                  {t.authQuickDemo}
-                </span>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleDemoLogin('01712345678', 'Rahim Ahmed')}
-                    className="p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-sky-50 hover:border-sky-200 text-left transition-all flex items-center gap-2"
-                  >
-                    <div className="w-7 h-7 rounded-full bg-sky-200 text-primary flex items-center justify-center font-bold text-xs">
-                      R
-                    </div>
-                    <div className="truncate">
-                      <p className="text-xs font-bold text-slate-800 leading-tight">Rahim Ahmed</p>
-                      <p className="text-[10px] text-slate-500">01712345678</p>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleDemoLogin('01912345678', 'Salma Begum')}
-                    className="p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-sky-50 hover:border-sky-200 text-left transition-all flex items-center gap-2"
-                  >
-                    <div className="w-7 h-7 rounded-full bg-pink-100 text-pink-700 flex items-center justify-center font-bold text-xs">
-                      S
-                    </div>
-                    <div className="truncate">
-                      <p className="text-xs font-bold text-slate-800 leading-tight">Salma Begum</p>
-                      <p className="text-[10px] text-slate-500">01912345678</p>
-                    </div>
-                  </button>
-                </div>
-              </div>
             </form>
           )}
 

@@ -1,5 +1,48 @@
 import { BookingHistoryItem, Language, SiteSettings } from '../types';
-import { getStoredSiteSettings, getStoredTests, getStoredPackages } from './dataStorage';
+import { getStoredSiteSettings, getStoredTests, getStoredPackages, getStoredLabs } from './dataStorage';
+
+export const resolveOrderCollectionFee = (
+  order: BookingHistoryItem, 
+  lang: Language = 'bn', 
+  itemsFinalSum: number = 0, 
+  accessoriesFee: number = 0
+): number => {
+  // 1. Strict Priority: If fee is explicitly stored in order snapshot (historical preservation)
+  if (typeof order.collectionFee === 'number') {
+    return order.collectionFee;
+  }
+  if (typeof order.serviceCharge === 'number') {
+    return order.serviceCharge;
+  }
+
+  // 2. Strict Priority: Derive from order.totalCost and saved subtotal / accessories
+  if (order.totalCost && order.totalCost > 0) {
+    const effectiveFinal = itemsFinalSum > 0 
+      ? itemsFinalSum 
+      : ((order.subtotal || 0) - (order.totalDiscount || 0));
+    const effectiveAcc = order.accessoriesFee !== undefined ? order.accessoriesFee : accessoriesFee;
+    
+    if (effectiveFinal > 0) {
+      const diff = order.totalCost - (effectiveFinal + effectiveAcc);
+      if (diff >= 0) {
+        return diff;
+      }
+    }
+  }
+
+  // 3. Fallback only for legacy orders missing snapshot data: Lookup lab service charge
+  const allLabs = getStoredLabs(lang);
+  const matchedLab = allLabs.find(l => 
+    (order.labId && l.id === order.labId) || 
+    (order.labName && l.name?.trim().toLowerCase() === order.labName.trim().toLowerCase())
+  );
+
+  if (matchedLab && typeof matchedLab.serviceCharge === 'number') {
+    return matchedLab.serviceCharge;
+  }
+
+  return 200;
+};
 
 export const generateInvoiceHtml = (
   order: BookingHistoryItem, 
@@ -14,6 +57,7 @@ export const generateInvoiceHtml = (
     : `${order.date} ${order.time}`;
 
   // Resolve itemized breakdown (test wise main rate, discount, final rate)
+  // Strict snapshot isolation: If order.items exists, never query catalog
   const allCatalogItems = [...getStoredTests(lang), ...getStoredPackages(lang)];
   
   interface ResolvedInvoiceItem {
@@ -27,6 +71,7 @@ export const generateInvoiceHtml = (
   let resolvedItems: ResolvedInvoiceItem[] = [];
 
   if (order.items && order.items.length > 0) {
+    // 100% frozen historical snapshot
     resolvedItems = order.items.map(item => ({
       name: item.name,
       category: item.category,
@@ -35,10 +80,16 @@ export const generateInvoiceHtml = (
       finalPrice: item.finalPrice
     }));
   } else {
+    // For legacy orders without items array: reconstruct without mutating historical totals
     const rawTests = order.testNames && order.testNames.length > 0 
       ? order.testNames 
       : ['Diagnostic Health Test / Package'];
     
+    // If order has a preserved subtotal or totalCost, anchor item rates to preserved totals
+    const preservedSubtotal = order.subtotal && order.subtotal > 0 
+      ? order.subtotal 
+      : (order.totalCost ? Math.max(0, order.totalCost - (order.accessoriesFee || 45) - (order.collectionFee || order.serviceCharge || 150)) : 0);
+
     resolvedItems = rawTests.map(testName => {
       const matched = allCatalogItems.find(c => 
         c.name?.trim().toLowerCase() === testName.trim().toLowerCase() ||
@@ -60,7 +111,9 @@ export const generateInvoiceHtml = (
           finalPrice: itemFinal
         };
       } else {
-        const avg = Math.round(order.totalCost / rawTests.length);
+        const avg = preservedSubtotal > 0 
+          ? Math.round(preservedSubtotal / rawTests.length) 
+          : Math.round((order.totalCost || 500) / rawTests.length);
         return {
           name: testName,
           category: isBn ? 'ল্যাব টেস্ট' : 'Lab Test',
@@ -72,26 +125,36 @@ export const generateInvoiceHtml = (
     });
   }
 
-  const itemsFinalSum = resolvedItems.reduce((sum, item) => sum + item.finalPrice, 0);
-  const itemsMainSum = resolvedItems.reduce((sum, item) => sum + item.originalPrice, 0);
-  const itemsDiscountSum = resolvedItems.reduce((sum, item) => sum + item.discountAmount, 0);
+  // Preserve stored financial snapshot amounts
+  const computedMainSum = resolvedItems.reduce((sum, item) => sum + item.originalPrice, 0);
+  const itemsMainSum = (order.subtotal !== undefined && order.subtotal > 0)
+    ? order.subtotal
+    : computedMainSum;
+
+  const computedDiscountSum = resolvedItems.reduce((sum, item) => sum + item.discountAmount, 0);
   const totalDiscountSavings = order.totalDiscount !== undefined 
     ? order.totalDiscount 
-    : (itemsDiscountSum > 0 
-        ? itemsDiscountSum 
-        : Math.max(0, itemsMainSum - itemsFinalSum));
+    : (computedDiscountSum > 0 
+        ? computedDiscountSum 
+        : Math.max(0, itemsMainSum - resolvedItems.reduce((sum, item) => sum + item.finalPrice, 0)));
 
-  // Home Sample Collection Fee
-  const collectionFee = order.collectionFee !== undefined 
-    ? order.collectionFee 
-    : (order.serviceCharge !== undefined 
-        ? order.serviceCharge 
-        : 0);
+  const computedFinalSum = resolvedItems.reduce((sum, item) => sum + item.finalPrice, 0);
+  const itemsFinalSum = (order.subtotal !== undefined && order.totalDiscount !== undefined)
+    ? Math.max(0, order.subtotal - order.totalDiscount)
+    : computedFinalSum;
 
-  // Tube, Needle & Accessories Charge (1-2 tests: 45tk, 3-4 tests: 65tk, 4+ tests: 85tk)
+  // Tube, Needle & Accessories Charge (Historical preservation)
   const accessoriesFee = order.accessoriesFee !== undefined
     ? order.accessoriesFee
     : (resolvedItems.length > 0 ? (resolvedItems.length <= 2 ? 45 : resolvedItems.length <= 4 ? 65 : 85) : 0);
+
+  // Home Sample Collection Fee (Historical preservation)
+  const collectionFee = resolveOrderCollectionFee(order, lang, itemsFinalSum, accessoriesFee);
+
+  // Total payable amount (Strictly frozen to order.totalCost)
+  const totalPayable = order.totalCost && order.totalCost > 0 
+    ? order.totalCost 
+    : (itemsFinalSum + accessoriesFee + collectionFee);
 
   const cleanOrderId = (order.id || '').replace(/^#?EC-?/i, '').replace(/^#?BK-?/i, '').replace(/^#/, '');
 
@@ -635,7 +698,7 @@ export const generateInvoiceHtml = (
         </div>
         <div class="summary-row total-row">
           <span>${isBn ? 'সর্বমোট প্রদেয় বিল:' : 'Total Payable:'}</span>
-          <span class="total-amount">৳ ${order.totalCost}</span>
+          <span class="total-amount">৳ ${totalPayable}</span>
         </div>
       </div>
     </div>

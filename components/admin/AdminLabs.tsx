@@ -260,10 +260,6 @@ export const AdminLabs: React.FC<AdminLabsProps> = ({
                       <div>
                         <h3 className="font-bold text-base text-slate-900 leading-snug">{lab.name}</h3>
                         <div className="flex flex-wrap items-center gap-2 mt-1">
-                          <span className="px-2 py-0.5 bg-amber-50 text-amber-700 text-xs font-bold rounded-md border border-amber-100 flex items-center gap-1">
-                            <Star size={11} className="fill-amber-400 text-amber-500" />
-                            {lab.rating} / 5.0
-                          </span>
                           <span className="text-xs text-slate-500 flex items-center gap-1">
                             <MapPin size={12} /> {lab.location || 'Dhaka, Bangladesh'}
                           </span>

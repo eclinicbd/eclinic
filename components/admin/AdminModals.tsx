@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { TestPackage, HealthPackage, LabPartner, BookingHistoryItem, BookingStatus, Language, ServiceItem, CategoryItem } from '../../types';
 import { TRANSLATIONS } from '../../translations';
 import { generateUniqueOrderId, formatOrderId, calculateAccessoriesFee } from '../BookingModal';
@@ -38,9 +38,11 @@ import {
   Award,
   Pill,
   Flame,
-  Download
+  Download,
+  Upload,
+  ImageIcon
 } from 'lucide-react';
-import { printOrDownloadInvoice } from '../../services/invoiceService';
+import { printOrDownloadInvoice, resolveOrderCollectionFee } from '../../services/invoiceService';
 import { Button } from '../Button';
 import { CATEGORY_ICON_MAP, CATEGORY_COLOR_MAP } from './AdminCategories';
 
@@ -775,10 +777,10 @@ export const LabFormModal: React.FC<LabModalProps> = ({
   onSave,
   editingLab
 }) => {
+  const logoFileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState<Partial<LabPartner>>({
     name: '',
     serviceCharge: 150,
-    rating: 4.8,
     location: 'Dhaka, Bangladesh',
     logo: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&q=80&w=150',
     discountBadge: '',
@@ -796,7 +798,6 @@ export const LabFormModal: React.FC<LabModalProps> = ({
       setFormData({
         name: '',
         serviceCharge: 150,
-        rating: 4.8,
         location: 'Dhaka, Bangladesh',
         logo: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&q=80&w=150',
         discountBadge: '',
@@ -809,6 +810,26 @@ export const LabFormModal: React.FC<LabModalProps> = ({
 
   if (!isOpen) return null;
 
+  const handleLogoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert(lang === 'bn' ? 'লোগোর ফাইলের সাইজ ৫MB এর কম হতে হবে।' : 'Logo file size must be less than 5MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const result = ev.target?.result as string;
+      if (result) {
+        setFormData(prev => ({ ...prev, logo: result }));
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name?.trim()) return;
@@ -817,7 +838,6 @@ export const LabFormModal: React.FC<LabModalProps> = ({
       id: editingLab ? editingLab.id : `lab_${Date.now()}`,
       name: formData.name.trim(),
       serviceCharge: Number(formData.serviceCharge) || 0,
-      rating: Number(formData.rating) || 4.8,
       location: formData.location || 'Dhaka, Bangladesh',
       logo: formData.logo || '',
       discountBadge: formData.discountBadge?.trim() || undefined,
@@ -839,25 +859,45 @@ export const LabFormModal: React.FC<LabModalProps> = ({
               {editingLab ? t.adminEditLab : t.adminAddNewLab}
             </h2>
           </div>
-          <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg">
+          <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer">
             <X size={18} />
           </button>
         </div>
 
+        {/* Hidden file input for logo upload */}
+        <input 
+          type="file" 
+          ref={logoFileInputRef}
+          onChange={handleLogoFileUpload}
+          accept="image/png,image/jpeg,image/webp,image/svg+xml" 
+          className="hidden" 
+        />
+
         <form onSubmit={handleSubmit} className="space-y-4 pt-4 text-xs">
           {/* Live Logo Preview Box */}
-          <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-3.5">
-            <LabLogo 
-              name={formData.name || 'Lab'} 
-              logo={formData.logo} 
-              size="md" 
-              accentColor={formData.accentColor} 
-            />
-            <div className="flex-1 min-w-0">
-              <span className="text-[10px] uppercase font-extrabold text-slate-400 tracking-wider block">লোগো প্রিভিউ</span>
-              <p className="font-bold text-slate-900 text-sm truncate">{formData.name || 'Center Name'}</p>
-              <span className="text-[11px] text-slate-500 block truncate">{formData.location || 'Dhaka, Bangladesh'}</span>
+          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-3.5">
+            <div className="flex items-center gap-3.5 min-w-0">
+              <LabLogo 
+                name={formData.name || 'Lab'} 
+                logo={formData.logo} 
+                size="md" 
+                accentColor={formData.accentColor} 
+              />
+              <div className="min-w-0">
+                <span className="text-[10px] uppercase font-extrabold text-slate-400 tracking-wider block">লোগো লাইভ প্রিভিউ</span>
+                <p className="font-bold text-slate-900 text-sm truncate">{formData.name || 'Center Name'}</p>
+                <span className="text-[11px] text-slate-500 block truncate">{formData.location || 'Dhaka, Bangladesh'}</span>
+              </div>
             </div>
+
+            <button
+              type="button"
+              onClick={() => logoFileInputRef.current?.click()}
+              className="px-3 py-2 bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200 rounded-xl font-bold text-xs flex items-center gap-1.5 shrink-0 transition-colors cursor-pointer"
+            >
+              <Upload size={13} />
+              <span>{lang === 'bn' ? 'পরিবর্তন করুন' : 'Change'}</span>
+            </button>
           </div>
 
           <div>
@@ -872,7 +912,7 @@ export const LabFormModal: React.FC<LabModalProps> = ({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block font-bold text-slate-700 mb-1">Home Service Charge (৳) *</label>
               <input 
@@ -885,27 +925,25 @@ export const LabFormModal: React.FC<LabModalProps> = ({
               />
             </div>
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Rating (1.0 - 5.0)</label>
-              <input 
-                type="number" 
-                step="0.1" 
-                min="1" 
-                max="5"
-                value={formData.rating || 4.8} 
-                onChange={(e) => setFormData({ ...formData, rating: Number(e.target.value) })}
-                className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none text-xs"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
               <label className="block font-bold text-slate-700 mb-1">Discount Badge (Optional)</label>
               <input 
                 type="text" 
                 value={formData.discountBadge || ''} 
                 onChange={(e) => setFormData({ ...formData, discountBadge: e.target.value })}
                 placeholder="e.g. ১০% ছাড় / 10% OFF" 
+                className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none text-xs"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Location / Branches</label>
+              <input 
+                type="text" 
+                value={formData.location || ''} 
+                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                placeholder="e.g. Dhanmondi, Shantinagar, Uttara, Dhaka" 
                 className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none text-xs"
               />
             </div>
@@ -921,26 +959,48 @@ export const LabFormModal: React.FC<LabModalProps> = ({
             </div>
           </div>
 
-          <div>
-            <label className="block font-bold text-slate-700 mb-1">Location / Branches</label>
-            <input 
-              type="text" 
-              value={formData.location || ''} 
-              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              placeholder="e.g. Dhanmondi, Shantinagar, Uttara, Dhaka" 
-              className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none text-xs"
-            />
-          </div>
+          {/* Logo URL & Computer Upload Box */}
+          <div className="p-3.5 bg-slate-50/90 rounded-xl border border-slate-200/90 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <label className="block font-bold text-slate-800 text-xs">
+                {lang === 'bn' ? 'ডায়াগনস্টিক সেন্টারের লোগো (Logo)' : 'Center Logo Image'}
+              </label>
+              {formData.logo && (
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, logo: '' })}
+                  className="text-[11px] text-red-600 hover:text-red-700 font-bold flex items-center gap-1 cursor-pointer"
+                >
+                  <Trash2 size={12} /> {lang === 'bn' ? 'লোগো মুছুন' : 'Remove'}
+                </button>
+              )}
+            </div>
 
-          <div>
-            <label className="block font-bold text-slate-700 mb-1">Logo URL or SVG Data URI</label>
-            <input 
-              type="text" 
-              value={formData.logo || ''} 
-              onChange={(e) => setFormData({ ...formData, logo: e.target.value })}
-              placeholder="https://... or data:image/svg+xml;..." 
-              className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none text-xs font-mono"
-            />
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="relative flex-1">
+                <input 
+                  type="text" 
+                  value={formData.logo || ''} 
+                  onChange={(e) => setFormData({ ...formData, logo: e.target.value })}
+                  placeholder={lang === 'bn' ? 'লোগো URL পেস্ট করুন (https://...)' : 'Paste logo URL (https://...)'} 
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none text-xs font-mono bg-white"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => logoFileInputRef.current?.click()}
+                className="px-3.5 py-2 bg-primary hover:bg-sky-600 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shrink-0 shadow-xs transition-colors cursor-pointer"
+              >
+                <Upload size={14} />
+                <span>{lang === 'bn' ? 'কম্পিউটার থেকে আপলোড' : 'Upload from PC'}</span>
+              </button>
+            </div>
+
+            <p className="text-[10px] text-slate-500 leading-relaxed">
+              {lang === 'bn' 
+                ? '💡 ছবির সরাসরি লিংক (URL) দিতে পারেন অথবা "কম্পিউটার থেকে আপলোড" বাটনে ক্লিক করে ডিভাইস থেকে লোগো নির্বাচন করুন (PNG, JPG, SVG, WebP)।' 
+                : '💡 You can paste a direct logo URL or click "Upload from PC" to select an image from your device (PNG, JPG, SVG, WebP).'}
+            </p>
           </div>
 
           {/* Hide / Unhide Option */}
@@ -1403,43 +1463,53 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
           </div>
 
           {/* Bill Calculation Summary: 1. Subtotal -> 2. Discount Savings -> 3. Tube & Accessories -> 4. Home Collection Fee -> 5. Total */}
-          <div className="p-4 bg-slate-900 text-white rounded-xl space-y-2">
-            {order.subtotal !== undefined && (
-              <div className="flex justify-between items-center text-xs text-slate-300 border-b border-slate-800 pb-1.5">
-                <span>{lang === 'bn' ? 'মোট টেস্টের মূল্য (Tests Subtotal):' : 'Tests Subtotal:'}</span>
-                <span className="text-white font-bold">৳ {order.subtotal}</span>
+          {(() => {
+            const accFee = order.accessoriesFee !== undefined ? order.accessoriesFee : calculateAccessoriesFee(order.testNames.length);
+            const resolvedCollectionFee = resolveOrderCollectionFee(order, lang, order.subtotal, accFee);
+            const totalBill = order.totalCost && order.totalCost > 0 
+              ? order.totalCost 
+              : ((order.subtotal || 0) + accFee + resolvedCollectionFee);
+
+            return (
+              <div className="p-4 bg-slate-900 text-white rounded-xl space-y-2">
+                {order.subtotal !== undefined && (
+                  <div className="flex justify-between items-center text-xs text-slate-300 border-b border-slate-800 pb-1.5">
+                    <span>{lang === 'bn' ? 'মোট টেস্টের মূল্য (Tests Subtotal):' : 'Tests Subtotal:'}</span>
+                    <span className="text-white font-bold">৳ {order.subtotal}</span>
+                  </div>
+                )}
+                {(order.totalDiscount ?? 0) > 0 && (
+                  <div className="flex justify-between items-center text-xs text-emerald-400 border-b border-slate-800 pb-1.5 font-bold">
+                    <span>{lang === 'bn' ? 'মোট ডিসকাউন্ট / সাশ্রয়:' : 'Total Discount Savings:'}</span>
+                    <span>- ৳ {order.totalDiscount}</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center text-xs text-slate-300 border-b border-slate-800 pb-1.5">
+                  <span>{lang === 'bn' ? 'টিউব, নিডল ও এক্সেসরিজ ফি:' : 'Tube, Needle & Accessories Fee:'}</span>
+                  <span className="text-white font-bold">
+                    ৳ {accFee}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-xs text-slate-300 border-b border-slate-800 pb-1.5">
+                  <span>{lang === 'bn' ? 'হোম স্যাম্পল কালেকশন ফি:' : 'Home Sample Collection Fee:'}</span>
+                  <span className={resolvedCollectionFee === 0 ? 'text-emerald-400 font-bold' : 'text-white font-bold'}>
+                    {resolvedCollectionFee === 0 ? (lang === 'bn' ? '৳ ০ (ফ্রি / Free)' : '৳ 0 (FREE)') : `৳ ${resolvedCollectionFee}`}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center pt-0.5">
+                  <div>
+                    <span className="text-[10px] text-slate-400 uppercase font-bold block">
+                      {lang === 'bn' ? 'সর্বমোট প্রদেয় বিল' : 'Total Payable Amount'}
+                    </span>
+                    <span className="text-xs text-slate-400">
+                      {order.paymentMethod ? `Payment: ${order.paymentMethod.toUpperCase()}` : 'Cash on Sample Collection'}
+                    </span>
+                  </div>
+                  <span className="text-2xl font-black text-emerald-400">৳ {totalBill}</span>
+                </div>
               </div>
-            )}
-            {(order.totalDiscount ?? 0) > 0 && (
-              <div className="flex justify-between items-center text-xs text-emerald-400 border-b border-slate-800 pb-1.5 font-bold">
-                <span>{lang === 'bn' ? 'মোট ডিসকাউন্ট / সাশ্রয়:' : 'Total Discount Savings:'}</span>
-                <span>- ৳ {order.totalDiscount}</span>
-              </div>
-            )}
-            <div className="flex justify-between items-center text-xs text-slate-300 border-b border-slate-800 pb-1.5">
-              <span>{lang === 'bn' ? 'টিউব, নিডল ও এক্সেসরিজ ফি:' : 'Tube, Needle & Accessories Fee:'}</span>
-              <span className="text-white font-bold">
-                ৳ {order.accessoriesFee !== undefined ? order.accessoriesFee : calculateAccessoriesFee(order.testNames.length)}
-              </span>
-            </div>
-            <div className="flex justify-between items-center text-xs text-slate-300 border-b border-slate-800 pb-1.5">
-              <span>{lang === 'bn' ? 'হোম স্যাম্পল কালেকশন ফি:' : 'Home Sample Collection Fee:'}</span>
-              <span className={(order.collectionFee ?? order.serviceCharge ?? 0) === 0 ? 'text-emerald-400 font-bold' : 'text-white font-bold'}>
-                {(order.collectionFee ?? order.serviceCharge ?? 0) === 0 ? (lang === 'bn' ? '৳ ০ (ফ্রি / Free)' : '৳ 0 (FREE)') : `৳ ${order.collectionFee ?? order.serviceCharge}`}
-              </span>
-            </div>
-            <div className="flex justify-between items-center pt-0.5">
-              <div>
-                <span className="text-[10px] text-slate-400 uppercase font-bold block">
-                  {lang === 'bn' ? 'সর্বমোট প্রদেয় বিল' : 'Total Payable Amount'}
-                </span>
-                <span className="text-xs text-slate-400">
-                  {order.paymentMethod ? `Payment: ${order.paymentMethod.toUpperCase()}` : 'Cash on Sample Collection'}
-                </span>
-              </div>
-              <span className="text-2xl font-black text-emerald-400">৳ {order.totalCost}</span>
-            </div>
-          </div>
+            );
+          })()}
 
           {/* Quick Status & Assigned Staff */}
           <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 print:hidden">
