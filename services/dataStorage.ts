@@ -832,7 +832,8 @@ export const getStoredSiteSettings = (lang: Language): SiteSettings => {
           howItWorksSteps: (Array.isArray(parsed.howItWorksSteps) && parsed.howItWorksSteps.length > 0) ? parsed.howItWorksSteps : defaultSettings.howItWorksSteps,
           aboutStats: (Array.isArray(parsed.aboutStats) && parsed.aboutStats.length > 0) ? parsed.aboutStats : defaultSettings.aboutStats,
           services: (Array.isArray(parsed.services) && parsed.services.length > 0) ? parsed.services : defaultSettings.services,
-          nursingServices: (Array.isArray(parsed.nursingServices) && parsed.nursingServices.length > 0) ? parsed.nursingServices : defaultSettings.nursingServices
+          nursingServices: (Array.isArray(parsed.nursingServices) && parsed.nursingServices.length > 0) ? parsed.nursingServices : defaultSettings.nursingServices,
+          homeSectionsOrder: (Array.isArray(parsed.homeSectionsOrder) && parsed.homeSectionsOrder.length > 0) ? parsed.homeSectionsOrder : defaultSettings.homeSectionsOrder
         };
       }
     }
@@ -859,6 +860,7 @@ export const saveStoredSiteSettings = (lang: Language, settings: SiteSettings): 
       logoIcon: settings.logoIcon,
       faviconUrl: settings.faviconUrl || otherSettings.faviconUrl,
       heroImages: settings.heroImages || otherSettings.heroImages,
+      homeSectionsOrder: settings.homeSectionsOrder || otherSettings.homeSectionsOrder,
       showPartnerSection: settings.showPartnerSection !== undefined ? settings.showPartnerSection : otherSettings.showPartnerSection,
       showPopularTestsSection: settings.showPopularTestsSection !== undefined ? settings.showPopularTestsSection : otherSettings.showPopularTestsSection,
       showPackagesSection: settings.showPackagesSection !== undefined ? settings.showPackagesSection : otherSettings.showPackagesSection,

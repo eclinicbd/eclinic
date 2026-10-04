@@ -30,6 +30,7 @@ import {
   ExternalLink,
   ArrowUp,
   ArrowDown,
+  ArrowUpDown,
   ChevronRight,
   Sliders,
   CheckCircle2,
@@ -49,7 +50,8 @@ import {
   DEFAULT_HERO_IMAGES, 
   PRESET_GALLERY_IMAGES,
   DEFAULT_NURSING_SERVICES_BN,
-  DEFAULT_NURSING_SERVICES_EN
+  DEFAULT_NURSING_SERVICES_EN,
+  DEFAULT_HOME_SECTIONS_ORDER
 } from '../../constants';
 import { printOrDownloadInvoice } from '../../services/invoiceService';
 
@@ -315,6 +317,40 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
     setFormData({ ...defaults });
     onUpdateSiteSettings(defaults);
     showToast(t.adminResetSuccess);
+  };
+
+  // ==========================================
+  // HOMEPAGE SECTIONS REORDERING HANDLERS
+  // ==========================================
+  const getNormalizedSectionsOrder = (): string[] => {
+    const current = (formData.homeSectionsOrder && Array.isArray(formData.homeSectionsOrder) && formData.homeSectionsOrder.length > 0)
+      ? [...formData.homeSectionsOrder]
+      : [...DEFAULT_HOME_SECTIONS_ORDER];
+
+    DEFAULT_HOME_SECTIONS_ORDER.forEach(secKey => {
+      if (!current.includes(secKey)) current.push(secKey);
+    });
+    return current;
+  };
+
+  const handleMoveSection = (sectionKey: string, direction: 'up' | 'down') => {
+    const currentOrder = getNormalizedSectionsOrder();
+    const index = currentOrder.indexOf(sectionKey);
+    if (index === -1) return;
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= currentOrder.length) return;
+
+    const updated = [...currentOrder];
+    const temp = updated[index];
+    updated[index] = updated[targetIndex];
+    updated[targetIndex] = temp;
+
+    setFormData(prev => ({ ...prev, homeSectionsOrder: updated }));
+    showToast(
+      lang === 'bn' 
+        ? `সেকশনটি সফলভাবে ${direction === 'up' ? 'উপরে' : 'নিচে'} নেওয়া হয়েছে` 
+        : `Section moved ${direction} successfully`
+    );
   };
 
   // ==========================================
@@ -597,7 +633,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
           }`}
         >
           <Sliders size={15} className={activeSubTab === 'sections' ? 'text-primary' : ''} />
-          <span>{lang === 'bn' ? 'হোমপেজ সেকশন টেক্সট' : 'Homepage Section Texts'}</span>
+          <span>{lang === 'bn' ? 'হোমপেজ সেকশন অ্যাক্টিভেশন ও পজিশন' : 'Homepage Section Activation & Order'}</span>
         </button>
 
         <button
@@ -1126,684 +1162,1017 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
       {/* ========================================================================= */}
       {/* 2. HOMEPAGE SECTIONS TEXT MANAGEMENT                                      */}
       {/* ========================================================================= */}
-      {activeSubTab === 'sections' && (
-        <div className="space-y-6">
-          {/* Quick Header Info Banner */}
-          <div className="p-4 bg-sky-50 rounded-2xl border border-sky-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div>
-              <h4 className="text-xs font-bold text-sky-900 flex items-center gap-1.5">
-                <Sliders size={15} className="text-primary" />
-                <span>{lang === 'bn' ? 'হোমপেজ সেকশন অ্যাক্টিভেশন ও টেক্সট কন্ট্রোল' : 'Homepage Section Activation & Content Management'}</span>
-              </h4>
-              <p className="text-[11px] text-sky-700/80 mt-0.5">
-                {lang === 'bn' 
-                  ? 'প্রতিটি সেকশনের ডানদিকের সুইচ থেকে সেকশনটি হোমপেজে চালু (Active) বা বন্ধ (Inactive) করতে পারবেন।' 
-                  : 'Toggle any section Active/Inactive to control its public visibility on the homepage.'}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 text-[11px] font-bold rounded-lg flex items-center gap-1 border border-emerald-200">
-                <Eye size={12} />
-                <span>
-                  {[
-                    formData.showPartnerSection !== false,
-                    formData.showPopularTestsSection !== false,
-                    formData.showPackagesSection !== false,
-                    formData.showNursingSection !== false,
-                    formData.showHowItWorksSection !== false,
-                    formData.showServicesSection !== false
-                  ].filter(Boolean).length} / 6 {lang === 'bn' ? 'সক্রিয়' : 'Active'}
-                </span>
-              </span>
-            </div>
-          </div>
+      {activeSubTab === 'sections' && (() => {
+        const sectionsOrder = getNormalizedSectionsOrder();
+        const activeCount = [
+          formData.showPartnerSection !== false,
+          formData.showPopularTestsSection !== false,
+          formData.showPackagesSection !== false,
+          formData.showNursingSection !== false,
+          formData.showHowItWorksSection !== false,
+          formData.showServicesSection !== false
+        ].filter(Boolean).length;
 
-          {/* Section 1: Partner Diagnostic Centers (Home Page Section 2) */}
-          <div className={`bg-white p-6 rounded-2xl border shadow-sm space-y-4 transition-all ${
-            formData.showPartnerSection !== false ? 'border-slate-200' : 'border-slate-200/60 bg-slate-50/50 opacity-90'
-          }`}>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className={`p-2 rounded-xl ${formData.showPartnerSection !== false ? 'bg-sky-100 text-primary' : 'bg-slate-200 text-slate-500'}`}>
-                  <Building2 size={18} />
-                </div>
+        const sectionNamesMap: Record<string, { bn: string; en: string; shortBn: string; shortEn: string }> = {
+          partner: { bn: 'অনুমোদিত ডায়াগনস্টিক পার্টনার্স', en: 'Diagnostic Lab Partners', shortBn: 'পার্টনার ল্যাবস', shortEn: 'Lab Partners' },
+          popularTests: { bn: 'জনপ্রিয় ডায়াগনস্টিক টেস্টসমূহ', en: 'Popular Diagnostic Tests', shortBn: 'জনপ্রিয় টেস্ট', shortEn: 'Popular Tests' },
+          packages: { bn: 'হেলথ প্যাকেজ স্লাইডার', en: 'Essential Health Packages', shortBn: 'হেলথ প্যাকেজ', shortEn: 'Health Packages' },
+          nursing: { bn: 'হোম নার্সিং ও পেশেন্ট কেয়ার', en: 'Home Nursing & Care', shortBn: 'নার্সিং কেয়ার', shortEn: 'Nursing Care' },
+          services: { bn: 'স্বাস্থ্যসেবা সমূহ হেডার', en: 'Healthcare Services Header', shortBn: 'স্বাস্থ্যসেবা', shortEn: 'Healthcare Services' },
+          howItWorks: { bn: 'কিভাবে সেবা নিবেন (৩টি ধাপ)', en: 'How It Works (3 Steps)', shortBn: 'কাজের ধাপসমূহ', shortEn: 'How It Works' }
+        };
+
+        return (
+          <div className="space-y-6">
+            {/* Quick Header Info Banner with Live Reorder Sequence Visualizer */}
+            <div className="p-4 sm:p-5 bg-gradient-to-r from-sky-50 via-indigo-50/40 to-sky-50 rounded-2xl border border-sky-200/80 space-y-3 shadow-2xs">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div>
-                  <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                    <span>{lang === 'bn' ? '১. অনুমোদিত ডায়াগনস্টিক পার্টনার্স সেকশন' : '1. Diagnostic Lab Partners Section'}</span>
-                  </h3>
-                  <span className="text-[11px] text-slate-400 font-medium">Home Page Section 2</span>
+                  <h4 className="text-sm font-bold text-sky-950 flex items-center gap-2">
+                    <Sliders size={17} className="text-primary" />
+                    <span>{lang === 'bn' ? 'হোমপেজ সেকশন অ্যাক্টিভেশন ও আপ/ডাউন পজিশন কন্ট্রোল' : 'Homepage Section Activation & Up/Down Position Reordering'}</span>
+                  </h4>
+                  <p className="text-xs text-sky-800/80 mt-1">
+                    {lang === 'bn' 
+                      ? 'প্রতিটি সেকশনের ডানদিকের ▲ (উপরে / Up) ও ▼ (নিচে / Down) বাটন ক্লিক করে সেকশনটির পজিশন পরিবর্তন করতে পারবেন এবং সুইচ দিয়ে চালু বা বন্ধ করতে পারবেন।' 
+                      : 'Click ▲ (Up) or ▼ (Down) to reorder any section on the homepage, or toggle Active/Inactive to control visibility.'}
+                  </p>
                 </div>
-              </div>
-
-              {/* Active / Inactive Toggle Button */}
-              <button
-                type="button"
-                onClick={() => setFormData(prev => ({ ...prev, showPartnerSection: !(prev.showPartnerSection !== false) }))}
-                className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border cursor-pointer self-start sm:self-auto ${
-                  formData.showPartnerSection !== false 
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100 shadow-xs' 
-                    : 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200'
-                }`}
-                title={formData.showPartnerSection !== false ? 'Click to set Inactive (Hide from Homepage)' : 'Click to set Active (Show on Homepage)'}
-              >
-                {formData.showPartnerSection !== false ? (
-                  <>
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <Eye size={13} className="text-emerald-600" />
-                    <span>{lang === 'bn' ? 'Active (সক্রিয়)' : 'Active (Visible)'}</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="w-2 h-2 rounded-full bg-slate-400"></span>
-                    <EyeOff size={13} className="text-slate-400" />
-                    <span>{lang === 'bn' ? 'Inactive (লুকানো)' : 'Inactive (Hidden)'}</span>
-                  </>
-                )}
-              </button>
-            </div>
-
-            {formData.showPartnerSection === false && (
-              <div className="px-3.5 py-2 bg-amber-50 border border-amber-200/80 rounded-xl text-[11px] text-amber-800 flex items-center gap-2">
-                <EyeOff size={14} className="text-amber-600 shrink-0" />
-                <span>{lang === 'bn' ? '⚠️ এই সেকশনটি বর্তমানে হোমপেজে লুকানো রয়েছে (Inactive)। আপনি চাইলে টেক্সট এডিট করে রাখতে পারেন।' : '⚠️ This section is currently hidden from homepage (Inactive).'}</span>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {lang === 'bn' ? 'ব্যাজ টেক্সট (Badge)' : 'Badge Text'}
-                </label>
-                <input
-                  type="text"
-                  value={formData.partnerBadge || ''}
-                  onChange={e => setFormData({ ...formData, partnerBadge: e.target.value })}
-                  placeholder="e.g. বিশ্বস্ত ডায়াগনস্টিক নেটওয়ার্ক"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none bg-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {lang === 'bn' ? 'সেকশন শিরোনাম (Title)' : 'Section Heading'}
-                </label>
-                <input
-                  type="text"
-                  value={formData.partnerTitle || ''}
-                  onChange={e => setFormData({ ...formData, partnerTitle: e.target.value })}
-                  placeholder="e.g. আমাদের অনুমোদিত ডায়াগনস্টিক পার্টনার্স"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-primary outline-none bg-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {lang === 'bn' ? 'সেকশন বিবরণ (Description)' : 'Subtitle / Description'}
-                </label>
-                <input
-                  type="text"
-                  value={formData.partnerDesc || ''}
-                  onChange={e => setFormData({ ...formData, partnerDesc: e.target.value })}
-                  placeholder="e.g. ল্যাব সিলেক্ট করে সহজেই টেস্ট ও ক্যাটালগ ব্রাউজ করুন"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none bg-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {lang === 'bn' ? 'বাটন টেক্সট (View All Button)' : 'View All Button Text'}
-                </label>
-                <input
-                  type="text"
-                  value={formData.partnerBtnText || ''}
-                  onChange={e => setFormData({ ...formData, partnerBtnText: e.target.value })}
-                  placeholder="e.g. সব দেখুন"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none bg-white"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Section 2: Popular Diagnostic Tests (Home Page Section 3) */}
-          <div className={`bg-white p-6 rounded-2xl border shadow-sm space-y-4 transition-all ${
-            formData.showPopularTestsSection !== false ? 'border-slate-200' : 'border-slate-200/60 bg-slate-50/50 opacity-90'
-          }`}>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className={`p-2 rounded-xl ${formData.showPopularTestsSection !== false ? 'bg-sky-100 text-primary' : 'bg-slate-200 text-slate-500'}`}>
-                  <FlaskConical size={18} />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                    <span>{lang === 'bn' ? '২. জনপ্রিয় ডায়াগনস্টিক টেস্ট সেকশন' : '2. Popular Diagnostic Tests Section'}</span>
-                  </h3>
-                  <span className="text-[11px] text-slate-400 font-medium">Home Page Section 3</span>
-                </div>
-              </div>
-
-              {/* Active / Inactive Toggle Button */}
-              <button
-                type="button"
-                onClick={() => setFormData(prev => ({ ...prev, showPopularTestsSection: !(prev.showPopularTestsSection !== false) }))}
-                className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border cursor-pointer self-start sm:self-auto ${
-                  formData.showPopularTestsSection !== false 
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100 shadow-xs' 
-                    : 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200'
-                }`}
-                title={formData.showPopularTestsSection !== false ? 'Click to set Inactive (Hide from Homepage)' : 'Click to set Active (Show on Homepage)'}
-              >
-                {formData.showPopularTestsSection !== false ? (
-                  <>
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <Eye size={13} className="text-emerald-600" />
-                    <span>{lang === 'bn' ? 'Active (সক্রিয়)' : 'Active (Visible)'}</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="w-2 h-2 rounded-full bg-slate-400"></span>
-                    <EyeOff size={13} className="text-slate-400" />
-                    <span>{lang === 'bn' ? 'Inactive (লুকানো)' : 'Inactive (Hidden)'}</span>
-                  </>
-                )}
-              </button>
-            </div>
-
-            {formData.showPopularTestsSection === false && (
-              <div className="px-3.5 py-2 bg-amber-50 border border-amber-200/80 rounded-xl text-[11px] text-amber-800 flex items-center gap-2">
-                <EyeOff size={14} className="text-amber-600 shrink-0" />
-                <span>{lang === 'bn' ? '⚠️ এই সেকশনটি বর্তমানে হোমপেজে লুকানো রয়েছে (Inactive)। আপনি চাইলে টেক্সট এডিট করে রাখতে পারেন।' : '⚠️ This section is currently hidden from homepage (Inactive).'}</span>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {lang === 'bn' ? 'ব্যাজ টেক্সট (Badge)' : 'Badge Text'}
-                </label>
-                <input
-                  type="text"
-                  value={formData.popularTestsBadge || ''}
-                  onChange={e => setFormData({ ...formData, popularTestsBadge: e.target.value })}
-                  placeholder="e.g. জনপ্রিয় স্বাস্থ্য পরীক্ষা"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none bg-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {lang === 'bn' ? 'সেকশন শিরোনাম (Title)' : 'Section Heading'}
-                </label>
-                <input
-                  type="text"
-                  value={formData.popularTestsTitle || ''}
-                  onChange={e => setFormData({ ...formData, popularTestsTitle: e.target.value })}
-                  placeholder="e.g. জনপ্রিয় ডায়াগনস্টিক টেস্টসমূহ"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-primary outline-none bg-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {lang === 'bn' ? 'সেকশন বিবরণ (Description)' : 'Subtitle / Description'}
-                </label>
-                <input
-                  type="text"
-                  value={formData.popularTestsDesc || ''}
-                  onChange={e => setFormData({ ...formData, popularTestsDesc: e.target.value })}
-                  placeholder="e.g. একক টেস্টের বিস্তারিত তালিকা। অর্ডার করুন এবং দক্ষ স্যাম্পল কালেক্টরকে বাসায় ডাকুন।"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none bg-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {lang === 'bn' ? 'বাটন টেক্সট (Browse Tests Button)' : 'Button Text'}
-                </label>
-                <input
-                  type="text"
-                  value={formData.popularTestsBtnText || ''}
-                  onChange={e => setFormData({ ...formData, popularTestsBtnText: e.target.value })}
-                  placeholder="e.g. সকল টেস্ট দেখুন (১০০+)"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none bg-white"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Section 3: Essential Health Packages (Home Page Section 4) */}
-          <div className={`bg-white p-6 rounded-2xl border shadow-sm space-y-4 transition-all ${
-            formData.showPackagesSection !== false ? 'border-slate-200' : 'border-slate-200/60 bg-slate-50/50 opacity-90'
-          }`}>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className={`p-2 rounded-xl ${formData.showPackagesSection !== false ? 'bg-amber-100 text-amber-600' : 'bg-slate-200 text-slate-500'}`}>
-                  <Tag size={18} />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                    <span>{lang === 'bn' ? '৩. হেলথ প্যাকেজ স্লাইডার সেকশন' : '3. Essential Health Packages Section'}</span>
-                  </h3>
-                  <span className="text-[11px] text-slate-400 font-medium">Home Page Section 4</span>
-                </div>
-              </div>
-
-              {/* Active / Inactive Toggle Button */}
-              <button
-                type="button"
-                onClick={() => setFormData(prev => ({ ...prev, showPackagesSection: !(prev.showPackagesSection !== false) }))}
-                className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border cursor-pointer self-start sm:self-auto ${
-                  formData.showPackagesSection !== false 
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100 shadow-xs' 
-                    : 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200'
-                }`}
-                title={formData.showPackagesSection !== false ? 'Click to set Inactive (Hide from Homepage)' : 'Click to set Active (Show on Homepage)'}
-              >
-                {formData.showPackagesSection !== false ? (
-                  <>
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <Eye size={13} className="text-emerald-600" />
-                    <span>{lang === 'bn' ? 'Active (সক্রিয়)' : 'Active (Visible)'}</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="w-2 h-2 rounded-full bg-slate-400"></span>
-                    <EyeOff size={13} className="text-slate-400" />
-                    <span>{lang === 'bn' ? 'Inactive (লুকানো)' : 'Inactive (Hidden)'}</span>
-                  </>
-                )}
-              </button>
-            </div>
-
-            {formData.showPackagesSection === false && (
-              <div className="px-3.5 py-2 bg-amber-50 border border-amber-200/80 rounded-xl text-[11px] text-amber-800 flex items-center gap-2">
-                <EyeOff size={14} className="text-amber-600 shrink-0" />
-                <span>{lang === 'bn' ? '⚠️ এই সেকশনটি বর্তমানে হোমপেজে লুকানো রয়েছে (Inactive)। আপনি চাইলে টেক্সট এডিট করে রাখতে পারেন।' : '⚠️ This section is currently hidden from homepage (Inactive).'}</span>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {lang === 'bn' ? 'ব্যাজ টেক্সট (Badge)' : 'Badge Text'}
-                </label>
-                <input
-                  type="text"
-                  value={formData.packagesBadge || ''}
-                  onChange={e => setFormData({ ...formData, packagesBadge: e.target.value })}
-                  placeholder="e.g. বিশেষ সাশ্রয়ী প্যাকেজ"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none bg-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {lang === 'bn' ? 'সেকশন শিরোনাম (Title)' : 'Section Heading'}
-                </label>
-                <input
-                  type="text"
-                  value={formData.packagesTitle || ''}
-                  onChange={e => setFormData({ ...formData, packagesTitle: e.target.value })}
-                  placeholder="e.g. এসেনশিয়াল হোম ডায়াগনস্টিক প্যাকেজ"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-primary outline-none bg-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {lang === 'bn' ? 'সেকশন বিবরণ (Description)' : 'Subtitle / Description'}
-                </label>
-                <input
-                  type="text"
-                  value={formData.packagesDesc || ''}
-                  onChange={e => setFormData({ ...formData, packagesDesc: e.target.value })}
-                  placeholder="e.g. একক টেস্টের চেয়ে প্যাকেজে খরচ বাঁচান ৪০% পর্যন্ত..."
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none bg-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {lang === 'bn' ? 'বাটন টেক্সট (View All Packages)' : 'View All Button Text'}
-                </label>
-                <input
-                  type="text"
-                  value={formData.packagesBtnText || ''}
-                  onChange={e => setFormData({ ...formData, packagesBtnText: e.target.value })}
-                  placeholder="e.g. সকল প্যাকেজ দেখুন"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none bg-white"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Section 4: Nursing & Care Services Section Texts (Home Page (Below Packages)) */}
-          <div className={`bg-white p-6 rounded-2xl border shadow-sm space-y-4 transition-all ${
-            formData.showNursingSection !== false ? 'border-rose-100' : 'border-slate-200/60 bg-slate-50/50 opacity-90'
-          }`}>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-rose-50 pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className={`p-2 rounded-xl ${formData.showNursingSection !== false ? 'bg-rose-100 text-rose-500' : 'bg-slate-200 text-slate-500'}`}>
-                  <HeartPulse size={18} />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                    <span>{lang === 'bn' ? '৪. হোম নার্সিং ও পেশেন্ট কেয়ার সেকশন' : '4. Home Nursing & Patient Care Section'}</span>
-                  </h3>
-                  <span className="text-[11px] text-rose-600 font-bold bg-rose-50 px-2 py-0.5 rounded-md">Home Page (Below Packages)</span>
-                </div>
-              </div>
-
-              {/* Active / Inactive Toggle Button */}
-              <button
-                type="button"
-                onClick={() => setFormData(prev => ({ ...prev, showNursingSection: !(prev.showNursingSection !== false) }))}
-                className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border cursor-pointer self-start sm:self-auto ${
-                  formData.showNursingSection !== false 
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100 shadow-xs' 
-                    : 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200'
-                }`}
-                title={formData.showNursingSection !== false ? 'Click to set Inactive (Hide from Homepage)' : 'Click to set Active (Show on Homepage)'}
-              >
-                {formData.showNursingSection !== false ? (
-                  <>
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <Eye size={13} className="text-emerald-600" />
-                    <span>{lang === 'bn' ? 'Active (সক্রিয়)' : 'Active (Visible)'}</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="w-2 h-2 rounded-full bg-slate-400"></span>
-                    <EyeOff size={13} className="text-slate-400" />
-                    <span>{lang === 'bn' ? 'Inactive (লুকানো)' : 'Inactive (Hidden)'}</span>
-                  </>
-                )}
-              </button>
-            </div>
-
-            {formData.showNursingSection === false && (
-              <div className="px-3.5 py-2 bg-amber-50 border border-amber-200/80 rounded-xl text-[11px] text-amber-800 flex items-center gap-2">
-                <EyeOff size={14} className="text-amber-600 shrink-0" />
-                <span>{lang === 'bn' ? '⚠️ এই সেকশনটি বর্তমানে হোমপেজে লুকানো রয়েছে (Inactive)। আপনি চাইলে টেক্সট এডিট করে রাখতে পারেন।' : '⚠️ This section is currently hidden from homepage (Inactive).'}</span>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {lang === 'bn' ? 'ব্যাজ টেক্সট (Badge)' : 'Badge Text'}
-                </label>
-                <input
-                  type="text"
-                  value={formData.nursingBadge || ''}
-                  onChange={e => setFormData({ ...formData, nursingBadge: e.target.value })}
-                  placeholder="e.g. বিশেষ হোম কেয়ার সেবা"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-rose-400 outline-none bg-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {lang === 'bn' ? 'সেকশন শিরোনাম (Title)' : 'Section Heading'}
-                </label>
-                <input
-                  type="text"
-                  value={formData.nursingTitle || ''}
-                  onChange={e => setFormData({ ...formData, nursingTitle: e.target.value })}
-                  placeholder="e.g. নার্সিং ও পেশেন্ট কেয়ার সার্ভিস"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-rose-400 outline-none bg-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {lang === 'bn' ? 'সেকশন বিবরণ (Description)' : 'Subtitle / Description'}
-                </label>
-                <input
-                  type="text"
-                  value={formData.nursingDesc || ''}
-                  onChange={e => setFormData({ ...formData, nursingDesc: e.target.value })}
-                  placeholder="e.g. রেজিস্টার্ড নার্স ও দক্ষ ব্রাদারদের সরাসরি আপনার বাসায়..."
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-rose-400 outline-none bg-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {lang === 'bn' ? '২৪/৭ নার্সিং হটলাইন নম্বর' : '24/7 Nursing Helpline Number'}
-                </label>
-                <input
-                  type="text"
-                  value={formData.nursingHotline || ''}
-                  onChange={e => setFormData({ ...formData, nursingHotline: e.target.value })}
-                  placeholder="e.g. 09612-889900"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-rose-400 outline-none bg-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {lang === 'bn' ? 'নার্সিং হোয়াটসঅ্যাপ নম্বর' : 'Nursing WhatsApp Number'}
-                </label>
-                <input
-                  type="text"
-                  value={formData.nursingWhatsApp || ''}
-                  onChange={e => setFormData({ ...formData, nursingWhatsApp: e.target.value })}
-                  placeholder="e.g. 01700-112233"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-rose-400 outline-none bg-white"
-                />
-              </div>
-
-              <div className="flex items-end">
-                <Button 
-                  onClick={() => setActiveSubTab('nursing')}
-                  variant="outline" 
-                  className="w-full text-xs font-bold text-rose-600 border-rose-200 hover:bg-rose-50"
-                >
-                  <HeartPulse size={14} className="mr-1.5 inline" /> {lang === 'bn' ? 'নার্সিং সার্ভিসসমূহ ম্যানেজ করুন' : 'Manage Nursing Services List'} &rarr;
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Section 5: How It Works in 3 Steps (Home Page Steps) */}
-          <div className={`bg-white p-6 rounded-2xl border shadow-sm space-y-4 transition-all ${
-            formData.showHowItWorksSection !== false ? 'border-slate-200' : 'border-slate-200/60 bg-slate-50/50 opacity-90'
-          }`}>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className={`p-2 rounded-xl ${formData.showHowItWorksSection !== false ? 'bg-sky-100 text-primary' : 'bg-slate-200 text-slate-500'}`}>
-                  <ShieldCheck size={18} />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                    <span>{lang === 'bn' ? '৫. কিভাবে সেবা নিবেন (৩টি ধাপ)' : '5. How It Works (3 Steps Workflow)'}</span>
-                  </h3>
-                  <span className="text-[11px] text-slate-400 font-medium">Home Page Steps</span>
-                </div>
-              </div>
-
-              {/* Active / Inactive Toggle Button */}
-              <button
-                type="button"
-                onClick={() => setFormData(prev => ({ ...prev, showHowItWorksSection: !(prev.showHowItWorksSection !== false) }))}
-                className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border cursor-pointer self-start sm:self-auto ${
-                  formData.showHowItWorksSection !== false 
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100 shadow-xs' 
-                    : 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200'
-                }`}
-                title={formData.showHowItWorksSection !== false ? 'Click to set Inactive (Hide from Homepage)' : 'Click to set Active (Show on Homepage)'}
-              >
-                {formData.showHowItWorksSection !== false ? (
-                  <>
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <Eye size={13} className="text-emerald-600" />
-                    <span>{lang === 'bn' ? 'Active (সক্রিয়)' : 'Active (Visible)'}</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="w-2 h-2 rounded-full bg-slate-400"></span>
-                    <EyeOff size={13} className="text-slate-400" />
-                    <span>{lang === 'bn' ? 'Inactive (লুকানো)' : 'Inactive (Hidden)'}</span>
-                  </>
-                )}
-              </button>
-            </div>
-
-            {formData.showHowItWorksSection === false && (
-              <div className="px-3.5 py-2 bg-amber-50 border border-amber-200/80 rounded-xl text-[11px] text-amber-800 flex items-center gap-2">
-                <EyeOff size={14} className="text-amber-600 shrink-0" />
-                <span>{lang === 'bn' ? '⚠️ এই সেকশনটি বর্তমানে হোমপেজে লুকানো রয়েছে (Inactive)। আপনি চাইলে ধাপগুলো এডিট করে রাখতে পারেন।' : '⚠️ This section is currently hidden from homepage (Inactive).'}</span>
-              </div>
-            )}
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                {lang === 'bn' ? 'সেকশন মূল শিরোনাম' : 'Section Main Heading'}
-              </label>
-              <input
-                type="text"
-                value={formData.howItWorksTitle || ''}
-                onChange={e => setFormData({ ...formData, howItWorksTitle: e.target.value })}
-                placeholder="e.g. সহজ ৩টি ধাপে ঘরে বসে ল্যাব টেস্ট"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-primary outline-none bg-white"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-              {howItWorksSteps.map((step, idx) => (
-                <div key={idx} className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2.5">
-                  <span className="px-2 py-0.5 rounded-md bg-primary text-white text-[10px] font-bold">
-                    Step {idx + 1}
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-1.5 bg-emerald-100 text-emerald-900 text-xs font-bold rounded-xl flex items-center gap-1.5 border border-emerald-300 shadow-2xs">
+                    <Eye size={13} className="text-emerald-700" />
+                    <span>
+                      {activeCount} / 6 {lang === 'bn' ? 'সক্রিয়' : 'Active'}
+                    </span>
                   </span>
-
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                      {lang === 'bn' ? 'ধাপের শিরোনাম (Title)' : 'Step Title'}
-                    </label>
-                    <input
-                      type="text"
-                      value={step.title}
-                      onChange={e => handleUpdateStep(idx, 'title', e.target.value)}
-                      className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold bg-white"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                      {lang === 'bn' ? 'ধাপের বিবরণ (Description)' : 'Step Description'}
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={step.desc}
-                      onChange={e => handleUpdateStep(idx, 'desc', e.target.value)}
-                      className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs bg-white leading-relaxed"
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Section 6: Healthcare Services Header (Home Page Services Header) */}
-          <div className={`bg-white p-6 rounded-2xl border shadow-sm space-y-4 transition-all ${
-            formData.showServicesSection !== false ? 'border-slate-200' : 'border-slate-200/60 bg-slate-50/50 opacity-90'
-          }`}>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className={`p-2 rounded-xl ${formData.showServicesSection !== false ? 'bg-sky-100 text-primary' : 'bg-slate-200 text-slate-500'}`}>
-                  <Layers size={18} />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                    <span>{lang === 'bn' ? '৬. স্বাস্থ্যসেবা সমূহ সেকশন হেডার' : '6. Healthcare Services Section Header'}</span>
-                  </h3>
-                  <span className="text-[11px] text-slate-400 font-medium">Home Page Services Header</span>
                 </div>
               </div>
 
-              {/* Active / Inactive Toggle Button */}
-              <button
-                type="button"
-                onClick={() => setFormData(prev => ({ ...prev, showServicesSection: !(prev.showServicesSection !== false) }))}
-                className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border cursor-pointer self-start sm:self-auto ${
-                  formData.showServicesSection !== false 
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100 shadow-xs' 
-                    : 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200'
-                }`}
-                title={formData.showServicesSection !== false ? 'Click to set Inactive (Hide from Homepage)' : 'Click to set Active (Show on Homepage)'}
-              >
-                {formData.showServicesSection !== false ? (
-                  <>
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <Eye size={13} className="text-emerald-600" />
-                    <span>{lang === 'bn' ? 'Active (সক্রিয়)' : 'Active (Visible)'}</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="w-2 h-2 rounded-full bg-slate-400"></span>
-                    <EyeOff size={13} className="text-slate-400" />
-                    <span>{lang === 'bn' ? 'Inactive (লুকানো)' : 'Inactive (Hidden)'}</span>
-                  </>
-                )}
-              </button>
-            </div>
+              {/* Order Flow Chips */}
+              <div className="pt-2 border-t border-sky-200/60 flex items-center flex-wrap gap-1.5 text-xs">
+                <span className="text-sky-900 font-bold flex items-center gap-1 shrink-0 mr-1">
+                  <ArrowUpDown size={13} className="text-primary" />
+                  <span>{lang === 'bn' ? 'হোমপেজ বর্তমান ক্রম:' : 'Current Homepage Order:'}</span>
+                </span>
+                {sectionsOrder.map((secKey, i) => {
+                  const info = sectionNamesMap[secKey] || { bn: secKey, en: secKey, shortBn: secKey, shortEn: secKey };
+                  const isSecActive = 
+                    secKey === 'partner' ? formData.showPartnerSection !== false :
+                    secKey === 'popularTests' ? formData.showPopularTestsSection !== false :
+                    secKey === 'packages' ? formData.showPackagesSection !== false :
+                    secKey === 'nursing' ? formData.showNursingSection !== false :
+                    secKey === 'services' ? formData.showServicesSection !== false :
+                    formData.showHowItWorksSection !== false;
 
-            {formData.showServicesSection === false && (
-              <div className="px-3.5 py-2 bg-amber-50 border border-amber-200/80 rounded-xl text-[11px] text-amber-800 flex items-center gap-2">
-                <EyeOff size={14} className="text-amber-600 shrink-0" />
-                <span>{lang === 'bn' ? '⚠️ এই সেকশনটি বর্তমানে হোমপেজে লুকানো রয়েছে (Inactive)। আপনি চাইলে টেক্সট এডিট করে রাখতে পারেন।' : '⚠️ This section is currently hidden from homepage (Inactive).'}</span>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {lang === 'bn' ? 'ব্যাজ টেক্সট (Badge)' : 'Badge Text'}
-                </label>
-                <input
-                  type="text"
-                  value={formData.servicesBadge || ''}
-                  onChange={e => setFormData({ ...formData, servicesBadge: e.target.value })}
-                  placeholder="e.g. আমাদের সেবাসমূহ"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none bg-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {lang === 'bn' ? 'সেকশন শিরোনাম (Title)' : 'Section Heading'}
-                </label>
-                <input
-                  type="text"
-                  value={formData.servicesTitle || ''}
-                  onChange={e => setFormData({ ...formData, servicesTitle: e.target.value })}
-                  placeholder="e.g. আমাদের স্বাস্থ্যসেবা সমূহ"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-primary outline-none bg-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {lang === 'bn' ? 'সেকশন বিবরণ (Description)' : 'Subtitle / Description'}
-                </label>
-                <input
-                  type="text"
-                  value={formData.servicesDesc || ''}
-                  onChange={e => setFormData({ ...formData, servicesDesc: e.target.value })}
-                  placeholder="e.g. ঘরে বসেই উন্নত মানের ডায়াগনস্টিক ও ল্যাব টেস্ট সেবা নিশ্চিত করতে..."
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none bg-white"
-                />
+                  return (
+                    <div 
+                      key={secKey} 
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-semibold transition-all ${
+                        isSecActive
+                          ? 'bg-white text-slate-800 border-sky-200 shadow-2xs'
+                          : 'bg-slate-100/90 text-slate-400 border-slate-200 line-through opacity-70'
+                      }`}
+                    >
+                      <span className="w-4 h-4 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center">
+                        {i + 1}
+                      </span>
+                      <span>{lang === 'bn' ? info.shortBn : info.shortEn}</span>
+                      {i < sectionsOrder.length - 1 && (
+                        <span className="text-slate-300 font-bold ml-0.5">&rarr;</span>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
-          </div>
 
-          <div className="pt-2 flex justify-end">
-            <Button onClick={() => handleSaveAll()} className="px-6 py-2.5 text-xs font-bold shadow-md shadow-sky-100">
-              <Check size={14} className="mr-1.5 inline" /> {lang === 'bn' ? 'সকল সেকশন সেটিংস ও টেক্সট সেভ করুন' : 'Save Section Settings & Texts'}
-            </Button>
+            {/* Render Sections in Dynamic Order */}
+            <div className="space-y-5">
+              {sectionsOrder.map((sectionKey, idx) => {
+                const isFirst = idx === 0;
+                const isLast = idx === sectionsOrder.length - 1;
+
+                if (sectionKey === 'partner') {
+                  const isActive = formData.showPartnerSection !== false;
+                  return (
+                    <div 
+                      key="partner"
+                      className={`bg-white p-6 rounded-2xl border shadow-sm space-y-4 transition-all ${
+                        isActive ? 'border-slate-200' : 'border-slate-200/60 bg-slate-50/50 opacity-90'
+                      }`}
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                        <div className="flex items-center gap-2.5">
+                          <span className="px-2.5 py-1 bg-slate-900 text-white text-xs font-black rounded-lg shadow-2xs">
+                            #{idx + 1}
+                          </span>
+                          <div className={`p-2 rounded-xl ${isActive ? 'bg-sky-100 text-primary' : 'bg-slate-200 text-slate-500'}`}>
+                            <Building2 size={18} />
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                              <span>{lang === 'bn' ? 'অনুমোদিত ডায়াগনস্টিক পার্টনার্স সেকশন' : 'Diagnostic Lab Partners Section'}</span>
+                            </h3>
+                            <span className="text-[11px] text-slate-400 font-medium">Home Page Section &bull; Pos #{idx + 1}</span>
+                          </div>
+                        </div>
+
+                        {/* Controls: Up / Down Reorder & Active Toggle */}
+                        <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
+                          {/* Up Button */}
+                          <button
+                            type="button"
+                            disabled={isFirst}
+                            onClick={() => handleMoveSection('partner', 'up')}
+                            className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                              isFirst 
+                                ? 'opacity-30 cursor-not-allowed bg-slate-100 text-slate-400 border-slate-200' 
+                                : 'bg-white text-slate-700 border-slate-200 hover:bg-sky-50 hover:text-primary hover:border-sky-300 shadow-2xs cursor-pointer'
+                            }`}
+                            title={lang === 'bn' ? 'সেকশনটি ১ ধাপ উপরে নিন' : 'Move section up'}
+                          >
+                            <ArrowUp size={14} className={isFirst ? '' : 'text-primary'} />
+                            <span className="hidden sm:inline">{lang === 'bn' ? 'উপরে' : 'Up'}</span>
+                          </button>
+
+                          {/* Down Button */}
+                          <button
+                            type="button"
+                            disabled={isLast}
+                            onClick={() => handleMoveSection('partner', 'down')}
+                            className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                              isLast 
+                                ? 'opacity-30 cursor-not-allowed bg-slate-100 text-slate-400 border-slate-200' 
+                                : 'bg-white text-slate-700 border-slate-200 hover:bg-sky-50 hover:text-primary hover:border-sky-300 shadow-2xs cursor-pointer'
+                            }`}
+                            title={lang === 'bn' ? 'সেকশনটি ১ ধাপ নিচে নিন' : 'Move section down'}
+                          >
+                            <ArrowDown size={14} className={isLast ? '' : 'text-primary'} />
+                            <span className="hidden sm:inline">{lang === 'bn' ? 'নিচে' : 'Down'}</span>
+                          </button>
+
+                          {/* Active / Inactive Toggle Button */}
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, showPartnerSection: !(prev.showPartnerSection !== false) }))}
+                            className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border cursor-pointer ${
+                              isActive 
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100 shadow-xs' 
+                                : 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200'
+                            }`}
+                            title={isActive ? 'Click to set Inactive (Hide from Homepage)' : 'Click to set Active (Show on Homepage)'}
+                          >
+                            {isActive ? (
+                              <>
+                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                <Eye size={13} className="text-emerald-600" />
+                                <span>{lang === 'bn' ? 'Active (সক্রিয়)' : 'Active (Visible)'}</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+                                <EyeOff size={13} className="text-slate-400" />
+                                <span>{lang === 'bn' ? 'Inactive (লুকানো)' : 'Inactive (Hidden)'}</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {!isActive && (
+                        <div className="px-3.5 py-2 bg-amber-50 border border-amber-200/80 rounded-xl text-[11px] text-amber-800 flex items-center gap-2">
+                          <EyeOff size={14} className="text-amber-600 shrink-0" />
+                          <span>{lang === 'bn' ? '⚠️ এই সেকশনটি বর্তমানে হোমপেজে লুকানো রয়েছে (Inactive)। আপনি চাইলে টেক্সট এডিট করে রাখতে পারেন।' : '⚠️ This section is currently hidden from homepage (Inactive).'}</span>
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">
+                            {lang === 'bn' ? 'ব্যাজ টেক্সট (Badge)' : 'Badge Text'}
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.partnerBadge || ''}
+                            onChange={e => setFormData({ ...formData, partnerBadge: e.target.value })}
+                            placeholder="e.g. বিশ্বস্ত ডায়াগনস্টিক নেটওয়ার্ক"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none bg-white"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">
+                            {lang === 'bn' ? 'সেকশন শিরোনাম (Title)' : 'Section Heading'}
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.partnerTitle || ''}
+                            onChange={e => setFormData({ ...formData, partnerTitle: e.target.value })}
+                            placeholder="e.g. আমাদের অনুমোদিত ডায়াগনস্টিক পার্টনার্স"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-primary outline-none bg-white"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">
+                            {lang === 'bn' ? 'সেকশন বিবরণ (Description)' : 'Subtitle / Description'}
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.partnerDesc || ''}
+                            onChange={e => setFormData({ ...formData, partnerDesc: e.target.value })}
+                            placeholder="e.g. ল্যাব সিলেক্ট করে সহজেই টেস্ট ও ক্যাটালগ ব্রাউজ করুন"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none bg-white"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">
+                            {lang === 'bn' ? 'বাটন টেক্সট (View All Button)' : 'View All Button Text'}
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.partnerBtnText || ''}
+                            onChange={e => setFormData({ ...formData, partnerBtnText: e.target.value })}
+                            placeholder="e.g. সব দেখুন"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none bg-white"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (sectionKey === 'popularTests') {
+                  const isActive = formData.showPopularTestsSection !== false;
+                  return (
+                    <div 
+                      key="popularTests"
+                      className={`bg-white p-6 rounded-2xl border shadow-sm space-y-4 transition-all ${
+                        isActive ? 'border-slate-200' : 'border-slate-200/60 bg-slate-50/50 opacity-90'
+                      }`}
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                        <div className="flex items-center gap-2.5">
+                          <span className="px-2.5 py-1 bg-slate-900 text-white text-xs font-black rounded-lg shadow-2xs">
+                            #{idx + 1}
+                          </span>
+                          <div className={`p-2 rounded-xl ${isActive ? 'bg-sky-100 text-primary' : 'bg-slate-200 text-slate-500'}`}>
+                            <FlaskConical size={18} />
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                              <span>{lang === 'bn' ? 'জনপ্রিয় ডায়াগনস্টিক টেস্ট সেকশন' : 'Popular Diagnostic Tests Section'}</span>
+                            </h3>
+                            <span className="text-[11px] text-slate-400 font-medium">Home Page Section &bull; Pos #{idx + 1}</span>
+                          </div>
+                        </div>
+
+                        {/* Controls: Up / Down Reorder & Active Toggle */}
+                        <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
+                          {/* Up Button */}
+                          <button
+                            type="button"
+                            disabled={isFirst}
+                            onClick={() => handleMoveSection('popularTests', 'up')}
+                            className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                              isFirst 
+                                ? 'opacity-30 cursor-not-allowed bg-slate-100 text-slate-400 border-slate-200' 
+                                : 'bg-white text-slate-700 border-slate-200 hover:bg-sky-50 hover:text-primary hover:border-sky-300 shadow-2xs cursor-pointer'
+                            }`}
+                            title={lang === 'bn' ? 'সেকশনটি ১ ধাপ উপরে নিন' : 'Move section up'}
+                          >
+                            <ArrowUp size={14} className={isFirst ? '' : 'text-primary'} />
+                            <span className="hidden sm:inline">{lang === 'bn' ? 'উপরে' : 'Up'}</span>
+                          </button>
+
+                          {/* Down Button */}
+                          <button
+                            type="button"
+                            disabled={isLast}
+                            onClick={() => handleMoveSection('popularTests', 'down')}
+                            className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                              isLast 
+                                ? 'opacity-30 cursor-not-allowed bg-slate-100 text-slate-400 border-slate-200' 
+                                : 'bg-white text-slate-700 border-slate-200 hover:bg-sky-50 hover:text-primary hover:border-sky-300 shadow-2xs cursor-pointer'
+                            }`}
+                            title={lang === 'bn' ? 'সেকশনটি ১ ধাপ নিচে নিন' : 'Move section down'}
+                          >
+                            <ArrowDown size={14} className={isLast ? '' : 'text-primary'} />
+                            <span className="hidden sm:inline">{lang === 'bn' ? 'নিচে' : 'Down'}</span>
+                          </button>
+
+                          {/* Active / Inactive Toggle Button */}
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, showPopularTestsSection: !(prev.showPopularTestsSection !== false) }))}
+                            className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border cursor-pointer ${
+                              isActive 
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100 shadow-xs' 
+                                : 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200'
+                            }`}
+                            title={isActive ? 'Click to set Inactive (Hide from Homepage)' : 'Click to set Active (Show on Homepage)'}
+                          >
+                            {isActive ? (
+                              <>
+                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                <Eye size={13} className="text-emerald-600" />
+                                <span>{lang === 'bn' ? 'Active (সক্রিয়)' : 'Active (Visible)'}</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+                                <EyeOff size={13} className="text-slate-400" />
+                                <span>{lang === 'bn' ? 'Inactive (লুকানো)' : 'Inactive (Hidden)'}</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {!isActive && (
+                        <div className="px-3.5 py-2 bg-amber-50 border border-amber-200/80 rounded-xl text-[11px] text-amber-800 flex items-center gap-2">
+                          <EyeOff size={14} className="text-amber-600 shrink-0" />
+                          <span>{lang === 'bn' ? '⚠️ এই সেকশনটি বর্তমানে হোমপেজে লুকানো রয়েছে (Inactive)। আপনি চাইলে টেক্সট এডিট করে রাখতে পারেন।' : '⚠️ This section is currently hidden from homepage (Inactive).'}</span>
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">
+                            {lang === 'bn' ? 'ব্যাজ টেক্সট (Badge)' : 'Badge Text'}
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.popularTestsBadge || ''}
+                            onChange={e => setFormData({ ...formData, popularTestsBadge: e.target.value })}
+                            placeholder="e.g. জনপ্রিয় স্বাস্থ্য পরীক্ষা"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none bg-white"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">
+                            {lang === 'bn' ? 'সেকশন শিরোনাম (Title)' : 'Section Heading'}
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.popularTestsTitle || ''}
+                            onChange={e => setFormData({ ...formData, popularTestsTitle: e.target.value })}
+                            placeholder="e.g. জনপ্রিয় ডায়াগনস্টিক টেস্টসমূহ"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-primary outline-none bg-white"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">
+                            {lang === 'bn' ? 'সেকশন বিবরণ (Description)' : 'Subtitle / Description'}
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.popularTestsDesc || ''}
+                            onChange={e => setFormData({ ...formData, popularTestsDesc: e.target.value })}
+                            placeholder="e.g. একক টেস্টের বিস্তারিত তালিকা। অর্ডার করুন এবং দক্ষ স্যাম্পল কালেক্টরকে বাসায় ডাকুন।"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none bg-white"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">
+                            {lang === 'bn' ? 'বাটন টেক্সট (Browse Tests Button)' : 'Button Text'}
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.popularTestsBtnText || ''}
+                            onChange={e => setFormData({ ...formData, popularTestsBtnText: e.target.value })}
+                            placeholder="e.g. সকল টেস্ট দেখুন (১০০+)"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none bg-white"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (sectionKey === 'packages') {
+                  const isActive = formData.showPackagesSection !== false;
+                  return (
+                    <div 
+                      key="packages"
+                      className={`bg-white p-6 rounded-2xl border shadow-sm space-y-4 transition-all ${
+                        isActive ? 'border-slate-200' : 'border-slate-200/60 bg-slate-50/50 opacity-90'
+                      }`}
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                        <div className="flex items-center gap-2.5">
+                          <span className="px-2.5 py-1 bg-slate-900 text-white text-xs font-black rounded-lg shadow-2xs">
+                            #{idx + 1}
+                          </span>
+                          <div className={`p-2 rounded-xl ${isActive ? 'bg-amber-100 text-amber-600' : 'bg-slate-200 text-slate-500'}`}>
+                            <Tag size={18} />
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                              <span>{lang === 'bn' ? 'হেলথ প্যাকেজ স্লাইডার সেকশন' : 'Essential Health Packages Section'}</span>
+                            </h3>
+                            <span className="text-[11px] text-slate-400 font-medium">Home Page Section &bull; Pos #{idx + 1}</span>
+                          </div>
+                        </div>
+
+                        {/* Controls: Up / Down Reorder & Active Toggle */}
+                        <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
+                          {/* Up Button */}
+                          <button
+                            type="button"
+                            disabled={isFirst}
+                            onClick={() => handleMoveSection('packages', 'up')}
+                            className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                              isFirst 
+                                ? 'opacity-30 cursor-not-allowed bg-slate-100 text-slate-400 border-slate-200' 
+                                : 'bg-white text-slate-700 border-slate-200 hover:bg-sky-50 hover:text-primary hover:border-sky-300 shadow-2xs cursor-pointer'
+                            }`}
+                            title={lang === 'bn' ? 'সেকশনটি ১ ধাপ উপরে নিন' : 'Move section up'}
+                          >
+                            <ArrowUp size={14} className={isFirst ? '' : 'text-primary'} />
+                            <span className="hidden sm:inline">{lang === 'bn' ? 'উপরে' : 'Up'}</span>
+                          </button>
+
+                          {/* Down Button */}
+                          <button
+                            type="button"
+                            disabled={isLast}
+                            onClick={() => handleMoveSection('packages', 'down')}
+                            className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                              isLast 
+                                ? 'opacity-30 cursor-not-allowed bg-slate-100 text-slate-400 border-slate-200' 
+                                : 'bg-white text-slate-700 border-slate-200 hover:bg-sky-50 hover:text-primary hover:border-sky-300 shadow-2xs cursor-pointer'
+                            }`}
+                            title={lang === 'bn' ? 'সেকশনটি ১ ধাপ নিচে নিন' : 'Move section down'}
+                          >
+                            <ArrowDown size={14} className={isLast ? '' : 'text-primary'} />
+                            <span className="hidden sm:inline">{lang === 'bn' ? 'নিচে' : 'Down'}</span>
+                          </button>
+
+                          {/* Active / Inactive Toggle Button */}
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, showPackagesSection: !(prev.showPackagesSection !== false) }))}
+                            className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border cursor-pointer ${
+                              isActive 
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100 shadow-xs' 
+                                : 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200'
+                            }`}
+                            title={isActive ? 'Click to set Inactive (Hide from Homepage)' : 'Click to set Active (Show on Homepage)'}
+                          >
+                            {isActive ? (
+                              <>
+                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                <Eye size={13} className="text-emerald-600" />
+                                <span>{lang === 'bn' ? 'Active (সক্রিয়)' : 'Active (Visible)'}</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+                                <EyeOff size={13} className="text-slate-400" />
+                                <span>{lang === 'bn' ? 'Inactive (লুকানো)' : 'Inactive (Hidden)'}</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {!isActive && (
+                        <div className="px-3.5 py-2 bg-amber-50 border border-amber-200/80 rounded-xl text-[11px] text-amber-800 flex items-center gap-2">
+                          <EyeOff size={14} className="text-amber-600 shrink-0" />
+                          <span>{lang === 'bn' ? '⚠️ এই সেকশনটি বর্তমানে হোমপেজে লুকানো রয়েছে (Inactive)। আপনি চাইলে টেক্সট এডিট করে রাখতে পারেন।' : '⚠️ This section is currently hidden from homepage (Inactive).'}</span>
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">
+                            {lang === 'bn' ? 'ব্যাজ টেক্সট (Badge)' : 'Badge Text'}
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.packagesBadge || ''}
+                            onChange={e => setFormData({ ...formData, packagesBadge: e.target.value })}
+                            placeholder="e.g. বিশেষ সাশ্রয়ী প্যাকেজ"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none bg-white"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">
+                            {lang === 'bn' ? 'সেকশন শিরোনাম (Title)' : 'Section Heading'}
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.packagesTitle || ''}
+                            onChange={e => setFormData({ ...formData, packagesTitle: e.target.value })}
+                            placeholder="e.g. এসেনশিয়াল হোম ডায়াগনস্টিক প্যাকেজ"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-primary outline-none bg-white"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">
+                            {lang === 'bn' ? 'সেকশন বিবরণ (Description)' : 'Subtitle / Description'}
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.packagesDesc || ''}
+                            onChange={e => setFormData({ ...formData, packagesDesc: e.target.value })}
+                            placeholder="e.g. একক টেস্টের চেয়ে প্যাকেজে খরচ বাঁচান ৪০% পর্যন্ত..."
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none bg-white"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">
+                            {lang === 'bn' ? 'বাটন টেক্সট (View All Packages)' : 'View All Button Text'}
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.packagesBtnText || ''}
+                            onChange={e => setFormData({ ...formData, packagesBtnText: e.target.value })}
+                            placeholder="e.g. সকল প্যাকেজ দেখুন"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none bg-white"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (sectionKey === 'nursing') {
+                  const isActive = formData.showNursingSection !== false;
+                  return (
+                    <div 
+                      key="nursing"
+                      className={`bg-white p-6 rounded-2xl border shadow-sm space-y-4 transition-all ${
+                        isActive ? 'border-rose-100' : 'border-slate-200/60 bg-slate-50/50 opacity-90'
+                      }`}
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-rose-50 pb-3">
+                        <div className="flex items-center gap-2.5">
+                          <span className="px-2.5 py-1 bg-slate-900 text-white text-xs font-black rounded-lg shadow-2xs">
+                            #{idx + 1}
+                          </span>
+                          <div className={`p-2 rounded-xl ${isActive ? 'bg-rose-100 text-rose-500' : 'bg-slate-200 text-slate-500'}`}>
+                            <HeartPulse size={18} />
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                              <span>{lang === 'bn' ? 'হোম নার্সিং ও পেশেন্ট কেয়ার সেকশন' : 'Home Nursing & Patient Care Section'}</span>
+                            </h3>
+                            <span className="text-[11px] text-rose-600 font-bold bg-rose-50 px-2 py-0.5 rounded-md">Pos #{idx + 1}</span>
+                          </div>
+                        </div>
+
+                        {/* Controls: Up / Down Reorder & Active Toggle */}
+                        <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
+                          {/* Up Button */}
+                          <button
+                            type="button"
+                            disabled={isFirst}
+                            onClick={() => handleMoveSection('nursing', 'up')}
+                            className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                              isFirst 
+                                ? 'opacity-30 cursor-not-allowed bg-slate-100 text-slate-400 border-slate-200' 
+                                : 'bg-white text-slate-700 border-slate-200 hover:bg-sky-50 hover:text-primary hover:border-sky-300 shadow-2xs cursor-pointer'
+                            }`}
+                            title={lang === 'bn' ? 'সেকশনটি ১ ধাপ উপরে নিন' : 'Move section up'}
+                          >
+                            <ArrowUp size={14} className={isFirst ? '' : 'text-primary'} />
+                            <span className="hidden sm:inline">{lang === 'bn' ? 'উপরে' : 'Up'}</span>
+                          </button>
+
+                          {/* Down Button */}
+                          <button
+                            type="button"
+                            disabled={isLast}
+                            onClick={() => handleMoveSection('nursing', 'down')}
+                            className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                              isLast 
+                                ? 'opacity-30 cursor-not-allowed bg-slate-100 text-slate-400 border-slate-200' 
+                                : 'bg-white text-slate-700 border-slate-200 hover:bg-sky-50 hover:text-primary hover:border-sky-300 shadow-2xs cursor-pointer'
+                            }`}
+                            title={lang === 'bn' ? 'সেকশনটি ১ ধাপ নিচে নিন' : 'Move section down'}
+                          >
+                            <ArrowDown size={14} className={isLast ? '' : 'text-primary'} />
+                            <span className="hidden sm:inline">{lang === 'bn' ? 'নিচে' : 'Down'}</span>
+                          </button>
+
+                          {/* Active / Inactive Toggle Button */}
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, showNursingSection: !(prev.showNursingSection !== false) }))}
+                            className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border cursor-pointer ${
+                              isActive 
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100 shadow-xs' 
+                                : 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200'
+                            }`}
+                            title={isActive ? 'Click to set Inactive (Hide from Homepage)' : 'Click to set Active (Show on Homepage)'}
+                          >
+                            {isActive ? (
+                              <>
+                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                <Eye size={13} className="text-emerald-600" />
+                                <span>{lang === 'bn' ? 'Active (সক্রিয়)' : 'Active (Visible)'}</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+                                <EyeOff size={13} className="text-slate-400" />
+                                <span>{lang === 'bn' ? 'Inactive (লুকানো)' : 'Inactive (Hidden)'}</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {!isActive && (
+                        <div className="px-3.5 py-2 bg-amber-50 border border-amber-200/80 rounded-xl text-[11px] text-amber-800 flex items-center gap-2">
+                          <EyeOff size={14} className="text-amber-600 shrink-0" />
+                          <span>{lang === 'bn' ? '⚠️ এই সেকশনটি বর্তমানে হোমপেজে লুকানো রয়েছে (Inactive)। আপনি চাইলে টেক্সট এডিট করে রাখতে পারেন।' : '⚠️ This section is currently hidden from homepage (Inactive).'}</span>
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">
+                            {lang === 'bn' ? 'ব্যাজ টেক্সট (Badge)' : 'Badge Text'}
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.nursingBadge || ''}
+                            onChange={e => setFormData({ ...formData, nursingBadge: e.target.value })}
+                            placeholder="e.g. বিশেষ হোম কেয়ার সেবা"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-rose-400 outline-none bg-white"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">
+                            {lang === 'bn' ? 'সেকশন শিরোনাম (Title)' : 'Section Heading'}
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.nursingTitle || ''}
+                            onChange={e => setFormData({ ...formData, nursingTitle: e.target.value })}
+                            placeholder="e.g. নার্সিং ও পেশেন্ট কেয়ার সার্ভিস"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-rose-400 outline-none bg-white"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">
+                            {lang === 'bn' ? 'সেকশন বিবরণ (Description)' : 'Subtitle / Description'}
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.nursingDesc || ''}
+                            onChange={e => setFormData({ ...formData, nursingDesc: e.target.value })}
+                            placeholder="e.g. রেজিস্টার্ড নার্স ও দক্ষ ব্রাদারদের সরাসরি আপনার বাসায়..."
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-rose-400 outline-none bg-white"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">
+                            {lang === 'bn' ? '২৪/৭ নার্সিং হটলাইন নম্বর' : '24/7 Nursing Helpline Number'}
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.nursingHotline || ''}
+                            onChange={e => setFormData({ ...formData, nursingHotline: e.target.value })}
+                            placeholder="e.g. 09612-889900"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-rose-400 outline-none bg-white"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">
+                            {lang === 'bn' ? 'নার্সিং হোয়াটসঅ্যাপ নম্বর' : 'Nursing WhatsApp Number'}
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.nursingWhatsApp || ''}
+                            onChange={e => setFormData({ ...formData, nursingWhatsApp: e.target.value })}
+                            placeholder="e.g. 01700-112233"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-rose-400 outline-none bg-white"
+                          />
+                        </div>
+
+                        <div className="flex items-end">
+                          <Button 
+                            onClick={() => setActiveSubTab('nursing')}
+                            variant="outline" 
+                            className="w-full text-xs font-bold text-rose-600 border-rose-200 hover:bg-rose-50"
+                          >
+                            <HeartPulse size={14} className="mr-1.5 inline" /> {lang === 'bn' ? 'নার্সিং সার্ভিসসমূহ ম্যানেজ করুন' : 'Manage Nursing Services List'} &rarr;
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (sectionKey === 'howItWorks') {
+                  const isActive = formData.showHowItWorksSection !== false;
+                  return (
+                    <div 
+                      key="howItWorks"
+                      className={`bg-white p-6 rounded-2xl border shadow-sm space-y-4 transition-all ${
+                        isActive ? 'border-slate-200' : 'border-slate-200/60 bg-slate-50/50 opacity-90'
+                      }`}
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                        <div className="flex items-center gap-2.5">
+                          <span className="px-2.5 py-1 bg-slate-900 text-white text-xs font-black rounded-lg shadow-2xs">
+                            #{idx + 1}
+                          </span>
+                          <div className={`p-2 rounded-xl ${isActive ? 'bg-sky-100 text-primary' : 'bg-slate-200 text-slate-500'}`}>
+                            <ShieldCheck size={18} />
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                              <span>{lang === 'bn' ? 'কিভাবে সেবা নিবেন (৩টি ধাপ)' : 'How It Works (3 Steps Workflow)'}</span>
+                            </h3>
+                            <span className="text-[11px] text-slate-400 font-medium">Home Page Section &bull; Pos #{idx + 1}</span>
+                          </div>
+                        </div>
+
+                        {/* Controls: Up / Down Reorder & Active Toggle */}
+                        <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
+                          {/* Up Button */}
+                          <button
+                            type="button"
+                            disabled={isFirst}
+                            onClick={() => handleMoveSection('howItWorks', 'up')}
+                            className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                              isFirst 
+                                ? 'opacity-30 cursor-not-allowed bg-slate-100 text-slate-400 border-slate-200' 
+                                : 'bg-white text-slate-700 border-slate-200 hover:bg-sky-50 hover:text-primary hover:border-sky-300 shadow-2xs cursor-pointer'
+                            }`}
+                            title={lang === 'bn' ? 'সেকশনটি ১ ধাপ উপরে নিন' : 'Move section up'}
+                          >
+                            <ArrowUp size={14} className={isFirst ? '' : 'text-primary'} />
+                            <span className="hidden sm:inline">{lang === 'bn' ? 'উপরে' : 'Up'}</span>
+                          </button>
+
+                          {/* Down Button */}
+                          <button
+                            type="button"
+                            disabled={isLast}
+                            onClick={() => handleMoveSection('howItWorks', 'down')}
+                            className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                              isLast 
+                                ? 'opacity-30 cursor-not-allowed bg-slate-100 text-slate-400 border-slate-200' 
+                                : 'bg-white text-slate-700 border-slate-200 hover:bg-sky-50 hover:text-primary hover:border-sky-300 shadow-2xs cursor-pointer'
+                            }`}
+                            title={lang === 'bn' ? 'সেকশনটি ১ ধাপ নিচে নিন' : 'Move section down'}
+                          >
+                            <ArrowDown size={14} className={isLast ? '' : 'text-primary'} />
+                            <span className="hidden sm:inline">{lang === 'bn' ? 'নিচে' : 'Down'}</span>
+                          </button>
+
+                          {/* Active / Inactive Toggle Button */}
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, showHowItWorksSection: !(prev.showHowItWorksSection !== false) }))}
+                            className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border cursor-pointer ${
+                              isActive 
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100 shadow-xs' 
+                                : 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200'
+                            }`}
+                            title={isActive ? 'Click to set Inactive (Hide from Homepage)' : 'Click to set Active (Show on Homepage)'}
+                          >
+                            {isActive ? (
+                              <>
+                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                <Eye size={13} className="text-emerald-600" />
+                                <span>{lang === 'bn' ? 'Active (সক্রিয়)' : 'Active (Visible)'}</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+                                <EyeOff size={13} className="text-slate-400" />
+                                <span>{lang === 'bn' ? 'Inactive (লুকানো)' : 'Inactive (Hidden)'}</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {!isActive && (
+                        <div className="px-3.5 py-2 bg-amber-50 border border-amber-200/80 rounded-xl text-[11px] text-amber-800 flex items-center gap-2">
+                          <EyeOff size={14} className="text-amber-600 shrink-0" />
+                          <span>{lang === 'bn' ? '⚠️ এই সেকশনটি বর্তমানে হোমপেজে লুকানো রয়েছে (Inactive)। আপনি চাইলে ধাপগুলো এডিট করে রাখতে পারেন।' : '⚠️ This section is currently hidden from homepage (Inactive).'}</span>
+                        </div>
+                      )}
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          {lang === 'bn' ? 'সেকশন মূল শিরোনাম' : 'Section Main Heading'}
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.howItWorksTitle || ''}
+                          onChange={e => setFormData({ ...formData, howItWorksTitle: e.target.value })}
+                          placeholder="e.g. সহজ ৩টি ধাপে ঘরে বসে ল্যাব টেস্ট"
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-primary outline-none bg-white"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                        {howItWorksSteps.map((step, sIdx) => (
+                          <div key={sIdx} className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2.5">
+                            <span className="px-2 py-0.5 rounded-md bg-primary text-white text-[10px] font-bold">
+                              Step {sIdx + 1}
+                            </span>
+
+                            <div>
+                              <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                                {lang === 'bn' ? 'ধাপের শিরোনাম (Title)' : 'Step Title'}
+                              </label>
+                              <input
+                                type="text"
+                                value={step.title}
+                                onChange={e => handleUpdateStep(sIdx, 'title', e.target.value)}
+                                className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold bg-white"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                                {lang === 'bn' ? 'ধাপের বিবরণ (Description)' : 'Step Description'}
+                              </label>
+                              <textarea
+                                rows={2}
+                                value={step.desc}
+                                onChange={e => handleUpdateStep(sIdx, 'desc', e.target.value)}
+                                className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs bg-white leading-relaxed"
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (sectionKey === 'services') {
+                  const isActive = formData.showServicesSection !== false;
+                  return (
+                    <div 
+                      key="services"
+                      className={`bg-white p-6 rounded-2xl border shadow-sm space-y-4 transition-all ${
+                        isActive ? 'border-slate-200' : 'border-slate-200/60 bg-slate-50/50 opacity-90'
+                      }`}
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                        <div className="flex items-center gap-2.5">
+                          <span className="px-2.5 py-1 bg-slate-900 text-white text-xs font-black rounded-lg shadow-2xs">
+                            #{idx + 1}
+                          </span>
+                          <div className={`p-2 rounded-xl ${isActive ? 'bg-sky-100 text-primary' : 'bg-slate-200 text-slate-500'}`}>
+                            <Layers size={18} />
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                              <span>{lang === 'bn' ? 'স্বাস্থ্যসেবা সমূহ সেকশন হেডার' : 'Healthcare Services Section Header'}</span>
+                            </h3>
+                            <span className="text-[11px] text-slate-400 font-medium">Home Page Section &bull; Pos #{idx + 1}</span>
+                          </div>
+                        </div>
+
+                        {/* Controls: Up / Down Reorder & Active Toggle */}
+                        <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
+                          {/* Up Button */}
+                          <button
+                            type="button"
+                            disabled={isFirst}
+                            onClick={() => handleMoveSection('services', 'up')}
+                            className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                              isFirst 
+                                ? 'opacity-30 cursor-not-allowed bg-slate-100 text-slate-400 border-slate-200' 
+                                : 'bg-white text-slate-700 border-slate-200 hover:bg-sky-50 hover:text-primary hover:border-sky-300 shadow-2xs cursor-pointer'
+                            }`}
+                            title={lang === 'bn' ? 'সেকশনটি ১ ধাপ উপরে নিন' : 'Move section up'}
+                          >
+                            <ArrowUp size={14} className={isFirst ? '' : 'text-primary'} />
+                            <span className="hidden sm:inline">{lang === 'bn' ? 'উপরে' : 'Up'}</span>
+                          </button>
+
+                          {/* Down Button */}
+                          <button
+                            type="button"
+                            disabled={isLast}
+                            onClick={() => handleMoveSection('services', 'down')}
+                            className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                              isLast 
+                                ? 'opacity-30 cursor-not-allowed bg-slate-100 text-slate-400 border-slate-200' 
+                                : 'bg-white text-slate-700 border-slate-200 hover:bg-sky-50 hover:text-primary hover:border-sky-300 shadow-2xs cursor-pointer'
+                            }`}
+                            title={lang === 'bn' ? 'সেকশনটি ১ ধাপ নিচে নিন' : 'Move section down'}
+                          >
+                            <ArrowDown size={14} className={isLast ? '' : 'text-primary'} />
+                            <span className="hidden sm:inline">{lang === 'bn' ? 'নিচে' : 'Down'}</span>
+                          </button>
+
+                          {/* Active / Inactive Toggle Button */}
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, showServicesSection: !(prev.showServicesSection !== false) }))}
+                            className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border cursor-pointer ${
+                              isActive 
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100 shadow-xs' 
+                                : 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200'
+                            }`}
+                            title={isActive ? 'Click to set Inactive (Hide from Homepage)' : 'Click to set Active (Show on Homepage)'}
+                          >
+                            {isActive ? (
+                              <>
+                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                <Eye size={13} className="text-emerald-600" />
+                                <span>{lang === 'bn' ? 'Active (সক্রিয়)' : 'Active (Visible)'}</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+                                <EyeOff size={13} className="text-slate-400" />
+                                <span>{lang === 'bn' ? 'Inactive (লুকানো)' : 'Inactive (Hidden)'}</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {!isActive && (
+                        <div className="px-3.5 py-2 bg-amber-50 border border-amber-200/80 rounded-xl text-[11px] text-amber-800 flex items-center gap-2">
+                          <EyeOff size={14} className="text-amber-600 shrink-0" />
+                          <span>{lang === 'bn' ? '⚠️ এই সেকশনটি বর্তমানে হোমপেজে লুকানো রয়েছে (Inactive)। আপনি চাইলে টেক্সট এডিট করে রাখতে পারেন।' : '⚠️ This section is currently hidden from homepage (Inactive).'}</span>
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">
+                            {lang === 'bn' ? 'ব্যাজ টেক্সট (Badge)' : 'Badge Text'}
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.servicesBadge || ''}
+                            onChange={e => setFormData({ ...formData, servicesBadge: e.target.value })}
+                            placeholder="e.g. আমাদের সেবাসমূহ"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none bg-white"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">
+                            {lang === 'bn' ? 'সেকশন শিরোনাম (Title)' : 'Section Heading'}
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.servicesTitle || ''}
+                            onChange={e => setFormData({ ...formData, servicesTitle: e.target.value })}
+                            placeholder="e.g. আমাদের স্বাস্থ্যসেবা সমূহ"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-primary outline-none bg-white"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">
+                            {lang === 'bn' ? 'সেকশন বিবরণ (Description)' : 'Subtitle / Description'}
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.servicesDesc || ''}
+                            onChange={e => setFormData({ ...formData, servicesDesc: e.target.value })}
+                            placeholder="e.g. ঘরে বসেই উন্নত মানের ডায়াগনস্টিক ও ল্যাব টেস্ট সেবা নিশ্চিত করতে..."
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none bg-white"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
+                return null;
+              })}
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <Button onClick={() => handleSaveAll()} className="px-6 py-2.5 text-xs font-bold shadow-md shadow-sky-100">
+                <Check size={14} className="mr-1.5 inline" /> {lang === 'bn' ? 'সকল সেকশন পজিশন ও সেটিংস সেভ করুন' : 'Save Section Order & Settings'}
+              </Button>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ========================================================================= */}
       {/* 3. BRANDING & LOGO TAB                                                    */}

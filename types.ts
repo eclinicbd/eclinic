@@ -279,6 +279,9 @@ export interface SiteSettings {
   heroBtnBook?: string;
   heroImages?: string[];
 
+  // Homepage Sections Ordering & Visibility
+  homeSectionsOrder?: string[]; // Custom ordering array of section keys: 'partner' | 'popularTests' | 'packages' | 'nursing' | 'services' | 'howItWorks'
+  
   // Partner Diagnostic Centers Section
   showPartnerSection?: boolean; // Section 2 visibility toggle
   partnerBadge?: string;

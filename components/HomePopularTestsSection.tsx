@@ -51,7 +51,7 @@ export const HomePopularTestsSection: React.FC<HomePopularTestsSectionProps> = (
   const [isPaused, setIsPaused] = useState(false);
 
   // Maximum 12 most ordered tests
-  const popularTests = tests.filter(t => !t.isHidden).slice(0, 12);
+  const popularTests = tests.filter(t => !t.isHidden && (!selectedLabId || !t.hiddenLabs?.includes(selectedLabId))).slice(0, 12);
 
   // Auto-scroll single row effect
   useEffect(() => {

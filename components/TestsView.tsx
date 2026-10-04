@@ -81,6 +81,7 @@ export const TestsView: React.FC<TestsViewProps> = ({
 
   const filteredTests = tests.filter(test => {
     if (test.isHidden) return false;
+    if (selectedLabId && test.hiddenLabs?.includes(selectedLabId)) return false;
     const matchesSearch = test.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           (test.description && test.description.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesCategory = activeCategory === 'All' || test.category === activeCategory;

@@ -83,6 +83,7 @@ export const PackagesView: React.FC<PackagesViewProps> = ({
   const filteredPackages = useMemo(() => {
     return packages.filter(pkg => {
       if (pkg.isHidden) return false;
+      if (selectedLabId && pkg.hiddenLabs?.includes(selectedLabId)) return false;
 
       // Filter category or testCount
       if (activeFilter === '4_tests' && pkg.testCount !== 4) return false;
@@ -103,7 +104,7 @@ export const PackagesView: React.FC<PackagesViewProps> = ({
 
       return true;
     });
-  }, [packages, activeFilter, searchTerm]);
+  }, [packages, activeFilter, searchTerm, selectedLabId]);
 
   return (
     <div className="min-h-screen bg-slate-50/70 pb-20">

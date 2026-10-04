@@ -100,7 +100,7 @@ import {
   LogOut
 } from 'lucide-react';
 
-import { DEFAULT_HERO_IMAGES, DEFAULT_NURSING_SERVICES_BN, DEFAULT_NURSING_SERVICES_EN } from './constants';
+import { DEFAULT_HERO_IMAGES, DEFAULT_NURSING_SERVICES_BN, DEFAULT_NURSING_SERVICES_EN, DEFAULT_HOME_SECTIONS_ORDER } from './constants';
 
 const CATEGORIES = ['All', 'General', 'Diabetes', 'Heart', 'Thyroid', 'Vitamin'];
 
@@ -1116,283 +1116,312 @@ export default function App() {
             </div>
           </section>
 
-          {/* Partner Diagnostic Centers Single-Row Scrollable Section (Section 2) */}
-          {siteSettings.showPartnerSection !== false && (
-            <section className="py-12 bg-gradient-to-b from-slate-50 via-sky-50/20 to-slate-100/70 border-y border-slate-200">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
-                  <div>
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-100/90 text-primary text-xs font-extrabold uppercase tracking-wider mb-2">
-                      <ShieldCheck size={14} />
-                      <span>{siteSettings.partnerBadge || (language === 'bn' ? 'বিশ্বস্ত ডায়াগনস্টিক নেটওয়ার্ক' : 'Trusted Diagnostic Network')}</span>
-                    </div>
-                    <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
-                      <Building2 className="text-primary flex-shrink-0" size={24} />
-                      <span>{siteSettings.partnerTitle || (language === 'bn' ? 'আমাদের অনুমোদিত ডায়াগনস্টিক পার্টনার্স' : 'Accredited Diagnostic Lab Partners')}</span>
-                    </h3>
-                    <p className="text-xs sm:text-sm text-slate-600 mt-1">
-                      {siteSettings.partnerDesc || (language === 'bn' 
-                        ? 'ল্যাব সিলেক্ট করে সহজেই টেস্ট ও ক্যাটালগ ব্রাউজ করুন' 
-                        : 'Select any partner lab to explore tests and diagnostic packages')}
-                    </p>
-                  </div>
+          {/* Dynamic Reorderable Homepage Content Sections */}
+          {(() => {
+            const sectionsOrder = (siteSettings.homeSectionsOrder && Array.isArray(siteSettings.homeSectionsOrder) && siteSettings.homeSectionsOrder.length > 0)
+              ? siteSettings.homeSectionsOrder
+              : DEFAULT_HOME_SECTIONS_ORDER;
 
-                  {/* Navigation Scroll Buttons & View All */}
-                  <div className="flex items-center gap-2 self-start sm:self-auto">
-                    <button 
-                      onClick={() => scrollLabs('left')}
-                      aria-label="Scroll left"
-                      className="p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-primary hover:border-primary hover:bg-sky-50 shadow-xs transition-all"
-                    >
-                      <ChevronLeft size={18} />
-                    </button>
-                    <button 
-                      onClick={() => scrollLabs('right')}
-                      aria-label="Scroll right"
-                      className="p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-primary hover:border-primary hover:bg-sky-50 shadow-xs transition-all"
-                    >
-                      <ChevronRight size={18} />
-                    </button>
-                    <button 
-                      onClick={() => navigateToTests()} 
-                      className="inline-flex items-center gap-1 px-3.5 py-2 bg-white text-primary font-bold text-xs rounded-xl border border-sky-200 hover:bg-sky-50 shadow-xs transition-all ml-1 whitespace-nowrap"
-                    >
-                      <span>{siteSettings.partnerBtnText || (language === 'bn' ? 'সব দেখুন' : 'View All')}</span>
-                      <ArrowRight size={14} />
-                    </button>
-                  </div>
-                </div>
+            // Ensure all known section keys exist in the sequence
+            const normalizedOrder = [...sectionsOrder];
+            DEFAULT_HOME_SECTIONS_ORDER.forEach(secKey => {
+              if (!normalizedOrder.includes(secKey)) normalizedOrder.push(secKey);
+            });
 
-                {/* Single-Row Horizontally Scrollable Lab Cards with Auto-Scroll & Pause-on-Hover */}
-                <div 
-                  ref={labScrollRef}
-                  onMouseEnter={() => setIsLabPaused(true)}
-                  onMouseLeave={() => setIsLabPaused(false)}
-                  onTouchStart={() => setIsLabPaused(true)}
-                  onTouchEnd={() => setIsLabPaused(false)}
-                  className="flex gap-4 overflow-x-auto scroll-smooth pb-3 pt-1 px-1 no-scrollbar select-none"
-                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                >
-                  {labs.filter(l => !l.isHidden).map((lab) => (
-                    <div
-                      key={lab.id}
-                      onClick={() => navigateToTests('All', lab.id, '')}
-                      className="w-48 sm:w-56 flex-shrink-0 bg-white rounded-2xl border border-slate-200 hover:border-primary hover:shadow-lg transition-all duration-200 p-4 flex flex-col items-center justify-between text-center cursor-pointer group relative overflow-hidden"
-                    >
-                      {/* Optional Discount Tag on Corner */}
-                      {lab.discountBadge && (
-                        <div className="absolute top-2 right-2">
-                          <span className="inline-block bg-emerald-50 text-emerald-700 border border-emerald-200/80 text-[10px] font-extrabold px-2 py-0.5 rounded-md">
-                            {lab.discountBadge}
-                          </span>
-                        </div>
-                      )}
-
-                      <div className="flex flex-col items-center w-full pt-1">
-                        {/* Prominent Lab Logo */}
-                        <div className="mb-3 p-1 rounded-xl bg-slate-50/80 group-hover:bg-sky-50/80 transition-colors">
-                          <LabLogo 
-                            name={lab.name} 
-                            logo={lab.logo} 
-                            size="lg" 
-                            accentColor={lab.accentColor} 
-                            className="group-hover:scale-105 transition-transform"
-                          />
-                        </div>
-
-                        {/* Lab Name */}
-                        <h4 className="text-sm font-bold text-slate-800 group-hover:text-primary transition-colors line-clamp-2 leading-snug min-h-[2.5rem] flex items-center justify-center">
-                          {lab.name}
-                        </h4>
-                      </div>
-
-                      {/* Simple Clean CTA Link */}
-                      <div className="w-full mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-center gap-1 text-xs font-bold text-primary group-hover:underline">
-                        <span>{language === 'bn' ? 'টেস্ট দেখুন' : 'Explore Tests'}</span>
-                        <ChevronRight size={13} className="group-hover:translate-x-1 transition-transform" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </section>
-          )}
-
-          {/* Most Ordered / Popular Tests Auto-scrolling Single Row Section (Section 3) */}
-          {siteSettings.showPopularTestsSection !== false && (
-            <HomePopularTestsSection
-              tests={tests}
-              lang={language}
-              onToggleCart={toggleCart}
-              onDirectBook={(testId, labId) => {
-                if (labId) setSelectedLabId(labId);
-                addToCart(testId);
-                setIsBookingModalOpen(true);
-              }}
-              cart={cart}
-              labs={labs}
-              selectedLabId={selectedLabId}
-              onNavigateToTests={navigateToTests}
-              badge={siteSettings.popularTestsBadge}
-              title={siteSettings.popularTestsTitle}
-              description={siteSettings.popularTestsDesc}
-              btnText={siteSettings.popularTestsBtnText}
-            />
-          )}
-
-          {/* Essential Home Diagnostic Packages Auto-scrolling Section (Section 4) */}
-          {siteSettings.showPackagesSection !== false && (
-            <HomePackagesSection
-              packages={packages}
-              lang={language}
-              onAddToCart={addToCart}
-              onDirectBook={handleDirectBookPackage}
-              cart={cart}
-              onOpenDetailModal={(pkg) => setSelectedPackageForDetail(pkg)}
-              onNavigateToPackages={navigateToPackages}
-              labs={labs}
-              selectedLabId={selectedLabId}
-              badge={siteSettings.packagesBadge}
-              title={siteSettings.packagesTitle}
-              description={siteSettings.packagesDesc}
-              btnText={siteSettings.packagesBtnText}
-            />
-          )}
-
-          {/* Home Nursing & Patient Care Service Section (Below Packages) */}
-          {siteSettings.showNursingSection !== false && (
-            <NursingCareSection
-              services={siteSettings.nursingServices && siteSettings.nursingServices.length > 0
-                ? siteSettings.nursingServices
-                : (language === 'en' ? DEFAULT_NURSING_SERVICES_EN : DEFAULT_NURSING_SERVICES_BN)}
-              lang={language}
-              badge={siteSettings.nursingBadge}
-              title={siteSettings.nursingTitle}
-              description={siteSettings.nursingDesc}
-              hotline={siteSettings.nursingHotline || siteSettings.contactHotline || siteSettings.contactPhone}
-              whatsapp={siteSettings.nursingWhatsApp || siteSettings.contactWhatsApp}
-            />
-          )}
-
-          {/* Dynamic Services Section (Home Page Services Header) */}
-          {siteSettings.showServicesSection !== false && activeServices.length > 0 && (
-            <section id="services" className="py-20 bg-white border-b border-slate-100">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="text-center max-w-3xl mx-auto mb-14">
-                  <span className="inline-block py-1 px-3 rounded-full bg-sky-100 text-primary text-xs font-bold mb-3 uppercase tracking-wider">
-                    {siteSettings.servicesBadge || t.footerServices}
-                  </span>
-                  <h2 className="text-3xl font-bold text-slate-900 tracking-tight mb-3">
-                    {siteSettings.servicesTitle || (language === 'bn' ? 'আমাদের স্বাস্থ্যসেবা সমূহ' : 'Our Specialized Healthcare Services')}
-                  </h2>
-                  <p className="text-slate-600 text-sm md:text-base">
-                    {siteSettings.servicesDesc || (language === 'bn' 
-                      ? 'ঘরে বসেই উন্নত মানের ডায়াগনস্টিক ও ল্যাব টেস্ট সেবা নিশ্চিত করতে আমরা প্রতিজ্ঞাবদ্ধ।' 
-                      : 'Reliable, hospital-grade sample collection and diagnostics delivered right at your doorstep.')}
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {activeServices.map((service) => {
-                    const iconMap: Record<string, any> = {
-                      Home,
-                      FlaskConical,
-                      FileText,
-                      Stethoscope,
-                      HeartPulse,
-                      ShieldCheck,
-                      Activity,
-                      Phone,
-                      Clock,
-                      Award,
-                      Sparkles
-                    };
-                    const SrvIcon = iconMap[service.icon || 'FlaskConical'] || FlaskConical;
-
-                    return (
-                      <div 
-                        key={service.id} 
-                        className="group bg-slate-50 hover:bg-white p-7 rounded-2xl border border-slate-200/80 hover:border-primary/40 shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between"
-                      >
-                        <div>
-                          <div className="flex items-center justify-between mb-5">
-                            <div className="w-13 h-13 rounded-xl bg-white border border-slate-200 group-hover:bg-primary group-hover:border-primary flex items-center justify-center text-primary group-hover:text-white transition-all shadow-xs">
-                              <SrvIcon size={26} />
+            return normalizedOrder.map((sectionKey) => {
+              switch (sectionKey) {
+                case 'partner':
+                  if (siteSettings.showPartnerSection === false) return null;
+                  return (
+                    <section key="partner" className="py-12 bg-gradient-to-b from-slate-50 via-sky-50/20 to-slate-100/70 border-y border-slate-200">
+                      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
+                          <div>
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-100/90 text-primary text-xs font-extrabold uppercase tracking-wider mb-2">
+                              <ShieldCheck size={14} />
+                              <span>{siteSettings.partnerBadge || (language === 'bn' ? 'বিশ্বস্ত ডায়াগনস্টিক নেটওয়ার্ক' : 'Trusted Diagnostic Network')}</span>
                             </div>
-                            {service.badge && (
-                              <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-sky-100 text-primary group-hover:bg-sky-50 group-hover:text-sky-700">
-                                {service.badge}
-                              </span>
-                            )}
+                            <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
+                              <Building2 className="text-primary flex-shrink-0" size={24} />
+                              <span>{siteSettings.partnerTitle || (language === 'bn' ? 'আমাদের অনুমোদিত ডায়াগনস্টিক পার্টনার্স' : 'Accredited Diagnostic Lab Partners')}</span>
+                            </h3>
+                            <p className="text-xs sm:text-sm text-slate-600 mt-1">
+                              {siteSettings.partnerDesc || (language === 'bn' 
+                                ? 'ল্যাব সিলেক্ট করে সহজেই টেস্ট ও ক্যাটালগ ব্রাউজ করুন' 
+                                : 'Select any partner lab to explore tests and diagnostic packages')}
+                            </p>
                           </div>
-                          <h3 className="text-xl font-bold text-slate-900 mb-2 group-hover:text-primary transition-colors">
-                            {service.title}
-                          </h3>
-                          <p className="text-slate-600 text-sm leading-relaxed mb-6">
-                            {service.description}
+
+                          {/* Navigation Scroll Buttons & View All */}
+                          <div className="flex items-center gap-2 self-start sm:self-auto">
+                            <button 
+                              onClick={() => scrollLabs('left')}
+                              aria-label="Scroll left"
+                              className="p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-primary hover:border-primary hover:bg-sky-50 shadow-xs transition-all"
+                            >
+                              <ChevronLeft size={18} />
+                            </button>
+                            <button 
+                              onClick={() => scrollLabs('right')}
+                              aria-label="Scroll right"
+                              className="p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-primary hover:border-primary hover:bg-sky-50 shadow-xs transition-all"
+                            >
+                              <ChevronRight size={18} />
+                            </button>
+                            <button 
+                              onClick={() => navigateToTests()} 
+                              className="inline-flex items-center gap-1 px-3.5 py-2 bg-white text-primary font-bold text-xs rounded-xl border border-sky-200 hover:bg-sky-50 shadow-xs transition-all ml-1 whitespace-nowrap"
+                            >
+                              <span>{siteSettings.partnerBtnText || (language === 'bn' ? 'সব দেখুন' : 'View All')}</span>
+                              <ArrowRight size={14} />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Single-Row Horizontally Scrollable Lab Cards with Auto-Scroll & Pause-on-Hover */}
+                        <div 
+                          ref={labScrollRef}
+                          onMouseEnter={() => setIsLabPaused(true)}
+                          onMouseLeave={() => setIsLabPaused(false)}
+                          onTouchStart={() => setIsLabPaused(true)}
+                          onTouchEnd={() => setIsLabPaused(false)}
+                          className="flex gap-4 overflow-x-auto scroll-smooth pb-3 pt-1 px-1 no-scrollbar select-none"
+                          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                        >
+                          {labs.filter(l => !l.isHidden).map((lab) => (
+                            <div
+                              key={lab.id}
+                              onClick={() => navigateToTests('All', lab.id, '')}
+                              className="w-48 sm:w-56 flex-shrink-0 bg-white rounded-2xl border border-slate-200 hover:border-primary hover:shadow-lg transition-all duration-200 p-4 flex flex-col items-center justify-between text-center cursor-pointer group relative overflow-hidden"
+                            >
+                              {/* Optional Discount Tag on Corner */}
+                              {lab.discountBadge && (
+                                <div className="absolute top-2 right-2">
+                                  <span className="inline-block bg-emerald-50 text-emerald-700 border border-emerald-200/80 text-[10px] font-extrabold px-2 py-0.5 rounded-md">
+                                    {lab.discountBadge}
+                                  </span>
+                                </div>
+                              )}
+
+                              <div className="flex flex-col items-center w-full pt-1">
+                                {/* Prominent Lab Logo */}
+                                <div className="mb-3 p-1 rounded-xl bg-slate-50/80 group-hover:bg-sky-50/80 transition-colors">
+                                  <LabLogo 
+                                    name={lab.name} 
+                                    logo={lab.logo} 
+                                    size="lg" 
+                                    accentColor={lab.accentColor} 
+                                    className="group-hover:scale-105 transition-transform"
+                                  />
+                                </div>
+
+                                {/* Lab Name */}
+                                <h4 className="text-sm font-bold text-slate-800 group-hover:text-primary transition-colors line-clamp-2 leading-snug min-h-[2.5rem] flex items-center justify-center">
+                                  {lab.name}
+                                </h4>
+                              </div>
+
+                              {/* Simple Clean CTA Link */}
+                              <div className="w-full mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-center gap-1 text-xs font-bold text-primary group-hover:underline">
+                                <span>{language === 'bn' ? 'টেস্ট দেখুন' : 'Explore Tests'}</span>
+                                <ChevronRight size={13} className="group-hover:translate-x-1 transition-transform" />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </section>
+                  );
+
+                case 'popularTests':
+                  if (siteSettings.showPopularTestsSection === false) return null;
+                  return (
+                    <HomePopularTestsSection
+                      key="popularTests"
+                      tests={tests}
+                      lang={language}
+                      onToggleCart={toggleCart}
+                      onDirectBook={(testId, labId) => {
+                        if (labId) setSelectedLabId(labId);
+                        addToCart(testId);
+                        setIsBookingModalOpen(true);
+                      }}
+                      cart={cart}
+                      labs={labs}
+                      selectedLabId={selectedLabId}
+                      onNavigateToTests={navigateToTests}
+                      badge={siteSettings.popularTestsBadge}
+                      title={siteSettings.popularTestsTitle}
+                      description={siteSettings.popularTestsDesc}
+                      btnText={siteSettings.popularTestsBtnText}
+                    />
+                  );
+
+                case 'packages':
+                  if (siteSettings.showPackagesSection === false) return null;
+                  return (
+                    <HomePackagesSection
+                      key="packages"
+                      packages={packages}
+                      lang={language}
+                      onAddToCart={addToCart}
+                      onDirectBook={handleDirectBookPackage}
+                      cart={cart}
+                      onOpenDetailModal={(pkg) => setSelectedPackageForDetail(pkg)}
+                      onNavigateToPackages={navigateToPackages}
+                      labs={labs}
+                      selectedLabId={selectedLabId}
+                      badge={siteSettings.packagesBadge}
+                      title={siteSettings.packagesTitle}
+                      description={siteSettings.packagesDesc}
+                      btnText={siteSettings.packagesBtnText}
+                    />
+                  );
+
+                case 'nursing':
+                  if (siteSettings.showNursingSection === false) return null;
+                  return (
+                    <NursingCareSection
+                      key="nursing"
+                      services={siteSettings.nursingServices && siteSettings.nursingServices.length > 0
+                        ? siteSettings.nursingServices
+                        : (language === 'en' ? DEFAULT_NURSING_SERVICES_EN : DEFAULT_NURSING_SERVICES_BN)}
+                      lang={language}
+                      badge={siteSettings.nursingBadge}
+                      title={siteSettings.nursingTitle}
+                      description={siteSettings.nursingDesc}
+                      hotline={siteSettings.nursingHotline || siteSettings.contactHotline || siteSettings.contactPhone}
+                      whatsapp={siteSettings.nursingWhatsApp || siteSettings.contactWhatsApp}
+                    />
+                  );
+
+                case 'services':
+                  if (siteSettings.showServicesSection === false || activeServices.length === 0) return null;
+                  return (
+                    <section key="services" id="services" className="py-20 bg-white border-b border-slate-100">
+                      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="text-center max-w-3xl mx-auto mb-14">
+                          <span className="inline-block py-1 px-3 rounded-full bg-sky-100 text-primary text-xs font-bold mb-3 uppercase tracking-wider">
+                            {siteSettings.servicesBadge || t.footerServices}
+                          </span>
+                          <h2 className="text-3xl font-bold text-slate-900 tracking-tight mb-3">
+                            {siteSettings.servicesTitle || (language === 'bn' ? 'আমাদের স্বাস্থ্যসেবা সমূহ' : 'Our Specialized Healthcare Services')}
+                          </h2>
+                          <p className="text-slate-600 text-sm md:text-base">
+                            {siteSettings.servicesDesc || (language === 'bn' 
+                              ? 'ঘরে বসেই উন্নত মানের ডায়াগনস্টিক ও ল্যাব টেস্ট সেবা নিশ্চিত করতে আমরা প্রতিজ্ঞাবদ্ধ।' 
+                              : 'Reliable, hospital-grade sample collection and diagnostics delivered right at your doorstep.')}
                           </p>
                         </div>
 
-                        <div className="pt-4 border-t border-slate-200/60 flex items-center justify-between text-xs font-semibold text-primary">
-                          <button 
-                            onClick={() => scrollToSection('tests')}
-                            className="flex items-center gap-1 hover:underline"
-                          >
-                            <span>{language === 'bn' ? 'টেস্ট বুক করুন' : 'Book Test'}</span>
-                            <ChevronRight size={14} />
-                          </button>
-                          {(siteSettings.contactHotline || siteSettings.contactPhone) && (
-                            <a 
-                              href={`tel:${siteSettings.contactHotline || siteSettings.contactPhone}`}
-                              className="text-slate-500 hover:text-slate-800 flex items-center gap-1"
-                            >
-                              <Phone size={12} />
-                              <span>{siteSettings.contactHotline || siteSettings.contactPhone}</span>
-                            </a>
-                          )}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                          {activeServices.map((service) => {
+                            const iconMap: Record<string, any> = {
+                              Home,
+                              FlaskConical,
+                              FileText,
+                              Stethoscope,
+                              HeartPulse,
+                              ShieldCheck,
+                              Activity,
+                              Phone,
+                              Clock,
+                              Award,
+                              Sparkles
+                            };
+                            const SrvIcon = iconMap[service.icon || 'FlaskConical'] || FlaskConical;
+
+                            return (
+                              <div 
+                                key={service.id} 
+                                className="group bg-slate-50 hover:bg-white p-7 rounded-2xl border border-slate-200/80 hover:border-primary/40 shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between"
+                              >
+                                <div>
+                                  <div className="flex items-center justify-between mb-5">
+                                    <div className="w-13 h-13 rounded-xl bg-white border border-slate-200 group-hover:bg-primary group-hover:border-primary flex items-center justify-center text-primary group-hover:text-white transition-all shadow-xs">
+                                      <SrvIcon size={26} />
+                                    </div>
+                                    {service.badge && (
+                                      <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-sky-100 text-primary group-hover:bg-sky-50 group-hover:text-sky-700">
+                                        {service.badge}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <h3 className="text-xl font-bold text-slate-900 mb-2 group-hover:text-primary transition-colors">
+                                    {service.title}
+                                  </h3>
+                                  <p className="text-slate-600 text-sm leading-relaxed mb-6">
+                                    {service.description}
+                                  </p>
+                                </div>
+
+                                <div className="pt-4 border-t border-slate-200/60 flex items-center justify-between text-xs font-semibold text-primary">
+                                  <button 
+                                    onClick={() => scrollToSection('tests')}
+                                    className="flex items-center gap-1 hover:underline"
+                                  >
+                                    <span>{language === 'bn' ? 'টেস্ট বুক করুন' : 'Book Test'}</span>
+                                    <ChevronRight size={14} />
+                                  </button>
+                                  {(siteSettings.contactHotline || siteSettings.contactPhone) && (
+                                    <a 
+                                      href={`tel:${siteSettings.contactHotline || siteSettings.contactPhone}`}
+                                      className="text-slate-500 hover:text-slate-800 flex items-center gap-1"
+                                    >
+                                      <Phone size={12} />
+                                      <span>{siteSettings.contactHotline || siteSettings.contactPhone}</span>
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </section>
-          )}
+                    </section>
+                  );
 
-          {/* Features / How it Works (Home Page Steps) */}
-          {siteSettings.showHowItWorksSection !== false && (
-            <section id="how-it-works" className="py-20 bg-slate-50">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="text-center mb-16">
-                  <h2 className="text-3xl font-bold text-secondary mb-4">
-                    {siteSettings.howItWorksTitle || t.sectionHowTitle}
-                  </h2>
-                </div>
+                case 'howItWorks':
+                  if (siteSettings.showHowItWorksSection === false) return null;
+                  return (
+                    <section key="howItWorks" id="how-it-works" className="py-20 bg-slate-50">
+                      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="text-center mb-16">
+                          <h2 className="text-3xl font-bold text-secondary mb-4">
+                            {siteSettings.howItWorksTitle || t.sectionHowTitle}
+                          </h2>
+                        </div>
 
-                <div className="grid md:grid-cols-3 gap-8">
-                  {(siteSettings.howItWorksSteps && siteSettings.howItWorksSteps.length > 0 
-                    ? siteSettings.howItWorksSteps 
-                    : [
-                        { title: t.step1Title, desc: t.step1Desc },
-                        { title: t.step2Title, desc: t.step2Desc },
-                        { title: t.step3Title, desc: t.step3Desc }
-                      ]
-                  ).map((feature, idx) => (
-                    <div key={idx} className="p-8 bg-white rounded-2xl text-center border border-slate-100 shadow-xs hover:shadow-md transition-all duration-300">
-                      <div className="w-16 h-16 bg-sky-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xs text-primary">
-                        {idx === 0 && <Search className="w-8 h-8" />}
-                        {idx === 1 && <Home className="w-8 h-8" />}
-                        {idx === 2 && <Activity className="w-8 h-8" />}
-                        {idx > 2 && <ShieldCheck className="w-8 h-8" />}
+                        <div className="grid md:grid-cols-3 gap-8">
+                          {(siteSettings.howItWorksSteps && siteSettings.howItWorksSteps.length > 0 
+                            ? siteSettings.howItWorksSteps 
+                            : [
+                                { title: t.step1Title, desc: t.step1Desc },
+                                { title: t.step2Title, desc: t.step2Desc },
+                                { title: t.step3Title, desc: t.step3Desc }
+                              ]
+                          ).map((feature, idx) => (
+                            <div key={idx} className="p-8 bg-white rounded-2xl text-center border border-slate-100 shadow-xs hover:shadow-md transition-all duration-300">
+                              <div className="w-16 h-16 bg-sky-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xs text-primary">
+                                {idx === 0 && <Search className="w-8 h-8" />}
+                                {idx === 1 && <Home className="w-8 h-8" />}
+                                {idx === 2 && <Activity className="w-8 h-8" />}
+                                {idx > 2 && <ShieldCheck className="w-8 h-8" />}
+                              </div>
+                              <h3 className="text-xl font-bold text-slate-800 mb-3">{feature.title}</h3>
+                              <p className="text-slate-600 leading-relaxed text-sm">{feature.desc}</p>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <h3 className="text-xl font-bold text-slate-800 mb-3">{feature.title}</h3>
-                      <p className="text-slate-600 leading-relaxed text-sm">{feature.desc}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </section>
-          )}
+                    </section>
+                  );
+
+                default:
+                  return null;
+              }
+            });
+          })()}
 
           {/* Dynamic About Us Section */}
           <section id="about" className="py-20 bg-white border-t border-slate-100">

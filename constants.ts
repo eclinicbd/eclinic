@@ -1330,6 +1330,15 @@ export const PRESET_GALLERY_IMAGES: { url: string; label: string }[] = [
   { url: "https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&q=80&w=800", label: "Diagnostic Equipment" }
 ];
 
+export const DEFAULT_HOME_SECTIONS_ORDER: string[] = [
+  'partner',
+  'popularTests',
+  'packages',
+  'nursing',
+  'services',
+  'howItWorks'
+];
+
 export const DEFAULT_SITE_SETTINGS_BN: SiteSettings = {
   siteName: 'LabHome BD',
   siteTagline: 'বাংলাদেশের বিশ্বস্ত হোম স্যাম্পল কালেকশন ও ডিজিটাল ডায়াগনস্টিক প্ল্যাটফর্ম',
@@ -1344,6 +1353,9 @@ export const DEFAULT_SITE_SETTINGS_BN: SiteSettings = {
   heroDesc: 'পপুলার, ল্যাবএইড, বারডেমসহ দেশের শীর্ষ ডায়াগনস্টিক সেন্টার থেকে বিশেষজ্ঞের মাধ্যমে রক্ত সংগ্রহ ও ডিজিটাল রিপোর্ট ডেলিভারি।',
   heroBtnBook: 'টেস্ট বুক করুন',
   heroImages: [...DEFAULT_HERO_IMAGES],
+
+  // Homepage Sections Ordering
+  homeSectionsOrder: [...DEFAULT_HOME_SECTIONS_ORDER],
 
   // Partner Diagnostic Centers Section
   showPartnerSection: true,
@@ -1458,6 +1470,9 @@ export const DEFAULT_SITE_SETTINGS_EN: SiteSettings = {
   heroDesc: 'Book certified lab diagnostics from Popular, Labaid, BIRDEM & get fast digital reports delivered directly to your device.',
   heroBtnBook: 'Book Test Now',
   heroImages: [...DEFAULT_HERO_IMAGES],
+
+  // Homepage Sections Ordering
+  homeSectionsOrder: [...DEFAULT_HOME_SECTIONS_ORDER],
 
   // Partner Diagnostic Centers Section
   showPartnerSection: true,

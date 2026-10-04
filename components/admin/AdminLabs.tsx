@@ -35,6 +35,7 @@ interface AdminLabsProps {
   onOpenDeleteLab: (lab: LabPartner) => void;
   onReorderLab?: (labId: string, direction: 'up' | 'down') => void;
   onResetDefaultLabs?: () => void;
+  onManageLabTests?: (lab: LabPartner) => void;
 }
 
 export const AdminLabs: React.FC<AdminLabsProps> = ({
@@ -46,7 +47,8 @@ export const AdminLabs: React.FC<AdminLabsProps> = ({
   onToggleHideLab,
   onOpenDeleteLab,
   onReorderLab,
-  onResetDefaultLabs
+  onResetDefaultLabs,
+  onManageLabTests
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [visibilityFilter, setVisibilityFilter] = useState<'all' | 'visible' | 'hidden'>('all');
@@ -307,10 +309,29 @@ export const AdminLabs: React.FC<AdminLabsProps> = ({
                     <span className="text-xl font-extrabold text-sky-900">৳ {lab.serviceCharge}</span>
                   </div>
 
-                  {/* Diagnostics Test Count */}
-                  <div className="text-xs text-slate-500 flex items-center gap-2">
-                    <FlaskConical size={14} className="text-slate-400" />
-                    <span>Has custom rates in <strong className="text-slate-800">{tests.filter(t => t.priceByLab?.[lab.id]).length}</strong> tests</span>
+                  {/* Diagnostics Test Count & Active Status */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-2 text-xs">
+                    <div className="flex items-center gap-1.5 text-slate-600">
+                      <FlaskConical size={14} className="text-sky-600" />
+                      <span>
+                        {lang === 'bn' ? 'সক্রিয় টেস্ট:' : 'Active Tests:'}{' '}
+                        <strong className={tests.filter(t => !t.hiddenLabs?.includes(lab.id)).length > 0 ? 'text-emerald-700 font-bold' : 'text-amber-700 font-bold'}>
+                          {tests.filter(t => !t.hiddenLabs?.includes(lab.id)).length}
+                        </strong>
+                        <span className="text-slate-400">/{tests.length}</span>
+                      </span>
+                    </div>
+
+                    {onManageLabTests && (
+                      <button
+                        type="button"
+                        onClick={() => onManageLabTests(lab)}
+                        className="px-2.5 py-1 bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200/90 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
+                      >
+                        <FlaskConical size={12} className="text-sky-600" />
+                        <span>{lang === 'bn' ? 'টেস্ট পরিচালনা' : 'Manage Tests'}</span>
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -340,6 +361,17 @@ export const AdminLabs: React.FC<AdminLabsProps> = ({
                   </button>
 
                   <div className="flex items-center gap-1.5">
+                    {onManageLabTests && (
+                      <button 
+                        type="button"
+                        onClick={() => onManageLabTests(lab)}
+                        className="px-2.5 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors border border-indigo-200/70 cursor-pointer"
+                        title={lang === 'bn' ? 'এই সেন্টারের টেস্ট এক্টিভেশন ও মূল্য নির্ধারণ করুন' : 'Manage tests and pricing'}
+                      >
+                        <FlaskConical size={13} />
+                        <span className="hidden sm:inline">{lang === 'bn' ? 'টেস্ট সেটিংস' : 'Tests'}</span>
+                      </button>
+                    )}
                     <button 
                       onClick={() => onOpenEditLab(lab)}
                       className="px-3 py-1.5 bg-slate-900 text-white hover:bg-slate-800 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer"

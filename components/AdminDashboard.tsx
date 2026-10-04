@@ -57,6 +57,7 @@ import {
   PackageFormModal,
   CategoryFormModal,
   LabFormModal, 
+  LabTestsManagerModal,
   OrderFormModal, 
   OrderDetailsModal, 
   DeleteConfirmModal,
@@ -156,6 +157,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const [isLabModalOpen, setIsLabModalOpen] = useState(false);
   const [editingLab, setEditingLab] = useState<LabPartner | null>(null);
+  const [managingLabTests, setManagingLabTests] = useState<LabPartner | null>(null);
 
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<BookingHistoryItem | null>(null);
@@ -389,14 +391,51 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setIsLabModalOpen(true);
   };
 
-  const handleSaveLab = (labToSave: LabPartner) => {
+  const handleSaveLab = (labToSave: LabPartner, activeTestIds?: string[]) => {
     if (editingLab) {
       const updated = labs.map(l => l.id === labToSave.id ? labToSave : l);
       onUpdateLabs(updated);
       showToast(t.adminSaveSuccess);
     } else {
+      // NEW Diagnostic Center created:
+      // DO NOT auto-activate all tests!
+      // Only tests explicitly chosen in activeTestIds (empty by default) will be active.
+      const activeSet = new Set(activeTestIds || []);
+      const updatedTests = tests.map(test => {
+        const isCurrentActive = activeSet.has(test.id);
+        const currentHidden = test.hiddenLabs || [];
+        if (isCurrentActive) {
+          return {
+            ...test,
+            hiddenLabs: currentHidden.filter(id => id !== labToSave.id)
+          };
+        } else {
+          // Deactivated/Inactive for this newly created diagnostic center
+          return {
+            ...test,
+            hiddenLabs: currentHidden.includes(labToSave.id) ? currentHidden : [...currentHidden, labToSave.id]
+          };
+        }
+      });
+      onUpdateTests(updatedTests);
+
+      // Packages: Also inactive by default for the new diagnostic center
+      if (onUpdatePackages && packages) {
+        const updatedPackages = packages.map(pkg => {
+          const currentHidden = pkg.hiddenLabs || [];
+          return {
+            ...pkg,
+            hiddenLabs: currentHidden.includes(labToSave.id) ? currentHidden : [...currentHidden, labToSave.id]
+          };
+        });
+        onUpdatePackages(updatedPackages);
+      }
+
       onUpdateLabs([...labs, labToSave]);
-      showToast(t.adminSaveSuccess);
+      showToast(lang === 'bn' 
+        ? `নতুন সেন্টার "${labToSave.name}" সফলভাবে যুক্ত হয়েছে (টেস্টসমূহ ডিফল্টভাবে ইনঅ্যাক্টিভ রাখা হয়েছে)!` 
+        : `New center "${labToSave.name}" added successfully (tests inactive by default)!`
+      );
     }
     setIsLabModalOpen(false);
     setEditingLab(null);
@@ -879,6 +918,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               onOpenDeleteLab={(lab) => setDeleteTarget({ type: 'lab', id: lab.id, name: lab.name })}
               onReorderLab={handleReorderLab}
               onResetDefaultLabs={handleResetDefaultLabs}
+              onManageLabTests={(lab) => setManagingLabTests(lab)}
             />
           )}
 
@@ -999,6 +1039,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         }}
         onSave={handleSaveLab}
         editingLab={editingLab}
+        tests={tests}
+      />
+
+      <LabTestsManagerModal 
+        lang={lang}
+        isOpen={!!managingLabTests}
+        onClose={() => setManagingLabTests(null)}
+        lab={managingLabTests}
+        tests={tests}
+        onUpdateTests={(updated) => {
+          onUpdateTests(updated);
+          showToast(lang === 'bn' ? 'সেন্টারের টেস্ট অ্যাক্টিভেশন আপডেট করা হয়েছে!' : 'Center test activations updated!');
+        }}
       />
 
       <OrderFormModal 

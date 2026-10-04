@@ -79,7 +79,7 @@ export const HomePackagesSection: React.FC<HomePackagesSectionProps> = ({
     return () => clearInterval(interval);
   }, [isPaused]);
 
-  const activePackages = packages.filter(p => !p.isHidden);
+  const activePackages = packages.filter(p => !p.isHidden && (!selectedLabId || !p.hiddenLabs?.includes(selectedLabId)));
 
   if (activePackages.length === 0) return null;
 

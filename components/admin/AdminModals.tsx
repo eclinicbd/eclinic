@@ -702,34 +702,6 @@ export const TestFormModal: React.FC<TestModalProps> = ({
             </div>
           </div>
 
-          {/* Preset Images */}
-          <div>
-            <label className="block font-bold text-slate-700 mb-1.5">Preset Image or Image URL</label>
-            <div className="flex items-center gap-2 mb-2">
-              <input 
-                type="text" 
-                value={formData.image || ''} 
-                onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                placeholder="https://..." 
-                className="flex-grow px-3 py-1.5 border border-slate-200 rounded-xl text-xs"
-              />
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {PRESET_IMAGES.map((img, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => setFormData({ ...formData, image: img.url })}
-                  className={`px-2.5 py-1 rounded-lg border text-[11px] font-medium transition-colors ${
-                    formData.image === img.url ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-700 border-slate-200'
-                  }`}
-                >
-                  {img.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Hide / Unhide Option */}
           <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-xl flex items-start gap-3">
             <input 
@@ -766,8 +738,9 @@ interface LabModalProps {
   lang: Language;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (lab: LabPartner) => void;
+  onSave: (lab: LabPartner, activeTestIds?: string[]) => void;
   editingLab: LabPartner | null;
+  tests?: TestPackage[];
 }
 
 export const LabFormModal: React.FC<LabModalProps> = ({
@@ -775,7 +748,8 @@ export const LabFormModal: React.FC<LabModalProps> = ({
   isOpen,
   onClose,
   onSave,
-  editingLab
+  editingLab,
+  tests = []
 }) => {
   const logoFileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState<Partial<LabPartner>>({
@@ -789,11 +763,18 @@ export const LabFormModal: React.FC<LabModalProps> = ({
     isHidden: false
   });
 
+  // Test Activation Mode for new diagnostic centers: 'none' (default, no tests auto-active), 'all' (all tests), 'custom' (select specific tests)
+  const [testActivationMode, setTestActivationMode] = useState<'none' | 'all' | 'custom'>('none');
+  const [selectedTestIds, setSelectedTestIds] = useState<string[]>([]);
+  const [testSearchTerm, setTestSearchTerm] = useState('');
+
   const t = TRANSLATIONS[lang];
 
   useEffect(() => {
     if (editingLab) {
       setFormData({ ...editingLab, isHidden: !!editingLab.isHidden });
+      setTestActivationMode('none');
+      setSelectedTestIds([]);
     } else {
       setFormData({
         name: '',
@@ -805,6 +786,10 @@ export const LabFormModal: React.FC<LabModalProps> = ({
         accentColor: '#0284c7',
         isHidden: false
       });
+      // Default: NO tests auto-activated for new diagnostic centers!
+      setTestActivationMode('none');
+      setSelectedTestIds([]);
+      setTestSearchTerm('');
     }
   }, [editingLab, isOpen]);
 
@@ -830,6 +815,20 @@ export const LabFormModal: React.FC<LabModalProps> = ({
     e.target.value = '';
   };
 
+  const handleToggleSelectTest = (testId: string) => {
+    setSelectedTestIds(prev => 
+      prev.includes(testId) ? prev.filter(id => id !== testId) : [...prev, testId]
+    );
+  };
+
+  const handleSelectAllTests = () => {
+    setSelectedTestIds(tests.map(t => t.id));
+  };
+
+  const handleDeselectAllTests = () => {
+    setSelectedTestIds([]);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name?.trim()) return;
@@ -846,12 +845,30 @@ export const LabFormModal: React.FC<LabModalProps> = ({
       isHidden: !!formData.isHidden
     };
 
-    onSave(labToSave);
+    // Calculate active test IDs based on chosen activation mode
+    let activeTestIds: string[] | undefined = undefined;
+    if (!editingLab) {
+      if (testActivationMode === 'none') {
+        activeTestIds = []; // No tests active initially
+      } else if (testActivationMode === 'all') {
+        activeTestIds = tests.map(t => t.id); // All tests active
+      } else if (testActivationMode === 'custom') {
+        activeTestIds = selectedTestIds; // Only chosen tests active
+      }
+    }
+
+    onSave(labToSave, activeTestIds);
   };
+
+  const filteredTestsForSelection = tests.filter(test => {
+    if (!testSearchTerm.trim()) return true;
+    const term = testSearchTerm.toLowerCase();
+    return test.name.toLowerCase().includes(term) || (test.category && test.category.toLowerCase().includes(term));
+  });
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-100 max-h-[92vh] overflow-y-auto">
         <div className="flex justify-between items-center pb-4 border-b border-slate-100">
           <div className="flex items-center gap-2">
             <Building2 className="text-sky-600" size={20} />
@@ -1003,6 +1020,166 @@ export const LabFormModal: React.FC<LabModalProps> = ({
             </p>
           </div>
 
+          {/* New Diagnostic Center Test Activation Options (When creating new Center) */}
+          {!editingLab && (
+            <div className="p-4 bg-gradient-to-br from-indigo-50/70 via-sky-50/50 to-slate-50 rounded-2xl border border-indigo-200/80 space-y-3">
+              <div className="flex items-center gap-2">
+                <FlaskConical size={16} className="text-indigo-600" />
+                <span className="font-bold text-slate-900 text-xs">
+                  {lang === 'bn' ? 'টেস্ট অ্যাক্টিভেশন সেটিংস (Test Activation Policy)' : 'Initial Test Activation Policy'}
+                </span>
+              </div>
+
+              <div className="space-y-2">
+                {/* Mode 1: None (Default - DO NOT AUTO-ACTIVATE) */}
+                <label className={`p-3 rounded-xl border flex items-start gap-2.5 cursor-pointer transition-all ${
+                  testActivationMode === 'none'
+                    ? 'bg-white border-primary shadow-xs ring-2 ring-primary/20'
+                    : 'bg-white/70 border-slate-200 hover:bg-white'
+                }`}>
+                  <input 
+                    type="radio" 
+                    name="testActivationMode" 
+                    value="none" 
+                    checked={testActivationMode === 'none'}
+                    onChange={() => setTestActivationMode('none')}
+                    className="mt-0.5 w-4 h-4 text-primary focus:ring-primary cursor-pointer"
+                  />
+                  <div className="text-xs">
+                    <span className="font-bold text-slate-900 block flex items-center gap-1.5">
+                      <span>🚫 {lang === 'bn' ? 'কোনো টেস্ট অটো-এক্টিভ হবে না (ডিফল্ট)' : 'Do NOT Auto-Activate Tests (Default)'}</span>
+                      <span className="px-1.5 py-0.2 bg-emerald-100 text-emerald-800 text-[10px] font-extrabold rounded">প্রস্তাবিত</span>
+                    </span>
+                    <span className="text-[11px] text-slate-600 block mt-0.5">
+                      {lang === 'bn' 
+                        ? 'নতুন সেন্টারে কোনো টেস্ট অটো-এক্টিভ হবে না। সেন্টার তৈরির পর অ্যাডমিন প্যানেল থেকে পছন্দমতো টেস্ট এক্টিভ করতে পারবেন।' 
+                        : 'No tests will be auto-activated. You can manually assign and activate tests from the admin panel anytime.'}
+                    </span>
+                  </div>
+                </label>
+
+                {/* Mode 2: Custom Selection */}
+                <label className={`p-3 rounded-xl border flex items-start gap-2.5 cursor-pointer transition-all ${
+                  testActivationMode === 'custom'
+                    ? 'bg-white border-primary shadow-xs ring-2 ring-primary/20'
+                    : 'bg-white/70 border-slate-200 hover:bg-white'
+                }`}>
+                  <input 
+                    type="radio" 
+                    name="testActivationMode" 
+                    value="custom" 
+                    checked={testActivationMode === 'custom'}
+                    onChange={() => setTestActivationMode('custom')}
+                    className="mt-0.5 w-4 h-4 text-primary focus:ring-primary cursor-pointer"
+                  />
+                  <div className="text-xs w-full">
+                    <span className="font-bold text-slate-900 block">
+                      🎯 {lang === 'bn' ? 'নির্দিষ্ট কিছু টেস্ট নির্বাচন করে এক্টিভ করুন' : 'Select Specific Tests to Activate'}
+                    </span>
+                    <span className="text-[11px] text-slate-600 block mt-0.5">
+                      {lang === 'bn' 
+                        ? 'নিচের তালিকা থেকে শুধুমাত্র নির্ধারিত টেস্টগুলো এই সেন্টারের জন্য এক্টিভ করুন।' 
+                        : 'Pick only the tests you want active for this new center.'}
+                    </span>
+                  </div>
+                </label>
+
+                {/* Mode 3: All Tests */}
+                <label className={`p-2.5 rounded-xl border flex items-start gap-2.5 cursor-pointer transition-all ${
+                  testActivationMode === 'all'
+                    ? 'bg-white border-primary shadow-xs ring-2 ring-primary/20'
+                    : 'bg-white/70 border-slate-200 hover:bg-white'
+                }`}>
+                  <input 
+                    type="radio" 
+                    name="testActivationMode" 
+                    value="all" 
+                    checked={testActivationMode === 'all'}
+                    onChange={() => setTestActivationMode('all')}
+                    className="mt-0.5 w-4 h-4 text-primary focus:ring-primary cursor-pointer"
+                  />
+                  <div className="text-xs">
+                    <span className="font-bold text-slate-900 block">
+                      ⚡ {lang === 'bn' ? 'সকল টেস্ট এক্টিভ করুন' : 'Activate All Tests'}
+                    </span>
+                    <span className="text-[11px] text-slate-600 block mt-0.5">
+                      {lang === 'bn' 
+                        ? 'সিস্টেমের বিদ্যমান সকল টেস্ট এই নতুন সেন্টারের জন্য কার্যকর হবে।' 
+                        : 'Enable all existing tests for this diagnostic center.'}
+                    </span>
+                  </div>
+                </label>
+              </div>
+
+              {/* Custom selection picker checklist */}
+              {testActivationMode === 'custom' && (
+                <div className="mt-3 pt-3 border-t border-indigo-100/90 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[11px] font-bold text-slate-700">
+                      {lang === 'bn' ? `নির্বাচিত টেস্ট: ${selectedTestIds.length} / ${tests.length}` : `Selected: ${selectedTestIds.length} / ${tests.length}`}
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={handleSelectAllTests}
+                        className="px-2 py-1 text-[11px] font-bold bg-white text-primary border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer"
+                      >
+                        {lang === 'bn' ? 'সব সিলেক্ট' : 'Select All'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleDeselectAllTests}
+                        className="px-2 py-1 text-[11px] font-bold bg-white text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer"
+                      >
+                        {lang === 'bn' ? 'সব বাদ' : 'Clear All'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="relative">
+                    <Search size={13} className="absolute left-2.5 top-2.5 text-slate-400" />
+                    <input 
+                      type="text"
+                      placeholder={lang === 'bn' ? 'টেস্টের নাম দিয়ে খুঁজুন...' : 'Search tests...'}
+                      value={testSearchTerm}
+                      onChange={(e) => setTestSearchTerm(e.target.value)}
+                      className="w-full pl-7 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:ring-1 focus:ring-primary"
+                    />
+                  </div>
+
+                  <div className="max-h-48 overflow-y-auto space-y-1 bg-white p-2 rounded-xl border border-slate-200">
+                    {filteredTestsForSelection.length === 0 ? (
+                      <p className="text-center py-4 text-[11px] text-slate-400">কোনো টেস্ট পাওয়া যায়নি</p>
+                    ) : (
+                      filteredTestsForSelection.map(test => {
+                        const isSelected = selectedTestIds.includes(test.id);
+                        return (
+                          <label 
+                            key={test.id} 
+                            className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors ${
+                              isSelected ? 'bg-sky-50 text-sky-950 font-semibold' : 'hover:bg-slate-50 text-slate-700'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 min-w-0 pr-2">
+                              <input 
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => handleToggleSelectTest(test.id)}
+                                className="w-3.5 h-3.5 rounded text-primary focus:ring-primary cursor-pointer"
+                              />
+                              <span className="truncate text-xs">{test.name}</span>
+                            </div>
+                            <span className="text-[11px] font-bold text-slate-500 shrink-0">৳ {test.price}</span>
+                          </label>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Hide / Unhide Option */}
           <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-xl flex items-start gap-3">
             <input 
@@ -1027,6 +1204,353 @@ export const LabFormModal: React.FC<LabModalProps> = ({
             </Button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+// 2.5 LAB TESTS MANAGER MODAL (Manage Active Tests per Lab)
+// ==========================================
+interface LabTestsManagerModalProps {
+  lang: Language;
+  isOpen: boolean;
+  onClose: () => void;
+  lab: LabPartner | null;
+  tests: TestPackage[];
+  onUpdateTests: (tests: TestPackage[]) => void;
+}
+
+export const LabTestsManagerModal: React.FC<LabTestsManagerModalProps> = ({
+  lang,
+  isOpen,
+  onClose,
+  lab,
+  tests,
+  onUpdateTests
+}) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [filterActiveState, setFilterActiveState] = useState<'all' | 'active' | 'inactive'>('all');
+  const [localTests, setLocalTests] = useState<TestPackage[]>([]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setLocalTests([...tests]);
+      setSearchTerm('');
+      setSelectedCategory('All');
+      setFilterActiveState('all');
+    }
+  }, [isOpen, tests]);
+
+  if (!isOpen || !lab) return null;
+
+  const categories = ['All', ...Array.from(new Set(tests.map(t => t.category).filter(Boolean)))];
+
+  const handleToggleTestActive = (testId: string) => {
+    setLocalTests(prev => prev.map(t => {
+      if (t.id !== testId) return t;
+      const currentHidden = t.hiddenLabs || [];
+      const isCurrentlyHidden = currentHidden.includes(lab.id);
+      const updatedHidden = isCurrentlyHidden
+        ? currentHidden.filter(id => id !== lab.id) // Unhide -> Active
+        : [...currentHidden, lab.id]; // Hide -> Inactive
+      return {
+        ...t,
+        hiddenLabs: updatedHidden
+      };
+    }));
+  };
+
+  const handleSetAllActive = () => {
+    setLocalTests(prev => prev.map(t => ({
+      ...t,
+      hiddenLabs: (t.hiddenLabs || []).filter(id => id !== lab.id)
+    })));
+  };
+
+  const handleSetAllInactive = () => {
+    setLocalTests(prev => prev.map(t => {
+      const currentHidden = t.hiddenLabs || [];
+      return {
+        ...t,
+        hiddenLabs: currentHidden.includes(lab.id) ? currentHidden : [...currentHidden, lab.id]
+      };
+    }));
+  };
+
+  const handleLabPriceChange = (testId: string, sellingPrice: number) => {
+    setLocalTests(prev => prev.map(t => {
+      if (t.id !== testId) return t;
+      return {
+        ...t,
+        priceByLab: {
+          ...(t.priceByLab || {}),
+          [lab.id]: sellingPrice
+        }
+      };
+    }));
+  };
+
+  const handleSave = () => {
+    onUpdateTests(localTests);
+    onClose();
+  };
+
+  const activeCount = localTests.filter(t => !(t.hiddenLabs || []).includes(lab.id)).length;
+  const inactiveCount = localTests.length - activeCount;
+
+  const filteredTests = localTests.filter(test => {
+    const isInactive = (test.hiddenLabs || []).includes(lab.id);
+    const isActive = !isInactive;
+
+    if (filterActiveState === 'active' && !isActive) return false;
+    if (filterActiveState === 'inactive' && !isInactive) return false;
+
+    if (selectedCategory !== 'All' && test.category !== selectedCategory) return false;
+
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      return test.name.toLowerCase().includes(term) || (test.description && test.description.toLowerCase().includes(term));
+    }
+    return true;
+  });
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+      <div className="bg-white rounded-3xl max-w-3xl w-full p-6 shadow-2xl border border-slate-100 max-h-[92vh] flex flex-col">
+        {/* Header */}
+        <div className="flex justify-between items-start pb-4 border-b border-slate-100">
+          <div className="flex items-center gap-3">
+            <LabLogo name={lab.name} logo={lab.logo} size="md" accentColor={lab.accentColor} />
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-bold text-slate-900">
+                  {lang === 'bn' ? `"${lab.name}" সেন্টারের টেস্ট পরিচালনা` : `Manage Tests for ${lab.name}`}
+                </h2>
+                <span className="px-2.5 py-0.5 bg-sky-100 text-sky-800 text-[11px] font-extrabold rounded-full">
+                  {activeCount} {lang === 'bn' ? 'টি এক্টিভ' : 'Active'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {lang === 'bn'
+                  ? 'এই সেন্টারের জন্য কোন কোন টেস্ট চালু (Active) বা বন্ধ (Inactive) থাকবে তা সহজে নির্ধারণ করুন।'
+                  : 'Toggle active/inactive status and set custom prices for this diagnostic center.'}
+              </p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer">
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Quick Stats & Bulk Actions Toolbar */}
+        <div className="py-3 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="text-slate-500 font-medium">
+              মোট: <strong>{localTests.length}</strong> | 
+              এক্টিভ: <strong className="text-emerald-600 font-bold">{activeCount}</strong> | 
+              ইনঅ্যাক্টিভ: <strong className="text-amber-600 font-bold">{inactiveCount}</strong>
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleSetAllActive}
+              className="px-2.5 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl font-bold border border-emerald-200 transition-colors flex items-center gap-1 cursor-pointer"
+            >
+              <Check size={13} />
+              <span>{lang === 'bn' ? 'সকল টেস্ট এক্টিভ করুন' : 'Activate All'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleSetAllInactive}
+              className="px-2.5 py-1.5 bg-amber-50 text-amber-800 hover:bg-amber-100 rounded-xl font-bold border border-amber-200 transition-colors flex items-center gap-1 cursor-pointer"
+            >
+              <EyeOff size={13} />
+              <span>{lang === 'bn' ? 'সকল টেস্ট ইনঅ্যাক্টিভ করুন' : 'Deactivate All'}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="py-3 grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+          <div className="relative">
+            <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
+            <input 
+              type="text"
+              placeholder={lang === 'bn' ? 'টেস্টের নাম দিয়ে খুঁজুন...' : 'Search test name...'}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-8 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+
+          <div>
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none cursor-pointer"
+            >
+              {categories.map(c => (
+                <option key={c} value={c}>{c === 'All' ? (lang === 'bn' ? 'সকল ক্যাটাগরি' : 'All Categories') : c}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex bg-slate-100 p-1 rounded-xl gap-1">
+            <button
+              type="button"
+              onClick={() => setFilterActiveState('all')}
+              className={`flex-1 py-1 text-center font-bold rounded-lg transition-all cursor-pointer ${
+                filterActiveState === 'all' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600'
+              }`}
+            >
+              {lang === 'bn' ? 'সব' : 'All'} ({localTests.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterActiveState('active')}
+              className={`flex-1 py-1 text-center font-bold rounded-lg transition-all cursor-pointer ${
+                filterActiveState === 'active' ? 'bg-white text-emerald-700 shadow-2xs' : 'text-slate-600'
+              }`}
+            >
+              {lang === 'bn' ? 'এক্টিভ' : 'Active'} ({activeCount})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterActiveState('inactive')}
+              className={`flex-1 py-1 text-center font-bold rounded-lg transition-all cursor-pointer ${
+                filterActiveState === 'inactive' ? 'bg-white text-amber-700 shadow-2xs' : 'text-slate-600'
+              }`}
+            >
+              {lang === 'bn' ? 'ইনঅ্যাক্টিভ' : 'Inactive'} ({inactiveCount})
+            </button>
+          </div>
+        </div>
+
+        {/* Tests List */}
+        <div className="flex-1 overflow-y-auto space-y-2 py-2 pr-1">
+          {filteredTests.length === 0 ? (
+            <div className="text-center py-12 text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+              <FlaskConical size={32} className="mx-auto mb-2 text-slate-300" />
+              <p className="font-semibold text-xs text-slate-500">
+                {lang === 'bn' ? 'কোনো টেস্ট পাওয়া যায়নি।' : 'No tests found matching your criteria.'}
+              </p>
+            </div>
+          ) : (
+            filteredTests.map(test => {
+              const isInactive = (test.hiddenLabs || []).includes(lab.id);
+              const isActive = !isInactive;
+              const currentLabPrice = test.priceByLab?.[lab.id] ?? test.price;
+
+              return (
+                <div
+                  key={test.id}
+                  className={`p-3 rounded-2xl border transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
+                    isActive 
+                      ? 'bg-white border-slate-200 hover:border-slate-300' 
+                      : 'bg-amber-50/30 border-amber-200/80 opacity-80'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <button
+                      type="button"
+                      onClick={() => handleToggleTestActive(test.id)}
+                      className={`w-7 h-7 rounded-xl flex items-center justify-center transition-all cursor-pointer flex-shrink-0 ${
+                        isActive
+                          ? 'bg-emerald-500 text-white shadow-xs'
+                          : 'bg-slate-200 text-slate-400 hover:bg-slate-300'
+                      }`}
+                      title={isActive ? 'Active for this lab' : 'Inactive for this lab'}
+                    >
+                      {isActive ? <Check size={15} /> : <X size={15} />}
+                    </button>
+
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className={`font-bold text-xs sm:text-sm ${isActive ? 'text-slate-900' : 'text-slate-600 line-through'}`}>
+                          {test.name}
+                        </h4>
+                        <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-semibold rounded">
+                          {test.category}
+                        </span>
+                        {isActive ? (
+                          <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-full">
+                            ✓ {lang === 'bn' ? 'এক্টিভ' : 'Active'}
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-bold rounded-full">
+                            🚫 {lang === 'bn' ? 'ইনঅ্যাক্টিভ' : 'Inactive'}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-slate-500 truncate max-w-md mt-0.5">
+                        {test.description || 'No description'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Pricing per lab & quick toggle */}
+                  <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                    <div className="flex items-center gap-1.5 text-xs">
+                      <span className="text-slate-400 text-[11px]">{lang === 'bn' ? 'রেট:' : 'Rate:'}</span>
+                      <div className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200">
+                        <span className="text-[11px] font-bold text-slate-500">৳</span>
+                        <input 
+                          type="number"
+                          min="0"
+                          value={currentLabPrice}
+                          onChange={(e) => handleLabPriceChange(test.id, Number(e.target.value) || 0)}
+                          className="w-16 bg-transparent font-bold text-slate-900 text-xs outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleToggleTestActive(test.id)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                        isActive
+                          ? 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200'
+                          : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
+                      }`}
+                    >
+                      {isActive ? (
+                        <>
+                          <EyeOff size={13} />
+                          <span>{lang === 'bn' ? 'বন্ধ করুন' : 'Deactivate'}</span>
+                        </>
+                      ) : (
+                        <>
+                          <Check size={13} />
+                          <span>{lang === 'bn' ? 'চালু করুন' : 'Activate'}</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
+          <span className="text-xs text-slate-500">
+            {lang === 'bn' ? `মোট ${activeCount}টি টেস্ট সক্রিয় থাকবে` : `${activeCount} tests will be active`}
+          </span>
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="outline" onClick={onClose} className="!py-2 !px-4 text-xs font-semibold">
+              Cancel
+            </Button>
+            <Button type="button" onClick={handleSave} className="!py-2 !px-5 text-xs font-semibold flex items-center gap-1.5 shadow-sm">
+              <Check size={15} />
+              <span>{lang === 'bn' ? 'পরিবর্তন সংরক্ষণ করুন' : 'Save Changes'}</span>
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );
