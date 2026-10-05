@@ -327,6 +327,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     showToast("Test duplicated successfully!");
   };
 
+  const handleQuickUpdateTestOrderCount = (testId: string, delta: number) => {
+    const updated = tests.map(t => {
+      if (t.id === testId) {
+        const currentCount = t.orderCount || 0;
+        const newCount = Math.max(0, currentCount + delta);
+        return { ...t, orderCount: newCount };
+      }
+      return t;
+    });
+    onUpdateTests(updated);
+    showToast(lang === 'bn' ? 'অর্ডার সংখ্যা আপডেট করা হয়েছে!' : 'Test order count updated!');
+  };
+
   // ==========================================
   // PACKAGE HANDLERS
   // ==========================================
@@ -911,6 +924,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               onToggleHideTest={handleToggleHideTest}
               onDuplicateTest={handleDuplicateTest}
               onOpenDeleteTest={(test) => setDeleteTarget({ type: 'test', id: test.id, name: test.name })}
+              onQuickUpdateOrderCount={handleQuickUpdateTestOrderCount}
             />
           )}
 

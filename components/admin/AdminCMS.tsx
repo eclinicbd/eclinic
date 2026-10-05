@@ -41,7 +41,11 @@ import {
   Printer,
   ListChecks,
   FileCheck,
-  Upload
+  Upload,
+  Smartphone,
+  Download,
+  Star,
+  QrCode
 } from 'lucide-react';
 import { Button } from '../Button';
 import { 
@@ -84,7 +88,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
   onToggleServiceActive,
   showToast
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'hero' | 'sections' | 'branding' | 'about' | 'contact' | 'services' | 'nursing' | 'invoice'>('hero');
+  const [activeSubTab, setActiveSubTab] = useState<'hero' | 'sections' | 'branding' | 'about' | 'contact' | 'services' | 'nursing' | 'invoice' | 'app'>('hero');
   const [formData, setFormData] = useState<SiteSettings>({ ...siteSettings });
   const [newHeroImageUrl, setNewHeroImageUrl] = useState('');
   const [previewHeroIndex, setPreviewHeroIndex] = useState(0);
@@ -707,6 +711,19 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
           <Printer size={15} className={activeSubTab === 'invoice' ? 'text-emerald-600' : ''} />
           <span>{lang === 'bn' ? 'ইনভয়েস ও মানি রিসিপ্ট' : 'Invoice & Guidelines'}</span>
         </button>
+
+        <button
+          onClick={() => setActiveSubTab('app')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
+            activeSubTab === 'app'
+              ? 'bg-white text-sky-700 shadow-sm border border-sky-200'
+              : 'text-slate-600 hover:text-sky-700'
+          }`}
+        >
+          <Smartphone size={15} className={activeSubTab === 'app' ? 'text-primary' : ''} />
+          <span>{lang === 'bn' ? 'মোবাইল অ্যাপ ও লিংক (Play Store & App Store)' : 'Mobile App & Store Links'}</span>
+          <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+        </button>
       </div>
 
       {/* ========================================================================= */}
@@ -1169,6 +1186,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
           formData.showPopularTestsSection !== false,
           formData.showPackagesSection !== false,
           formData.showNursingSection !== false,
+          formData.showAppDownloadSection !== false,
           formData.showHowItWorksSection !== false,
           formData.showServicesSection !== false
         ].filter(Boolean).length;
@@ -1178,6 +1196,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
           popularTests: { bn: 'জনপ্রিয় ডায়াগনস্টিক টেস্টসমূহ', en: 'Popular Diagnostic Tests', shortBn: 'জনপ্রিয় টেস্ট', shortEn: 'Popular Tests' },
           packages: { bn: 'হেলথ প্যাকেজ স্লাইডার', en: 'Essential Health Packages', shortBn: 'হেলথ প্যাকেজ', shortEn: 'Health Packages' },
           nursing: { bn: 'হোম নার্সিং ও পেশেন্ট কেয়ার', en: 'Home Nursing & Care', shortBn: 'নার্সিং কেয়ার', shortEn: 'Nursing Care' },
+          appDownload: { bn: 'মোবাইল অ্যাপ ডাউনলোড (Play Store & App Store)', en: 'Mobile App Download (Play Store & iOS)', shortBn: 'মোবাইল অ্যাপ', shortEn: 'Mobile App' },
           services: { bn: 'স্বাস্থ্যসেবা সমূহ হেডার', en: 'Healthcare Services Header', shortBn: 'স্বাস্থ্যসেবা', shortEn: 'Healthcare Services' },
           howItWorks: { bn: 'কিভাবে সেবা নিবেন (৩টি ধাপ)', en: 'How It Works (3 Steps)', shortBn: 'কাজের ধাপসমূহ', shortEn: 'How It Works' }
         };
@@ -1202,7 +1221,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                   <span className="px-3 py-1.5 bg-emerald-100 text-emerald-900 text-xs font-bold rounded-xl flex items-center gap-1.5 border border-emerald-300 shadow-2xs">
                     <Eye size={13} className="text-emerald-700" />
                     <span>
-                      {activeCount} / 6 {lang === 'bn' ? 'সক্রিয়' : 'Active'}
+                      {activeCount} / 7 {lang === 'bn' ? 'সক্রিয়' : 'Active'}
                     </span>
                   </span>
                 </div>
@@ -1221,6 +1240,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                     secKey === 'popularTests' ? formData.showPopularTestsSection !== false :
                     secKey === 'packages' ? formData.showPackagesSection !== false :
                     secKey === 'nursing' ? formData.showNursingSection !== false :
+                    secKey === 'appDownload' ? formData.showAppDownloadSection !== false :
                     secKey === 'services' ? formData.showServicesSection !== false :
                     formData.showHowItWorksSection !== false;
 
@@ -2018,6 +2038,134 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                             </div>
                           </div>
                         ))}
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (sectionKey === 'appDownload') {
+                  const isActive = formData.showAppDownloadSection !== false;
+                  return (
+                    <div 
+                      key="appDownload"
+                      className={`bg-white p-6 rounded-2xl border shadow-sm space-y-4 transition-all ${
+                        isActive ? 'border-sky-200 ring-1 ring-sky-100' : 'border-slate-200/60 bg-slate-50/50 opacity-90'
+                      }`}
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-sky-50 pb-3">
+                        <div className="flex items-center gap-2.5">
+                          <span className="px-2.5 py-1 bg-slate-900 text-white text-xs font-black rounded-lg shadow-2xs">
+                            #{idx + 1}
+                          </span>
+                          <div className={`p-2 rounded-xl ${isActive ? 'bg-sky-100 text-sky-600' : 'bg-slate-200 text-slate-500'}`}>
+                            <Smartphone size={18} />
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                              <span>{lang === 'bn' ? 'মোবাইল অ্যাপ ডাউনলোড সেকশন (Google Play & App Store)' : 'Mobile App Download Section'}</span>
+                            </h3>
+                            <span className="text-[11px] text-sky-600 font-bold bg-sky-50 px-2 py-0.5 rounded-md">Pos #{idx + 1} &bull; Store Links</span>
+                          </div>
+                        </div>
+
+                        {/* Controls: Up / Down Reorder & Active Toggle */}
+                        <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
+                          {/* Up Button */}
+                          <button
+                            type="button"
+                            disabled={isFirst}
+                            onClick={() => handleMoveSection('appDownload', 'up')}
+                            className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                              isFirst 
+                                ? 'opacity-30 cursor-not-allowed bg-slate-100 text-slate-400 border-slate-200' 
+                                : 'bg-white text-slate-700 border-slate-200 hover:bg-sky-50 hover:text-primary hover:border-sky-300 shadow-2xs cursor-pointer'
+                            }`}
+                            title={lang === 'bn' ? 'সেকশনটি ১ ধাপ উপরে নিন' : 'Move section up'}
+                          >
+                            <ArrowUp size={14} className={isFirst ? '' : 'text-primary'} />
+                            <span className="hidden sm:inline">{lang === 'bn' ? 'উপরে' : 'Up'}</span>
+                          </button>
+
+                          {/* Down Button */}
+                          <button
+                            type="button"
+                            disabled={isLast}
+                            onClick={() => handleMoveSection('appDownload', 'down')}
+                            className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                              isLast 
+                                ? 'opacity-30 cursor-not-allowed bg-slate-100 text-slate-400 border-slate-200' 
+                                : 'bg-white text-slate-700 border-slate-200 hover:bg-sky-50 hover:text-primary hover:border-sky-300 shadow-2xs cursor-pointer'
+                            }`}
+                            title={lang === 'bn' ? 'সেকশনটি ১ ধাপ নিচে নিন' : 'Move section down'}
+                          >
+                            <ArrowDown size={14} className={isLast ? '' : 'text-primary'} />
+                            <span className="hidden sm:inline">{lang === 'bn' ? 'নিচে' : 'Down'}</span>
+                          </button>
+
+                          {/* Active / Inactive Toggle Button */}
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, showAppDownloadSection: !(prev.showAppDownloadSection !== false) }))}
+                            className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border cursor-pointer ${
+                              isActive 
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100 shadow-xs' 
+                                : 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200'
+                            }`}
+                            title={isActive ? 'Click to set Inactive (Hide from Homepage)' : 'Click to set Active (Show on Homepage)'}
+                          >
+                            {isActive ? (
+                              <>
+                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                <Eye size={13} className="text-emerald-600" />
+                                <span>{lang === 'bn' ? 'Active (সক্রিয়)' : 'Active (Visible)'}</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+                                <EyeOff size={13} className="text-slate-400" />
+                                <span>{lang === 'bn' ? 'Inactive (লুকানো)' : 'Inactive (Hidden)'}</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">
+                            {lang === 'bn' ? 'Android / Google Play Store লিংক' : 'Google Play Store URL'}
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.androidAppUrl || ''}
+                            onChange={e => setFormData({ ...formData, androidAppUrl: e.target.value })}
+                            placeholder="https://play.google.com/store/apps/details?id=..."
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-mono focus:ring-2 focus:ring-primary outline-none bg-white"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">
+                            {lang === 'bn' ? 'Apple iOS / App Store লিংক' : 'Apple App Store URL'}
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.iosAppUrl || ''}
+                            onChange={e => setFormData({ ...formData, iosAppUrl: e.target.value })}
+                            placeholder="https://apps.apple.com/app/..."
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-mono focus:ring-2 focus:ring-primary outline-none bg-white"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setActiveSubTab('app')}
+                          className="text-xs font-bold text-sky-600 hover:text-sky-800 flex items-center gap-1 cursor-pointer underline"
+                        >
+                          <span>{lang === 'bn' ? '📱 সম্পূর্ণ মোবাইল অ্যাপ সেটিংস ও লাইভ প্রিভিউ দেখুন' : 'View Full Mobile App Settings & Live Preview'} &rarr;</span>
+                        </button>
                       </div>
                     </div>
                   );
@@ -3492,6 +3640,408 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                 </ul>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 9. MOBILE APP & STORE LINKS MANAGEMENT (Google Play & Apple iOS)         */}
+      {/* ========================================================================= */}
+      {activeSubTab === 'app' && (
+        <div className="space-y-6">
+          {/* Header Info */}
+          <div className="p-5 bg-gradient-to-r from-sky-900 via-slate-900 to-indigo-950 text-white rounded-2xl shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-sky-500/20 border border-sky-400/30 flex items-center justify-center text-sky-300">
+                <Smartphone size={26} />
+              </div>
+              <div>
+                <h3 className="text-base sm:text-lg font-extrabold text-white flex items-center gap-2">
+                  <span>{lang === 'bn' ? 'মোবাইল অ্যাপ ও স্টোর লিংক সেটিংস' : 'Mobile App & Store Links Settings'}</span>
+                  <span className="px-2 py-0.5 bg-emerald-500 text-slate-950 rounded-md text-[10px] font-black uppercase">
+                    Play Store & iOS
+                  </span>
+                </h3>
+                <p className="text-xs text-sky-200/80 mt-0.5 max-w-xl">
+                  {lang === 'bn'
+                    ? 'হোমপেজে গুগল প্লে স্টোর ও অ্যাপল অ্যাপ স্টোর ডাউনলোড অপশন প্রদর্শন করুন এবং আপনার অ্যাপের লাইভ লিংক যুক্ত করুন।'
+                    : 'Configure Google Play Store and Apple App Store links for patient app downloads and homepage banner display.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 self-start md:self-auto">
+              <Button 
+                onClick={() => handleSaveAll()}
+                className="px-5 py-2.5 text-xs font-bold bg-primary hover:bg-sky-500 text-white shadow-lg shadow-sky-950/40"
+              >
+                <Save size={14} className="mr-1 inline" />
+                <span>{lang === 'bn' ? 'পরিবর্তন সংরক্ষণ করুন' : 'Save App Links'}</span>
+              </Button>
+            </div>
+          </div>
+
+          {/* Grid: Settings Form (8 Cols) vs Live Preview (4 Cols) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            {/* Left: Configuration Form */}
+            <div className="lg:col-span-7 space-y-5">
+              
+              {/* Main Visibility & Placement Toggles */}
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                  <Sliders size={15} className="text-primary" />
+                  <span>{lang === 'bn' ? 'অ্যাপ অপশন প্রদর্শন ও অবস্থান' : 'App Option Visibility & Placement'}</span>
+                </h4>
+
+                <div className="space-y-3">
+                  {/* 1. Main Homepage App Download Section Toggle */}
+                  <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
+                    <div>
+                      <span className="font-bold text-xs text-slate-800 block">
+                        {lang === 'bn' ? '১. হোমপেজে মূল অ্যাপ ডাউনলোড সেকশন চালু রাখুন' : '1. Show Main App Download Section on Homepage'}
+                      </span>
+                      <span className="text-[11px] text-slate-500">
+                        {lang === 'bn' ? 'হোমপেজের চমৎকার অ্যাপ ব্যানার, স্মার্টফোন ফ্রেম ও ডাউনলোড বাটন।' : 'Attractive app showcase section with smartphone mockup and download buttons.'}
+                      </span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={formData.showAppDownloadSection !== false}
+                      onChange={e => setFormData({ ...formData, showAppDownloadSection: e.target.checked })}
+                      className="w-5 h-5 text-primary rounded accent-primary cursor-pointer"
+                    />
+                  </div>
+
+                  {/* 2. Hero Section App Buttons */}
+                  <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
+                    <div>
+                      <span className="font-bold text-xs text-slate-800 block">
+                        {lang === 'bn' ? '২. হিরো ব্যানারে অ্যাপ স্টোর ব্যাজ দেখান' : '2. Show App Store Badges in Hero Banner'}
+                      </span>
+                      <span className="text-[11px] text-slate-500">
+                        {lang === 'bn' ? 'হোমপেজের শীর্ষ হিরো ব্যানারের নিচে ছোট প্লে স্টোর ও আইওএস বাটন।' : 'Display mini Google Play & App Store buttons directly in the hero banner.'}
+                      </span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={formData.showAppButtonsInHero !== false}
+                      onChange={e => setFormData({ ...formData, showAppButtonsInHero: e.target.checked })}
+                      className="w-5 h-5 text-primary rounded accent-primary cursor-pointer"
+                    />
+                  </div>
+
+                  {/* 3. Footer App Buttons */}
+                  <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
+                    <div>
+                      <span className="font-bold text-xs text-slate-800 block">
+                        {lang === 'bn' ? '৩. ফুটার (Footer)-এ অ্যাপ লিংক দেখান' : '3. Show App Store Links in Footer'}
+                      </span>
+                      <span className="text-[11px] text-slate-500">
+                        {lang === 'bn' ? 'ওয়েবসাইটের নিচের ফুটারে ডাউনলোড বাটন প্রদর্শন করবে।' : 'Display Google Play and App Store links in the website footer.'}
+                      </span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={formData.showAppButtonsInFooter !== false}
+                      onChange={e => setFormData({ ...formData, showAppButtonsInFooter: e.target.checked })}
+                      className="w-5 h-5 text-primary rounded accent-primary cursor-pointer"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Store Links Form */}
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                  <ExternalLink size={15} className="text-emerald-600" />
+                  <span>{lang === 'bn' ? 'স্টোর লিংকসমূহ (Store URLs)' : 'Store Download URLs'}</span>
+                </h4>
+
+                {/* 1. Android Google Play Store URL */}
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-800 flex items-center gap-2">
+                      {/* Google Play Icon */}
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                        <path d="M3.609 1.814L13.793 12 3.61 22.186a2.372 2.372 0 0 1-.61-.926V2.74c.15-.353.364-.67.61-.926z" fill="#00D2FF"/>
+                        <path d="M17.186 8.607L13.793 12l3.393 3.393 3.82-2.183a1.41 1.41 0 0 0 0-2.42l-3.82-2.183z" fill="#FFCE00"/>
+                        <path d="M3.609 22.186L13.793 12 17.186 15.393 6.012 21.78a2.38 2.38 0 0 1-2.403.406z" fill="#FF3A44"/>
+                        <path d="M3.609 1.814a2.38 2.38 0 0 1 2.403.406l11.174 6.387L13.793 12 3.61 1.814z" fill="#00E676"/>
+                      </svg>
+                      <span>{lang === 'bn' ? 'Android / Google Play Store লিংক *' : 'Android / Google Play Store URL *'}</span>
+                    </label>
+
+                    {formData.androidAppUrl && (
+                      <a
+                        href={formData.androidAppUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[11px] font-bold text-sky-600 hover:text-sky-800 flex items-center gap-1"
+                      >
+                        <span>{lang === 'bn' ? 'লিংক টেস্ট করুন' : 'Test Link'}</span>
+                        <ExternalLink size={12} />
+                      </a>
+                    )}
+                  </div>
+
+                  <input
+                    type="url"
+                    value={formData.androidAppUrl || ''}
+                    onChange={e => setFormData({ ...formData, androidAppUrl: e.target.value })}
+                    placeholder="https://play.google.com/store/apps/details?id=com.eclinicbd.app"
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-mono bg-white focus:ring-2 focus:ring-primary outline-none"
+                  />
+
+                  {/* Preset Helper */}
+                  <div className="flex items-center gap-2 pt-1">
+                    <span className="text-[10px] text-slate-400">{lang === 'bn' ? 'ডিফল্ট লিংক:' : 'Quick Sample:'}</span>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, androidAppUrl: 'https://play.google.com/store/apps/details?id=com.eclinicbd.app' })}
+                      className="text-[10px] font-bold text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200 hover:border-primary hover:text-primary"
+                    >
+                      com.eclinicbd.app
+                    </button>
+                  </div>
+                </div>
+
+                {/* 2. Apple iOS App Store URL */}
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-800 flex items-center gap-2">
+                      {/* Apple Icon */}
+                      <svg className="w-4 h-4 fill-current text-slate-800" viewBox="0 0 24 24">
+                        <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.62-.75 1.04-1.8 0.92-2.85-.9.04-2 .6-2.65 1.35-.58.66-1.09 1.73-.95 2.76 1 .08 2.05-.51 2.68-1.26z"/>
+                      </svg>
+                      <span>{lang === 'bn' ? 'Apple iOS / App Store লিংক *' : 'Apple iOS / App Store URL *'}</span>
+                    </label>
+
+                    {formData.iosAppUrl && (
+                      <a
+                        href={formData.iosAppUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[11px] font-bold text-sky-600 hover:text-sky-800 flex items-center gap-1"
+                      >
+                        <span>{lang === 'bn' ? 'লিংক টেস্ট করুন' : 'Test Link'}</span>
+                        <ExternalLink size={12} />
+                      </a>
+                    )}
+                  </div>
+
+                  <input
+                    type="url"
+                    value={formData.iosAppUrl || ''}
+                    onChange={e => setFormData({ ...formData, iosAppUrl: e.target.value })}
+                    placeholder="https://apps.apple.com/app/eclinic-bd/id123456789"
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-mono bg-white focus:ring-2 focus:ring-primary outline-none"
+                  />
+
+                  {/* Preset Helper */}
+                  <div className="flex items-center gap-2 pt-1">
+                    <span className="text-[10px] text-slate-400">{lang === 'bn' ? 'ডিফল্ট লিংক:' : 'Quick Sample:'}</span>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, iosAppUrl: 'https://apps.apple.com/app/eclinic-bd/id123456789' })}
+                      className="text-[10px] font-bold text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200 hover:border-primary hover:text-primary"
+                    >
+                      apps.apple.com/app/eclinic-bd
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3. Direct APK Download URL (Optional) */}
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                  <label className="text-xs font-bold text-slate-700 flex items-center gap-2">
+                    <Download size={14} className="text-amber-500" />
+                    <span>{lang === 'bn' ? 'সরাসরি APK ডাউনলোড লিংক (অপশনাল)' : 'Direct APK Download URL (Optional)'}</span>
+                  </label>
+
+                  <input
+                    type="url"
+                    value={formData.apkDownloadUrl || ''}
+                    onChange={e => setFormData({ ...formData, apkDownloadUrl: e.target.value })}
+                    placeholder="https://eclinicbd.com/download/eclinic-latest.apk"
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-mono bg-white focus:ring-2 focus:ring-primary outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Section Texts Customization */}
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                  <FileText size={15} className="text-primary" />
+                  <span>{lang === 'bn' ? 'সেকশনের লেখা ও টেক্সট কাস্টমাইজেশন' : 'Section Texts & Content'}</span>
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      {lang === 'bn' ? 'টপ ব্যাজ (Badge Text)' : 'Badge Text'}
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.appSectionBadge || ''}
+                      onChange={e => setFormData({ ...formData, appSectionBadge: e.target.value })}
+                      placeholder="e.g. 📱 গুগল প্লে ও অ্যাপ স্টোর"
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      {lang === 'bn' ? 'ডাউনলোড কাউন্ট ব্যাজ' : 'Download Count Badge'}
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.appDownloadCount || ''}
+                      onChange={e => setFormData({ ...formData, appDownloadCount: e.target.value })}
+                      placeholder="e.g. ৫০,০০০+ সক্রিয় ডাউনলোড"
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    {lang === 'bn' ? 'মূল শিরোনাম (Section Title)' : 'Main Heading Title'} *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.appSectionTitle || ''}
+                    onChange={e => setFormData({ ...formData, appSectionTitle: e.target.value })}
+                    placeholder="e.g. স্মার্টফোনে eClinic মোবাইল অ্যাপ ডাউনলোড করুন"
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-primary outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    {lang === 'bn' ? 'বিস্তারিত বিবরণ (Section Description)' : 'Section Description'}
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={formData.appSectionDesc || ''}
+                    onChange={e => setFormData({ ...formData, appSectionDesc: e.target.value })}
+                    placeholder="e.g. এক ক্লিকে ঘরে বসেই ল্যাব টেস্ট অর্ডার করুন..."
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none leading-relaxed"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    {lang === 'bn' ? 'রেটিং ও রিভিউ টেক্সট' : 'Rating & Review Text'}
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.appRating || ''}
+                    onChange={e => setFormData({ ...formData, appRating: e.target.value })}
+                    placeholder="e.g. ৪.৮ ★ (৫,০০০+ রিভিউ)"
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none"
+                  />
+                </div>
+              </div>
+
+            </div>
+
+            {/* Right: Live Visual Preview Card */}
+            <div className="lg:col-span-5 space-y-5">
+              
+              {/* Card 1: Interactive Live Preview */}
+              <div className="bg-gradient-to-br from-slate-900 via-sky-950 to-slate-900 text-white p-5 rounded-2xl border border-slate-800 shadow-xl space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <span className="text-xs font-extrabold text-sky-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <Sparkles size={14} />
+                    <span>{lang === 'bn' ? 'লাইভ ওয়েবসাইট প্রিভিউ' : 'Live Website Preview'}</span>
+                  </span>
+                  <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-full font-bold">
+                    {formData.showAppDownloadSection !== false ? 'Active' : 'Hidden'}
+                  </span>
+                </div>
+
+                <div className="space-y-3">
+                  <span className="inline-block px-2.5 py-0.5 rounded-full bg-sky-500/20 border border-sky-400/30 text-sky-300 text-[11px] font-bold">
+                    {formData.appSectionBadge || (lang === 'bn' ? '📱 গুগল প্লে ও অ্যাপ স্টোর' : '📱 Mobile App')}
+                  </span>
+
+                  <h4 className="text-base font-extrabold text-white leading-snug">
+                    {formData.appSectionTitle || (lang === 'bn' ? 'স্মার্টফোনে eClinic মোবাইল অ্যাপ ডাউনলোড করুন' : 'Download eClinic Mobile App')}
+                  </h4>
+
+                  <p className="text-xs text-slate-300 leading-relaxed line-clamp-3">
+                    {formData.appSectionDesc || (lang === 'bn' ? 'এক ক্লিকে ঘরে বসেই ল্যাব টেস্ট অর্ডার করুন...' : 'Order home tests right from your phone...')}
+                  </p>
+
+                  {/* Badges preview */}
+                  <div className="flex items-center gap-2 pt-1 text-[10px]">
+                    <span className="px-2 py-1 rounded-lg bg-slate-800 text-amber-300 font-semibold flex items-center gap-1 border border-slate-700">
+                      <Star size={11} className="fill-amber-400 text-amber-400" />
+                      {formData.appRating || '4.8 ★'}
+                    </span>
+                    <span className="px-2 py-1 rounded-lg bg-slate-800 text-emerald-300 font-semibold flex items-center gap-1 border border-slate-700">
+                      <Download size={11} className="text-emerald-400" />
+                      {formData.appDownloadCount || '50,000+ Downloads'}
+                    </span>
+                  </div>
+
+                  {/* Live Interactive Buttons */}
+                  <div className="space-y-2.5 pt-2">
+                    {/* Google Play */}
+                    <a
+                      href={formData.androidAppUrl || '#'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full flex items-center gap-3 p-2.5 rounded-xl bg-black border border-slate-700 hover:border-sky-400 transition-all text-left group"
+                    >
+                      <svg className="w-6 h-6 shrink-0" viewBox="0 0 24 24" fill="none">
+                        <path d="M3.609 1.814L13.793 12 3.61 22.186a2.372 2.372 0 0 1-.61-.926V2.74c.15-.353.364-.67.61-.926z" fill="#00D2FF"/>
+                        <path d="M17.186 8.607L13.793 12l3.393 3.393 3.82-2.183a1.41 1.41 0 0 0 0-2.42l-3.82-2.183z" fill="#FFCE00"/>
+                        <path d="M3.609 22.186L13.793 12 17.186 15.393 6.012 21.78a2.38 2.38 0 0 1-2.403.406z" fill="#FF3A44"/>
+                        <path d="M3.609 1.814a2.38 2.38 0 0 1 2.403.406l11.174 6.387L13.793 12 3.61 1.814z" fill="#00E676"/>
+                      </svg>
+                      <div className="flex-1">
+                        <div className="text-[9px] uppercase font-semibold text-slate-400 leading-none">GET IT ON</div>
+                        <div className="text-sm font-extrabold text-white leading-tight">Google Play</div>
+                      </div>
+                      <ExternalLink size={13} className="text-slate-500 group-hover:text-white transition-colors" />
+                    </a>
+
+                    {/* Apple App Store */}
+                    <a
+                      href={formData.iosAppUrl || '#'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full flex items-center gap-3 p-2.5 rounded-xl bg-black border border-slate-700 hover:border-sky-400 transition-all text-left group"
+                    >
+                      <svg className="w-6 h-6 shrink-0 fill-current text-white" viewBox="0 0 24 24">
+                        <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.62-.75 1.04-1.8 0.92-2.85-.9.04-2 .6-2.65 1.35-.58.66-1.09 1.73-.95 2.76 1 .08 2.05-.51 2.68-1.26z"/>
+                      </svg>
+                      <div className="flex-1">
+                        <div className="text-[9px] uppercase font-semibold text-slate-400 leading-none">Download on the</div>
+                        <div className="text-sm font-extrabold text-white leading-tight">App Store</div>
+                      </div>
+                      <ExternalLink size={13} className="text-slate-500 group-hover:text-white transition-colors" />
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 2: Quick Tips */}
+              <div className="p-4 bg-sky-50 rounded-2xl border border-sky-100 text-xs text-sky-900 space-y-2">
+                <h5 className="font-bold flex items-center gap-1.5 text-sky-950">
+                  <ShieldCheck size={15} className="text-primary" />
+                  <span>{lang === 'bn' ? 'প্রয়োজনীয় টিপস:' : 'Helpful Tips:'}</span>
+                </h5>
+                <ul className="list-disc pl-4 space-y-1 text-[11px] text-sky-800 leading-relaxed">
+                  <li>{lang === 'bn' ? 'গুগল প্লে স্টোরে আপনার অ্যাপ পাবলিশ হওয়ার পর সম্পূর্ণ URL এখানে পেস্ট করুন।' : 'Paste the full live URL once your app is published on the Play Store.'}</li>
+                  <li>{lang === 'bn' ? 'iOS অ্যাপ স্টোর লিংক না থাকলে সাময়িকভাবে খালি রাখতে পারেন।' : 'You can leave iOS link blank or use default placeholder if only Android app is available.'}</li>
+                  <li>{lang === 'bn' ? 'সেভ করার পর হোমপেজে গিয়ে সেকশনটির কার্যকারিতা যাচাই করুন।' : 'Click Save to immediately publish these links across all site banners and footer.'}</li>
+                </ul>
+              </div>
+
+            </div>
+
           </div>
         </div>
       )}

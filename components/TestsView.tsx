@@ -97,7 +97,7 @@ export const TestsView: React.FC<TestsViewProps> = ({
     };
 
     return (test: TestPackage): number => {
-      let count = test.orderCount || defaultPopularityMap[test.id] || 120;
+      let count = test.orderCount !== undefined ? test.orderCount : (defaultPopularityMap[test.id] || 120);
       
       if (bookings && bookings.length > 0) {
         bookings.forEach(b => {

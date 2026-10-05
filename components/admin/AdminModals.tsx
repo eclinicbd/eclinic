@@ -119,6 +119,7 @@ export const TestFormModal: React.FC<TestModalProps> = ({
         originalPrice: origPrice,
         price: editingTest.price,
         discountPercent: discPct,
+        orderCount: editingTest.orderCount !== undefined ? editingTest.orderCount : 0,
         originalPriceByLab: editingTest.originalPriceByLab ? { ...editingTest.originalPriceByLab } : {},
         priceByLab: editingTest.priceByLab ? { ...editingTest.priceByLab } : {},
         hiddenLabs: editingTest.hiddenLabs ? [...editingTest.hiddenLabs] : [],
@@ -139,6 +140,7 @@ export const TestFormModal: React.FC<TestModalProps> = ({
         price: 500,
         discountPercent: 17,
         turnaroundTime: '24 Hours',
+        orderCount: 120,
         image: PRESET_IMAGES[0].url,
         originalPriceByLab: initialOrigPrices,
         priceByLab: initialPrices,
@@ -286,6 +288,7 @@ export const TestFormModal: React.FC<TestModalProps> = ({
       price: baseSelling,
       discountPercent: discountPct,
       turnaroundTime: formData.turnaroundTime || '24 Hours',
+      orderCount: Number(formData.orderCount) !== undefined ? Math.max(0, Number(formData.orderCount) || 0) : 0,
       image: formData.image || PRESET_IMAGES[0].url,
       originalPriceByLab: finalOriginalPrices,
       priceByLab: finalSellingPrices,
@@ -550,7 +553,7 @@ export const TestFormModal: React.FC<TestModalProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block font-bold text-slate-700 mb-1">Turnaround Time</label>
               <input 
@@ -562,12 +565,50 @@ export const TestFormModal: React.FC<TestModalProps> = ({
               />
             </div>
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Description / Preparation Instructions</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block font-bold text-slate-700 flex items-center gap-1">
+                  <Flame size={13} className="text-amber-500 fill-amber-500" />
+                  <span>{lang === 'bn' ? 'অর্ডার সংখ্যা (Done Count)' : 'Completed / Orders'}</span>
+                </label>
+                <span className="text-[10px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200/60">
+                  🔥 {formData.orderCount || 0}+
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <input 
+                  type="number"
+                  min="0"
+                  value={formData.orderCount !== undefined ? formData.orderCount : 0} 
+                  onChange={(e) => setFormData({ ...formData, orderCount: Math.max(0, parseInt(e.target.value, 10) || 0) })}
+                  placeholder="e.g. 860" 
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary outline-none text-xs font-bold text-slate-800 bg-white"
+                />
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, orderCount: Math.max(0, (prev.orderCount || 0) - 10) }))}
+                  className="px-2 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-bold text-slate-700 transition-colors"
+                  title={lang === 'bn' ? '১০ কমান' : 'Decrease 10'}
+                >
+                  -10
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, orderCount: (prev.orderCount || 0) + 10 }))}
+                  className="px-2 py-2 bg-amber-50 hover:bg-amber-100 rounded-lg text-xs font-bold text-amber-700 border border-amber-200/80 transition-colors"
+                  title={lang === 'bn' ? '১০ বাড়ান' : 'Increase 10'}
+                >
+                  +10
+                </button>
+              </div>
+              <span className="text-[10px] text-slate-400 mt-0.5 block">{lang === 'bn' ? 'অর্ডার হলে স্বয়ংক্রিয়ভাবে বাড়ে' : 'Auto updates on order'}</span>
+            </div>
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Description / Instructions</label>
               <input 
                 type="text"
                 value={formData.description || ''} 
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Fasting instructions or test details..." 
+                placeholder="Fasting instructions or details..." 
                 className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none text-xs"
               />
             </div>

@@ -12,7 +12,8 @@ import {
   Clock, 
   FlaskConical, 
   ArrowUpDown,
-  Tag 
+  Tag,
+  Flame
 } from 'lucide-react';
 import { Button } from '../Button';
 
@@ -26,6 +27,7 @@ interface AdminTestsProps {
   onToggleHideTest: (testId: string) => void;
   onDuplicateTest: (test: TestPackage) => void;
   onOpenDeleteTest: (test: TestPackage) => void;
+  onQuickUpdateOrderCount?: (testId: string, delta: number) => void;
 }
 
 export const AdminTests: React.FC<AdminTestsProps> = ({
@@ -37,7 +39,8 @@ export const AdminTests: React.FC<AdminTestsProps> = ({
   onOpenEditTest,
   onToggleHideTest,
   onDuplicateTest,
-  onOpenDeleteTest
+  onOpenDeleteTest,
+  onQuickUpdateOrderCount
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
@@ -180,37 +183,61 @@ export const AdminTests: React.FC<AdminTestsProps> = ({
                   isHidden ? 'border-amber-300/80 bg-amber-50/15' : 'border-slate-200 hover:border-slate-300'
                 }`}
               >
-                {/* Header Image & Badges */}
-                <div className="relative h-32 w-full bg-slate-100 overflow-hidden">
-                  <img 
-                    src={test.image} 
-                    alt={test.name} 
-                    className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ${
-                      isHidden ? 'grayscale-[35%] opacity-90' : ''
-                    }`} 
-                  />
-                  
-                  {/* Category & Discount badges */}
-                  <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 flex-wrap">
-                    <span className="px-2.5 py-1 bg-white/95 backdrop-blur-sm rounded-lg text-[10px] font-bold uppercase tracking-wider text-slate-700 shadow-sm">
+                {/* Top Badges & Meta Row (No Image) */}
+                <div className="p-3.5 pb-2.5 border-b border-slate-100/80 flex items-center justify-between gap-2 bg-slate-50/50">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="px-2 py-0.5 bg-white border border-slate-200/80 rounded-lg text-[10px] font-bold uppercase tracking-wider text-slate-700 shadow-xs flex items-center gap-1">
+                      <FlaskConical size={11} className="text-sky-600" />
                       {test.category}
                     </span>
+
+                    {/* Order Count / Completed Badge with quick adjust */}
+                    <div className="inline-flex items-center bg-amber-50 text-amber-800 border border-amber-200/80 rounded-lg text-[10px] font-extrabold shadow-2xs">
+                      {onQuickUpdateOrderCount && (
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onQuickUpdateOrderCount(test.id, -10);
+                          }}
+                          className="px-1.5 py-0.5 hover:bg-amber-100 text-amber-700 rounded-l-md font-bold transition-colors"
+                          title="-10"
+                        >
+                          -
+                        </button>
+                      )}
+                      <span className="px-1.5 py-0.5 flex items-center gap-1">
+                        <Flame size={11} className="text-amber-500 fill-amber-500" />
+                        <span>{test.orderCount || 0}+ {lang === 'bn' ? 'সম্পন্ন' : 'Done'}</span>
+                      </span>
+                      {onQuickUpdateOrderCount && (
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onQuickUpdateOrderCount(test.id, 10);
+                          }}
+                          className="px-1.5 py-0.5 hover:bg-amber-100 text-amber-700 rounded-r-md font-bold transition-colors"
+                          title="+10"
+                        >
+                          +
+                        </button>
+                      )}
+                    </div>
+
                     {test.originalPrice && test.originalPrice > test.price && (
-                      <span className="px-2 py-0.5 bg-rose-600 text-white rounded-lg text-[10px] font-extrabold flex items-center gap-1 shadow-sm">
+                      <span className="px-2 py-0.5 bg-rose-50 text-rose-600 border border-rose-200 rounded-lg text-[10px] font-extrabold flex items-center gap-1 shadow-xs">
                         <Tag size={10} />
                         {test.discountPercent || Math.round(((test.originalPrice - test.price) / test.originalPrice) * 100)}% {lang === 'bn' ? 'ছাড়' : 'OFF'}
                       </span>
                     )}
                   </div>
 
-                  {/* Top-Right Badges */}
-                  <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
                     {isHidden ? (
-                      <span className="px-2.5 py-1 bg-amber-500 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-sm">
+                      <span className="px-2.5 py-0.5 bg-amber-100 text-amber-800 border border-amber-300 rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-xs">
                         <EyeOff size={11} /> {t.adminHiddenBadge}
                       </span>
                     ) : (
-                      <span className="px-2.5 py-1 bg-emerald-600 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-sm">
+                      <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-xs">
                         <Clock size={10} /> {test.turnaroundTime}
                       </span>
                     )}

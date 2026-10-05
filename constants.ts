@@ -30,7 +30,8 @@ const TESTS_BN: TestPackage[] = [
     },
     category: 'General',
     image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
-    turnaroundTime: '১২ ঘন্টা'
+    turnaroundTime: '১২ ঘন্টা',
+    orderCount: 1420
   },
   {
     id: '2',
@@ -60,7 +61,8 @@ const TESTS_BN: TestPackage[] = [
     },
     category: 'Diabetes',
     image: 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&q=80&w=400',
-    turnaroundTime: '২৪ ঘন্টা'
+    turnaroundTime: '২৪ ঘন্টা',
+    orderCount: 1180
   },
   {
     id: '3',
@@ -90,7 +92,8 @@ const TESTS_BN: TestPackage[] = [
     },
     category: 'Heart',
     image: 'https://images.unsplash.com/photo-1628348068343-c6a848d2b6dd?auto=format&fit=crop&q=80&w=400',
-    turnaroundTime: '২৪ ঘন্টা'
+    turnaroundTime: '২৪ ঘন্টা',
+    orderCount: 950
   },
   {
     id: '4',
@@ -120,7 +123,8 @@ const TESTS_BN: TestPackage[] = [
     },
     category: 'Thyroid',
     image: 'https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?auto=format&fit=crop&q=80&w=400',
-    turnaroundTime: '৪৮ ঘন্টা'
+    turnaroundTime: '৪৮ ঘন্টা',
+    orderCount: 860
   },
   {
     id: '5',
@@ -1336,6 +1340,7 @@ export const DEFAULT_HOME_SECTIONS_ORDER: string[] = [
   'packages',
   'nursing',
   'services',
+  'appDownload',
   'howItWorks'
 ];
 
@@ -1386,6 +1391,19 @@ export const DEFAULT_SITE_SETTINGS_BN: SiteSettings = {
   nursingHotline: '09612-000000',
   nursingWhatsApp: '01700000000',
   nursingServices: DEFAULT_NURSING_SERVICES_BN,
+
+  // Mobile App Download Section
+  showAppDownloadSection: true,
+  appSectionBadge: '📱 গুগল প্লে ও অ্যাপ স্টোর',
+  appSectionTitle: 'আমাদের মোবাইল অ্যাপ ডাউনলোড করুন',
+  appSectionDesc: 'যে কোনো সময়, যে কোনো স্থান থেকে মাত্র এক ক্লিকে ল্যাব টেস্ট বুক করুন, প্রেসক্রিপশন আপলোড করুন এবং তাৎক্ষণিক রিপোর্ট নোটিফিকেশন পান।',
+  androidAppUrl: 'https://play.google.com/store/apps/details?id=com.eclinicbd.app',
+  iosAppUrl: 'https://apps.apple.com/app/eclinic-bd/id123456789',
+  apkDownloadUrl: 'https://eclinicbd.com/download/eclinic-latest.apk',
+  appDownloadCount: '৫০,০০০+ ডাউনলোড',
+  appRating: '৪.৮ ★ (৫,০০০+ রিভিউ)',
+  showAppButtonsInHero: true,
+  showAppButtonsInFooter: true,
 
   // How It Works / Steps
   showHowItWorksSection: true,
@@ -1503,6 +1521,19 @@ export const DEFAULT_SITE_SETTINGS_EN: SiteSettings = {
   nursingHotline: '09612-000000',
   nursingWhatsApp: '01700000000',
   nursingServices: DEFAULT_NURSING_SERVICES_EN,
+
+  // Mobile App Download Section
+  showAppDownloadSection: true,
+  appSectionBadge: '📱 Google Play & App Store',
+  appSectionTitle: 'Download Our Official Mobile App',
+  appSectionDesc: 'Book home blood tests in seconds, upload prescriptions, track phlebotomist arrival in real-time and access lifetime digital reports.',
+  androidAppUrl: 'https://play.google.com/store/apps/details?id=com.eclinicbd.app',
+  iosAppUrl: 'https://apps.apple.com/app/eclinic-bd/id123456789',
+  apkDownloadUrl: 'https://eclinicbd.com/download/eclinic-latest.apk',
+  appDownloadCount: '50,000+ Downloads',
+  appRating: '4.8 ★ (5,000+ Reviews)',
+  showAppButtonsInHero: true,
+  showAppButtonsInFooter: true,
 
   // How It Works / Steps
   showHowItWorksSection: true,

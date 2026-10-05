@@ -42,11 +42,12 @@ import {
   StaffUser,
   DateSlotConfig
 } from '../types';
+import { sendPatientRegistrationNotificationEmail } from './emailNotificationService';
 
 // Initialize Firebase App
 export const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
-// Initialize Firestore with specific database ID and auto-detect long polling for robust connectivity in preview/iframe
+// Initialize Firestore with specific database ID and forced long polling for robust connectivity in preview/iframe
 export const db = (() => {
   const dbId = firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)'
     ? firebaseConfig.firestoreDatabaseId
@@ -54,6 +55,7 @@ export const db = (() => {
 
   try {
     return initializeFirestore(app, {
+      experimentalForceLongPolling: true,
       experimentalAutoDetectLongPolling: true,
       ignoreUndefinedProperties: true
     }, dbId);
@@ -150,6 +152,9 @@ export const signInWithGoogle = async (): Promise<{ success: boolean; user?: Pat
         createdAt: patient.createdAt,
         updatedAt: new Date().toISOString()
       }, { merge: true });
+
+      // Send automatic notification email to eclinicbd24@gmail.com
+      sendPatientRegistrationNotificationEmail(patient);
     }
 
     return { success: true, user: patient };
@@ -266,6 +271,9 @@ export const registerWithEmail = async (
       createdAt: patient.createdAt,
       updatedAt: new Date().toISOString()
     }, { merge: true });
+
+    // Send automatic notification email to eclinicbd24@gmail.com
+    sendPatientRegistrationNotificationEmail(patient);
 
     return { success: true, user: patient };
   } catch (error: any) {

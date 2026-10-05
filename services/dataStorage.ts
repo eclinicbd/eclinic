@@ -644,7 +644,8 @@ export const saveStoredTests = (lang: Language, tests: TestPackage[]): void => {
           isHidden: test.isHidden,
           category: test.category,
           turnaroundTime: test.turnaroundTime,
-          image: test.image
+          image: test.image,
+          orderCount: test.orderCount
         };
       } else {
         updatedOtherTests.unshift({ ...test });

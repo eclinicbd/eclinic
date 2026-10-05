@@ -344,6 +344,20 @@ export interface SiteSettings {
   facebookUrl?: string;
   services: ServiceItem[];
 
+  // Mobile App Download Section & Store Links (Android & Apple iOS)
+  showAppDownloadSection?: boolean;
+  appSectionBadge?: string;
+  appSectionTitle?: string;
+  appSectionDesc?: string;
+  androidAppUrl?: string; // Google Play Store link
+  iosAppUrl?: string; // Apple iOS App Store link
+  apkDownloadUrl?: string; // Direct APK download link if needed
+  appDownloadCount?: string; // e.g. "৫০,০০০+ ডাউনলোড"
+  appRating?: string; // e.g. "৪.৮ ★ (৫,০০০+ রিভিউ)"
+  appMockupImage?: string; // Custom app preview screenshot
+  showAppButtonsInHero?: boolean; // Show Google Play / iOS badges in Hero banner as well
+  showAppButtonsInFooter?: boolean; // Show store buttons in Footer
+
   // Invoice & Money Receipt Customization
   invoiceLogoUrl?: string;
   invoiceOrgName?: string;

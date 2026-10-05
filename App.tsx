@@ -48,6 +48,10 @@ import {
   subscribeToPatientsList,
   subscribeToDateSlotConfig
 } from './services/firebase';
+import { 
+  sendOrderNotificationEmail, 
+  sendPatientRegistrationNotificationEmail 
+} from './services/emailNotificationService';
 import { saveStoredPaymentConfig } from './services/dataStorage';
 import { TestCard } from './components/TestCard';
 import { BookingModal, calculateAccessoriesFee } from './components/BookingModal';
@@ -61,6 +65,7 @@ import { PackageDetailModal } from './components/PackageDetailModal';
 import { HomePackagesSection } from './components/HomePackagesSection';
 import { HomePopularTestsSection } from './components/HomePopularTestsSection';
 import { NursingCareSection } from './components/NursingCareSection';
+import { HomeAppDownloadSection } from './components/HomeAppDownloadSection';
 import { LabLogo } from './components/LabLogo';
 import { Button } from './components/Button';
 import { 
@@ -572,6 +577,48 @@ export default function App() {
     });
     // Persist real-time to Firebase Firestore
     saveBookingToFirestore(booking);
+
+    // Send automatic notification email to eclinicbd24@gmail.com with Invoice, Schedule & Patient Details
+    sendOrderNotificationEmail(booking, language);
+
+    // Automatically increment orderCount for booked tests
+    const bookedIds = new Set<string>();
+    const bookedNames = new Set<string>();
+
+    if (booking.items && Array.isArray(booking.items)) {
+      booking.items.forEach(it => {
+        if (it.id) bookedIds.add(it.id);
+        if (it.name) bookedNames.add(it.name.toLowerCase().trim());
+      });
+    }
+    if (booking.testNames && Array.isArray(booking.testNames)) {
+      booking.testNames.forEach(name => {
+        if (name) bookedNames.add(name.toLowerCase().trim());
+      });
+    }
+
+    setTests(prevTests => {
+      let changed = false;
+      const updatedTests = prevTests.map(test => {
+        const isMatched = 
+          bookedIds.has(test.id) ||
+          bookedNames.has(test.name.toLowerCase().trim()) ||
+          Array.from(bookedNames).some(bn => bn.includes(test.name.toLowerCase().trim()) || test.name.toLowerCase().trim().includes(bn));
+        
+        if (isMatched) {
+          changed = true;
+          const currentCount = test.orderCount || 0;
+          return { ...test, orderCount: currentCount + 1 };
+        }
+        return test;
+      });
+
+      if (changed) {
+        saveStoredTests(language, updatedTests);
+        saveTestsToFirestore(language, updatedTests);
+      }
+      return updatedTests;
+    });
   };
 
   const toggleCart = (test: TestPackage | { id: string }) => {
@@ -623,6 +670,9 @@ export default function App() {
     setPatients(prev => {
       const exists = prev.some(p => p.id === patient.id || (p.phone && p.phone === patient.phone));
       if (!exists) {
+        // Send automatic notification email to eclinicbd24@gmail.com
+        sendPatientRegistrationNotificationEmail(patient, language);
+
         const next = [patient, ...prev];
         saveStoredPatients(next);
         return next;
@@ -1088,6 +1138,48 @@ export default function App() {
                       </a>
                     )}
                   </div>
+
+                  {/* Hero App Store Download Badges Row */}
+                  {siteSettings.showAppButtonsInHero !== false && (
+                    <div className="pt-6 flex flex-wrap items-center justify-center md:justify-start gap-3">
+                      <a
+                        href={siteSettings.androidAppUrl || 'https://play.google.com/store/apps'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-semibold border border-slate-800 hover:border-sky-400 transition-all shadow-xs cursor-pointer"
+                        title="Download on Google Play Store"
+                      >
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                          <path d="M3.609 1.814L13.793 12 3.61 22.186a2.372 2.372 0 0 1-.61-.926V2.74c.15-.353.364-.67.61-.926z" fill="#00D2FF"/>
+                          <path d="M17.186 8.607L13.793 12l3.393 3.393 3.82-2.183a1.41 1.41 0 0 0 0-2.42l-3.82-2.183z" fill="#FFCE00"/>
+                          <path d="M3.609 22.186L13.793 12 17.186 15.393 6.012 21.78a2.38 2.38 0 0 1-2.403.406z" fill="#FF3A44"/>
+                          <path d="M3.609 1.814a2.38 2.38 0 0 1 2.403.406l11.174 6.387L13.793 12 3.61 1.814z" fill="#00E676"/>
+                        </svg>
+                        <span className="text-[11px] font-bold">Google Play</span>
+                      </a>
+
+                      <a
+                        href={siteSettings.iosAppUrl || 'https://apps.apple.com'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-semibold border border-slate-800 hover:border-sky-400 transition-all shadow-xs cursor-pointer"
+                        title="Download on Apple App Store"
+                      >
+                        <svg className="w-4 h-4 fill-current text-white" viewBox="0 0 24 24">
+                          <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.62-.75 1.04-1.8 0.92-2.85-.9.04-2 .6-2.65 1.35-.58.66-1.09 1.73-.95 2.76 1 .08 2.05-.51 2.68-1.26z"/>
+                        </svg>
+                        <span className="text-[11px] font-bold">App Store</span>
+                      </a>
+
+                      <button
+                        onClick={() => scrollToSection('app-download')}
+                        className="text-[11px] font-bold text-sky-600 hover:text-sky-800 flex items-center gap-1 cursor-pointer"
+                      >
+                        <span>{language === 'bn' ? '📱 অ্যাপ ফিচারসমূহ' : '📱 App Features'}</span>
+                        <ChevronRight size={13} />
+                      </button>
+                    </div>
+                  )}
                 </div>
                 
                 {/* Image Slider */}
