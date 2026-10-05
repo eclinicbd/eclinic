@@ -617,12 +617,15 @@ export const TestFormModal: React.FC<TestModalProps> = ({
                 <span>{applySuccessMsg}</span>
               </div>
             )}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-52 overflow-y-auto pr-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-56 overflow-y-auto pr-1">
               {labs.map(lab => {
                 const isLabHidden = formData.hiddenLabs?.includes(lab.id);
                 const labSelling = formData.priceByLab?.[lab.id] ?? formData.price ?? 500;
                 const labOrig = formData.originalPriceByLab?.[lab.id] ?? formData.originalPrice ?? labSelling;
                 const hasLabDisc = labOrig > labSelling;
+                const labDiscPercent = hasLabDisc ? Math.round(((labOrig - labSelling) / labOrig) * 100) : 0;
+                const centerDefaultDisc = lab.discountPercent || 0;
+
                 return (
                   <div 
                     key={lab.id} 
@@ -637,9 +640,13 @@ export const TestFormModal: React.FC<TestModalProps> = ({
                         <span className={`truncate font-bold text-[11px] ${isLabHidden ? 'text-slate-500 line-through' : 'text-slate-800'}`}>
                           {lab.name}
                         </span>
-                        {hasLabDisc && !isLabHidden && (
-                          <span className="text-[9px] text-rose-600 font-extrabold bg-rose-50 px-1 rounded border border-rose-200/50 shrink-0">
-                            -{Math.round(((labOrig - labSelling) / labOrig) * 100)}%
+                        {hasLabDisc && !isLabHidden ? (
+                          <span className="text-[9px] text-rose-600 font-extrabold bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200/50 shrink-0">
+                            -{labDiscPercent}% {lang === 'bn' ? 'ছাড়' : 'OFF'}
+                          </span>
+                        ) : !isLabHidden && (
+                          <span className="text-[9px] text-slate-400 font-semibold bg-slate-50 px-1 py-0.2 rounded border border-slate-200/60 shrink-0">
+                            {lang === 'bn' ? 'ছাড় নেই' : 'No Disc'}
                           </span>
                         )}
                       </div>
@@ -668,9 +675,10 @@ export const TestFormModal: React.FC<TestModalProps> = ({
                         )}
                       </button>
                     </div>
+
                     <div className="grid grid-cols-2 gap-1.5">
                       <div>
-                        <span className="text-[9px] text-slate-400 font-semibold block">{lang === 'bn' ? 'মূল (৳)' : 'Regular (৳)'}</span>
+                        <span className="text-[9px] text-slate-400 font-semibold block">{lang === 'bn' ? 'মূল রেগুলার (৳)' : 'Regular (৳)'}</span>
                         <input 
                           type="number" 
                           min="0"
@@ -683,7 +691,7 @@ export const TestFormModal: React.FC<TestModalProps> = ({
                         />
                       </div>
                       <div>
-                        <span className="text-[9px] text-emerald-700 font-bold block">{lang === 'bn' ? 'বিক্রয় (৳)' : 'Selling (৳)'}</span>
+                        <span className="text-[9px] text-emerald-700 font-bold block">{lang === 'bn' ? 'বিক্রয় মূল্য (৳)' : 'Selling (৳)'}</span>
                         <input 
                           type="number" 
                           min="0"
@@ -696,6 +704,38 @@ export const TestFormModal: React.FC<TestModalProps> = ({
                         />
                       </div>
                     </div>
+
+                    {/* Quick Discount Toggle per Lab */}
+                    {!isLabHidden && (
+                      <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-[10px]">
+                        {hasLabDisc ? (
+                          <button
+                            type="button"
+                            onClick={() => handleLabSellingPriceChange(lab.id, labOrig)}
+                            className="text-amber-700 hover:text-amber-900 font-bold flex items-center gap-1 hover:underline cursor-pointer"
+                            title={lang === 'bn' ? 'এই টেস্টে কোনো ছাড় থাকবে না' : 'Remove discount for this test'}
+                          >
+                            <span>❌ {lang === 'bn' ? 'ছাড় বাতিল করুন' : 'Remove Discount'}</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const disc = centerDefaultDisc > 0 ? centerDefaultDisc : 15;
+                              handleLabSellingPriceChange(lab.id, Math.round(labOrig * (1 - disc / 100)));
+                            }}
+                            className="text-primary hover:text-sky-700 font-bold flex items-center gap-1 hover:underline cursor-pointer"
+                            title={lang === 'bn' ? 'সেন্টারের ছাড় প্রয়োগ করুন' : 'Apply center discount'}
+                          >
+                            <span>🏷️ {lang === 'bn' ? `${centerDefaultDisc > 0 ? `${centerDefaultDisc}%` : '১৫%'} ছাড় প্রয়োগ করুন` : `Apply ${centerDefaultDisc > 0 ? `${centerDefaultDisc}%` : '15%'} Discount`}</span>
+                          </button>
+                        )}
+
+                        <span className="text-slate-400 text-[9px]">
+                          {centerDefaultDisc > 0 ? `${lang === 'bn' ? 'সেন্টার ছাড়' : 'Lab Disc'}: ${centerDefaultDisc}%` : ''}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -755,6 +795,7 @@ export const LabFormModal: React.FC<LabModalProps> = ({
   const [formData, setFormData] = useState<Partial<LabPartner>>({
     name: '',
     serviceCharge: 150,
+    discountPercent: undefined,
     location: 'Dhaka, Bangladesh',
     logo: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&q=80&w=150',
     discountBadge: '',
@@ -772,13 +813,18 @@ export const LabFormModal: React.FC<LabModalProps> = ({
 
   useEffect(() => {
     if (editingLab) {
-      setFormData({ ...editingLab, isHidden: !!editingLab.isHidden });
+      setFormData({ 
+        ...editingLab, 
+        discountPercent: editingLab.discountPercent,
+        isHidden: !!editingLab.isHidden 
+      });
       setTestActivationMode('none');
       setSelectedTestIds([]);
     } else {
       setFormData({
         name: '',
         serviceCharge: 150,
+        discountPercent: undefined,
         location: 'Dhaka, Bangladesh',
         logo: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&q=80&w=150',
         discountBadge: '',
@@ -837,6 +883,7 @@ export const LabFormModal: React.FC<LabModalProps> = ({
       id: editingLab ? editingLab.id : `lab_${Date.now()}`,
       name: formData.name.trim(),
       serviceCharge: Number(formData.serviceCharge) || 0,
+      discountPercent: formData.discountPercent !== undefined && formData.discountPercent >= 0 ? Number(formData.discountPercent) : undefined,
       location: formData.location || 'Dhaka, Bangladesh',
       logo: formData.logo || '',
       discountBadge: formData.discountBadge?.trim() || undefined,
@@ -929,7 +976,7 @@ export const LabFormModal: React.FC<LabModalProps> = ({
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block font-bold text-slate-700 mb-1">Home Service Charge (৳) *</label>
               <input 
@@ -942,16 +989,41 @@ export const LabFormModal: React.FC<LabModalProps> = ({
               />
             </div>
             <div>
+              <label className="block font-bold text-slate-700 mb-1">
+                {lang === 'bn' ? 'স্বয়ংক্রিয় ছাড় (%)' : 'Auto Discount (%)'}
+              </label>
+              <div className="relative">
+                <input 
+                  type="number" 
+                  min="0"
+                  max="100"
+                  value={formData.discountPercent !== undefined ? formData.discountPercent : ''} 
+                  onChange={(e) => {
+                    const val = e.target.value === '' ? undefined : Number(e.target.value);
+                    setFormData({ ...formData, discountPercent: val });
+                  }}
+                  placeholder="e.g. 15" 
+                  className="w-full pl-3 pr-7 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none text-xs font-bold"
+                />
+                <span className="absolute right-2.5 top-2 text-slate-400 font-bold text-xs">%</span>
+              </div>
+            </div>
+            <div>
               <label className="block font-bold text-slate-700 mb-1">Discount Badge (Optional)</label>
               <input 
                 type="text" 
                 value={formData.discountBadge || ''} 
                 onChange={(e) => setFormData({ ...formData, discountBadge: e.target.value })}
-                placeholder="e.g. ১০% ছাড় / 10% OFF" 
+                placeholder="e.g. ১৫% ছাড় / 15% OFF" 
                 className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none text-xs"
               />
             </div>
           </div>
+          <p className="text-[10px] text-slate-500 -mt-2">
+            {lang === 'bn' 
+              ? '💡 সেন্টারের ছাড় (%) সেট করলে এই সেন্টারের টেস্টসমূহে অটো ডিসকাউন্ট প্রযোজ্য হবে। কোনো নির্দিষ্ট টেস্টে ছাড় না চাইলে টেস্ট এডিট থেকে ম্যানুয়ালি ছাড় তুলে নেওয়া যাবে।' 
+              : '💡 Setting Auto Discount (%) applies discount to all tests of this center. Can be overridden per test.'}
+          </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -1292,6 +1364,83 @@ export const LabTestsManagerModal: React.FC<LabTestsManagerModalProps> = ({
     }));
   };
 
+  const centerDiscount = lab.discountPercent || 0;
+
+  const handleApplyCenterDiscountToAll = () => {
+    const disc = centerDiscount > 0 ? centerDiscount : 15;
+    setLocalTests(prev => prev.map(t => {
+      const reg = t.originalPriceByLab?.[lab.id] || t.originalPrice || t.price;
+      const discounted = Math.round(reg * (1 - disc / 100));
+      return {
+        ...t,
+        originalPriceByLab: {
+          ...(t.originalPriceByLab || {}),
+          [lab.id]: reg
+        },
+        priceByLab: {
+          ...(t.priceByLab || {}),
+          [lab.id]: discounted
+        }
+      };
+    }));
+  };
+
+  const handleRemoveDiscountFromAll = () => {
+    setLocalTests(prev => prev.map(t => {
+      const reg = t.originalPriceByLab?.[lab.id] || t.originalPrice || t.price;
+      return {
+        ...t,
+        originalPriceByLab: {
+          ...(t.originalPriceByLab || {}),
+          [lab.id]: reg
+        },
+        priceByLab: {
+          ...(t.priceByLab || {}),
+          [lab.id]: reg
+        }
+      };
+    }));
+  };
+
+  const handleToggleTestDiscount = (testId: string) => {
+    setLocalTests(prev => prev.map(t => {
+      if (t.id !== testId) return t;
+      const reg = t.originalPriceByLab?.[lab.id] || t.originalPrice || t.price;
+      const currentSelling = t.priceByLab?.[lab.id] ?? t.price;
+      const hasDisc = reg > currentSelling;
+
+      if (hasDisc) {
+        // Remove discount: selling = reg
+        return {
+          ...t,
+          originalPriceByLab: {
+            ...(t.originalPriceByLab || {}),
+            [lab.id]: reg
+          },
+          priceByLab: {
+            ...(t.priceByLab || {}),
+            [lab.id]: reg
+          }
+        };
+      } else {
+        // Apply center discount
+        const disc = centerDiscount > 0 ? centerDiscount : 15;
+        const discounted = Math.round(reg * (1 - disc / 100));
+        return {
+          ...t,
+          originalPriceByLab: {
+            ...(t.originalPriceByLab || {}),
+            [lab.id]: reg
+          },
+          priceByLab: {
+            ...(t.priceByLab || {}),
+            [lab.id]: discounted
+          }
+        };
+      }
+    }));
+  };
+
   const handleSave = () => {
     onUpdateTests(localTests);
     onClose();
@@ -1318,24 +1467,30 @@ export const LabTestsManagerModal: React.FC<LabTestsManagerModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl max-w-3xl w-full p-6 shadow-2xl border border-slate-100 max-h-[92vh] flex flex-col">
+      <div className="bg-white rounded-3xl max-w-4xl w-full p-6 shadow-2xl border border-slate-100 max-h-[92vh] flex flex-col">
         {/* Header */}
         <div className="flex justify-between items-start pb-4 border-b border-slate-100">
           <div className="flex items-center gap-3">
             <LabLogo name={lab.name} logo={lab.logo} size="md" accentColor={lab.accentColor} />
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-lg font-bold text-slate-900">
-                  {lang === 'bn' ? `"${lab.name}" সেন্টারের টেস্ট পরিচালনা` : `Manage Tests for ${lab.name}`}
+                  {lang === 'bn' ? `"${lab.name}" সেন্টারের টেস্ট ও ডিসকাউন্ট পরিচালনা` : `Manage Tests & Discounts for ${lab.name}`}
                 </h2>
                 <span className="px-2.5 py-0.5 bg-sky-100 text-sky-800 text-[11px] font-extrabold rounded-full">
                   {activeCount} {lang === 'bn' ? 'টি এক্টিভ' : 'Active'}
                 </span>
+                {centerDiscount > 0 && (
+                  <span className="px-2.5 py-0.5 bg-rose-50 text-rose-700 border border-rose-200 text-[11px] font-extrabold rounded-full flex items-center gap-1">
+                    <Tag size={11} />
+                    <span>{centerDiscount}% {lang === 'bn' ? 'অটো ডিসকাউন্ট' : 'Auto Discount'}</span>
+                  </span>
+                )}
               </div>
               <p className="text-xs text-slate-500 mt-0.5">
                 {lang === 'bn'
-                  ? 'এই সেন্টারের জন্য কোন কোন টেস্ট চালু (Active) বা বন্ধ (Inactive) থাকবে তা সহজে নির্ধারণ করুন।'
-                  : 'Toggle active/inactive status and set custom prices for this diagnostic center.'}
+                  ? 'এই সেন্টারের জন্য টেস্ট অ্যাক্টিভেশন, সেন্টারের স্বয়ংক্রিয় ছাড় প্রয়োগ অথবা নির্দিষ্ট টেস্টে ম্যানুয়ালি ছাড় তুলে নেওয়ার সুবিধা।'
+                  : 'Manage active tests, auto-apply center discount, or manually remove discount per test.'}
               </p>
             </div>
           </div>
@@ -1354,14 +1509,32 @@ export const LabTestsManagerModal: React.FC<LabTestsManagerModalProps> = ({
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={handleApplyCenterDiscountToAll}
+              className="px-2.5 py-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-xl font-bold border border-rose-200 transition-colors flex items-center gap-1 cursor-pointer"
+              title={lang === 'bn' ? 'সকল এক্টিভ টেস্টে সেন্টারের ছাড় প্রয়োগ করুন' : 'Apply center discount to all active tests'}
+            >
+              <Tag size={13} />
+              <span>{lang === 'bn' ? `সকল টেস্টে ${centerDiscount > 0 ? `${centerDiscount}%` : '১৫%'} ছাড় দিন` : `Apply ${centerDiscount > 0 ? `${centerDiscount}%` : '15%'} Discount`}</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleRemoveDiscountFromAll}
+              className="px-2.5 py-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl font-bold border border-slate-200 transition-colors flex items-center gap-1 cursor-pointer"
+              title={lang === 'bn' ? 'সকল টেস্ট থেকে ছাড় প্রত্যাহার করুন' : 'Remove discount from all tests'}
+            >
+              <span>❌ {lang === 'bn' ? 'সব ছাড় বাতিল' : 'No Discount'}</span>
+            </button>
+            <div className="w-px h-4 bg-slate-200 mx-0.5" />
             <button
               type="button"
               onClick={handleSetAllActive}
               className="px-2.5 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl font-bold border border-emerald-200 transition-colors flex items-center gap-1 cursor-pointer"
             >
               <Check size={13} />
-              <span>{lang === 'bn' ? 'সকল টেস্ট এক্টিভ করুন' : 'Activate All'}</span>
+              <span>{lang === 'bn' ? 'সকল এক্টিভ' : 'Activate All'}</span>
             </button>
             <button
               type="button"
@@ -1369,7 +1542,7 @@ export const LabTestsManagerModal: React.FC<LabTestsManagerModalProps> = ({
               className="px-2.5 py-1.5 bg-amber-50 text-amber-800 hover:bg-amber-100 rounded-xl font-bold border border-amber-200 transition-colors flex items-center gap-1 cursor-pointer"
             >
               <EyeOff size={13} />
-              <span>{lang === 'bn' ? 'সকল টেস্ট ইনঅ্যাক্টিভ করুন' : 'Deactivate All'}</span>
+              <span>{lang === 'bn' ? 'সব বন্ধ' : 'Deactivate All'}</span>
             </button>
           </div>
         </div>
@@ -1431,7 +1604,7 @@ export const LabTestsManagerModal: React.FC<LabTestsManagerModalProps> = ({
         </div>
 
         {/* Tests List */}
-        <div className="flex-1 overflow-y-auto space-y-2 py-2 pr-1">
+        <div className="flex-1 overflow-y-auto space-y-2.5 py-2 pr-1">
           {filteredTests.length === 0 ? (
             <div className="text-center py-12 text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
               <FlaskConical size={32} className="mx-auto mb-2 text-slate-300" />
@@ -1443,14 +1616,17 @@ export const LabTestsManagerModal: React.FC<LabTestsManagerModalProps> = ({
             filteredTests.map(test => {
               const isInactive = (test.hiddenLabs || []).includes(lab.id);
               const isActive = !isInactive;
-              const currentLabPrice = test.priceByLab?.[lab.id] ?? test.price;
+              const labSelling = test.priceByLab?.[lab.id] ?? test.price;
+              const labOrig = test.originalPriceByLab?.[lab.id] ?? test.originalPrice ?? labSelling;
+              const hasDisc = labOrig > labSelling;
+              const discPercent = hasDisc ? Math.round(((labOrig - labSelling) / labOrig) * 100) : 0;
 
               return (
                 <div
                   key={test.id}
-                  className={`p-3 rounded-2xl border transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
+                  className={`p-3.5 rounded-2xl border transition-all flex flex-col md:flex-row items-start md:items-center justify-between gap-3 ${
                     isActive 
-                      ? 'bg-white border-slate-200 hover:border-slate-300' 
+                      ? 'bg-white border-slate-200 hover:border-slate-300 shadow-2xs' 
                       : 'bg-amber-50/30 border-amber-200/80 opacity-80'
                   }`}
                 >
@@ -1485,6 +1661,20 @@ export const LabTestsManagerModal: React.FC<LabTestsManagerModalProps> = ({
                             🚫 {lang === 'bn' ? 'ইনঅ্যাক্টিভ' : 'Inactive'}
                           </span>
                         )}
+
+                        {/* Discount status badge */}
+                        {isActive && (
+                          hasDisc ? (
+                            <span className="px-2 py-0.5 bg-rose-50 text-rose-700 border border-rose-200/80 text-[10px] font-extrabold rounded-full flex items-center gap-1">
+                              <Tag size={10} />
+                              <span>{discPercent}% {lang === 'bn' ? 'ছাড়' : 'OFF'}</span>
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-bold rounded-full">
+                              {lang === 'bn' ? 'কোনো ছাড় নেই' : 'No Discount'}
+                            </span>
+                          )
+                        )}
                       </div>
                       <p className="text-[11px] text-slate-500 truncate max-w-md mt-0.5">
                         {test.description || 'No description'}
@@ -1492,40 +1682,85 @@ export const LabTestsManagerModal: React.FC<LabTestsManagerModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Pricing per lab & quick toggle */}
-                  <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-                    <div className="flex items-center gap-1.5 text-xs">
-                      <span className="text-slate-400 text-[11px]">{lang === 'bn' ? 'রেট:' : 'Rate:'}</span>
+                  {/* Pricing per lab, discount toggler & quick active toggle */}
+                  <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-between md:justify-end">
+                    {/* Price Inputs */}
+                    <div className="flex items-center gap-2 text-xs">
                       <div className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200">
-                        <span className="text-[11px] font-bold text-slate-500">৳</span>
+                        <span className="text-[10px] text-slate-400 font-semibold">{lang === 'bn' ? 'মূল:' : 'Orig:'}</span>
                         <input 
                           type="number"
                           min="0"
-                          value={currentLabPrice}
+                          value={labOrig}
+                          onChange={(e) => {
+                            const val = Number(e.target.value) || 0;
+                            setLocalTests(prev => prev.map(t => {
+                              if (t.id !== test.id) return t;
+                              return {
+                                ...t,
+                                originalPriceByLab: { ...(t.originalPriceByLab || {}), [lab.id]: val }
+                              };
+                            }));
+                          }}
+                          className="w-14 bg-transparent font-medium text-slate-600 text-xs outline-none text-right"
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-1 bg-emerald-50/70 px-2 py-1 rounded-lg border border-emerald-200">
+                        <span className="text-[10px] text-emerald-800 font-bold">{lang === 'bn' ? 'বিক্রয়:' : 'Sale:'}</span>
+                        <input 
+                          type="number"
+                          min="0"
+                          value={labSelling}
                           onChange={(e) => handleLabPriceChange(test.id, Number(e.target.value) || 0)}
-                          className="w-16 bg-transparent font-bold text-slate-900 text-xs outline-none"
+                          className="w-14 bg-transparent font-bold text-slate-900 text-xs outline-none text-right"
                         />
                       </div>
                     </div>
 
+                    {/* 1-Click Toggle Discount for this Test */}
+                    {isActive && (
+                      <button
+                        type="button"
+                        onClick={() => handleToggleTestDiscount(test.id)}
+                        className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 border ${
+                          hasDisc
+                            ? 'bg-amber-50 text-amber-900 hover:bg-amber-100 border-amber-200'
+                            : 'bg-rose-50 text-rose-700 hover:bg-rose-100 border-rose-200'
+                        }`}
+                        title={hasDisc ? (lang === 'bn' ? 'এই টেস্ট থেকে ছাড় প্রত্যাহার করুন' : 'Remove discount') : (lang === 'bn' ? 'এই টেস্টে ছাড় প্রয়োগ করুন' : 'Apply discount')}
+                      >
+                        {hasDisc ? (
+                          <>
+                            <span>❌ {lang === 'bn' ? 'ছাড় তুলুন' : 'Remove Disc'}</span>
+                          </>
+                        ) : (
+                          <>
+                            <Tag size={11} />
+                            <span>{lang === 'bn' ? `${centerDiscount > 0 ? `${centerDiscount}%` : '১৫%'} ছাড় দিন` : `Apply ${centerDiscount > 0 ? `${centerDiscount}%` : '15%'}%`}</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+
                     <button
                       type="button"
                       onClick={() => handleToggleTestActive(test.id)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                      className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
                         isActive
-                          ? 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200'
+                          ? 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
                           : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
                       }`}
                     >
                       {isActive ? (
                         <>
-                          <EyeOff size={13} />
-                          <span>{lang === 'bn' ? 'বন্ধ করুন' : 'Deactivate'}</span>
+                          <EyeOff size={12} />
+                          <span>{lang === 'bn' ? 'বন্ধ' : 'Off'}</span>
                         </>
                       ) : (
                         <>
-                          <Check size={13} />
-                          <span>{lang === 'bn' ? 'চালু করুন' : 'Activate'}</span>
+                          <Check size={12} />
+                          <span>{lang === 'bn' ? 'চালু' : 'Active'}</span>
                         </>
                       )}
                     </button>

@@ -12,10 +12,22 @@ interface TestCardProps {
   labName?: string;
   selectedLabId?: string;
   isHighlighted?: boolean;
+  orderCount?: number;
 }
 
-export const TestCard: React.FC<TestCardProps> = ({ test, onToggleCart, isInCart, lang, labName, selectedLabId, isHighlighted }) => {
+export const TestCard: React.FC<TestCardProps> = ({ 
+  test, 
+  onToggleCart, 
+  isInCart, 
+  lang, 
+  labName, 
+  selectedLabId, 
+  isHighlighted,
+  orderCount 
+}) => {
   const t = TRANSLATIONS[lang];
+
+  const totalOrders = orderCount ?? test.orderCount;
 
   // Determine current discounted selling price
   const currentPrice = (selectedLabId && test.priceByLab && test.priceByLab[selectedLabId] !== undefined) 
@@ -53,12 +65,18 @@ export const TestCard: React.FC<TestCardProps> = ({ test, onToggleCart, isInCart
         </div>
       )}
       
-      {/* Top Row: Category, Discount Badge & Turnaround Time */}
+      {/* Top Row: Category, Discount Badge, Order Count & Turnaround Time */}
       <div className="p-4 pb-2 flex justify-between items-center gap-2">
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md">
             {test.category}
           </span>
+          {typeof totalOrders === 'number' && totalOrders > 0 && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 bg-amber-50 text-amber-800 border border-amber-200/80 rounded-md shadow-2xs">
+              <span>🔥</span>
+              <span>{totalOrders > 999 ? `${(totalOrders / 1000).toFixed(1)}k` : totalOrders}+ {lang === 'bn' ? 'সম্পন্ন' : 'Done'}</span>
+            </span>
+          )}
           {hasDiscount && (
             <span className="inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 bg-rose-50 text-rose-700 border border-rose-200/80 rounded-md shadow-2xs">
               <Tag size={10} className="text-rose-600" />

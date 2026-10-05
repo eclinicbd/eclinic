@@ -265,6 +265,12 @@ export const AdminLabs: React.FC<AdminLabsProps> = ({
                           <span className="text-xs text-slate-500 flex items-center gap-1">
                             <MapPin size={12} /> {lab.location || 'Dhaka, Bangladesh'}
                           </span>
+                          {lab.discountPercent !== undefined && lab.discountPercent > 0 && (
+                            <span className="px-2 py-0.5 bg-rose-50 text-rose-700 text-[11px] font-extrabold rounded-md border border-rose-200/80 flex items-center gap-1">
+                              <Tag size={10} className="text-rose-600" />
+                              <span>{lab.discountPercent}% {lang === 'bn' ? 'অটো ডিসকাউন্ট' : 'Auto Discount'}</span>
+                            </span>
+                          )}
                           {lab.discountBadge && (
                             <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[11px] font-bold rounded-md border border-emerald-200/60">
                               {lab.discountBadge}

@@ -29,6 +29,7 @@ export interface TestPackage {
   isPackage?: boolean;
   testCount?: number;
   includededTests?: string[];
+  orderCount?: number; // Total number of times this test has been ordered/performed
 }
 
 export interface HealthPackage extends TestPackage {
@@ -50,6 +51,7 @@ export interface LabPartner {
   rating?: number;
   logo: string;
   serviceCharge: number; // Service charge / home collection fee
+  discountPercent?: number; // Auto discount percentage for all tests of this diagnostic center (e.g. 10, 15, 20)
   location?: string;
   discountBadge?: string;
   accreditation?: string;

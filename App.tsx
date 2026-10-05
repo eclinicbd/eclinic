@@ -850,40 +850,46 @@ export default function App() {
                   {t.navHome}
                 </button>
 
-                {/* 2. Tests */}
-                <button 
-                  onClick={() => navigateToTests()} 
-                  className={`px-3.5 py-1.5 rounded-full transition-all flex items-center gap-1.5 ${
-                    currentView === 'tests' 
-                      ? 'bg-sky-50 text-primary font-bold border border-sky-200 shadow-2xs' 
-                      : 'text-slate-600 hover:text-primary hover:bg-slate-50'
-                  }`}
-                >
-                  <FlaskConical size={14} />
-                  <span>{t.navTests}</span>
-                </button>
+                {/* 2. Tests (Only active/visible if Tests Section is active) */}
+                {siteSettings.showPopularTestsSection !== false && (
+                  <button 
+                    onClick={() => navigateToTests()} 
+                    className={`px-3.5 py-1.5 rounded-full transition-all flex items-center gap-1.5 ${
+                      currentView === 'tests' 
+                        ? 'bg-sky-50 text-primary font-bold border border-sky-200 shadow-2xs' 
+                        : 'text-slate-600 hover:text-primary hover:bg-slate-50'
+                    }`}
+                  >
+                    <FlaskConical size={14} />
+                    <span>{t.navTests}</span>
+                  </button>
+                )}
 
-                {/* 3. Health Packages */}
-                <button 
-                  onClick={navigateToPackages} 
-                  className={`px-3.5 py-1.5 rounded-full transition-all flex items-center gap-1.5 ${
-                    currentView === 'packages' 
-                      ? 'bg-sky-50 text-primary font-bold border border-sky-200 shadow-2xs' 
-                      : 'text-slate-600 hover:text-primary hover:bg-slate-50'
-                  }`}
-                >
-                  <Sparkles size={14} className="text-amber-500" />
-                  <span>{t.navPackages || (language === 'bn' ? 'হেলথ প্যাকেজ' : 'Health Packages')}</span>
-                </button>
+                {/* 3. Health Packages (Only active/visible if Packages Section is active) */}
+                {siteSettings.showPackagesSection !== false && (
+                  <button 
+                    onClick={navigateToPackages} 
+                    className={`px-3.5 py-1.5 rounded-full transition-all flex items-center gap-1.5 ${
+                      currentView === 'packages' 
+                        ? 'bg-sky-50 text-primary font-bold border border-sky-200 shadow-2xs' 
+                        : 'text-slate-600 hover:text-primary hover:bg-slate-50'
+                    }`}
+                  >
+                    <Sparkles size={14} className="text-amber-500" />
+                    <span>{t.navPackages || (language === 'bn' ? 'হেলথ প্যাকেজ' : 'Health Packages')}</span>
+                  </button>
+                )}
 
-                {/* 4. Nursing & Home Care */}
-                <button 
-                  onClick={() => scrollToSection('nursing-care')} 
-                  className="px-3.5 py-1.5 rounded-full transition-all flex items-center gap-1.5 text-slate-600 hover:text-rose-600 hover:bg-rose-50 cursor-pointer"
-                >
-                  <HeartPulse size={14} className="text-rose-500" />
-                  <span>{language === 'bn' ? 'নার্সিং ও কেয়ার' : 'Nursing & Care'}</span>
-                </button>
+                {/* 4. Nursing & Home Care (Only active/visible if Nursing Section is active) */}
+                {siteSettings.showNursingSection !== false && (
+                  <button 
+                    onClick={() => scrollToSection('nursing-care')} 
+                    className="px-3.5 py-1.5 rounded-full transition-all flex items-center gap-1.5 text-slate-600 hover:text-rose-600 hover:bg-rose-50 cursor-pointer"
+                  >
+                    <HeartPulse size={14} className="text-rose-500" />
+                    <span>{language === 'bn' ? 'নার্সিং ও কেয়ার' : 'Nursing & Care'}</span>
+                  </button>
+                )}
 
                 {/* Language Switcher */}
                 <button 
@@ -1046,6 +1052,7 @@ export default function App() {
           onBackToHome={navigateToHome}
           highlightedTestId={highlightedTestId}
           setHighlightedTestId={setHighlightedTestId}
+          bookings={bookings}
         />
       ) : (
         <>
@@ -1524,20 +1531,24 @@ export default function App() {
             <Home size={18} />
             <span className="text-[10px] mt-0.5">{t.navHome}</span>
           </button>
-          <button 
-            onClick={() => navigateToTests()} 
-            className={`flex flex-col items-center px-3 py-1 transition-colors ${currentView === 'tests' ? 'text-primary font-bold' : 'text-slate-500'}`}
-          >
-            <FlaskConical size={18} />
-            <span className="text-[10px] mt-0.5">{t.navTests}</span>
-          </button>
-          <button 
-            onClick={navigateToPackages} 
-            className={`flex flex-col items-center px-3 py-1 transition-colors ${currentView === 'packages' ? 'text-primary font-bold' : 'text-slate-500'}`}
-          >
-            <Sparkles size={18} className={currentView === 'packages' ? 'text-amber-500' : ''} />
-            <span className="text-[10px] mt-0.5">{t.navPackages || (language === 'bn' ? 'প্যাকেজ' : 'Packages')}</span>
-          </button>
+          {siteSettings.showPopularTestsSection !== false && (
+            <button 
+              onClick={() => navigateToTests()} 
+              className={`flex flex-col items-center px-3 py-1 transition-colors ${currentView === 'tests' ? 'text-primary font-bold' : 'text-slate-500'}`}
+            >
+              <FlaskConical size={18} />
+              <span className="text-[10px] mt-0.5">{t.navTests}</span>
+            </button>
+          )}
+          {siteSettings.showPackagesSection !== false && (
+            <button 
+              onClick={navigateToPackages} 
+              className={`flex flex-col items-center px-3 py-1 transition-colors ${currentView === 'packages' ? 'text-primary font-bold' : 'text-slate-500'}`}
+            >
+              <Sparkles size={18} className={currentView === 'packages' ? 'text-amber-500' : ''} />
+              <span className="text-[10px] mt-0.5">{t.navPackages || (language === 'bn' ? 'প্যাকেজ' : 'Packages')}</span>
+            </button>
+          )}
           <button 
             onClick={openCartModal} 
             className={`flex flex-col items-center px-3 py-1 ${cart.length > 0 ? 'text-primary font-bold' : 'text-slate-500'} relative`}

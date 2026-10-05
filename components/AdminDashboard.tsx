@@ -395,19 +395,55 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     if (editingLab) {
       const updated = labs.map(l => l.id === labToSave.id ? labToSave : l);
       onUpdateLabs(updated);
+
+      // If lab discount percent was changed or set, update active tests for this lab
+      if (labToSave.discountPercent !== undefined && labToSave.discountPercent > 0) {
+        const disc = labToSave.discountPercent;
+        const updatedTests = tests.map(test => {
+          const isHidden = (test.hiddenLabs || []).includes(labToSave.id);
+          if (isHidden) return test;
+          const reg = test.originalPriceByLab?.[labToSave.id] || test.originalPrice || test.price;
+          const discounted = Math.round(reg * (1 - disc / 100));
+          return {
+            ...test,
+            originalPriceByLab: {
+              ...(test.originalPriceByLab || {}),
+              [labToSave.id]: reg
+            },
+            priceByLab: {
+              ...(test.priceByLab || {}),
+              [labToSave.id]: discounted
+            }
+          };
+        });
+        onUpdateTests(updatedTests);
+      }
+
       showToast(t.adminSaveSuccess);
     } else {
       // NEW Diagnostic Center created:
       // DO NOT auto-activate all tests!
       // Only tests explicitly chosen in activeTestIds (empty by default) will be active.
       const activeSet = new Set(activeTestIds || []);
+      const disc = labToSave.discountPercent || 0;
+
       const updatedTests = tests.map(test => {
         const isCurrentActive = activeSet.has(test.id);
         const currentHidden = test.hiddenLabs || [];
         if (isCurrentActive) {
+          const reg = test.originalPriceByLab?.[labToSave.id] || test.originalPrice || test.price;
+          const discounted = disc > 0 ? Math.round(reg * (1 - disc / 100)) : (test.priceByLab?.[labToSave.id] || test.price);
           return {
             ...test,
-            hiddenLabs: currentHidden.filter(id => id !== labToSave.id)
+            hiddenLabs: currentHidden.filter(id => id !== labToSave.id),
+            originalPriceByLab: {
+              ...(test.originalPriceByLab || {}),
+              [labToSave.id]: reg
+            },
+            priceByLab: {
+              ...(test.priceByLab || {}),
+              [labToSave.id]: discounted
+            }
           };
         } else {
           // Deactivated/Inactive for this newly created diagnostic center

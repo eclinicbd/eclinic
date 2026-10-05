@@ -1,5 +1,5 @@
-import React from 'react';
-import { TestPackage, LabPartner, Language, CategoryItem } from '../types';
+import React, { useState, useMemo, useEffect } from 'react';
+import { TestPackage, LabPartner, Language, CategoryItem, BookingHistoryItem } from '../types';
 import { TRANSLATIONS } from '../translations';
 import { calculateAccessoriesFee } from './BookingModal';
 import { TestCard } from './TestCard';
@@ -16,7 +16,10 @@ import {
   Home,
   CheckCircle2,
   Building2,
-  X
+  X,
+  Flame,
+  TrendingUp,
+  Sparkles
 } from 'lucide-react';
 
 interface TestsViewProps {
@@ -37,6 +40,7 @@ interface TestsViewProps {
   onBackToHome: () => void;
   highlightedTestId?: string | null;
   setHighlightedTestId?: (id: string | null) => void;
+  bookings?: BookingHistoryItem[];
 }
 
 export const TestsView: React.FC<TestsViewProps> = ({
@@ -56,12 +60,14 @@ export const TestsView: React.FC<TestsViewProps> = ({
   setSearchTerm,
   onBackToHome,
   highlightedTestId,
-  setHighlightedTestId
+  setHighlightedTestId,
+  bookings = []
 }) => {
   const t = TRANSLATIONS[lang];
+  const [sortBy, setSortBy] = useState<'most_ordered' | 'price_low' | 'price_high' | 'name_asc'>('most_ordered');
 
   // Auto-scroll to highlighted test smoothly
-  React.useEffect(() => {
+  useEffect(() => {
     if (highlightedTestId) {
       const timer = setTimeout(() => {
         const element = document.getElementById(`test-card-${highlightedTestId}`);
@@ -73,20 +79,83 @@ export const TestsView: React.FC<TestsViewProps> = ({
     }
   }, [highlightedTestId]);
 
+  // Calculate total completed/ordered count for each test (combining test order count + live bookings)
+  const getTestTotalOrders = useMemo(() => {
+    const defaultPopularityMap: Record<string, number> = {
+      '1': 1420, // CBC
+      '2': 1180, // HbA1c
+      '3': 950,  // Lipid Profile
+      '4': 840,  // Thyroid Profile
+      '5': 790,  // Vitamin D
+      '6': 720,  // Serum Creatinine
+      '7': 680,  // SGPT / ALT
+      '8': 650,  // FBS
+      '9': 590,  // Urine R/E
+      '10': 510, // Serum Electrolytes
+      '11': 470, // Uric Acid
+      '12': 430, // Bilirubin
+    };
+
+    return (test: TestPackage): number => {
+      let count = test.orderCount || defaultPopularityMap[test.id] || 120;
+      
+      if (bookings && bookings.length > 0) {
+        bookings.forEach(b => {
+          if (b.items && Array.isArray(b.items)) {
+            const matched = b.items.filter(item => 
+              (item.id && item.id === test.id) ||
+              (item.name && (item.name.toLowerCase().includes(test.name.toLowerCase()) || test.name.toLowerCase().includes(item.name.toLowerCase())))
+            );
+            count += matched.length;
+          } else if (b.testNames && Array.isArray(b.testNames)) {
+            const matched = b.testNames.filter(tn => 
+              tn.toLowerCase().includes(test.name.toLowerCase()) || test.name.toLowerCase().includes(tn.toLowerCase())
+            );
+            count += matched.length;
+          }
+        });
+      }
+
+      return count;
+    };
+  }, [bookings]);
+
   // Derive visible categories list
   const activeCategoriesList = ['All', ...Array.from(new Set([
     ...categories.filter(c => !c.isHidden).map(c => c.name),
     ...tests.filter(t => !t.isHidden).map(t => t.category).filter(Boolean)
   ]))];
 
-  const filteredTests = tests.filter(test => {
-    if (test.isHidden) return false;
-    if (selectedLabId && test.hiddenLabs?.includes(selectedLabId)) return false;
-    const matchesSearch = test.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          (test.description && test.description.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesCategory = activeCategory === 'All' || test.category === activeCategory;
-    return matchesSearch && matchesCategory;
-  });
+  // Filter and sort tests (Default: Most ordered / popular tests first)
+  const filteredTests = useMemo(() => {
+    return tests
+      .filter(test => {
+        if (test.isHidden) return false;
+        if (selectedLabId && test.hiddenLabs?.includes(selectedLabId)) return false;
+        const matchesSearch = test.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                              (test.description && test.description.toLowerCase().includes(searchTerm.toLowerCase()));
+        const matchesCategory = activeCategory === 'All' || test.category === activeCategory;
+        return matchesSearch && matchesCategory;
+      })
+      .sort((a, b) => {
+        if (sortBy === 'most_ordered') {
+          return getTestTotalOrders(b) - getTestTotalOrders(a);
+        }
+        const priceA = (selectedLabId && a.priceByLab?.[selectedLabId] !== undefined) ? a.priceByLab[selectedLabId] : a.price;
+        const priceB = (selectedLabId && b.priceByLab?.[selectedLabId] !== undefined) ? b.priceByLab[selectedLabId] : b.price;
+        
+        if (sortBy === 'price_low') {
+          return priceA - priceB;
+        }
+        if (sortBy === 'price_high') {
+          return priceB - priceA;
+        }
+        if (sortBy === 'name_asc') {
+          return a.name.localeCompare(b.name);
+        }
+        return getTestTotalOrders(b) - getTestTotalOrders(a);
+      });
+  }, [tests, selectedLabId, searchTerm, activeCategory, sortBy, getTestTotalOrders]);
 
   const cartItems = tests.filter(test => cart.includes(test.id));
   
@@ -263,8 +332,8 @@ export const TestsView: React.FC<TestsViewProps> = ({
           {/* CENTER: SEARCH BAR & TESTS GRID */}
           <div className="flex-1">
             
-            {/* Search Bar Row */}
-            <div className="flex gap-3 mb-6">
+            {/* Search & Sort Controls Row */}
+            <div className="flex flex-col sm:flex-row gap-3 mb-4">
               <div className="relative flex-1">
                 <Search className="absolute left-4 top-3 text-slate-400" size={18} />
                 <input 
@@ -284,10 +353,46 @@ export const TestsView: React.FC<TestsViewProps> = ({
                 )}
               </div>
               
-              <div className="hidden sm:flex items-center px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-600">
-                <span>{filteredTests.length} {lang === 'bn' ? 'টি টেস্ট উপলব্ধ' : 'tests found'}</span>
+              {/* Sort By Dropdown */}
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1 sm:flex-none">
+                  <div className="flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 shadow-xs">
+                    <ArrowUpDown size={14} className="text-primary flex-shrink-0" />
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value as any)}
+                      className="bg-transparent border-none outline-none font-semibold text-slate-800 cursor-pointer pr-2"
+                    >
+                      <option value="most_ordered">🔥 {lang === 'bn' ? 'সর্বাধিক টেস্ট সম্পন্ন (জনপ্রিয়)' : 'Most Ordered (Popular)'}</option>
+                      <option value="price_low">৳ {lang === 'bn' ? 'মূল্য: কম থেকে বেশি' : 'Price: Low to High'}</option>
+                      <option value="price_high">৳ {lang === 'bn' ? 'মূল্য: বেশি থেকে কম' : 'Price: High to Low'}</option>
+                      <option value="name_asc">🔤 {lang === 'bn' ? 'নাম অনুসারে (A-Z)' : 'Name (A to Z)'}</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="hidden sm:flex items-center px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 flex-shrink-0">
+                  <span>{filteredTests.length} {lang === 'bn' ? 'টি টেস্ট' : 'tests'}</span>
+                </div>
               </div>
             </div>
+
+            {/* Sub-header info bar: Sorted by most popular / completed */}
+            {sortBy === 'most_ordered' && (
+              <div className="flex items-center justify-between gap-2 px-3.5 py-2 bg-amber-50/80 border border-amber-200/70 rounded-xl mb-5 text-xs text-amber-900">
+                <div className="flex items-center gap-2">
+                  <Flame size={15} className="text-amber-600 flex-shrink-0 animate-bounce" />
+                  <span className="font-semibold">
+                    {lang === 'bn' 
+                      ? 'সর্বাধিক সম্পন্ন হওয়া টেস্টগুলো ক্রমান্বয়ে সবার উপরে সাজানো রয়েছে' 
+                      : 'Tests are sorted by highest completed orders first'}
+                  </span>
+                </div>
+                <span className="hidden md:inline-block text-[11px] font-bold text-amber-700 bg-amber-100/70 px-2 py-0.5 rounded-md">
+                  {lang === 'bn' ? 'জনপ্রিয় ক্রম' : 'Top Booked'}
+                </span>
+              </div>
+            )}
 
             {/* Test Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -301,6 +406,7 @@ export const TestsView: React.FC<TestsViewProps> = ({
                     labName={selectedLabId ? labs.find(l => l.id === selectedLabId)?.name : t.allCenters}
                     selectedLabId={selectedLabId}
                     isHighlighted={highlightedTestId === test.id}
+                    orderCount={getTestTotalOrders(test)}
                   />
                 </div>
               ))}
