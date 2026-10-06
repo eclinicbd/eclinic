@@ -342,6 +342,10 @@ export interface SiteSettings {
   emergencyNumber?: string;
   workingHours?: string;
   facebookUrl?: string;
+  linkedinUrl?: string;
+  youtubeUrl?: string;
+  instagramUrl?: string;
+  twitterUrl?: string;
   services: ServiceItem[];
 
   // Mobile App Download Section & Store Links (Android & Apple iOS)

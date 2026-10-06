@@ -1454,6 +1454,9 @@ export const DEFAULT_SITE_SETTINGS_BN: SiteSettings = {
   emergencyNumber: '01800-000000',
   workingHours: 'সকাল ৭:০০ টা - রাত ১০:০০ টা (প্রতিদিন)',
   facebookUrl: 'https://facebook.com/labhomebd',
+  linkedinUrl: 'https://linkedin.com/company/labhomebd',
+  youtubeUrl: 'https://youtube.com/@labhomebd',
+  instagramUrl: 'https://instagram.com/labhomebd',
   services: DEFAULT_SERVICES_BN,
 
   // Invoice & Money Receipt Defaults
@@ -1584,6 +1587,9 @@ export const DEFAULT_SITE_SETTINGS_EN: SiteSettings = {
   emergencyNumber: '01800-000000',
   workingHours: '7:00 AM - 10:00 PM (Everyday)',
   facebookUrl: 'https://facebook.com/labhomebd',
+  linkedinUrl: 'https://linkedin.com/company/labhomebd',
+  youtubeUrl: 'https://youtube.com/@labhomebd',
+  instagramUrl: 'https://instagram.com/labhomebd',
   services: DEFAULT_SERVICES_EN,
 
   // Invoice & Money Receipt Defaults

@@ -866,8 +866,14 @@ export const saveStoredSiteSettings = (lang: Language, settings: SiteSettings): 
       showPopularTestsSection: settings.showPopularTestsSection !== undefined ? settings.showPopularTestsSection : otherSettings.showPopularTestsSection,
       showPackagesSection: settings.showPackagesSection !== undefined ? settings.showPackagesSection : otherSettings.showPackagesSection,
       showNursingSection: settings.showNursingSection !== undefined ? settings.showNursingSection : otherSettings.showNursingSection,
+      showAppDownloadSection: settings.showAppDownloadSection !== undefined ? settings.showAppDownloadSection : otherSettings.showAppDownloadSection,
       showHowItWorksSection: settings.showHowItWorksSection !== undefined ? settings.showHowItWorksSection : otherSettings.showHowItWorksSection,
       showServicesSection: settings.showServicesSection !== undefined ? settings.showServicesSection : otherSettings.showServicesSection,
+      androidAppUrl: settings.androidAppUrl || otherSettings.androidAppUrl,
+      iosAppUrl: settings.iosAppUrl || otherSettings.iosAppUrl,
+      apkDownloadUrl: settings.apkDownloadUrl || otherSettings.apkDownloadUrl,
+      showAppButtonsInHero: settings.showAppButtonsInHero !== undefined ? settings.showAppButtonsInHero : otherSettings.showAppButtonsInHero,
+      showAppButtonsInFooter: settings.showAppButtonsInFooter !== undefined ? settings.showAppButtonsInFooter : otherSettings.showAppButtonsInFooter,
       aboutImage: settings.aboutImage || otherSettings.aboutImage,
       contactAddress: otherSettings.contactAddress || settings.contactAddress,
       contactPhone: settings.contactPhone,
@@ -877,7 +883,11 @@ export const saveStoredSiteSettings = (lang: Language, settings: SiteSettings): 
       emergencyNumber: settings.emergencyNumber,
       nursingHotline: settings.nursingHotline || otherSettings.nursingHotline,
       nursingWhatsApp: settings.nursingWhatsApp || otherSettings.nursingWhatsApp,
-      facebookUrl: settings.facebookUrl
+      facebookUrl: settings.facebookUrl || otherSettings.facebookUrl,
+      linkedinUrl: settings.linkedinUrl || otherSettings.linkedinUrl,
+      youtubeUrl: settings.youtubeUrl || otherSettings.youtubeUrl,
+      instagramUrl: settings.instagramUrl || otherSettings.instagramUrl,
+      twitterUrl: settings.twitterUrl || otherSettings.twitterUrl
     };
 
     localStorage.setItem(otherKey, JSON.stringify(mergedOther));
