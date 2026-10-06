@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { TestPackage, HealthPackage, LabPartner, Language, BookingHistoryItem, SiteSettings, PatientUser, CategoryItem } from './types';
+import { TestPackage, HealthPackage, LabPartner, Language, BookingHistoryItem, SiteSettings, PatientUser, CategoryItem, Doctor, DoctorAppointment, EPrescription } from './types';
 import { TRANSLATIONS } from './translations';
 import { 
   getStoredTests, 
@@ -15,6 +15,8 @@ import {
   saveStoredBookings,
   getStoredSiteSettings,
   saveStoredSiteSettings,
+  getStoredDoctors,
+  setStoredDoctors,
   resetAllDataToDefaults,
   getStoredCurrentPatient,
   saveStoredCurrentPatient,
@@ -61,11 +63,16 @@ import { AdminLoginModal } from './components/AdminLoginModal';
 import { PatientAuthModal } from './components/PatientAuthModal';
 import { TestsView } from './components/TestsView';
 import { PackagesView } from './components/PackagesView';
+import { DoctorsView } from './components/DoctorsView';
 import { PackageDetailModal } from './components/PackageDetailModal';
 import { HomePackagesSection } from './components/HomePackagesSection';
 import { HomePopularTestsSection } from './components/HomePopularTestsSection';
 import { NursingCareSection } from './components/NursingCareSection';
 import { HomeAppDownloadSection } from './components/HomeAppDownloadSection';
+import { HomeDoctorConsultationSection } from './components/HomeDoctorConsultationSection';
+import { DoctorBookingModal } from './components/DoctorBookingModal';
+import { DoctorVideoConsultationModal } from './components/DoctorVideoConsultationModal';
+import { EPrescriptionModal } from './components/EPrescriptionModal';
 import { LabLogo } from './components/LabLogo';
 import { Button } from './components/Button';
 import { 
@@ -110,7 +117,7 @@ import { DEFAULT_HERO_IMAGES, DEFAULT_NURSING_SERVICES_BN, DEFAULT_NURSING_SERVI
 const CATEGORIES = ['All', 'General', 'Diabetes', 'Heart', 'Thyroid', 'Vitamin'];
 
 // Helper to determine active view based on URL path or hash
-const getViewFromLocation = (): 'home' | 'tests' | 'packages' | 'dashboard' | 'admin' => {
+const getViewFromLocation = (): 'home' | 'tests' | 'packages' | 'doctors' | 'dashboard' | 'admin' => {
   if (typeof window === 'undefined') return 'home';
   const path = window.location.pathname.toLowerCase();
   const hash = window.location.hash.toLowerCase();
@@ -132,6 +139,9 @@ const getViewFromLocation = (): 'home' | 'tests' | 'packages' | 'dashboard' | 'a
   if (hash === '#packages' || hash.startsWith('#packages') || hash.startsWith('#/packages')) {
     return 'packages';
   }
+  if (hash === '#doctors' || hash.startsWith('#doctors') || hash.startsWith('#/doctors') || path === '/doctors' || path.startsWith('/doctors') || search.includes('view=doctors')) {
+    return 'doctors';
+  }
   if (hash === '#dashboard' || hash.startsWith('#dashboard') || hash.startsWith('#/dashboard')) {
     return 'dashboard';
   }
@@ -148,7 +158,7 @@ export default function App() {
     const saved = localStorage.getItem('labhome_lang');
     return (saved === 'bn' || saved === 'en') ? saved : 'en';
   });
-  const [currentView, setCurrentView] = useState<'home' | 'tests' | 'packages' | 'dashboard' | 'admin'>(() => {
+  const [currentView, setCurrentView] = useState<'home' | 'tests' | 'packages' | 'doctors' | 'dashboard' | 'admin'>(() => {
     return getViewFromLocation();
   });
   const [currentPatient, setCurrentPatient] = useState<PatientUser | null>(() => getStoredCurrentPatient());
@@ -165,11 +175,17 @@ export default function App() {
   const [tests, setTests] = useState<TestPackage[]>(() => getStoredTests(language));
   const [labs, setLabs] = useState<LabPartner[]>(() => getStoredLabs(language));
   const [packages, setPackages] = useState<HealthPackage[]>(() => getStoredPackages(language));
+  const [doctors, setDoctors] = useState<Doctor[]>(() => getStoredDoctors(language));
   const [categories, setCategories] = useState<CategoryItem[]>(() => getStoredCategories());
   const [bookings, setBookings] = useState<BookingHistoryItem[]>(() => getStoredBookings());
   const [patients, setPatients] = useState<PatientUser[]>(() => getStoredPatients());
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(() => getStoredSiteSettings(language));
   const [selectedPackageForDetail, setSelectedPackageForDetail] = useState<HealthPackage | null>(null);
+
+  // Doctor Consultation & Telemedicine Interactive States
+  const [selectedDoctorForBooking, setSelectedDoctorForBooking] = useState<Doctor | null>(null);
+  const [selectedAppointmentForVideo, setSelectedAppointmentForVideo] = useState<DoctorAppointment | null>(null);
+  const [selectedPrescriptionForView, setSelectedPrescriptionForView] = useState<EPrescription | null>(null);
 
   // Secure Admin Authentication State (session based, prevents public domain auto-login)
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => getIsAdminSessionActive());
@@ -290,6 +306,7 @@ export default function App() {
     setTests(getStoredTests(language));
     setLabs(getStoredLabs(language));
     setPackages(getStoredPackages(language));
+    setDoctors(getStoredDoctors(language));
     setSiteSettings(getStoredSiteSettings(language));
   }, [language]);
 
@@ -355,6 +372,11 @@ export default function App() {
     saveStoredPatients(updated);
   };
 
+  const handleUpdateDoctors = (updated: Doctor[]) => {
+    setDoctors(updated);
+    setStoredDoctors(updated, language);
+  };
+
   const handleUpdateSiteSettings = (updated: SiteSettings) => {
     setSiteSettings(updated);
     saveStoredSiteSettings(language, updated);
@@ -367,12 +389,14 @@ export default function App() {
     const dTests = getStoredTests(language);
     const dLabs = getStoredLabs(language);
     const dPkgs = getStoredPackages(language);
+    const dDocs = getStoredDoctors(language);
     const dCats = getStoredCategories();
     const dSettings = getStoredSiteSettings(language);
     
     setTests(dTests);
     setLabs(dLabs);
     setPackages(dPkgs);
+    setDoctors(dDocs);
     setCategories(dCats);
     setBookings(getStoredBookings());
     setSiteSettings(dSettings);
@@ -768,6 +792,14 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const navigateToDoctors = (pushHistory = true) => {
+    setCurrentView('doctors');
+    if (pushHistory && window.location.hash !== '#doctors') {
+      window.history.pushState({ view: 'doctors' }, '', `${window.location.pathname}#doctors`);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const navigateToHome = (pushHistory = true) => {
     setCurrentView('home');
     if (pushHistory && (window.location.hash || window.location.pathname === '/admin')) {
@@ -930,7 +962,22 @@ export default function App() {
                   </button>
                 )}
 
-                {/* 4. Nursing & Home Care (Only active/visible if Nursing Section is active) */}
+                {/* 4. Doctor Telemedicine Page (Header Option 'Doctor') */}
+                {siteSettings.showDoctorsSection !== false && (
+                  <button 
+                    onClick={navigateToDoctors} 
+                    className={`px-3.5 py-1.5 rounded-full transition-all flex items-center gap-1.5 cursor-pointer ${
+                      currentView === 'doctors' 
+                        ? 'bg-emerald-50 text-emerald-700 font-bold border border-emerald-300 shadow-2xs' 
+                        : 'text-slate-700 hover:text-emerald-700 hover:bg-emerald-50'
+                    }`}
+                  >
+                    <Stethoscope size={15} className={currentView === 'doctors' ? 'text-emerald-600' : 'text-emerald-600'} />
+                    <span>{language === 'bn' ? 'ডাক্তার' : 'Doctor'}</span>
+                  </button>
+                )}
+
+                {/* 5. Nursing & Home Care (Only active/visible if Nursing Section is active) */}
                 {siteSettings.showNursingSection !== false && (
                   <button 
                     onClick={() => scrollToSection('nursing-care')} 
@@ -990,14 +1037,29 @@ export default function App() {
                 </button>
               </div>
 
-              <div className="md:hidden flex items-center gap-2">
+              <div className="md:hidden flex items-center gap-1.5">
+                {/* Mobile Doctor Button */}
+                {siteSettings.showDoctorsSection !== false && (
+                  <button 
+                    onClick={navigateToDoctors}
+                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-bold border transition-colors cursor-pointer ${
+                      currentView === 'doctors'
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                        : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                    }`}
+                  >
+                    <Stethoscope size={13} className={currentView === 'doctors' ? 'text-white' : 'text-emerald-600'} />
+                    <span>{language === 'bn' ? 'ডাক্তার' : 'Doctor'}</span>
+                  </button>
+                )}
+
                 {/* Mobile Book Test Button */}
                 <button 
                   onClick={handleHeaderBookTestClick}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary text-white text-xs font-bold shadow-xs cursor-pointer"
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-primary text-white text-xs font-bold shadow-xs cursor-pointer"
                 >
-                  <Stethoscope size={13} />
-                  <span>{language === 'bn' ? 'বুকিং' : 'Book'}</span>
+                  <FlaskConical size={13} />
+                  <span>{language === 'bn' ? 'টেস্ট' : 'Test'}</span>
                   {cart.length > 0 && (
                     <span className="bg-amber-400 text-slate-900 text-[9px] font-black px-1 rounded-full">
                       {cart.length}
@@ -1046,6 +1108,9 @@ export default function App() {
           onUpdateBookings={handleUpdateBookings}
           patients={patients}
           onUpdatePatients={handleUpdatePatients}
+          doctors={doctors}
+          onUpdateDoctors={handleUpdateDoctors}
+          onOpenPrescriptionViewer={(presc) => setSelectedPrescriptionForView(presc)}
           siteSettings={siteSettings}
           onUpdateSiteSettings={handleUpdateSiteSettings}
           onResetAllData={handleResetAllData}
@@ -1070,6 +1135,8 @@ export default function App() {
             setCurrentView('home');
             setTimeout(() => scrollToSection('tests'), 100);
           }}
+          onOpenVideoRoom={(apt) => setSelectedAppointmentForVideo(apt)}
+          onOpenPrescription={(presc) => setSelectedPrescriptionForView(presc)}
         />
       ) : currentView === 'packages' ? (
         <PackagesView 
@@ -1480,6 +1547,23 @@ export default function App() {
                     </section>
                   );
 
+                case 'doctors':
+                  if (siteSettings.showDoctorsSection === false) return null;
+                  return (
+                    <HomeDoctorConsultationSection
+                      key="doctors"
+                      lang={language}
+                      doctors={doctors}
+                      badge={siteSettings.doctorsBadge}
+                      title={siteSettings.doctorsTitle}
+                      description={siteSettings.doctorsDesc}
+                      btnText={siteSettings.doctorsBtnText}
+                      emergencyHotline={siteSettings.doctorsEmergencyHotline || siteSettings.contactHotline}
+                      onBookDoctor={(doc) => setSelectedDoctorForBooking(doc)}
+                      onQuickVideoCall={(doc) => setSelectedDoctorForBooking(doc)}
+                    />
+                  );
+
                 case 'appDownload':
                   if (siteSettings.showAppDownloadSection === false) return null;
                   return (
@@ -1632,8 +1716,8 @@ export default function App() {
         </div>
       )}
 
-      {/* App Bar for Mobile (Bottom Navigation) - Active on Home, Packages, and Tests Views */}
-      {(currentView === 'home' || currentView === 'tests' || currentView === 'packages') && (
+      {/* App Bar for Mobile (Bottom Navigation) - Active on Home, Packages, Tests, and Doctors Views */}
+      {(currentView === 'home' || currentView === 'tests' || currentView === 'packages' || currentView === 'doctors') && (
         <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 z-30 flex justify-around py-2 pb-safe shadow-lg">
           <button 
             onClick={navigateToHome} 
@@ -1649,6 +1733,15 @@ export default function App() {
             >
               <FlaskConical size={18} />
               <span className="text-[10px] mt-0.5">{t.navTests}</span>
+            </button>
+          )}
+          {siteSettings.showDoctorsSection !== false && (
+            <button 
+              onClick={navigateToDoctors} 
+              className={`flex flex-col items-center px-3 py-1 transition-colors ${currentView === 'doctors' ? 'text-emerald-600 font-bold' : 'text-slate-500'}`}
+            >
+              <Stethoscope size={18} className={currentView === 'doctors' ? 'text-emerald-600' : ''} />
+              <span className="text-[10px] mt-0.5">{language === 'bn' ? 'ডাক্তার' : 'Doctor'}</span>
             </button>
           )}
           {siteSettings.showPackagesSection !== false && (
@@ -1728,6 +1821,61 @@ export default function App() {
         }}
         onSuccess={handleAdminLoginSuccess}
         lang={language}
+      />
+
+      {/* Doctor Booking Modal */}
+      <DoctorBookingModal 
+        doctor={selectedDoctorForBooking}
+        isOpen={Boolean(selectedDoctorForBooking)}
+        onClose={() => setSelectedDoctorForBooking(null)}
+        lang={language}
+        onBookingSuccess={(appointment) => {
+          // Keep doctor appointment state updated
+        }}
+        onStartVideoCall={(appointment) => {
+          setSelectedAppointmentForVideo(appointment);
+        }}
+      />
+
+      {/* Doctor Live Video Consultation Modal */}
+      <DoctorVideoConsultationModal 
+        appointment={selectedAppointmentForVideo}
+        isOpen={Boolean(selectedAppointmentForVideo)}
+        onClose={() => setSelectedAppointmentForVideo(null)}
+        lang={language}
+        onOpenPrescription={(presc) => {
+          setSelectedPrescriptionForView(presc);
+        }}
+      />
+
+      {/* Digital E-Prescription Modal */}
+      <EPrescriptionModal 
+        prescription={selectedPrescriptionForView}
+        isOpen={Boolean(selectedPrescriptionForView)}
+        onClose={() => setSelectedPrescriptionForView(null)}
+        lang={language}
+        onBookAdvisedTest={(testName, testId) => {
+          // If test exists with matching ID or name, add to cart
+          const matchingTest = tests.find(t => (testId && t.id === testId) || t.name.toLowerCase().includes(testName.toLowerCase()));
+          if (matchingTest) {
+            addToCart(matchingTest.id);
+          } else if (testId) {
+            addToCart(testId);
+          } else {
+            setSelectedPrescriptionForView(null);
+            navigateToTests();
+          }
+        }}
+        onBookAllAdvisedTests={(testNames) => {
+          testNames.forEach(tName => {
+            const matchingTest = tests.find(t => t.name.toLowerCase().includes(tName.toLowerCase()));
+            if (matchingTest && !cart.includes(matchingTest.id)) {
+              addToCart(matchingTest.id);
+            }
+          });
+          setSelectedPrescriptionForView(null);
+          setIsBookingModalOpen(true);
+        }}
       />
       
       {/* Dynamic Footer with CMS Data */}

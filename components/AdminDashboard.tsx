@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Language, BookingHistoryItem, TestPackage, HealthPackage, LabPartner, BookingStatus, SiteSettings, ServiceItem, CategoryItem, PatientUser, StaffUser, StaffRole, StaffPermissions } from '../types';
+import { Language, BookingHistoryItem, TestPackage, HealthPackage, LabPartner, BookingStatus, SiteSettings, ServiceItem, CategoryItem, PatientUser, StaffUser, StaffRole, StaffPermissions, Doctor, EPrescription } from '../types';
 import { TRANSLATIONS } from '../translations';
 import { 
   LayoutDashboard, 
@@ -23,7 +23,8 @@ import {
   CalendarClock,
   UserCheck,
   Lock,
-  CreditCard
+  CreditCard,
+  Stethoscope
 } from 'lucide-react';
 import { Button } from './Button';
 import { 
@@ -34,7 +35,9 @@ import {
   saveStoredStaffUsers,
   getStoredCurrentStaff,
   setStoredCurrentStaff,
-  filterOrdersForStaff
+  filterOrdersForStaff,
+  getStoredDoctors,
+  setStoredDoctors
 } from '../services/dataStorage';
 import { getLabs } from '../constants';
 
@@ -47,6 +50,7 @@ import { AdminPackages } from './admin/AdminPackages';
 import { AdminCategories } from './admin/AdminCategories';
 import { AdminLabs } from './admin/AdminLabs';
 import { AdminSlots } from './admin/AdminSlots';
+import { AdminDoctors } from './admin/AdminDoctors';
 import { AdminStaffUsers } from './admin/AdminStaffUsers';
 import { AdminCustomers } from './admin/AdminCustomers';
 import { AdminSettings } from './admin/AdminSettings';
@@ -79,6 +83,10 @@ interface AdminDashboardProps {
   onUpdateBookings: (bookings: BookingHistoryItem[]) => void;
   patients?: PatientUser[];
   onUpdatePatients?: (patients: PatientUser[]) => void;
+  doctors?: Doctor[];
+  onUpdateDoctors?: (doctors: Doctor[]) => void;
+  onOpenPrescriptionViewer?: (prescription: EPrescription) => void;
+  onJoinVideoAsDoctor?: (appointment: DoctorAppointment) => void;
   siteSettings: SiteSettings;
   onUpdateSiteSettings: (settings: SiteSettings) => void;
   onResetAllData: () => void;
@@ -100,13 +108,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onUpdateBookings,
   patients = [],
   onUpdatePatients,
+  doctors: propDoctors,
+  onUpdateDoctors: propOnUpdateDoctors,
+  onOpenPrescriptionViewer,
+  onJoinVideoAsDoctor,
   siteSettings,
   onUpdateSiteSettings,
   onResetAllData,
   onLogout
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'reports' | 'tests' | 'packages' | 'categories' | 'labs' | 'slots' | 'staff' | 'payments' | 'customers' | 'cms' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'reports' | 'tests' | 'packages' | 'categories' | 'labs' | 'doctors' | 'slots' | 'staff' | 'payments' | 'customers' | 'cms' | 'settings'>('overview');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Doctors Internal State fallback
+  const [internalDoctors, setInternalDoctors] = useState<Doctor[]>(() => propDoctors || getStoredDoctors(lang));
+  const activeDoctorsList = propDoctors || internalDoctors;
+  const handleUpdateDoctorsList = (newDocs: Doctor[]) => {
+    if (propOnUpdateDoctors) {
+      propOnUpdateDoctors(newDocs);
+    } else {
+      setInternalDoctors(newDocs);
+      setStoredDoctors(newDocs, lang);
+    }
+  };
 
   // Active Staff / RBAC Session State
   const [currentStaff, setCurrentStaff] = useState<StaffUser | null>(getStoredCurrentStaff);
@@ -821,6 +845,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <NavButton id="labs" icon={Building2} label="Centers & Fees" />
             )}
 
+            <NavButton 
+              id="doctors" 
+              icon={Stethoscope} 
+              label={lang === 'bn' ? 'ডাক্তার কন্সালটেন্সি' : 'Doctors & Tele-care'} 
+              badge={activeDoctorsList.length} 
+            />
+
             {(isSuperAdmin || staffPermissions.canManageSlots) && (
               <NavButton id="slots" icon={CalendarClock} label={lang === 'bn' ? 'তারিখ ও স্লট কাস্টমাইজ' : 'Date & Slot Manager'} />
             )}
@@ -969,6 +1000,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               onReorderLab={handleReorderLab}
               onResetDefaultLabs={handleResetDefaultLabs}
               onManageLabTests={(lab) => setManagingLabTests(lab)}
+            />
+          )}
+
+          {activeTab === 'doctors' && (
+            <AdminDoctors 
+              lang={lang}
+              doctors={activeDoctorsList}
+              onUpdateDoctors={handleUpdateDoctorsList}
+              onOpenPrescriptionViewer={onOpenPrescriptionViewer}
+              onJoinVideoAsDoctor={onJoinVideoAsDoctor}
             />
           )}
 

@@ -1,9 +1,10 @@
-import { TestPackage, LabPartner, Language, BookingHistoryItem, SiteSettings, PatientUser, HealthPackage, CategoryItem, DateSlotConfig, TimeSlotConfigItem, StaffUser, StaffRole, StaffPermissions, PaymentGatewaysConfig, AdminCredentials } from '../types';
+import { TestPackage, LabPartner, Language, BookingHistoryItem, SiteSettings, PatientUser, HealthPackage, CategoryItem, DateSlotConfig, TimeSlotConfigItem, StaffUser, StaffRole, StaffPermissions, PaymentGatewaysConfig, AdminCredentials, Doctor, DoctorAppointment, EPrescription } from '../types';
 import { 
   getTests as getDefaultTests, 
   getLabs as getDefaultLabs, 
   getSiteSettings as getDefaultSiteSettings,
-  getPackages as getDefaultPackages
+  getPackages as getDefaultPackages,
+  getDoctors as getDefaultDoctors
 } from '../constants';
 import { 
   saveAdminCredentialsToFirestore, 
@@ -24,6 +25,10 @@ const STORAGE_KEYS = {
   CATEGORIES: 'labhome_categories_v2',
   SITE_SETTINGS_BN: 'labhome_site_settings_bn_v2',
   SITE_SETTINGS_EN: 'labhome_site_settings_en_v2',
+  DOCTORS_BN: 'labhome_doctors_bn_v1',
+  DOCTORS_EN: 'labhome_doctors_en_v1',
+  DOCTOR_APPOINTMENTS: 'labhome_doctor_appointments_v1',
+  E_PRESCRIPTIONS: 'labhome_e_prescriptions_v1',
   PATIENTS: 'labhome_patients_v2',
   CURRENT_PATIENT: 'labhome_current_patient_v2',
   DATE_SLOT_CONFIG: 'labhome_date_slot_config_v1',
@@ -1275,6 +1280,117 @@ export const saveStoredPaymentConfig = (config: PaymentGatewaysConfig): void => 
     localStorage.setItem(STORAGE_KEYS.PAYMENT_CONFIG, JSON.stringify(config));
   } catch (e) {
     console.error("Error saving payment config to storage:", e);
+  }
+};
+
+export const getStoredDoctors = (lang: Language = 'bn'): Doctor[] => {
+  try {
+    const key = lang === 'en' ? STORAGE_KEYS.DOCTORS_EN : STORAGE_KEYS.DOCTORS_BN;
+    const stored = localStorage.getItem(key);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.error("Error reading stored doctors:", e);
+  }
+  return getDefaultDoctors(lang);
+};
+
+export const setStoredDoctors = (doctors: Doctor[], lang: Language = 'bn'): void => {
+  try {
+    const key = lang === 'en' ? STORAGE_KEYS.DOCTORS_EN : STORAGE_KEYS.DOCTORS_BN;
+    localStorage.setItem(key, JSON.stringify(doctors));
+  } catch (e) {
+    console.error("Error saving doctors to storage:", e);
+  }
+};
+
+export const getStoredDoctorAppointments = (): DoctorAppointment[] => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEYS.DOCTOR_APPOINTMENTS);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.error("Error reading doctor appointments:", e);
+  }
+  return [];
+};
+
+export const saveStoredDoctorAppointments = (appointments: DoctorAppointment[]): void => {
+  try {
+    localStorage.setItem(STORAGE_KEYS.DOCTOR_APPOINTMENTS, JSON.stringify(appointments));
+  } catch (e) {
+    console.error("Error saving doctor appointments:", e);
+  }
+};
+
+export const saveDoctorAppointment = (appointment: DoctorAppointment): void => {
+  try {
+    const existing = getStoredDoctorAppointments();
+    const updated = [appointment, ...existing.filter(a => a.id !== appointment.id)];
+    saveStoredDoctorAppointments(updated);
+  } catch (e) {
+    console.error("Error saving single doctor appointment:", e);
+  }
+};
+
+export const updateDoctorAppointmentStatus = (
+  appointmentId: string, 
+  status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled',
+  ePrescription?: EPrescription
+): void => {
+  try {
+    const existing = getStoredDoctorAppointments();
+    const updated = existing.map(apt => {
+      if (apt.id === appointmentId) {
+        return {
+          ...apt,
+          status,
+          ...(ePrescription ? { prescription: ePrescription, ePrescriptionId: ePrescription.id } : {})
+        };
+      }
+      return apt;
+    });
+    saveStoredDoctorAppointments(updated);
+  } catch (e) {
+    console.error("Error updating appointment status:", e);
+  }
+};
+
+export const getStoredEPrescriptions = (): EPrescription[] => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEYS.E_PRESCRIPTIONS);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.error("Error reading e-prescriptions:", e);
+  }
+  return [];
+};
+
+export const saveEPrescription = (prescription: EPrescription): void => {
+  try {
+    const existing = getStoredEPrescriptions();
+    const updated = [prescription, ...existing.filter(p => p.id !== prescription.id)];
+    localStorage.setItem(STORAGE_KEYS.E_PRESCRIPTIONS, JSON.stringify(updated));
+
+    // Also link with appointment if matching
+    if (prescription.appointmentId) {
+      updateDoctorAppointmentStatus(prescription.appointmentId, 'completed', prescription);
+    }
+  } catch (e) {
+    console.error("Error saving e-prescription:", e);
   }
 };
 

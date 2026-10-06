@@ -265,6 +265,121 @@ export interface NursingCareService {
   isActive?: boolean;
 }
 
+// Doctor Consultation, E-Prescription & Telemedicine Interfaces
+export interface DoctorTimeSlot {
+  id: string;
+  time: string; // e.g. "09:00 AM - 09:30 AM"
+  startTime: string; // e.g. "09:00 AM"
+  endTime: string;   // e.g. "09:30 AM"
+  period?: 'morning' | 'afternoon' | 'evening' | 'night';
+  isBooked?: boolean;
+}
+
+export interface Doctor {
+  id: string;
+  name: string;
+  title?: string; // e.g. "ডাঃ" / "Dr." or "অধ্যাপক ডাঃ"
+  specialty: string; // e.g. "মেডিসিন ও ডায়াবেটিস বিশেষজ্ঞ"
+  department: string; // e.g. "Medicine", "Cardiology", "Pediatrics", "Gynecology", "Dermatology", "Diabetes", "General Physician"
+  degrees: string; // e.g. "MBBS, FCPS (Medicine), MD, MACP (USA)"
+  bmdcRegNo?: string; // e.g. "A-54321"
+  hospital: string; // e.g. "ঢাকা মেডিকেল কলেজ ও হাসপাতাল"
+  experienceYears: number | string; // e.g. 12
+  rating: number; // e.g. 4.9
+  reviewCount: number; // e.g. 340
+  totalConsultations: number; // e.g. 1450
+  consultationFee: number; // e.g. 500
+  originalFee?: number; // e.g. 800
+  discountPercent?: number; // e.g. 37
+  followupFee?: number; // e.g. 300
+  image: string;
+  gender?: 'male' | 'female';
+  languages?: string[]; // e.g. ["বাংলা", "English"]
+  availableDays?: string[]; // e.g. ["শনি", "রবি", "সোম", "মঙ্গল", "বুধ", "বৃহঃ", "শুক্র"]
+  availableTimeText?: string; // e.g. "প্রতিদিন সন্ধ্যা ৬:০০ - রাত ৯:০০"
+  slotIntervalMinutes?: number; // 30
+  consultationTypes?: ('video' | 'audio' | 'chamber')[];
+  about?: string;
+  isActive?: boolean;
+  orderCount?: number;
+}
+
+export interface PrescribedMedicine {
+  id: string;
+  name: string; // e.g. "Tab. Napa Extra 500mg"
+  type?: 'Tab' | 'Cap' | 'Syp' | 'Inj' | 'Drop' | 'Ointment';
+  dosage: string; // e.g. "১ + ০ + ১"
+  duration: string; // e.g. "৭ দিন"
+  instruction: string; // e.g. "খাবারের পরে ভরা পেটে"
+}
+
+export interface PrescribedTestAdvice {
+  id: string;
+  testId?: string; // matching lab test ID if available
+  name: string; // e.g. "CBC with ESR"
+  estimatedPrice?: number;
+  instructions?: string; // e.g. "ফাস্টিং ব্লাড সুগার ৮-১০ ঘণ্টা না খেয়ে দিতে হবে"
+}
+
+export interface EPrescription {
+  id: string;
+  appointmentId: string;
+  date: string;
+  doctorId: string;
+  doctorName: string;
+  doctorDegrees: string;
+  doctorSpecialty: string;
+  doctorHospital: string;
+  doctorBmdcNo: string;
+  doctorSignature?: string;
+  patientName: string;
+  patientAge: string | number;
+  patientGender: string;
+  patientPhone: string;
+  chiefComplaints: string[];
+  vitals?: {
+    bloodPressure?: string;
+    pulse?: string;
+    temperature?: string;
+    weight?: string;
+    bloodSugar?: string;
+  };
+  diagnosis?: string;
+  medicines: PrescribedMedicine[];
+  advisedTests: PrescribedTestAdvice[];
+  advice: string[];
+  followupDate?: string;
+}
+
+export interface DoctorAppointment {
+  id: string;
+  doctorId: string;
+  doctorName: string;
+  doctorSpecialty: string;
+  doctorHospital: string;
+  doctorImage?: string;
+  doctorFee: number;
+  patientId?: string;
+  patientName: string;
+  patientPhone: string;
+  patientEmail?: string;
+  patientAge: number | string;
+  patientGender: 'male' | 'female' | 'other';
+  problemDescription: string;
+  appointmentDate: string; // YYYY-MM-DD
+  appointmentTimeSlot: string; // e.g. "06:00 PM - 06:30 PM"
+  consultationType: 'video' | 'audio' | 'chamber';
+  paymentMethod: PaymentMethod;
+  paymentStatus: 'paid' | 'unpaid' | 'pending';
+  transactionId?: string;
+  senderPhone?: string;
+  status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+  createdAt: string;
+  ePrescriptionId?: string;
+  prescription?: EPrescription;
+  videoRoomId?: string;
+}
+
 // Global Site Settings and CMS configuration
 export interface SiteSettings {
   siteName: string;
@@ -304,6 +419,14 @@ export interface SiteSettings {
   packagesTitle?: string;
   packagesDesc?: string;
   packagesBtnText?: string;
+
+  // Doctor Consultation & Telemedicine Section
+  showDoctorsSection?: boolean; // Doctor Consultation visibility toggle
+  doctorsBadge?: string;
+  doctorsTitle?: string;
+  doctorsDesc?: string;
+  doctorsBtnText?: string;
+  doctorsEmergencyHotline?: string;
 
   // Nursing & Care Section
   showNursingSection?: boolean; // Below Packages visibility toggle

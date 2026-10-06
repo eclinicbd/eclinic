@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Language, BookingHistoryItem, ReportItem, PatientUser } from '../types';
+import { Language, BookingHistoryItem, ReportItem, PatientUser, DoctorAppointment, EPrescription } from '../types';
 import { TRANSLATIONS } from '../translations';
 import { 
   LayoutDashboard, 
@@ -25,13 +25,16 @@ import {
   Trash2,
   Image as ImageIcon,
   Printer,
-  Receipt
+  Receipt,
+  Stethoscope,
+  Video
 } from 'lucide-react';
 import { Button } from './Button';
 import { ProfilePictureModal, PRESET_AVATARS } from './ProfilePictureModal';
 import { InvoiceModal } from './InvoiceModal';
 import { printOrDownloadInvoice } from '../services/invoiceService';
 import { formatOrderId } from './BookingModal';
+import { getStoredDoctorAppointments } from '../services/dataStorage';
 
 interface UserDashboardProps {
   lang: Language;
@@ -40,6 +43,8 @@ interface UserDashboardProps {
   onUpdateProfile: (updates: Partial<PatientUser>) => void;
   bookings: BookingHistoryItem[];
   onBookNewTest?: () => void;
+  onOpenVideoRoom?: (appointment: DoctorAppointment) => void;
+  onOpenPrescription?: (prescription: EPrescription) => void;
 }
 
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
@@ -50,10 +55,17 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   currentPatient,
   onUpdateProfile,
   bookings,
-  onBookNewTest
+  onBookNewTest,
+  onOpenVideoRoom,
+  onOpenPrescription
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'bookings' | 'reports' | 'profile'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'bookings' | 'consultations' | 'reports' | 'profile'>('overview');
   const [isPictureModalOpen, setIsPictureModalOpen] = useState(false);
+  const [doctorAppointments, setDoctorAppointments] = useState<DoctorAppointment[]>(() => {
+    const all = getStoredDoctorAppointments();
+    if (!currentPatient.phone) return all;
+    return all.filter(a => a.patientPhone === currentPatient.phone || !a.patientPhone);
+  });
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const t = TRANSLATIONS[lang];
 
@@ -294,6 +306,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
           <nav className="space-y-1.5">
             <SidebarItem id="overview" icon={LayoutDashboard} label={t.dashOverview} />
             <SidebarItem id="bookings" icon={CalendarDays} label={t.dashBookings} count={userBookings.length} />
+            <SidebarItem id="consultations" icon={Stethoscope} label={lang === 'bn' ? 'ডাক্তার ও ই-প্রেসক্রিপশন' : 'Doctor & Prescriptions'} count={doctorAppointments.length} />
             <SidebarItem id="reports" icon={FileText} label={t.dashReports} count={userReports.length} />
             <SidebarItem id="profile" icon={User} label={t.dashProfile} />
             
@@ -519,6 +532,100 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                   </tbody>
                 </table>
               </div>
+            </div>
+          )}
+
+          {/* DOCTOR CONSULTATIONS & E-PRESCRIPTIONS TAB */}
+          {activeTab === 'consultations' && (
+            <div className="space-y-4 animate-in fade-in duration-300">
+              <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h3 className="font-bold text-slate-800 text-base">
+                    {lang === 'bn' ? 'ডাক্তার অ্যাপয়েন্টমেন্ট ও ডিজিটাল ই-প্রেসক্রিপশন' : 'Doctor Appointments & E-Prescriptions'}
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    {lang === 'bn' ? 'আপনার ৩০ মিনিটের নির্ধারিত ভিডিও কনসালটেন্সি স্লট ও ভেরিফাইড প্রেসক্রিপশন' : 'Your scheduled 30-min video consults and verified prescriptions'}
+                  </p>
+                </div>
+                {onBookNewTest && (
+                  <button
+                    onClick={onBookNewTest}
+                    className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm"
+                  >
+                    <Stethoscope size={14} />
+                    <span>{lang === 'bn' ? 'নতুন ডাক্তার বুক করুন' : 'Book Doctor'}</span>
+                  </button>
+                )}
+              </div>
+
+              {doctorAppointments.length === 0 ? (
+                <div className="bg-white rounded-3xl p-12 text-center border border-slate-100 space-y-3">
+                  <Stethoscope className="w-12 h-12 text-slate-300 mx-auto" />
+                  <h4 className="font-bold text-slate-700 text-sm">
+                    {lang === 'bn' ? 'কোনো ডাক্তার অ্যাপয়েন্টমেন্টের রেকর্ড নেই' : 'No doctor consultation appointments yet'}
+                  </h4>
+                  <p className="text-xs text-slate-400 max-w-md mx-auto">
+                    {lang === 'bn' 
+                      ? 'হোমপেজের ডাক্তার কন্সালটেন্সি সেকশন থেকে দেশসেরা বিশেষজ্ঞ চিকিৎসকদের সাথে অ্যাপয়েন্টমেন্ট ও ভিডিও কল বুক করুন।' 
+                      : 'Book appointments and HD live video consultations with verified specialist doctors on the homepage.'}
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-3">
+                  {doctorAppointments.map(apt => (
+                    <div key={apt.id} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:shadow-md transition-all">
+                      <div className="flex items-start sm:items-center gap-4">
+                        <img
+                          src={apt.doctorImage || 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=300'}
+                          alt={apt.doctorName}
+                          className="w-14 h-14 rounded-2xl object-cover border border-slate-200 shrink-0"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=300';
+                          }}
+                        />
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs font-mono font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded">
+                              {apt.id}
+                            </span>
+                            <span className="text-[11px] font-bold text-emerald-700 uppercase bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                              {apt.consultationType} Call
+                            </span>
+                          </div>
+                          <h4 className="font-bold text-slate-900 text-sm mt-1">{apt.doctorName}</h4>
+                          <p className="text-xs text-slate-500 font-medium">{apt.doctorSpecialty} &bull; {apt.doctorHospital}</p>
+                          <p className="text-[11px] text-slate-600 mt-1 font-semibold flex items-center gap-1.5">
+                            <Clock size={12} className="text-sky-600" />
+                            <span>{apt.appointmentDate} &bull; {apt.appointmentTimeSlot}</span>
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto shrink-0">
+                        {apt.consultationType === 'video' && onOpenVideoRoom && (
+                          <button
+                            onClick={() => onOpenVideoRoom(apt)}
+                            className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm"
+                          >
+                            <Video size={14} />
+                            <span>{lang === 'bn' ? 'ভিডিও রুমে প্রবেশ' : 'Join Video'}</span>
+                          </button>
+                        )}
+
+                        {apt.prescription && onOpenPrescription && (
+                          <button
+                            onClick={() => onOpenPrescription(apt.prescription!)}
+                            className="px-3.5 py-2 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 font-bold text-xs flex items-center gap-1.5 border border-sky-200"
+                          >
+                            <FileText size={14} />
+                            <span>{lang === 'bn' ? 'ই-প্রেসক্রিপশন' : 'Prescription'}</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
