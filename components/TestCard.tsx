@@ -73,7 +73,7 @@ export const TestCard: React.FC<TestCardProps> = ({
         </span>
 
         {/* 2. Order Count */}
-        {typeof totalOrders === 'number' && totalOrders > 0 && (
+        {typeof totalOrders === 'number' && (
           <span className="inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 bg-amber-50 text-amber-800 border border-amber-200/80 rounded-md shadow-2xs whitespace-nowrap flex-shrink-0">
             <span>🔥</span>
             <span>{totalOrders > 999 ? `${(totalOrders / 1000).toFixed(1)}k` : totalOrders}+ {lang === 'bn' ? 'সম্পন্ন' : 'Done'}</span>

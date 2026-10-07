@@ -140,7 +140,7 @@ export const TestFormModal: React.FC<TestModalProps> = ({
         price: 500,
         discountPercent: 17,
         turnaroundTime: '24 Hours',
-        orderCount: 120,
+        orderCount: 0,
         image: PRESET_IMAGES[0].url,
         originalPriceByLab: initialOrigPrices,
         priceByLab: initialPrices,

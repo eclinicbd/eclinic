@@ -80,49 +80,58 @@ export const generateInvoiceHtml = (
       finalPrice: item.finalPrice
     }));
   } else {
-    // For legacy orders without items array: reconstruct without mutating historical totals
-    const rawTests = order.testNames && order.testNames.length > 0 
-      ? order.testNames 
-      : ['Diagnostic Health Test / Package'];
-    
-    // If order has a preserved subtotal or totalCost, anchor item rates to preserved totals
-    const preservedSubtotal = order.subtotal && order.subtotal > 0 
-      ? order.subtotal 
-      : (order.totalCost ? Math.max(0, order.totalCost - (order.accessoriesFee || 45) - (order.collectionFee || order.serviceCharge || 150)) : 0);
+    if (order.prescriptionUrl && (!order.testNames || order.testNames.length === 0)) {
+      resolvedItems = [{
+        name: isBn ? `ডাক্তারের প্রেসক্রিপশন (${order.prescriptionName || 'সংযুক্ত'})` : `Doctor Prescription (${order.prescriptionName || 'Attached'})`,
+        category: isBn ? 'প্রেসক্রিপশন পর্যালোচনা সাপেক্ষে' : 'Prescription Review',
+        originalPrice: 0,
+        discountAmount: 0,
+        finalPrice: 0
+      }];
+    } else {
+      const rawTests = order.testNames && order.testNames.length > 0 
+        ? order.testNames 
+        : ['Diagnostic Health Test / Package'];
+      
+      // If order has a preserved subtotal or totalCost, anchor item rates to preserved totals
+      const preservedSubtotal = order.subtotal && order.subtotal > 0 
+        ? order.subtotal 
+        : (order.totalCost ? Math.max(0, order.totalCost - (order.accessoriesFee || 45) - (order.collectionFee || order.serviceCharge || 150)) : 0);
 
-    resolvedItems = rawTests.map(testName => {
-      const matched = allCatalogItems.find(c => 
-        c.name?.trim().toLowerCase() === testName.trim().toLowerCase() ||
-        c.id === testName
-      );
-      if (matched) {
-        const itemFinal = (order.labId && matched.priceByLab?.[order.labId] !== undefined)
-          ? matched.priceByLab[order.labId]
-          : matched.price;
-        const itemRegular = (order.labId && matched.originalPriceByLab?.[order.labId] !== undefined)
-          ? matched.originalPriceByLab[order.labId]
-          : (matched.originalPrice || itemFinal);
-        const discount = Math.max(0, itemRegular - itemFinal);
-        return {
-          name: matched.name,
-          category: matched.category,
-          originalPrice: itemRegular,
-          discountAmount: discount,
-          finalPrice: itemFinal
-        };
-      } else {
-        const avg = preservedSubtotal > 0 
-          ? Math.round(preservedSubtotal / rawTests.length) 
-          : Math.round((order.totalCost || 500) / rawTests.length);
-        return {
-          name: testName,
-          category: isBn ? 'ল্যাব টেস্ট' : 'Lab Test',
-          originalPrice: avg,
-          discountAmount: 0,
-          finalPrice: avg
-        };
-      }
-    });
+      resolvedItems = rawTests.map(testName => {
+        const matched = allCatalogItems.find(c => 
+          c.name?.trim().toLowerCase() === testName.trim().toLowerCase() ||
+          c.id === testName
+        );
+        if (matched) {
+          const itemFinal = (order.labId && matched.priceByLab?.[order.labId] !== undefined)
+            ? matched.priceByLab[order.labId]
+            : matched.price;
+          const itemRegular = (order.labId && matched.originalPriceByLab?.[order.labId] !== undefined)
+            ? matched.originalPriceByLab[order.labId]
+            : (matched.originalPrice || itemFinal);
+          const discount = Math.max(0, itemRegular - itemFinal);
+          return {
+            name: matched.name,
+            category: matched.category,
+            originalPrice: itemRegular,
+            discountAmount: discount,
+            finalPrice: itemFinal
+          };
+        } else {
+          const avg = preservedSubtotal > 0 
+            ? Math.round(preservedSubtotal / rawTests.length) 
+            : Math.round((order.totalCost || 500) / rawTests.length);
+          return {
+            name: testName,
+            category: isBn ? 'ল্যাব টেস্ট' : 'Lab Test',
+            originalPrice: avg,
+            discountAmount: 0,
+            finalPrice: avg
+          };
+        }
+      });
+    }
   }
 
   // Preserve stored financial snapshot amounts

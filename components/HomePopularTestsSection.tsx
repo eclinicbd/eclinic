@@ -50,8 +50,11 @@ export const HomePopularTestsSection: React.FC<HomePopularTestsSectionProps> = (
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isPaused, setIsPaused] = useState(false);
 
-  // Maximum 12 most ordered tests
-  const popularTests = tests.filter(t => !t.isHidden && (!selectedLabId || !t.hiddenLabs?.includes(selectedLabId))).slice(0, 12);
+  // Maximum 12 most ordered tests - sorted by highest orderCount descending
+  const popularTests = [...tests]
+    .filter(t => !t.isHidden && (!selectedLabId || !t.hiddenLabs?.includes(selectedLabId)))
+    .sort((a, b) => (b.orderCount || 0) - (a.orderCount || 0))
+    .slice(0, 12);
 
   // Auto-scroll single row effect
   useEffect(() => {
@@ -139,9 +142,10 @@ export const HomePopularTestsSection: React.FC<HomePopularTestsSectionProps> = (
             </div>
 
             <Button 
-              onClick={onNavigateToTests} 
+              type="button"
+              onClick={() => onNavigateToTests('All', '', '')} 
               variant="outline" 
-              className="!text-xs py-2 px-3.5"
+              className="!text-xs py-2 px-3.5 cursor-pointer"
             >
               {btnText || (lang === 'bn' ? 'সকল টেস্ট দেখুন (১০০+)' : 'Browse All 100+ Tests')} &rarr;
             </Button>
@@ -196,11 +200,19 @@ export const HomePopularTestsSection: React.FC<HomePopularTestsSectionProps> = (
                   </span>
                 </div>
 
-                {/* Top Meta: Category & Turnaround */}
-                <div className="p-4 pt-4 pb-2 flex justify-between items-center gap-2 pl-24">
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md">
-                    {test.category}
-                  </span>
+                {/* Top Meta: Category, Done Count & Turnaround */}
+                <div className="p-4 pt-4 pb-2 flex justify-between items-center gap-1.5 flex-wrap pl-22">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md">
+                      {test.category}
+                    </span>
+
+                    {/* Test Done Count Badge */}
+                    <span className="inline-flex items-center gap-1 text-[10px] font-extrabold px-1.5 py-0.5 bg-amber-50 text-amber-800 border border-amber-200/80 rounded-md shadow-2xs">
+                      <Flame size={10} className="text-amber-500 fill-amber-500" />
+                      <span>{(test.orderCount || 0) > 999 ? `${((test.orderCount || 0) / 1000).toFixed(1)}k` : (test.orderCount || 0)}+ {lang === 'bn' ? 'সম্পন্ন' : 'Done'}</span>
+                    </span>
+                  </div>
                   
                   <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-full flex-shrink-0">
                     <Clock size={10} />

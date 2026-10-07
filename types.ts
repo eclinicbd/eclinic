@@ -137,6 +137,8 @@ export interface BookingFormData {
   labId: string;
   doctorName?: string;
   prescription?: File | null;
+  prescriptionUrl?: string;
+  prescriptionName?: string;
   paymentMethod?: PaymentMethod;
   transactionId?: string;
   senderPhone?: string;
@@ -185,6 +187,8 @@ export interface BookingHistoryItem {
   totalCost: number;
   status: BookingStatus;
   doctorName?: string;
+  prescriptionUrl?: string;
+  prescriptionName?: string;
   createdAt?: string;
   assignedStaffId?: string;
   assignedStaffName?: string;

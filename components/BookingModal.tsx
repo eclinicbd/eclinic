@@ -30,7 +30,13 @@ import {
   Smartphone,
   Lock,
   ArrowRight,
-  Info
+  Info,
+  UploadCloud,
+  FileUp,
+  Image as ImageIcon,
+  Eye,
+  Paperclip,
+  ZoomIn
 } from 'lucide-react';
 import { Button } from './Button';
 import { getStoredDateSlotConfig, isSlotAvailable, DEFAULT_TIME_SLOTS, getStoredSiteSettings, getStoredPaymentConfig } from '../services/dataStorage';
@@ -214,6 +220,58 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const [confirmedBookingId, setConfirmedBookingId] = useState<string>('');
   const [copiedId, setCopiedId] = useState(false);
   const [copiedNumber, setCopiedNumber] = useState<string | null>(null);
+  const [prescriptionPreviewModal, setPrescriptionPreviewModal] = useState<string | null>(null);
+  const [isUploadingPrescription, setIsUploadingPrescription] = useState(false);
+  const prescriptionFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePrescriptionFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate size limit (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      setValidationError(isBn ? 'প্রেসক্রিপশন ফাইলের সাইজ সর্বোচ্চ ১০MB হতে পারবে।' : 'Prescription file size must be within 10MB.');
+      return;
+    }
+
+    setIsUploadingPrescription(true);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = reader.result as string;
+      setFormData(prev => ({
+        ...prev,
+        prescription: file,
+        prescriptionUrl: base64,
+        prescriptionName: file.name
+      }));
+      setIsUploadingPrescription(false);
+      setValidationError(null);
+
+      // Auto advance to Step 2 (Schedule) if currently in Step 1
+      if (step === 1) {
+        setTimeout(() => {
+          setStep(2);
+        }, 350);
+      }
+    };
+    reader.onerror = () => {
+      setValidationError(isBn ? 'ফাইল পড়তে সমস্যা হয়েছে, দয়া করে আবার চেষ্টা করুন।' : 'Failed to read file. Please try again.');
+      setIsUploadingPrescription(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemovePrescription = () => {
+    setFormData(prev => ({
+      ...prev,
+      prescription: null,
+      prescriptionUrl: undefined,
+      prescriptionName: undefined
+    }));
+    if (prescriptionFileInputRef.current) {
+      prescriptionFileInputRef.current.value = '';
+    }
+  };
 
   const handleCopyPaymentNumber = (num: string) => {
     navigator.clipboard.writeText(num);
@@ -339,6 +397,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const accessoriesFee = calculateAccessoriesFee(cartItems.length);
   const totalBill = subTotal + (cartItems.length > 0 ? serviceCharge : 0) + accessoriesFee;
 
+  // When prescription is uploaded without tests in cart (or booking is made based on doctor's prescription)
+  const isPrescriptionBooking = Boolean(formData.prescriptionUrl && cartItems.length === 0);
+
   // Suggestions search logic
   const cleanSearch = searchTerm.trim().toLowerCase();
   const availableToAddTests = allTests.filter(test => !cartItems.some(item => item.id === test.id));
@@ -352,10 +413,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       }).slice(0, 8)
     : availableToAddTests.slice(0, 6);
 
-  // Step 1 -> Step 2 validation
+  // Step 1 -> Step 2 validation (Either tests in cart or prescription uploaded)
   const handleProceedToStep2 = () => {
-    if (cartItems.length === 0) {
-      setValidationError(isBn ? 'অনুগ্রহ করে অন্তত একটি টেস্ট কার্টে যোগ করুন।' : 'Please add at least one test to your cart.');
+    if (cartItems.length === 0 && !formData.prescriptionUrl) {
+      setValidationError(isBn ? 'অনুগ্রহ করে অন্তত একটি টেস্ট সিলেক্ট করুন অথবা প্রেসক্রিপশন আপলোড করুন।' : 'Please select at least one test or upload a doctor prescription.');
       return;
     }
     setValidationError(null);
@@ -397,8 +458,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const handleSubmitBooking = async () => {
     if (isSubmitting || step === 4) return;
 
-    // Validate payment method details (Mandatory for bKash, Nagad, Rocket, Card)
-    if (formData.paymentMethod === 'bkash' || formData.paymentMethod === 'nagad' || formData.paymentMethod === 'rocket') {
+    // Validate payment method details (Mandatory for bKash, Nagad, Rocket, Card only when not prescription-only review)
+    if (!isPrescriptionBooking && (formData.paymentMethod === 'bkash' || formData.paymentMethod === 'nagad' || formData.paymentMethod === 'rocket')) {
       const methodName = formData.paymentMethod === 'bkash' 
         ? (isBn ? 'বিকাশ' : 'bKash') 
         : formData.paymentMethod === 'nagad' 
@@ -427,7 +488,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       }
     }
 
-    if (formData.paymentMethod === 'card') {
+    if (!isPrescriptionBooking && formData.paymentMethod === 'card') {
       const cleanCardNum = (formData.cardNumber || '').replace(/\s/g, '');
       if (!cleanCardNum || cleanCardNum.length < 15) {
         setValidationError(isBn ? 'অনুগ্রহ করে সঠিক ১৬ ডিজিট কার্ড নম্বর লিখুন।' : 'Please enter a valid 16-digit card number.');
@@ -456,9 +517,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     setCopiedId(false);
 
     let paymentStatus: 'unpaid' | 'paid' | 'pending_verification' = 'unpaid';
-    if (formData.paymentMethod === 'card') {
+    if (!isPrescriptionBooking && formData.paymentMethod === 'card') {
       paymentStatus = 'paid';
-    } else if (formData.paymentMethod === 'bkash' || formData.paymentMethod === 'nagad' || formData.paymentMethod === 'rocket') {
+    } else if (!isPrescriptionBooking && (formData.paymentMethod === 'bkash' || formData.paymentMethod === 'nagad' || formData.paymentMethod === 'rocket')) {
       paymentStatus = formData.transactionId ? 'pending_verification' : 'unpaid';
     } else {
       paymentStatus = 'unpaid';
@@ -490,14 +551,16 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         labName: selectedLab?.name || 'Popular Diagnostic Centre',
         testNames: cartItems.map(t => t.name),
         items: bookingItemDetails,
-        subtotal: regularSubTotal,
-        totalDiscount: totalSavings,
-        collectionFee: serviceCharge,
-        accessoriesFee: accessoriesFee,
-        serviceCharge: serviceCharge,
-        totalCost: totalBill,
+        subtotal: isPrescriptionBooking ? 0 : regularSubTotal,
+        totalDiscount: isPrescriptionBooking ? 0 : totalSavings,
+        collectionFee: isPrescriptionBooking ? 0 : serviceCharge,
+        accessoriesFee: isPrescriptionBooking ? 0 : accessoriesFee,
+        serviceCharge: isPrescriptionBooking ? 0 : serviceCharge,
+        totalCost: isPrescriptionBooking ? 0 : totalBill,
         status: 'pending',
         doctorName: formData.doctorName?.trim() || '',
+        prescriptionUrl: formData.prescriptionUrl,
+        prescriptionName: formData.prescriptionName,
         paymentMethod: formData.paymentMethod || 'cod',
         paymentStatus,
         transactionId: formData.transactionId?.trim() || undefined,
@@ -553,6 +616,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       totalCost: totalBill,
       status: 'pending',
       doctorName: formData.doctorName,
+      prescriptionUrl: formData.prescriptionUrl,
+      prescriptionName: formData.prescriptionName,
       paymentMethod: formData.paymentMethod || 'cod',
       paymentStatus: formData.paymentMethod === 'card' ? 'paid' : formData.transactionId ? 'pending_verification' : 'unpaid',
       transactionId: formData.transactionId,
@@ -969,8 +1034,134 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 )}
               </div>
 
-              {/* 4. Bill Summary Card: 1. Tests Subtotal -> 2. Discount Savings -> 3. Tube & Accessories -> 4. Home Collection Charge -> 5. Total */}
-              {cartItems.length > 0 && (
+              {/* 4. Prescription Upload Card */}
+              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                    <FileUp size={15} className="text-primary" />
+                    <span>{isBn ? 'ডাক্তারের প্রেসক্রিপশন আপলোড (ঐচ্ছিক):' : 'Upload Doctor Prescription (Optional):'}</span>
+                  </label>
+                  {formData.prescriptionUrl && (
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
+                      <Check size={11} /> {isBn ? 'সংযুক্ত' : 'Attached'}
+                    </span>
+                  )}
+                </div>
+
+                {/* Hidden File Input */}
+                <input 
+                  type="file"
+                  ref={prescriptionFileInputRef}
+                  accept="image/*,.pdf"
+                  onChange={handlePrescriptionFileChange}
+                  className="hidden"
+                />
+
+                {!formData.prescriptionUrl ? (
+                  <div 
+                    onClick={() => prescriptionFileInputRef.current?.click()}
+                    className="border-2 border-dashed border-sky-200 hover:border-primary bg-sky-50/40 hover:bg-sky-50/80 rounded-2xl p-4 text-center transition-all cursor-pointer group"
+                  >
+                    <div className="w-10 h-10 mx-auto rounded-xl bg-white border border-sky-200 text-primary flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform mb-1.5">
+                      <UploadCloud size={20} className="text-primary" />
+                    </div>
+                    <p className="text-xs font-bold text-slate-800 group-hover:text-primary transition-colors">
+                      {isBn ? 'মোবাইল বা কম্পিউটার থেকে প্রেসক্রিপশন আপলোড করুন' : 'Upload Prescription from Mobile or Computer'}
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      {isBn ? 'ক্যামেরা দিয়ে ছবি তুলুন অথবা গ্যালারি/ফাইল থেকে JPG, PNG বা PDF নির্বাচন করুন' : 'Capture photo with camera or choose JPG, PNG, PDF'}
+                    </p>
+                    <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-slate-200 text-slate-700 text-[11px] font-bold rounded-lg shadow-2xs group-hover:border-primary">
+                      <Paperclip size={12} className="text-primary" />
+                      <span>{isBn ? 'ফাইল সিলেক্ট করুন (সর্বোচ্চ ১০MB)' : 'Select File (Max 10MB)'}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      {formData.prescriptionUrl.startsWith('data:image/') || formData.prescriptionUrl.startsWith('http') ? (
+                        <div 
+                          onClick={() => setPrescriptionPreviewModal(formData.prescriptionUrl || null)}
+                          className="relative group w-11 h-11 rounded-lg overflow-hidden bg-slate-200 shrink-0 border border-slate-300 cursor-pointer"
+                          title={isBn ? 'বড় করে দেখতে ক্লিক করুন' : 'Click to enlarge'}
+                        >
+                          <img 
+                            src={formData.prescriptionUrl} 
+                            alt="Prescription" 
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform" 
+                          />
+                          <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                            <ZoomIn size={13} className="text-white" />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="w-11 h-11 rounded-lg bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 shrink-0 font-bold text-xs">
+                          PDF
+                        </div>
+                      )}
+                      
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-slate-900 truncate">
+                          {formData.prescriptionName || (isBn ? 'প্রেসক্রিপশন ফাইল' : 'Prescription File')}
+                        </p>
+                        <p className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1 mt-0.5">
+                          <CheckCircle size={12} /> {isBn ? 'সফলভাবে আপলোড হয়েছে' : 'Uploaded successfully'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1 shrink-0">
+                      {formData.prescriptionUrl.startsWith('data:image/') && (
+                        <button
+                          type="button"
+                          onClick={() => setPrescriptionPreviewModal(formData.prescriptionUrl || null)}
+                          className="p-1.5 text-slate-600 hover:text-primary hover:bg-white rounded-lg transition-all border border-transparent hover:border-slate-200 cursor-pointer"
+                          title={isBn ? 'বড় করে দেখুন' : 'Preview'}
+                        >
+                          <Eye size={15} />
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => prescriptionFileInputRef.current?.click()}
+                        className="p-1.5 text-slate-600 hover:text-sky-600 hover:bg-white rounded-lg transition-all border border-transparent hover:border-slate-200 cursor-pointer"
+                        title={isBn ? 'পরিবর্তন করুন' : 'Change file'}
+                      >
+                        <UploadCloud size={15} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleRemovePrescription}
+                        className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
+                        title={isBn ? 'মুছে ফেলুন' : 'Remove'}
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 5. Prescription Review Notice or Bill Summary Card */}
+              {isPrescriptionBooking ? (
+                <div className="bg-gradient-to-r from-slate-900 to-indigo-950 text-white p-4 rounded-2xl shadow-sm space-y-2 text-xs border border-indigo-800/40">
+                  <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs">
+                    <Sparkles size={16} className="text-emerald-400 shrink-0" />
+                    <span>{isBn ? 'প্রেসক্রিপশন পর্যালোচনার পর চূড়ান্ত বিল নির্ধারিত হবে' : 'Bill will be finalized upon prescription review'}</span>
+                  </div>
+                  <p className="text-[11px] text-slate-300 leading-relaxed">
+                    {isBn 
+                      ? 'আমাদের মেডিকেল স্পেশালিস্ট আপনার আপলোডকৃত প্রেসক্রিপশন দেখে প্রয়োজনীয় টেস্টসমূহ যুক্ত করবেন এবং সর্বোচ্চ ডিসকাউন্টে মোট বিল চূড়ান্ত করবেন। কোনো অগ্রিম ফি দিতে হবে না।' 
+                      : 'Our medical specialists will analyze your prescription, add required tests, and apply maximal laboratory discounts. No advance fee required.'}
+                  </p>
+                  <div className="pt-2 border-t border-slate-700/80 flex items-center justify-between text-[11px]">
+                    <span className="text-slate-300">{isBn ? 'অগ্রিম প্রদেয় বিল:' : 'Upfront Payable:'}</span>
+                    <span className="font-bold text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-500/30">
+                      {isBn ? '৳০ (বিল পরবর্তীতে নির্ধারণ হবে)' : '৳0 (Calculated later)'}
+                    </span>
+                  </div>
+                </div>
+              ) : cartItems.length > 0 ? (
                 <div className="bg-slate-900 text-white p-4 rounded-2xl shadow-sm space-y-2 text-xs">
                   <div className="flex justify-between text-slate-300">
                     <span>{isBn ? 'টেস্টের মোট মূল্য (Tests Subtotal):' : 'Tests Subtotal:'}</span>
@@ -1006,7 +1197,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     <span className="text-lg font-black text-emerald-400">৳{totalBill}</span>
                   </div>
                 </div>
-              )}
+              ) : null}
             </div>
           )}
 
@@ -1194,31 +1385,98 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 )}
               </div>
 
-              {/* Doctor Reference (Optional) */}
-              <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs space-y-2">
-                <label className="text-xs font-bold text-slate-700 block">
-                  {isBn ? 'রেফারকারী চিকিৎসকের নাম (ঐচ্ছিক):' : 'Referring Doctor Name (Optional):'}
-                </label>
-                <input 
-                  type="text" 
-                  placeholder={isBn ? 'e.g. ডাঃ এম এ বারী (ঐচ্ছিক)' : 'e.g. Dr. M A Bari (Optional)'}
-                  value={formData.doctorName}
-                  onChange={(e) => setFormData({ ...formData, doctorName: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
-                />
+              {/* Doctor Reference & Prescription (Optional) */}
+              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">
+                    {isBn ? 'রেফারকারী চিকিৎসকের নাম (ঐচ্ছিক):' : 'Referring Doctor Name (Optional):'}
+                  </label>
+                  <input 
+                    type="text" 
+                    placeholder={isBn ? 'e.g. ডাঃ এম এ বারী (ঐচ্ছিক)' : 'e.g. Dr. M A Bari (Optional)'}
+                    value={formData.doctorName}
+                    onChange={(e) => setFormData({ ...formData, doctorName: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
+                  />
+                </div>
+
+                {/* Prescription Status / Upload in Step 2 */}
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <FileUp size={14} className="text-primary" />
+                    <div>
+                      <span className="text-xs font-bold text-slate-800 block leading-tight">
+                        {isBn ? 'প্রেসক্রিপশন সংযুক্তি' : 'Prescription Attachment'}
+                      </span>
+                      <span className="text-[10px] text-slate-500">
+                        {formData.prescriptionUrl 
+                          ? (formData.prescriptionName || (isBn ? 'ফাইল সংযুক্ত আছে' : 'File attached'))
+                          : (isBn ? 'কোনো প্রেসক্রিপশন সংযুক্ত নেই' : 'No prescription attached')}
+                      </span>
+                    </div>
+                  </div>
+
+                  {formData.prescriptionUrl ? (
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setPrescriptionPreviewModal(formData.prescriptionUrl || null)}
+                        className="px-2.5 py-1 bg-sky-50 text-primary hover:bg-sky-100 rounded-lg text-xs font-bold border border-sky-200 transition-colors cursor-pointer flex items-center gap-1"
+                      >
+                        <Eye size={12} />
+                        <span>{isBn ? 'দেখুন' : 'View'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleRemovePrescription}
+                        className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                        title={isBn ? 'মুছে ফেলুন' : 'Remove'}
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => prescriptionFileInputRef.current?.click()}
+                      className="px-3 py-1 bg-white hover:bg-sky-50 text-primary hover:text-sky-700 rounded-lg text-xs font-bold border border-sky-200 transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
+                    >
+                      <UploadCloud size={13} />
+                      <span>{isBn ? 'ছবি/ফাইল আপলোড' : 'Upload File'}</span>
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Bill Preview Banner */}
-              <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between text-xs">
-                <div>
-                  <span className="text-[10px] text-emerald-800 font-bold uppercase block">{isBn ? 'নির্বাচিত টেস্ট' : 'Selected Tests'}</span>
-                  <span className="font-bold text-emerald-950">{cartItems.length} {isBn ? 'টি টেস্ট' : 'Tests'} ({selectedLab?.name})</span>
+              {isPrescriptionBooking ? (
+                <div className="p-3.5 bg-sky-50 border border-sky-200 rounded-2xl flex items-center justify-between text-xs">
+                  <div className="min-w-0 pr-2">
+                    <span className="text-[10px] text-sky-800 font-bold uppercase block">{isBn ? 'বুকিংয়ের ধরন' : 'Booking Type'}</span>
+                    <span className="font-bold text-sky-950 flex items-center gap-1 truncate">
+                      <FileUp size={13} className="text-primary shrink-0" />
+                      <span className="truncate">{formData.prescriptionName || (isBn ? 'প্রেসক্রিপশন আপলোড' : 'Prescription Upload')}</span>
+                    </span>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="text-[10px] text-sky-800 font-bold uppercase block">{isBn ? 'প্রদেয় বিল' : 'Payable'}</span>
+                    <span className="text-xs font-bold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded border border-emerald-300">
+                      {isBn ? 'প্রেসক্রিপশন যাচাই সাপেক্ষে' : 'Under Review'}
+                    </span>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <span className="text-[10px] text-emerald-800 font-bold uppercase block">{isBn ? 'মোট প্রদেয় বিল' : 'Total Payable'}</span>
-                  <span className="text-base font-black text-emerald-700">৳{totalBill}</span>
+              ) : (
+                <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between text-xs">
+                  <div>
+                    <span className="text-[10px] text-emerald-800 font-bold uppercase block">{isBn ? 'নির্বাচিত টেস্ট' : 'Selected Tests'}</span>
+                    <span className="font-bold text-emerald-950">{cartItems.length} {isBn ? 'টি টেস্ট' : 'Tests'} ({selectedLab?.name})</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] text-emerald-800 font-bold uppercase block">{isBn ? 'মোট প্রদেয় বিল' : 'Total Payable'}</span>
+                    <span className="text-base font-black text-emerald-700">৳{totalBill}</span>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
 
@@ -1229,16 +1487,35 @@ export const BookingModal: React.FC<BookingModalProps> = ({
             <div className="space-y-4">
               
               {/* Payment Header Total */}
-              <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white p-4 rounded-2xl shadow-md flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-slate-300 block">{isBn ? 'সর্বমোট পরিশোধযোগ্য বিল' : 'Total Amount Payable'}</span>
-                  <p className="text-xl font-black text-emerald-400">৳{totalBill}</p>
+              {isPrescriptionBooking ? (
+                <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 text-white p-4 rounded-2xl shadow-md flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-300 block">{isBn ? 'পেমেন্ট ও বিলিং পদ্ধতি' : 'Billing & Payment Method'}</span>
+                    <p className="text-sm sm:text-base font-black text-emerald-400 flex items-center gap-1.5 mt-0.5">
+                      <ShieldCheck size={16} />
+                      <span>{isBn ? 'প্রেসক্রিপশন পর্যালোচনার পর বিল পরিশোধ' : 'Pay After Prescription Review'}</span>
+                    </p>
+                    <p className="text-[11px] text-slate-300 mt-0.5">
+                      {isBn ? 'স্যাম্পল সংগ্রহের সময় নির্ধারিত বিল পরিশোধ করতে পারবেন' : 'Pay final bill to technician during home sample collection'}
+                    </p>
+                  </div>
+                  <div className="text-right text-[11px] text-slate-300 shrink-0">
+                    <span className="block font-semibold">{formData.fullName}</span>
+                    <span className="text-[10px] text-slate-400">{formData.date} • {formData.time}</span>
+                  </div>
                 </div>
-                <div className="text-right text-[11px] text-slate-300">
-                  <span className="block font-semibold">{formData.fullName}</span>
-                  <span className="text-[10px] text-slate-400">{formData.date} • {formData.time}</span>
+              ) : (
+                <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white p-4 rounded-2xl shadow-md flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-300 block">{isBn ? 'সর্বমোট পরিশোধযোগ্য বিল' : 'Total Amount Payable'}</span>
+                    <p className="text-xl font-black text-emerald-400">৳{totalBill}</p>
+                  </div>
+                  <div className="text-right text-[11px] text-slate-300">
+                    <span className="block font-semibold">{formData.fullName}</span>
+                    <span className="text-[10px] text-slate-400">{formData.date} • {formData.time}</span>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Payment Methods Selector */}
               <div className="space-y-2.5">
@@ -1272,7 +1549,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                             <div>
                               <div className="flex items-center gap-2">
                                 <h4 className="text-xs font-black text-slate-900 leading-tight">{opt.title}</h4>
-                                {opt.badge && (
+                                {opt.badge && !isPrescriptionBooking && (
                                   <span className="text-[9px] font-bold bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded-md border border-slate-200">
                                     {opt.badge}
                                   </span>
@@ -1301,9 +1578,13 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                                   <span>{isBn ? 'ক্যাশ অন স্যাম্পল কালেকশন নিশ্চিতকরণ' : 'Cash on Sample Collection'}</span>
                                 </p>
                                 <p className="text-[11px] text-emerald-800">
-                                  {isBn 
-                                    ? 'আমাদের মেডিকেল টেকনোলজিস্ট আপনার বাসায় স্যাম্পল কালেকশন শেষ করার পর আপনি সরাসরি ৳' + totalBill + ' টাকা ক্যাশ প্রদান করবেন।'
-                                    : 'Please pay ৳' + totalBill + ' in cash to our technician upon successful doorstep sample collection.'}
+                                  {isPrescriptionBooking
+                                    ? (isBn 
+                                        ? 'আমাদের মেডিকেল স্পেশালিস্ট প্রেসক্রিপশন দেখে আপনাকে মোট ডিসকাউন্টেড বিল জানাবেন। স্যাম্পল সংগ্রহের সময় ফ্লেবোটোমিস্টকে নগদ অর্থ বা ডিজিটাল মাধ্যমে পরিশোধ করতে পারবেন।'
+                                        : 'Our medical specialist will inform you of the final discounted bill after reviewing your prescription. You can pay cash or via digital wallet during home sample collection.')
+                                    : (isBn 
+                                        ? 'আমাদের মেডিকেল টেকনোলজিস্ট আপনার বাসায় স্যাম্পল কালেকশন শেষ করার পর আপনি সরাসরি ৳' + totalBill + ' টাকা ক্যাশ প্রদান করবেন।'
+                                        : 'Please pay ৳' + totalBill + ' in cash to our technician upon successful doorstep sample collection.')}
                                 </p>
                               </div>
                             )}
@@ -1331,47 +1612,53 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                                   </div>
                                   <ol className="list-decimal list-inside text-[11px] text-pink-800 space-y-0.5">
                                     <li>{isBn ? 'বিকাশ অ্যাপে যান বা *247# ডায়াল করুন।' : 'Open bKash App or dial *247#.'}</li>
-                                    <li>{isBn ? `নম্বর ${paymentConfig.bkash.merchantNumber || '01712-345678'} এ মোট ৳${totalBill} টাকা Send Money / Payment করুন।` : `Send Money / Pay ৳${totalBill} to ${paymentConfig.bkash.merchantNumber || '01712-345678'}.`}</li>
-                                    <li>{isBn ? 'নিচে আপনার বিকাশ প্রেরক নম্বর ও TrxID প্রদান করুন।' : 'Enter your sender phone number and TrxID below.'}</li>
+                                    <li>
+                                      {isPrescriptionBooking 
+                                        ? (isBn ? `প্রেসক্রিপশন পর্যালোচনার পর নির্ধারিত বিল নম্বর ${paymentConfig.bkash.merchantNumber || '01712-345678'} এ পরিশোধ করতে পারবেন।` : `You can send payment to ${paymentConfig.bkash.merchantNumber || '01712-345678'} after bill finalization.`)
+                                        : (isBn ? `নম্বর ${paymentConfig.bkash.merchantNumber || '01712-345678'} এ মোট ৳${totalBill} টাকা Send Money / Payment করুন।` : `Send Money / Pay ৳${totalBill} to ${paymentConfig.bkash.merchantNumber || '01712-345678'}.`)}
+                                    </li>
+                                    {!isPrescriptionBooking && <li>{isBn ? 'নিচে আপনার বিকাশ প্রেরক নম্বর ও TrxID প্রদান করুন।' : 'Enter your sender phone number and TrxID below.'}</li>}
                                   </ol>
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                  <div>
-                                    <label className="text-[11px] font-bold text-slate-700 flex items-center justify-between mb-1">
-                                      <span>{isBn ? 'বিকাশ মোবাইল নম্বর (Sender Phone):' : 'bKash Sender Phone:'}</span>
-                                      <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* বাধ্যতামূলক' : '* Required'}</span>
-                                    </label>
-                                    <input 
-                                      type="tel"
-                                      required
-                                      placeholder="017XXXXXXXX"
-                                      value={formData.senderPhone || ''}
-                                      onChange={(e) => {
-                                        setFormData({ ...formData, senderPhone: e.target.value });
-                                        if (validationError) setValidationError(null);
-                                      }}
-                                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 outline-none"
-                                    />
+                                {!isPrescriptionBooking && (
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    <div>
+                                      <label className="text-[11px] font-bold text-slate-700 flex items-center justify-between mb-1">
+                                        <span>{isBn ? 'বিকাশ মোবাইল নম্বর (Sender Phone):' : 'bKash Sender Phone:'}</span>
+                                        <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* বাধ্যতামূলক' : '* Required'}</span>
+                                      </label>
+                                      <input 
+                                        type="tel"
+                                        required
+                                        placeholder="017XXXXXXXX"
+                                        value={formData.senderPhone || ''}
+                                        onChange={(e) => {
+                                          setFormData({ ...formData, senderPhone: e.target.value });
+                                          if (validationError) setValidationError(null);
+                                        }}
+                                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 outline-none"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="text-[11px] font-bold text-slate-700 flex items-center justify-between mb-1">
+                                        <span>{isBn ? 'ট্রানজেকশন আইডি (TrxID):' : 'Transaction ID (TrxID):'}</span>
+                                        <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* বাধ্যতামূলক' : '* Required'}</span>
+                                      </label>
+                                      <input 
+                                        type="text"
+                                        required
+                                        placeholder="e.g. 9J87AKL9"
+                                        value={formData.transactionId || ''}
+                                        onChange={(e) => {
+                                          setFormData({ ...formData, transactionId: e.target.value });
+                                          if (validationError) setValidationError(null);
+                                        }}
+                                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono uppercase focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 outline-none"
+                                      />
+                                    </div>
                                   </div>
-                                  <div>
-                                    <label className="text-[11px] font-bold text-slate-700 flex items-center justify-between mb-1">
-                                      <span>{isBn ? 'ট্রানজেকশন আইডি (TrxID):' : 'Transaction ID (TrxID):'}</span>
-                                      <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* বাধ্যতামূলক' : '* Required'}</span>
-                                    </label>
-                                    <input 
-                                      type="text"
-                                      required
-                                      placeholder="e.g. 9J87AKL9"
-                                      value={formData.transactionId || ''}
-                                      onChange={(e) => {
-                                        setFormData({ ...formData, transactionId: e.target.value });
-                                        if (validationError) setValidationError(null);
-                                      }}
-                                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono uppercase focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 outline-none"
-                                    />
-                                  </div>
-                                </div>
+                                )}
                               </div>
                             )}
 
@@ -1398,47 +1685,53 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                                   </div>
                                   <ol className="list-decimal list-inside text-[11px] text-orange-800 space-y-0.5">
                                     <li>{isBn ? 'নগদ অ্যাপ খুলুন বা *167# ডায়াল করুন।' : 'Open Nagad App or dial *167#.'}</li>
-                                    <li>{isBn ? `নম্বর ${paymentConfig.nagad.merchantNumber || '01812-345678'} এ মোট ৳${totalBill} টাকা Send Money / Payment করুন।` : `Send ৳${totalBill} to ${paymentConfig.nagad.merchantNumber || '01812-345678'}.`}</li>
-                                    <li>{isBn ? 'নিচে আপনার প্রেরক নম্বর ও TrxID লিখুন।' : 'Enter sender phone and TrxID below.'}</li>
+                                    <li>
+                                      {isPrescriptionBooking
+                                        ? (isBn ? `প্রেসক্রিপশন পর্যালোচনার পর নির্ধারিত বিল নম্বর ${paymentConfig.nagad.merchantNumber || '01812-345678'} এ সেন্ড মানি করতে পারবেন।` : `Pay to ${paymentConfig.nagad.merchantNumber || '01812-345678'} upon review.`)
+                                        : (isBn ? `নম্বর ${paymentConfig.nagad.merchantNumber || '01812-345678'} এ মোট ৳${totalBill} টাকা Send Money / Payment করুন।` : `Send ৳${totalBill} to ${paymentConfig.nagad.merchantNumber || '01812-345678'}.`)}
+                                    </li>
+                                    {!isPrescriptionBooking && <li>{isBn ? 'নিচে আপনার প্রেরক নম্বর ও TrxID লিখুন।' : 'Enter sender phone and TrxID below.'}</li>}
                                   </ol>
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                  <div>
-                                    <label className="text-[11px] font-bold text-slate-700 flex items-center justify-between mb-1">
-                                      <span>{isBn ? 'নগদ মোবাইল নম্বর (Sender Phone):' : 'Nagad Sender Phone:'}</span>
-                                      <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* বাধ্যতামূলক' : '* Required'}</span>
-                                    </label>
-                                    <input 
-                                      type="tel"
-                                      required
-                                      placeholder="018XXXXXXXX"
-                                      value={formData.senderPhone || ''}
-                                      onChange={(e) => {
-                                        setFormData({ ...formData, senderPhone: e.target.value });
-                                        if (validationError) setValidationError(null);
-                                      }}
-                                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 outline-none"
-                                    />
+                                {!isPrescriptionBooking && (
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    <div>
+                                      <label className="text-[11px] font-bold text-slate-700 flex items-center justify-between mb-1">
+                                        <span>{isBn ? 'নগদ মোবাইল নম্বর (Sender Phone):' : 'Nagad Sender Phone:'}</span>
+                                        <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* বাধ্যতামূলক' : '* Required'}</span>
+                                      </label>
+                                      <input 
+                                        type="tel"
+                                        required
+                                        placeholder="018XXXXXXXX"
+                                        value={formData.senderPhone || ''}
+                                        onChange={(e) => {
+                                          setFormData({ ...formData, senderPhone: e.target.value });
+                                          if (validationError) setValidationError(null);
+                                        }}
+                                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 outline-none"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="text-[11px] font-bold text-slate-700 flex items-center justify-between mb-1">
+                                        <span>{isBn ? 'ট্রানজেকশন আইডি (TrxID):' : 'Transaction ID (TrxID):'}</span>
+                                        <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* বাধ্যতামূলক' : '* Required'}</span>
+                                      </label>
+                                      <input 
+                                        type="text"
+                                        required
+                                        placeholder="e.g. 7K99NGD1"
+                                        value={formData.transactionId || ''}
+                                        onChange={(e) => {
+                                          setFormData({ ...formData, transactionId: e.target.value });
+                                          if (validationError) setValidationError(null);
+                                        }}
+                                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono uppercase focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 outline-none"
+                                      />
+                                    </div>
                                   </div>
-                                  <div>
-                                    <label className="text-[11px] font-bold text-slate-700 flex items-center justify-between mb-1">
-                                      <span>{isBn ? 'ট্রানজেকশন আইডি (TrxID):' : 'Transaction ID (TrxID):'}</span>
-                                      <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* বাধ্যতামূলক' : '* Required'}</span>
-                                    </label>
-                                    <input 
-                                      type="text"
-                                      required
-                                      placeholder="e.g. 7K99NGD1"
-                                      value={formData.transactionId || ''}
-                                      onChange={(e) => {
-                                        setFormData({ ...formData, transactionId: e.target.value });
-                                        if (validationError) setValidationError(null);
-                                      }}
-                                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono uppercase focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 outline-none"
-                                    />
-                                  </div>
-                                </div>
+                                )}
                               </div>
                             )}
 
@@ -1465,47 +1758,53 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                                   </div>
                                   <ol className="list-decimal list-inside text-[11px] text-purple-800 space-y-0.5">
                                     <li>{isBn ? 'রকেট অ্যাপ খুলুন বা *322# ডায়াল করুন।' : 'Open Rocket App or dial *322#.'}</li>
-                                    <li>{isBn ? `রকেট একাউন্ট ${paymentConfig.rocket.accountNumber || '01912-345678-9'} এ মোট ৳${totalBill} টাকা সেন্ড মানি করুন।` : `Send ৳${totalBill} to ${paymentConfig.rocket.accountNumber || '01912-345678-9'}.`}</li>
-                                    <li>{isBn ? 'নিচে আপনার রকেট প্রেরক নম্বর ও TrxID প্রদান করুন।' : 'Enter sender phone and TrxID below.'}</li>
+                                    <li>
+                                      {isPrescriptionBooking
+                                        ? (isBn ? `প্রেসক্রিপশন পর্যালোচনার পর নির্ধারিত বিল ${paymentConfig.rocket.accountNumber || '01912-345678-9'} এ সেন্ড মানি করতে পারবেন।` : `Pay to ${paymentConfig.rocket.accountNumber || '01912-345678-9'} upon review.`)
+                                        : (isBn ? `রকেট একাউন্ট ${paymentConfig.rocket.accountNumber || '01912-345678-9'} এ মোট ৳${totalBill} টাকা সেন্ড মানি করুন।` : `Send ৳${totalBill} to ${paymentConfig.rocket.accountNumber || '01912-345678-9'}.`)}
+                                    </li>
+                                    {!isPrescriptionBooking && <li>{isBn ? 'নিচে আপনার রকেট প্রেরক নম্বর ও TrxID প্রদান করুন।' : 'Enter sender phone and TrxID below.'}</li>}
                                   </ol>
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                  <div>
-                                    <label className="text-[11px] font-bold text-slate-700 flex items-center justify-between mb-1">
-                                      <span>{isBn ? 'রকেট মোবাইল নম্বর (Sender Phone):' : 'Rocket Sender Phone:'}</span>
-                                      <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* বাধ্যতামূলক' : '* Required'}</span>
-                                    </label>
-                                    <input 
-                                      type="tel"
-                                      required
-                                      placeholder="019XXXXXXXX"
-                                      value={formData.senderPhone || ''}
-                                      onChange={(e) => {
-                                        setFormData({ ...formData, senderPhone: e.target.value });
-                                        if (validationError) setValidationError(null);
-                                      }}
-                                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 outline-none"
-                                    />
+                                {!isPrescriptionBooking && (
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    <div>
+                                      <label className="text-[11px] font-bold text-slate-700 flex items-center justify-between mb-1">
+                                        <span>{isBn ? 'রকেট মোবাইল নম্বর (Sender Phone):' : 'Rocket Sender Phone:'}</span>
+                                        <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* বাধ্যতামূলক' : '* Required'}</span>
+                                      </label>
+                                      <input 
+                                        type="tel"
+                                        required
+                                        placeholder="019XXXXXXXX"
+                                        value={formData.senderPhone || ''}
+                                        onChange={(e) => {
+                                          setFormData({ ...formData, senderPhone: e.target.value });
+                                          if (validationError) setValidationError(null);
+                                        }}
+                                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 outline-none"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="text-[11px] font-bold text-slate-700 flex items-center justify-between mb-1">
+                                        <span>{isBn ? 'ট্রানজেকশন আইডি (TrxID):' : 'Transaction ID (TrxID):'}</span>
+                                        <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* বাধ্যতামূলক' : '* Required'}</span>
+                                      </label>
+                                      <input 
+                                        type="text"
+                                        required
+                                        placeholder="e.g. 8ROC7712"
+                                        value={formData.transactionId || ''}
+                                        onChange={(e) => {
+                                          setFormData({ ...formData, transactionId: e.target.value });
+                                          if (validationError) setValidationError(null);
+                                        }}
+                                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono uppercase focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 outline-none"
+                                      />
+                                    </div>
                                   </div>
-                                  <div>
-                                    <label className="text-[11px] font-bold text-slate-700 flex items-center justify-between mb-1">
-                                      <span>{isBn ? 'ট্রানজেকশন আইডি (TrxID):' : 'Transaction ID (TrxID):'}</span>
-                                      <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* বাধ্যতামূলক' : '* Required'}</span>
-                                    </label>
-                                    <input 
-                                      type="text"
-                                      required
-                                      placeholder="e.g. 8ROC7712"
-                                      value={formData.transactionId || ''}
-                                      onChange={(e) => {
-                                        setFormData({ ...formData, transactionId: e.target.value });
-                                        if (validationError) setValidationError(null);
-                                      }}
-                                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono uppercase focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 outline-none"
-                                    />
-                                  </div>
-                                </div>
+                                )}
                               </div>
                             )}
 
@@ -1520,93 +1819,99 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                                     </span>
                                   </div>
 
-                                  <div className="space-y-2 pt-1">
-                                    <div>
-                                      <label className="text-[10px] font-bold text-slate-700 flex items-center justify-between mb-0.5">
-                                        <span>{isBn ? 'কার্ড নম্বর (১৬ ডিজিট):' : 'Card Number (16-digit):'}</span>
-                                        <span className="text-[9px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* বাধ্যতামূলক' : '* Required'}</span>
-                                      </label>
-                                      <input 
-                                        type="text"
-                                        required
-                                        maxLength={19}
-                                        placeholder="4123 •••• •••• 9876"
-                                        value={formData.cardNumber || ''}
-                                        onChange={(e) => {
-                                          const v = e.target.value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
-                                          const matches = v.match(/\d{4,16}/g);
-                                          const match = matches && matches[0] || '';
-                                          const parts = [];
-                                          for (let i = 0, len = match.length; i < len; i += 4) {
-                                            parts.push(match.substring(i, i + 4));
-                                          }
-                                          const formatted = parts.length ? parts.join(' ') : v;
-                                          setFormData({ ...formData, cardNumber: formatted });
-                                          if (validationError) setValidationError(null);
-                                        }}
-                                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 text-xs font-mono focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 outline-none"
-                                      />
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-2">
+                                  {!isPrescriptionBooking ? (
+                                    <div className="space-y-2 pt-1">
                                       <div>
                                         <label className="text-[10px] font-bold text-slate-700 flex items-center justify-between mb-0.5">
-                                          <span>{isBn ? 'মেয়াদ (MM/YY):' : 'Expiry (MM/YY):'}</span>
-                                          <span className="text-[9px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* আবশ্যক' : '* Required'}</span>
+                                          <span>{isBn ? 'কার্ড নম্বর (১৬ ডিজিট):' : 'Card Number (16-digit):'}</span>
+                                          <span className="text-[9px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* বাধ্যতামূলক' : '* Required'}</span>
                                         </label>
                                         <input 
-                                          type="text"
+                                          type="text" 
                                           required
-                                          maxLength={5}
-                                          placeholder="12/28"
-                                          value={formData.cardExpiry || ''}
+                                          maxLength={19}
+                                          placeholder="4123 •••• •••• 9876"
+                                          value={formData.cardNumber || ''}
                                           onChange={(e) => {
-                                            let v = e.target.value.replace(/[^0-9]/g, '');
-                                            if (v.length > 2) v = v.substring(0, 2) + '/' + v.substring(2, 4);
-                                            setFormData({ ...formData, cardExpiry: v });
+                                            const v = e.target.value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+                                            const matches = v.match(/\d{4,16}/g);
+                                            const match = matches && matches[0] || '';
+                                            const parts = [];
+                                            for (let i = 0, len = match.length; i < len; i += 4) {
+                                              parts.push(match.substring(i, i + 4));
+                                            }
+                                            const formatted = parts.length ? parts.join(' ') : v;
+                                            setFormData({ ...formData, cardNumber: formatted });
                                             if (validationError) setValidationError(null);
                                           }}
                                           className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 text-xs font-mono focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 outline-none"
                                         />
                                       </div>
+
+                                      <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                          <label className="text-[10px] font-bold text-slate-700 flex items-center justify-between mb-0.5">
+                                            <span>{isBn ? 'মেয়াদ (MM/YY):' : 'Expiry (MM/YY):'}</span>
+                                            <span className="text-[9px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* আবশ্যক' : '* Required'}</span>
+                                          </label>
+                                          <input 
+                                            type="text" 
+                                            required
+                                            maxLength={5}
+                                            placeholder="12/28"
+                                            value={formData.cardExpiry || ''}
+                                            onChange={(e) => {
+                                              let v = e.target.value.replace(/[^0-9]/g, '');
+                                              if (v.length > 2) v = v.substring(0, 2) + '/' + v.substring(2, 4);
+                                              setFormData({ ...formData, cardExpiry: v });
+                                              if (validationError) setValidationError(null);
+                                            }}
+                                            className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 text-xs font-mono focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 outline-none"
+                                          />
+                                        </div>
+                                        <div>
+                                          <label className="text-[10px] font-bold text-slate-700 flex items-center justify-between mb-0.5">
+                                            <span>{isBn ? 'সিভিভি (CVV/CVC):' : 'CVV / CVC:'}</span>
+                                            <span className="text-[9px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* আবশ্যক' : '* Required'}</span>
+                                          </label>
+                                          <input 
+                                            type="password" 
+                                            required
+                                            maxLength={4}
+                                            placeholder="•••"
+                                            value={formData.cardCvv || ''}
+                                            onChange={(e) => {
+                                              setFormData({ ...formData, cardCvv: e.target.value.replace(/[^0-9]/g, '') });
+                                              if (validationError) setValidationError(null);
+                                            }}
+                                            className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 text-xs font-mono focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 outline-none"
+                                          />
+                                        </div>
+                                      </div>
+
                                       <div>
                                         <label className="text-[10px] font-bold text-slate-700 flex items-center justify-between mb-0.5">
-                                          <span>{isBn ? 'সিভিভি (CVV/CVC):' : 'CVV / CVC:'}</span>
+                                          <span>{isBn ? 'কার্ডধারীর নাম:' : 'Cardholder Name:'}</span>
                                           <span className="text-[9px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* আবশ্যক' : '* Required'}</span>
                                         </label>
                                         <input 
-                                          type="password"
+                                          type="text" 
                                           required
-                                          maxLength={4}
-                                          placeholder="•••"
-                                          value={formData.cardCvv || ''}
+                                          placeholder="e.g. MOHAMMAD RAHIM"
+                                          value={formData.cardHolder || ''}
                                           onChange={(e) => {
-                                            setFormData({ ...formData, cardCvv: e.target.value.replace(/[^0-9]/g, '') });
+                                            setFormData({ ...formData, cardHolder: e.target.value.toUpperCase() });
                                             if (validationError) setValidationError(null);
                                           }}
-                                          className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 text-xs font-mono focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 outline-none"
+                                          className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 text-xs uppercase focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 outline-none"
                                         />
                                       </div>
                                     </div>
-
-                                    <div>
-                                      <label className="text-[10px] font-bold text-slate-700 flex items-center justify-between mb-0.5">
-                                        <span>{isBn ? 'কার্ডধারীর নাম:' : 'Cardholder Name:'}</span>
-                                        <span className="text-[9px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* আবশ্যক' : '* Required'}</span>
-                                      </label>
-                                      <input 
-                                        type="text"
-                                        required
-                                        placeholder="e.g. MOHAMMAD RAHIM"
-                                        value={formData.cardHolder || ''}
-                                        onChange={(e) => {
-                                          setFormData({ ...formData, cardHolder: e.target.value.toUpperCase() });
-                                          if (validationError) setValidationError(null);
-                                        }}
-                                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 text-xs uppercase focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 outline-none"
-                                      />
-                                    </div>
-                                  </div>
+                                  ) : (
+                                    <p className="text-[11px] text-sky-800">
+                                      {isBn ? 'প্রেসক্রিপশন পর্যালোচনার পর আপনি অনলাইনে কার্ডের মাধ্যমে নিরাপদ পেমেন্ট সম্পন্ন করতে পারবেন।' : 'You can pay online with card after prescription review.'}
+                                    </p>
+                                  )}
                                 </div>
                               </div>
                             )}
@@ -1636,9 +1941,13 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                   {isBn ? 'বুকিং সফলভাবে সম্পন্ন হয়েছে!' : 'Booking Confirmed Successfully!'}
                 </h3>
                 <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-                  {isBn 
-                    ? 'আমাদের মেডিকেল প্রতিনিধি দ্রুত আপনার সাথে যোগাযোগ করে স্যাম্পল কালেকশন নিশ্চিত করবেন।' 
-                    : 'Our medical representative will call you shortly to confirm sample collection.'}
+                  {isPrescriptionBooking
+                    ? (isBn 
+                        ? 'আমাদের মেডিকেল স্পেশালিস্ট দ্রুত প্রেসক্রিপশন পর্যালোচনা করে টেস্ট ও চূড়ান্ত বিল নিশ্চিত করতে যোগাযোগ করবেন।' 
+                        : 'Our medical specialist will review your prescription and contact you shortly to confirm tests and discounted bill.')
+                    : (isBn 
+                        ? 'আমাদের মেডিকেল প্রতিনিধি দ্রুত আপনার সাথে যোগাযোগ করে স্যাম্পল কালেকশন নিশ্চিত করবেন।' 
+                        : 'Our medical representative will call you shortly to confirm sample collection.')}
                 </p>
               </div>
 
@@ -1679,7 +1988,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 <div className="flex justify-between border-b border-slate-100 pb-2">
                   <span className="text-slate-500">{isBn ? 'পেমেন্ট পদ্ধতি:' : 'Payment Method:'}</span>
                   <strong className="text-slate-900 capitalize">
-                    {formData.paymentMethod === 'cod' 
+                    {isPrescriptionBooking
+                      ? (isBn ? 'প্রেসক্রিপশন যাচাই সাপেক্ষে (স্যাম্পল সংগ্রহের সময় পরিশোধ)' : 'Pay on Sample Collection')
+                      : formData.paymentMethod === 'cod' 
                       ? (isBn ? 'ক্যাশ অন কালেকশন' : 'Cash on Delivery')
                       : formData.paymentMethod === 'bkash'
                       ? `bKash ${formData.transactionId ? `(Trx: ${formData.transactionId})` : ''}`
@@ -1694,9 +2005,15 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                   <span className="text-slate-500">{isBn ? 'ঠিকানা:' : 'Address:'}</span>
                   <span className="text-slate-800 text-right max-w-[200px] truncate">{formData.address}</span>
                 </div>
-                <div className="flex justify-between pt-1">
+                <div className="flex justify-between pt-1 items-center">
                   <span className="text-slate-900 font-bold">{isBn ? 'মোট বিল:' : 'Total Bill:'}</span>
-                  <strong className="text-emerald-600 font-black text-sm">৳{totalBill}</strong>
+                  {isPrescriptionBooking ? (
+                    <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                      {isBn ? 'প্রেসক্রিপশন পর্যালোচনার পর নির্ধারিত হবে' : 'Subject to prescription review'}
+                    </span>
+                  ) : (
+                    <strong className="text-emerald-600 font-black text-sm">৳{totalBill}</strong>
+                  )}
                 </div>
               </div>
 
@@ -1733,12 +2050,19 @@ export const BookingModal: React.FC<BookingModalProps> = ({
             {step === 1 && (
               <>
                 <div className="min-w-0">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 block">{isBn ? 'মোট প্রদেয়' : 'Total Bill'}</span>
-                  <span className="text-base sm:text-lg font-black text-primary">৳{totalBill}</span>
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block">{isBn ? 'মোট প্রদেয় বিল' : 'Total Bill'}</span>
+                  {isPrescriptionBooking ? (
+                    <span className="text-xs sm:text-sm font-bold text-emerald-600 flex items-center gap-1">
+                      <ShieldCheck size={14} className="shrink-0" />
+                      <span>{isBn ? 'প্রেসক্রিপশন যাচাই সাপেক্ষে' : 'Under Review'}</span>
+                    </span>
+                  ) : (
+                    <span className="text-base sm:text-lg font-black text-primary">৳{totalBill}</span>
+                  )}
                 </div>
                 <Button
                   onClick={handleProceedToStep2}
-                  disabled={cartItems.length === 0}
+                  disabled={cartItems.length === 0 && !formData.prescriptionUrl}
                   className="px-5 py-3 text-xs sm:text-sm font-bold shadow-md flex items-center gap-1.5 cursor-pointer"
                 >
                   <span>{isBn ? 'পরবর্তী: শিডিউল ও সময়' : 'Next: Schedule'}</span>
@@ -1760,8 +2084,12 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 </button>
 
                 <div className="hidden sm:block text-right">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 block">{isBn ? 'মোট প্রদেয়' : 'Total Bill'}</span>
-                  <span className="text-base font-black text-emerald-600">৳{totalBill}</span>
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block">{isBn ? 'বিলিং' : 'Billing'}</span>
+                  {isPrescriptionBooking ? (
+                    <span className="text-xs font-bold text-emerald-600">{isBn ? 'প্রেসক্রিপশন সাপেক্ষে' : 'Under Review'}</span>
+                  ) : (
+                    <span className="text-base font-black text-emerald-600">৳{totalBill}</span>
+                  )}
                 </div>
 
                 <Button
@@ -1789,7 +2117,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
                 <div className="hidden sm:block text-right">
                   <span className="text-[10px] uppercase font-bold text-slate-400 block">{isBn ? 'পেমেন্ট মেথড' : 'Payment'}</span>
-                  <span className="text-xs font-bold text-slate-800 capitalize">{formData.paymentMethod} (৳{totalBill})</span>
+                  <span className="text-xs font-bold text-slate-800 capitalize">
+                    {isPrescriptionBooking ? (isBn ? 'স্যাম্পল কালেকশনের পর' : 'Pay on Collection') : `${formData.paymentMethod} (৳${totalBill})`}
+                  </span>
                 </div>
 
                 <Button
@@ -1809,6 +2139,53 @@ export const BookingModal: React.FC<BookingModalProps> = ({
               </>
             )}
 
+          </div>
+        )}
+        {/* Prescription Full Image Zoom Modal */}
+        {prescriptionPreviewModal && (
+          <div 
+            onClick={() => setPrescriptionPreviewModal(null)}
+            className="fixed inset-0 z-60 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
+          >
+            <div 
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl overflow-hidden max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl animate-in zoom-in-95"
+            >
+              <div className="p-3 bg-slate-900 text-white flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold">
+                  <FileUp size={15} className="text-primary" />
+                  <span>{isBn ? 'প্রেসক্রিপশন প্রিভিউ' : 'Prescription Preview'}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPrescriptionPreviewModal(null)}
+                  className="p-1 hover:bg-white/20 rounded-full transition-colors cursor-pointer text-white"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="p-2 overflow-auto max-h-[75vh] flex items-center justify-center bg-slate-950/90">
+                <img 
+                  src={prescriptionPreviewModal} 
+                  alt="Prescription Full View" 
+                  className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg" 
+                />
+              </div>
+
+              <div className="p-3 bg-white border-t border-slate-200 flex items-center justify-between text-xs">
+                <span className="text-slate-500 font-medium">
+                  {formData.prescriptionName || (isBn ? 'সংযুক্ত প্রেসক্রিপশন' : 'Attached Prescription')}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPrescriptionPreviewModal(null)}
+                  className="px-4 py-1.5 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  {isBn ? 'ঠিক আছে' : 'Close'}
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

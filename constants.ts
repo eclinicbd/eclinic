@@ -31,7 +31,7 @@ const TESTS_BN: TestPackage[] = [
     category: 'General',
     image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
     turnaroundTime: '১২ ঘন্টা',
-    orderCount: 1420
+    orderCount: 0
   },
   {
     id: '2',
@@ -62,7 +62,7 @@ const TESTS_BN: TestPackage[] = [
     category: 'Diabetes',
     image: 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&q=80&w=400',
     turnaroundTime: '২৪ ঘন্টা',
-    orderCount: 1180
+    orderCount: 0
   },
   {
     id: '3',
@@ -93,7 +93,7 @@ const TESTS_BN: TestPackage[] = [
     category: 'Heart',
     image: 'https://images.unsplash.com/photo-1628348068343-c6a848d2b6dd?auto=format&fit=crop&q=80&w=400',
     turnaroundTime: '২৪ ঘন্টা',
-    orderCount: 950
+    orderCount: 0
   },
   {
     id: '4',
@@ -124,7 +124,7 @@ const TESTS_BN: TestPackage[] = [
     category: 'Thyroid',
     image: 'https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?auto=format&fit=crop&q=80&w=400',
     turnaroundTime: '৪৮ ঘন্টা',
-    orderCount: 860
+    orderCount: 0
   },
   {
     id: '5',

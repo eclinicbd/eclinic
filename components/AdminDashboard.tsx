@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Language, BookingHistoryItem, TestPackage, HealthPackage, LabPartner, BookingStatus, SiteSettings, ServiceItem, CategoryItem, PatientUser, StaffUser, StaffRole, StaffPermissions, Doctor, EPrescription } from '../types';
+import { Language, BookingHistoryItem, TestPackage, HealthPackage, LabPartner, BookingStatus, SiteSettings, ServiceItem, CategoryItem, PatientUser, StaffUser, StaffRole, StaffPermissions, Doctor, DoctorAppointment, EPrescription } from '../types';
 import { TRANSLATIONS } from '../translations';
 import { 
   LayoutDashboard, 

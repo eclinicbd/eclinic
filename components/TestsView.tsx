@@ -81,23 +81,8 @@ export const TestsView: React.FC<TestsViewProps> = ({
 
   // Calculate total completed/ordered count for each test (combining test order count + live bookings)
   const getTestTotalOrders = useMemo(() => {
-    const defaultPopularityMap: Record<string, number> = {
-      '1': 1420, // CBC
-      '2': 1180, // HbA1c
-      '3': 950,  // Lipid Profile
-      '4': 840,  // Thyroid Profile
-      '5': 790,  // Vitamin D
-      '6': 720,  // Serum Creatinine
-      '7': 680,  // SGPT / ALT
-      '8': 650,  // FBS
-      '9': 590,  // Urine R/E
-      '10': 510, // Serum Electrolytes
-      '11': 470, // Uric Acid
-      '12': 430, // Bilirubin
-    };
-
     return (test: TestPackage): number => {
-      let count = test.orderCount !== undefined ? test.orderCount : (defaultPopularityMap[test.id] || 120);
+      let count = test.orderCount !== undefined ? test.orderCount : 0;
       
       if (bookings && bookings.length > 0) {
         bookings.forEach(b => {

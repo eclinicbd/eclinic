@@ -21,7 +21,9 @@ import {
   Calendar,
   CalendarDays,
   RotateCcw,
-  X
+  X,
+  FileText,
+  FileUp
 } from 'lucide-react';
 import { Button } from '../Button';
 import { printOrDownloadInvoice } from '../../services/invoiceService';
@@ -61,6 +63,7 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'amount_high' | 'amount_low'>('newest');
+  const [previewPrescriptionBooking, setPreviewPrescriptionBooking] = useState<BookingHistoryItem | null>(null);
 
   const t = TRANSLATIONS[lang];
 
@@ -462,6 +465,17 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({
                       <p className="text-[11px] text-slate-600 truncate mt-0.5" title={booking.testNames.join(', ')}>
                         {booking.testNames.join(', ')}
                       </p>
+                      {booking.prescriptionUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setPreviewPrescriptionBooking(booking)}
+                          className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-[10px] font-bold cursor-pointer transition-colors"
+                          title="View uploaded prescription"
+                        >
+                          <FileText size={11} className="text-amber-600" />
+                          <span>{isBn ? 'প্রেসক্রিপশন ফাইল' : 'Prescription File'}</span>
+                        </button>
+                      )}
                     </td>
                     <td className="px-2.5 py-3 whitespace-nowrap">
                       <select 
@@ -549,6 +563,91 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({
           </table>
         </div>
       </div>
+
+      {/* Admin Prescription Viewer Modal */}
+      {previewPrescriptionBooking && previewPrescriptionBooking.prescriptionUrl && (
+        <div 
+          onClick={() => setPreviewPrescriptionBooking(null)}
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl overflow-hidden max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl animate-in zoom-in-95"
+          >
+            <div className="p-4 bg-slate-900 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FileText size={18} className="text-primary" />
+                <div>
+                  <h3 className="font-bold text-sm leading-none">
+                    {isBn ? 'গ্রাহকের আপলোডকৃত প্রেসক্রিপশন' : 'Customer Uploaded Prescription'}
+                  </h3>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Order ID: {formatOrderId(previewPrescriptionBooking.id)} • {previewPrescriptionBooking.customerName}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewPrescriptionBooking(null)}
+                className="p-1.5 hover:bg-white/20 rounded-full transition-colors cursor-pointer text-white"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-3 overflow-auto max-h-[70vh] flex items-center justify-center bg-slate-950">
+              {previewPrescriptionBooking.prescriptionUrl.startsWith('data:image/') || previewPrescriptionBooking.prescriptionUrl.startsWith('http') ? (
+                <img 
+                  src={previewPrescriptionBooking.prescriptionUrl} 
+                  alt="Customer Prescription" 
+                  className="max-w-full max-h-[65vh] object-contain rounded-lg shadow-lg" 
+                />
+              ) : (
+                <div className="text-center py-10 text-white space-y-3">
+                  <FileText size={48} className="mx-auto text-primary" />
+                  <p className="text-sm font-bold">
+                    {previewPrescriptionBooking.prescriptionName || 'Prescription PDF Document'}
+                  </p>
+                  <a
+                    href={previewPrescriptionBooking.prescriptionUrl}
+                    download={previewPrescriptionBooking.prescriptionName || `Prescription-${previewPrescriptionBooking.id}.pdf`}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white rounded-xl text-xs font-bold shadow-md hover:bg-sky-600"
+                  >
+                    <Download size={14} />
+                    <span>{isBn ? 'PDF ডাউনলোড করুন' : 'Download PDF'}</span>
+                  </a>
+                </div>
+              )}
+            </div>
+
+            <div className="p-3.5 bg-white border-t border-slate-200 flex items-center justify-between text-xs">
+              <div className="text-slate-600">
+                <span className="font-bold text-slate-800">{previewPrescriptionBooking.customerName}</span>
+                <span className="text-slate-400 mx-1.5">•</span>
+                <span>{previewPrescriptionBooking.customerPhone}</span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <a 
+                  href={previewPrescriptionBooking.prescriptionUrl} 
+                  download={previewPrescriptionBooking.prescriptionName || `Prescription-${formatOrderId(previewPrescriptionBooking.id)}.png`}
+                  className="px-4 py-2 bg-primary text-white font-bold rounded-xl hover:bg-sky-600 transition-colors cursor-pointer flex items-center gap-1.5 text-xs shadow-xs"
+                >
+                  <Download size={14} />
+                  <span>{isBn ? 'ডাউনলোড' : 'Download'}</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setPreviewPrescriptionBooking(null)}
+                  className="px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors cursor-pointer"
+                >
+                  {isBn ? 'বন্ধ করুন' : 'Close'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

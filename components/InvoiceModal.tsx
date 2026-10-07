@@ -39,6 +39,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
   lang
 }) => {
   const [copied, setCopied] = useState(false);
+  const [showPrescriptionModal, setShowPrescriptionModal] = useState(false);
 
   if (!isOpen || !order) return null;
 
@@ -289,6 +290,21 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   <span className="text-[10px] text-slate-400 font-semibold block">{isBn ? 'ডাক্তার রেফারেন্স:' : 'Doctor Ref:'}</span>
                   <p className="text-slate-700 font-medium">{order.doctorName || (isBn ? 'নির্দিষ্ট নেই / সেলফ' : 'Self Reference')}</p>
                 </div>
+                {order.prescriptionUrl && (
+                  <div className="pt-1 border-t border-slate-100 flex items-center justify-between">
+                    <span className="text-[10px] text-slate-500 font-bold flex items-center gap-1">
+                      <FileText size={12} className="text-primary" />
+                      <span>{isBn ? 'সংযুক্ত প্রেসক্রিপশন' : 'Attached Prescription'}</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowPrescriptionModal(true)}
+                      className="px-2 py-0.5 bg-sky-100 text-primary hover:bg-sky-200 font-bold text-[10px] rounded-md transition-colors cursor-pointer"
+                    >
+                      {isBn ? 'প্রেসক্রিপশন দেখুন' : 'View Prescription'}
+                    </button>
+                  </div>
+                )}
               </div>
               <div className="bg-emerald-50 text-emerald-800 p-2 rounded-xl border border-emerald-200 flex items-center gap-2 text-[11px] font-bold">
                 <ShieldCheck size={16} className="text-emerald-600 shrink-0" />
@@ -410,6 +426,78 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
             </Button>
           </div>
         </div>
+
+        {/* Attached Prescription Preview Modal */}
+        {showPrescriptionModal && order.prescriptionUrl && (
+          <div 
+            onClick={() => setShowPrescriptionModal(false)}
+            className="fixed inset-0 z-60 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
+          >
+            <div 
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl overflow-hidden max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl animate-in zoom-in-95"
+            >
+              <div className="p-3.5 bg-slate-900 text-white flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold">
+                  <FileText size={16} className="text-primary" />
+                  <span>{isBn ? 'প্রেসক্রিপশন বিবরণ' : 'Prescription Details'} ({formatOrderId(order.id)})</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowPrescriptionModal(false)}
+                  className="p-1 hover:bg-white/20 rounded-full transition-colors cursor-pointer text-white"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="p-3 overflow-auto max-h-[72vh] flex items-center justify-center bg-slate-950">
+                {order.prescriptionUrl.startsWith('data:image/') || order.prescriptionUrl.startsWith('http') ? (
+                  <img 
+                    src={order.prescriptionUrl} 
+                    alt="Prescription" 
+                    className="max-w-full max-h-[68vh] object-contain rounded-lg shadow" 
+                  />
+                ) : (
+                  <div className="text-center py-10 text-white space-y-2">
+                    <FileText size={48} className="mx-auto text-primary" />
+                    <p className="text-sm font-bold">{order.prescriptionName || 'Prescription PDF Document'}</p>
+                    <a
+                      href={order.prescriptionUrl}
+                      download={order.prescriptionName || 'prescription.pdf'}
+                      className="inline-block px-4 py-2 bg-primary text-white rounded-xl text-xs font-bold"
+                    >
+                      {isBn ? 'PDF ডাউনলোড করুন' : 'Download PDF'}
+                    </a>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-3 bg-white border-t border-slate-200 flex items-center justify-between text-xs">
+                <span className="text-slate-600 font-medium">
+                  {order.customerName} • {order.customerPhone}
+                </span>
+                <div className="flex items-center gap-2">
+                  <a 
+                    href={order.prescriptionUrl} 
+                    download={order.prescriptionName || `Prescription-${formatOrderId(order.id)}.png`}
+                    className="px-3.5 py-1.5 bg-primary text-white font-bold rounded-xl hover:bg-sky-600 transition-colors cursor-pointer flex items-center gap-1 text-xs"
+                  >
+                    <Download size={13} />
+                    <span>{isBn ? 'ডাউনলোড' : 'Download'}</span>
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => setShowPrescriptionModal(false)}
+                    className="px-3.5 py-1.5 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors cursor-pointer"
+                  >
+                    {isBn ? 'বন্ধ করুন' : 'Close'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
     </div>

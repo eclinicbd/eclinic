@@ -764,22 +764,23 @@ export default function App() {
     }
   };
 
-  const navigateToTests = (categoryId?: string, labId?: string, search?: string, highlightTestId?: string, pushHistory = true) => {
-    setActiveCategory(categoryId || 'All');
-    if (labId !== undefined) {
-      setSelectedLabId(labId);
-    } else {
-      setSelectedLabId('');
-    }
-    setSearchTerm(search !== undefined ? search : '');
-    setHighlightedTestId(highlightTestId || null);
+  const navigateToTests = (categoryId?: any, labId?: any, search?: string, highlightTestId?: string, pushHistory = true) => {
+    const validCategory = (typeof categoryId === 'string' && categoryId) ? categoryId : 'All';
+    const validLab = (typeof labId === 'string') ? labId : (selectedLabId || '');
+    const validSearch = (typeof search === 'string') ? search : '';
+    const validHighlight = (typeof highlightTestId === 'string') ? highlightTestId : null;
+
+    setActiveCategory(validCategory);
+    setSelectedLabId(validLab);
+    setSearchTerm(validSearch);
+    setHighlightedTestId(validHighlight);
     setCurrentView('tests');
     
     if (pushHistory && window.location.hash !== '#tests') {
       window.history.pushState({ view: 'tests' }, '', `${window.location.pathname}#tests`);
     }
 
-    if (!highlightTestId) {
+    if (!validHighlight) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -1111,6 +1112,7 @@ export default function App() {
           doctors={doctors}
           onUpdateDoctors={handleUpdateDoctors}
           onOpenPrescriptionViewer={(presc) => setSelectedPrescriptionForView(presc)}
+          onJoinVideoAsDoctor={(apt) => setSelectedAppointmentForVideo(apt)}
           siteSettings={siteSettings}
           onUpdateSiteSettings={handleUpdateSiteSettings}
           onResetAllData={handleResetAllData}
@@ -1149,6 +1151,15 @@ export default function App() {
           labs={labs}
           selectedLabId={selectedLabId}
           onSelectLab={setSelectedLabId}
+        />
+      ) : currentView === 'doctors' ? (
+        <DoctorsView 
+          doctors={doctors}
+          lang={language}
+          onBookDoctor={(doc) => setSelectedDoctorForBooking(doc)}
+          onQuickVideoCall={(doc) => setSelectedDoctorForBooking(doc)}
+          onBackToHome={navigateToHome}
+          emergencyHotline={siteSettings.doctorsEmergencyHotline || siteSettings.contactHotline}
         />
       ) : currentView === 'tests' ? (
         <TestsView 
@@ -1561,6 +1572,7 @@ export default function App() {
                       emergencyHotline={siteSettings.doctorsEmergencyHotline || siteSettings.contactHotline}
                       onBookDoctor={(doc) => setSelectedDoctorForBooking(doc)}
                       onQuickVideoCall={(doc) => setSelectedDoctorForBooking(doc)}
+                      onViewAllDoctors={navigateToDoctors}
                     />
                   );
 
@@ -2007,25 +2019,34 @@ export default function App() {
               <h4 className="text-white font-bold mb-4 text-sm uppercase tracking-wider">{t.footerServices}</h4>
               <ul className="space-y-2.5 text-sm">
                 <li>
-                  <button onClick={() => scrollToSection('tests')} className="hover:text-white transition-colors">
+                  <button onClick={() => scrollToSection('tests')} className="hover:text-white transition-colors cursor-pointer">
                     {t.footerLinks.labTest}
                   </button>
                 </li>
+                {siteSettings.showDoctorsSection !== false && (
+                  <li>
+                    <button onClick={navigateToDoctors} className="hover:text-white transition-colors cursor-pointer flex items-center gap-1.5">
+                      <span>{language === 'bn' ? 'ডাক্তার ভিডিও কন্সালটেন্সি' : 'Doctor Video Consultation'}</span>
+                    </button>
+                  </li>
+                )}
                 <li>
-                  <button onClick={() => scrollToSection('services')} className="hover:text-white transition-colors">
+                  <button onClick={() => scrollToSection('services')} className="hover:text-white transition-colors cursor-pointer">
                     {language === 'bn' ? 'হোম স্যাম্পল কালেকশন' : 'Home Sample Collection'}
                   </button>
                 </li>
                 <li>
-                  <button onClick={() => scrollToSection('services')} className="hover:text-white transition-colors">
+                  <button onClick={() => scrollToSection('services')} className="hover:text-white transition-colors cursor-pointer">
                     {language === 'bn' ? 'অনলাইন রিপোর্ট ডেলিভারি' : 'Online Report Delivery'}
                   </button>
                 </li>
-                <li>
-                  <button onClick={() => scrollToSection('packages')} className="hover:text-white transition-colors">
-                    {t.footerLinks.healthPkg}
-                  </button>
-                </li>
+                {siteSettings.showNursingSection !== false && (
+                  <li>
+                    <button onClick={() => scrollToSection('nursing-care')} className="hover:text-white transition-colors cursor-pointer">
+                      {language === 'bn' ? 'হোম নার্সিং ও কেয়ার' : 'Home Nursing Care'}
+                    </button>
+                  </li>
+                )}
               </ul>
             </div>
 
