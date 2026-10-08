@@ -1,0 +1,91 @@
+{
+  "id": "/",
+  "name": "eClinic BD - Smart Healthcare",
+  "short_name": "eClinic BD",
+  "description": "Book diagnostic lab tests from home with doorstep sample collection in Bangladesh.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#0ea5e9",
+  "background_color": "#ffffff",
+  "lang": "bn",
+  "dir": "ltr",
+  "categories": [
+    "medical",
+    "health",
+    "lifestyle"
+  ],
+  "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "540x960",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "eClinic BD Mobile Experience"
+    },
+    {
+      "src": "/screenshot-desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "eClinic BD Web Dashboard"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "ল্যাব টেস্ট বুকিং",
+      "short_name": "Lab Tests",
+      "description": "হোম স্যাম্পল কালেকশন ল্যাব টেস্ট বুক করুন",
+      "url": "/",
+      "icons": [
+        {
+          "src": "/pwa-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "ডাক্তার ভিডিও কল",
+      "short_name": "Doctor Call",
+      "description": "ভিডিও কলে বিশেষজ্ঞ ডাক্তারের পরামর্শ নিন",
+      "url": "/?view=doctors",
+      "icons": [
+        {
+          "src": "/pwa-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "prefer_related_applications": false,
+  "related_applications": []
+}
