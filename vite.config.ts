@@ -32,7 +32,21 @@ export default defineConfig(({ mode }) => {
             theme_color: '#0ea5e9',
             background_color: '#ffffff',
             display: 'standalone',
+            display_override: ['window-controls-overlay', 'standalone', 'minimal-ui'],
             orientation: 'any',
+            launch_handler: {
+              client_mode: 'navigate-existing'
+            },
+            handle_links: 'preferred',
+            share_target: {
+              action: '/',
+              method: 'GET',
+              params: {
+                title: 'title',
+                text: 'text',
+                url: 'url'
+              }
+            },
             start_url: '/',
             scope: '/',
             lang: 'bn',

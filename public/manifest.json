@@ -6,7 +6,16 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui"
+  ],
   "orientation": "any",
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "handle_links": "preferred",
   "theme_color": "#0ea5e9",
   "background_color": "#ffffff",
   "lang": "bn",
@@ -87,5 +96,20 @@
     }
   ],
   "prefer_related_applications": false,
-  "related_applications": []
+  "related_applications": [],
+  "share_target": {
+    "action": "/",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "protocol_handlers": [
+    {
+      "protocol": "web+eclinic",
+      "url": "/?test=%s"
+    }
+  ]
 }
