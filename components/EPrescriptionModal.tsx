@@ -38,10 +38,11 @@ export const EPrescriptionModal: React.FC<EPrescriptionModalProps> = ({
   onBookAdvisedTest,
   onBookAllAdvisedTests
 }) => {
+  const printRef = useRef<HTMLDivElement>(null);
+
   if (!isOpen || !prescription) return null;
 
   const isBn = lang === 'bn';
-  const printRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = () => {
     window.print();

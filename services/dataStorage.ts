@@ -827,21 +827,56 @@ export const getStoredSiteSettings = (lang: Language): SiteSettings => {
   const defaultSettings = getDefaultSiteSettings(lang);
   try {
     const key = lang === 'en' ? STORAGE_KEYS.SITE_SETTINGS_EN : STORAGE_KEYS.SITE_SETTINGS_BN;
+    const otherKey = lang === 'en' ? STORAGE_KEYS.SITE_SETTINGS_BN : STORAGE_KEYS.SITE_SETTINGS_EN;
     const stored = localStorage.getItem(key);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      if (parsed && typeof parsed === 'object' && parsed.siteName) {
-        return {
-          ...defaultSettings,
-          ...parsed,
-          heroImages: (Array.isArray(parsed.heroImages) && parsed.heroImages.length > 0) ? parsed.heroImages : defaultSettings.heroImages,
-          howItWorksSteps: (Array.isArray(parsed.howItWorksSteps) && parsed.howItWorksSteps.length > 0) ? parsed.howItWorksSteps : defaultSettings.howItWorksSteps,
-          aboutStats: (Array.isArray(parsed.aboutStats) && parsed.aboutStats.length > 0) ? parsed.aboutStats : defaultSettings.aboutStats,
-          services: (Array.isArray(parsed.services) && parsed.services.length > 0) ? parsed.services : defaultSettings.services,
-          nursingServices: (Array.isArray(parsed.nursingServices) && parsed.nursingServices.length > 0) ? parsed.nursingServices : defaultSettings.nursingServices,
-          homeSectionsOrder: (Array.isArray(parsed.homeSectionsOrder) && parsed.homeSectionsOrder.length > 0) ? parsed.homeSectionsOrder : defaultSettings.homeSectionsOrder
-        };
-      }
+    const otherStored = localStorage.getItem(otherKey);
+
+    let parsed = stored ? JSON.parse(stored) : null;
+    let otherParsed = otherStored ? JSON.parse(otherStored) : null;
+
+    if (parsed && typeof parsed === 'object' && parsed.siteName) {
+      // Global module visibility flags: if explicitly disabled in either language, respect it globally
+      const isDocInactive = parsed.showDoctorsSection === false || (otherParsed && otherParsed.showDoctorsSection === false);
+      const isNursingInactive = parsed.showNursingSection === false || (otherParsed && otherParsed.showNursingSection === false);
+      const isPartnerInactive = parsed.showPartnerSection === false || (otherParsed && otherParsed.showPartnerSection === false);
+      const isPopularInactive = parsed.showPopularTestsSection === false || (otherParsed && otherParsed.showPopularTestsSection === false);
+      const isPackagesInactive = parsed.showPackagesSection === false || (otherParsed && otherParsed.showPackagesSection === false);
+      const isAppInactive = parsed.showAppDownloadSection === false || (otherParsed && otherParsed.showAppDownloadSection === false);
+      const isHowItWorksInactive = parsed.showHowItWorksSection === false || (otherParsed && otherParsed.showHowItWorksSection === false);
+      const isServicesInactive = parsed.showServicesSection === false || (otherParsed && otherParsed.showServicesSection === false);
+
+      return {
+        ...defaultSettings,
+        ...parsed,
+        showDoctorsSection: !isDocInactive,
+        showNursingSection: !isNursingInactive,
+        showPartnerSection: !isPartnerInactive,
+        showPopularTestsSection: !isPopularInactive,
+        showPackagesSection: !isPackagesInactive,
+        showAppDownloadSection: !isAppInactive,
+        showHowItWorksSection: !isHowItWorksInactive,
+        showServicesSection: !isServicesInactive,
+        heroImages: (Array.isArray(parsed.heroImages) && parsed.heroImages.length > 0) ? parsed.heroImages : (Array.isArray(otherParsed?.heroImages) && otherParsed.heroImages.length > 0 ? otherParsed.heroImages : defaultSettings.heroImages),
+        howItWorksSteps: (Array.isArray(parsed.howItWorksSteps) && parsed.howItWorksSteps.length > 0) ? parsed.howItWorksSteps : defaultSettings.howItWorksSteps,
+        aboutStats: (Array.isArray(parsed.aboutStats) && parsed.aboutStats.length > 0) ? parsed.aboutStats : defaultSettings.aboutStats,
+        services: (Array.isArray(parsed.services) && parsed.services.length > 0) ? parsed.services : defaultSettings.services,
+        nursingServices: (Array.isArray(parsed.nursingServices) && parsed.nursingServices.length > 0) ? parsed.nursingServices : defaultSettings.nursingServices,
+        homeSectionsOrder: (Array.isArray(parsed.homeSectionsOrder) && parsed.homeSectionsOrder.length > 0) ? parsed.homeSectionsOrder : (Array.isArray(otherParsed?.homeSectionsOrder) && otherParsed.homeSectionsOrder.length > 0 ? otherParsed.homeSectionsOrder : defaultSettings.homeSectionsOrder)
+      };
+    } else if (otherParsed && typeof otherParsed === 'object' && otherParsed.siteName) {
+      return {
+        ...defaultSettings,
+        showDoctorsSection: otherParsed.showDoctorsSection !== false,
+        showNursingSection: otherParsed.showNursingSection !== false,
+        showPartnerSection: otherParsed.showPartnerSection !== false,
+        showPopularTestsSection: otherParsed.showPopularTestsSection !== false,
+        showPackagesSection: otherParsed.showPackagesSection !== false,
+        showAppDownloadSection: otherParsed.showAppDownloadSection !== false,
+        showHowItWorksSection: otherParsed.showHowItWorksSection !== false,
+        showServicesSection: otherParsed.showServicesSection !== false,
+        heroImages: (Array.isArray(otherParsed.heroImages) && otherParsed.heroImages.length > 0) ? otherParsed.heroImages : defaultSettings.heroImages,
+        homeSectionsOrder: (Array.isArray(otherParsed.homeSectionsOrder) && otherParsed.homeSectionsOrder.length > 0) ? otherParsed.homeSectionsOrder : defaultSettings.homeSectionsOrder
+      };
     }
   } catch (e) {
     console.error("Failed to parse stored site settings:", e);
@@ -870,6 +905,7 @@ export const saveStoredSiteSettings = (lang: Language, settings: SiteSettings): 
       showPartnerSection: settings.showPartnerSection !== undefined ? settings.showPartnerSection : otherSettings.showPartnerSection,
       showPopularTestsSection: settings.showPopularTestsSection !== undefined ? settings.showPopularTestsSection : otherSettings.showPopularTestsSection,
       showPackagesSection: settings.showPackagesSection !== undefined ? settings.showPackagesSection : otherSettings.showPackagesSection,
+      showDoctorsSection: settings.showDoctorsSection !== undefined ? settings.showDoctorsSection : otherSettings.showDoctorsSection,
       showNursingSection: settings.showNursingSection !== undefined ? settings.showNursingSection : otherSettings.showNursingSection,
       showAppDownloadSection: settings.showAppDownloadSection !== undefined ? settings.showAppDownloadSection : otherSettings.showAppDownloadSection,
       showHowItWorksSection: settings.showHowItWorksSection !== undefined ? settings.showHowItWorksSection : otherSettings.showHowItWorksSection,
@@ -886,6 +922,7 @@ export const saveStoredSiteSettings = (lang: Language, settings: SiteSettings): 
       contactEmail: settings.contactEmail,
       contactWhatsApp: settings.contactWhatsApp,
       emergencyNumber: settings.emergencyNumber,
+      doctorsEmergencyHotline: settings.doctorsEmergencyHotline || otherSettings.doctorsEmergencyHotline,
       nursingHotline: settings.nursingHotline || otherSettings.nursingHotline,
       nursingWhatsApp: settings.nursingWhatsApp || otherSettings.nursingWhatsApp,
       facebookUrl: settings.facebookUrl || otherSettings.facebookUrl,
@@ -1286,13 +1323,39 @@ export const saveStoredPaymentConfig = (config: PaymentGatewaysConfig): void => 
 export const getStoredDoctors = (lang: Language = 'bn'): Doctor[] => {
   try {
     const key = lang === 'en' ? STORAGE_KEYS.DOCTORS_EN : STORAGE_KEYS.DOCTORS_BN;
+    const otherKey = lang === 'en' ? STORAGE_KEYS.DOCTORS_BN : STORAGE_KEYS.DOCTORS_EN;
     const stored = localStorage.getItem(key);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
-      }
+    const otherStored = localStorage.getItem(otherKey);
+
+    let doctorsList = stored ? JSON.parse(stored) : null;
+    let otherList = otherStored ? JSON.parse(otherStored) : null;
+
+    if (!Array.isArray(doctorsList) || doctorsList.length === 0) {
+      doctorsList = getDefaultDoctors(lang);
     }
+
+    // Cross-sync status and active flags from other language if available
+    if (Array.isArray(otherList) && otherList.length > 0) {
+      const otherMap = new Map(otherList.map((d: Doctor) => [d.id, d]));
+      doctorsList = doctorsList.map((d: Doctor) => {
+        const otherDoc = otherMap.get(d.id);
+        if (otherDoc) {
+          return {
+            ...d,
+            // If explicitly marked inactive or modified in the other language, sync it!
+            isActive: otherDoc.isActive !== undefined ? otherDoc.isActive : d.isActive,
+            orderCount: otherDoc.orderCount !== undefined ? otherDoc.orderCount : d.orderCount,
+            totalConsultations: otherDoc.totalConsultations !== undefined ? otherDoc.totalConsultations : d.totalConsultations,
+            consultationFee: otherDoc.consultationFee || d.consultationFee,
+            originalFee: otherDoc.originalFee || d.originalFee,
+            discountPercent: otherDoc.discountPercent !== undefined ? otherDoc.discountPercent : d.discountPercent,
+          };
+        }
+        return d;
+      });
+    }
+
+    return doctorsList;
   } catch (e) {
     console.error("Error reading stored doctors:", e);
   }
@@ -1303,6 +1366,48 @@ export const setStoredDoctors = (doctors: Doctor[], lang: Language = 'bn'): void
   try {
     const key = lang === 'en' ? STORAGE_KEYS.DOCTORS_EN : STORAGE_KEYS.DOCTORS_BN;
     localStorage.setItem(key, JSON.stringify(doctors));
+
+    // Also sync active status and common fields to other language
+    const otherLang = lang === 'en' ? 'bn' : 'en';
+    const otherKey = otherLang === 'en' ? STORAGE_KEYS.DOCTORS_EN : STORAGE_KEYS.DOCTORS_BN;
+    const otherStored = localStorage.getItem(otherKey);
+    let otherDoctors: Doctor[] = otherStored ? JSON.parse(otherStored) : getDefaultDoctors(otherLang);
+
+    if (Array.isArray(otherDoctors)) {
+      const currentMap = new Map(doctors.map(d => [d.id, d]));
+      const updatedOther = otherDoctors.map(od => {
+        const match = currentMap.get(od.id);
+        if (match) {
+          return {
+            ...od,
+            isActive: match.isActive !== false,
+            orderCount: match.orderCount,
+            totalConsultations: match.totalConsultations,
+            consultationFee: match.consultationFee,
+            originalFee: match.originalFee,
+            discountPercent: match.discountPercent,
+            rating: match.rating,
+            gender: match.gender,
+            image: match.image || od.image,
+            slotIntervalMinutes: match.slotIntervalMinutes,
+            availableTimeText: match.availableTimeText || od.availableTimeText
+          };
+        }
+        return od;
+      });
+
+      // Also handle newly added or deleted doctors
+      const currentIds = new Set(doctors.map(d => d.id));
+      const filteredOther = updatedOther.filter(od => currentIds.has(od.id));
+      const otherIds = new Set(filteredOther.map(od => od.id));
+      for (const d of doctors) {
+        if (!otherIds.has(d.id)) {
+          filteredOther.push(d);
+        }
+      }
+
+      localStorage.setItem(otherKey, JSON.stringify(filteredOther));
+    }
   } catch (e) {
     console.error("Error saving doctors to storage:", e);
   }

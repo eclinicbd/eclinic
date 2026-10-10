@@ -379,11 +379,27 @@ export default function App() {
     setStoredDoctors(updated, language);
   };
 
+  // Check if Doctor Telemedicine Module is currently active
+  const isDoctorModuleActive = siteSettings.showDoctorsSection !== false && doctors.some(d => d.isActive !== false);
+
+  // Auto redirect from doctor view if doctor module is inactive
+  useEffect(() => {
+    if (currentView === 'doctors' && !isDoctorModuleActive) {
+      setCurrentView('home');
+      if (window.location.hash === '#doctors') {
+        window.history.replaceState({ view: 'home' }, '', `${window.location.pathname}#home`);
+      }
+    }
+  }, [currentView, isDoctorModuleActive]);
+
   const handleUpdateSiteSettings = (updated: SiteSettings) => {
     setSiteSettings(updated);
     saveStoredSiteSettings(language, updated);
     // Real-time synchronization to Firestore ensures changes are visible to ALL visitors across the live domain
     saveSiteSettingsToFirestore(language, updated);
+    const otherLang = language === 'en' ? 'bn' : 'en';
+    const otherSettings = getStoredSiteSettings(otherLang);
+    saveSiteSettingsToFirestore(otherLang, otherSettings);
   };
 
   const handleResetAllData = () => {
@@ -966,7 +982,7 @@ export default function App() {
                 )}
 
                 {/* 4. Doctor Telemedicine Page (Header Option 'Doctor') */}
-                {siteSettings.showDoctorsSection !== false && (
+                {isDoctorModuleActive && (
                   <button 
                     onClick={navigateToDoctors} 
                     className={`px-3.5 py-1.5 rounded-full transition-all flex items-center gap-1.5 cursor-pointer ${
@@ -1537,7 +1553,7 @@ export default function App() {
                   );
 
                 case 'doctors':
-                  if (siteSettings.showDoctorsSection === false) return null;
+                  if (!isDoctorModuleActive) return null;
                   return (
                     <HomeDoctorConsultationSection
                       key="doctors"
@@ -1725,7 +1741,7 @@ export default function App() {
               <span className="text-[10px] mt-0.5">{t.navTests}</span>
             </button>
           )}
-          {siteSettings.showDoctorsSection !== false && (
+          {isDoctorModuleActive && (
             <button 
               onClick={navigateToDoctors} 
               className={`flex flex-col items-center px-3 py-1 transition-colors ${currentView === 'doctors' ? 'text-emerald-600 font-bold' : 'text-slate-500'}`}
@@ -1814,60 +1830,66 @@ export default function App() {
       />
 
       {/* Doctor Booking Modal */}
-      <DoctorBookingModal 
-        doctor={selectedDoctorForBooking}
-        isOpen={Boolean(selectedDoctorForBooking)}
-        onClose={() => setSelectedDoctorForBooking(null)}
-        lang={language}
-        currentPatient={currentPatient}
-        onBookingSuccess={(appointment) => {
-          // Keep doctor appointment state updated
-        }}
-        onStartVideoCall={(appointment) => {
-          setSelectedAppointmentForVideo(appointment);
-        }}
-      />
+      {selectedDoctorForBooking && (
+        <DoctorBookingModal 
+          doctor={selectedDoctorForBooking}
+          isOpen={Boolean(selectedDoctorForBooking)}
+          onClose={() => setSelectedDoctorForBooking(null)}
+          lang={language}
+          currentPatient={currentPatient}
+          onBookingSuccess={(appointment) => {
+            // Keep doctor appointment state updated
+          }}
+          onStartVideoCall={(appointment) => {
+            setSelectedAppointmentForVideo(appointment);
+          }}
+        />
+      )}
 
       {/* Doctor Live Video Consultation Modal */}
-      <DoctorVideoConsultationModal 
-        appointment={selectedAppointmentForVideo}
-        isOpen={Boolean(selectedAppointmentForVideo)}
-        onClose={() => setSelectedAppointmentForVideo(null)}
-        lang={language}
-        onOpenPrescription={(presc) => {
-          setSelectedPrescriptionForView(presc);
-        }}
-      />
+      {selectedAppointmentForVideo && (
+        <DoctorVideoConsultationModal 
+          appointment={selectedAppointmentForVideo}
+          isOpen={Boolean(selectedAppointmentForVideo)}
+          onClose={() => setSelectedAppointmentForVideo(null)}
+          lang={language}
+          onOpenPrescription={(presc) => {
+            setSelectedPrescriptionForView(presc);
+          }}
+        />
+      )}
 
       {/* Digital E-Prescription Modal */}
-      <EPrescriptionModal 
-        prescription={selectedPrescriptionForView}
-        isOpen={Boolean(selectedPrescriptionForView)}
-        onClose={() => setSelectedPrescriptionForView(null)}
-        lang={language}
-        onBookAdvisedTest={(testName, testId) => {
-          // If test exists with matching ID or name, add to cart
-          const matchingTest = tests.find(t => (testId && t.id === testId) || t.name.toLowerCase().includes(testName.toLowerCase()));
-          if (matchingTest) {
-            addToCart(matchingTest.id);
-          } else if (testId) {
-            addToCart(testId);
-          } else {
-            setSelectedPrescriptionForView(null);
-            navigateToTests();
-          }
-        }}
-        onBookAllAdvisedTests={(testNames) => {
-          testNames.forEach(tName => {
-            const matchingTest = tests.find(t => t.name.toLowerCase().includes(tName.toLowerCase()));
-            if (matchingTest && !cart.includes(matchingTest.id)) {
+      {selectedPrescriptionForView && (
+        <EPrescriptionModal 
+          prescription={selectedPrescriptionForView}
+          isOpen={Boolean(selectedPrescriptionForView)}
+          onClose={() => setSelectedPrescriptionForView(null)}
+          lang={language}
+          onBookAdvisedTest={(testName, testId) => {
+            // If test exists with matching ID or name, add to cart
+            const matchingTest = tests.find(t => (testId && t.id === testId) || t.name.toLowerCase().includes(testName.toLowerCase()));
+            if (matchingTest) {
               addToCart(matchingTest.id);
+            } else if (testId) {
+              addToCart(testId);
+            } else {
+              setSelectedPrescriptionForView(null);
+              navigateToTests();
             }
-          });
-          setSelectedPrescriptionForView(null);
-          setIsBookingModalOpen(true);
-        }}
-      />
+          }}
+          onBookAllAdvisedTests={(testNames) => {
+            testNames.forEach(tName => {
+              const matchingTest = tests.find(t => t.name.toLowerCase().includes(tName.toLowerCase()));
+              if (matchingTest && !cart.includes(matchingTest.id)) {
+                addToCart(matchingTest.id);
+              }
+            });
+            setSelectedPrescriptionForView(null);
+            setIsBookingModalOpen(true);
+          }}
+        />
+      )}
       
       {/* Dynamic Footer with CMS Data */}
       {currentView !== 'dashboard' && currentView !== 'admin' && (
@@ -2002,7 +2024,7 @@ export default function App() {
                     {t.footerLinks.labTest}
                   </button>
                 </li>
-                {siteSettings.showDoctorsSection !== false && (
+                {isDoctorModuleActive && (
                   <li>
                     <button onClick={navigateToDoctors} className="hover:text-white transition-colors cursor-pointer flex items-center gap-1.5">
                       <span>{language === 'bn' ? 'ডাক্তার ভিডিও কন্সালটেন্সি' : 'Doctor Video Consultation'}</span>

@@ -45,8 +45,6 @@ export const DoctorVideoConsultationModal: React.FC<DoctorVideoConsultationModal
   lang,
   onOpenPrescription
 }) => {
-  if (!isOpen || !appointment) return null;
-
   const isBn = lang === 'bn';
   const [isVideoOn, setIsVideoOn] = useState<boolean>(true);
   const [isMicOn, setIsMicOn] = useState<boolean>(true);
@@ -54,26 +52,29 @@ export const DoctorVideoConsultationModal: React.FC<DoctorVideoConsultationModal
   const [callDuration, setCallDuration] = useState<number>(0);
   const [activeTab, setActiveTab] = useState<'chat' | 'notes'>('chat');
   const [chatMessage, setChatMessage] = useState<string>('');
-  const [chatList, setChatList] = useState<ChatItem[]>([
+  const [chatList, setChatList] = useState<ChatItem[]>(() => [
     {
       id: '1',
       sender: 'doctor',
       text: isBn 
-        ? `আসসালামু আলাইকুম ${appointment.patientName}, আমি ডাঃ ${appointment.doctorName}। আপনার শারীরিক সমস্যাটি বিস্তারিত বলুন।` 
-        : `Hello ${appointment.patientName}, I am Dr. ${appointment.doctorName}. Please tell me more about your symptoms.`,
+        ? `আসসালামু আলাইকুম ${appointment?.patientName || ''}, আমি ডাঃ ${appointment?.doctorName || ''}। আপনার শারীরিক সমস্যাটি বিস্তারিত বলুন।` 
+        : `Hello ${appointment?.patientName || ''}, I am Dr. ${appointment?.doctorName || ''}. Please tell me more about your symptoms.`,
       time: 'Just now'
     }
   ]);
 
-  const [prescriptionGenerated, setPrescriptionGenerated] = useState<EPrescription | null>(appointment.prescription || null);
+  const [prescriptionGenerated, setPrescriptionGenerated] = useState<EPrescription | null>(() => appointment?.prescription || null);
 
   // Timer counter
   useEffect(() => {
+    if (!isOpen || !appointment) return;
     const timer = setInterval(() => {
       setCallDuration(prev => prev + 1);
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [isOpen, appointment]);
+
+  if (!isOpen || !appointment) return null;
 
   const formatTimer = (seconds: number) => {
     const mins = Math.floor(seconds / 60);

@@ -46,8 +46,6 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
   onStartVideoCall,
   currentPatient
 }) => {
-  if (!isOpen || !doctor) return null;
-
   const isBn = lang === 'bn';
   // 4 Steps: 1 = Date & 30-min Slot, 2 = Patient Details, 3 = Payment (Same as test booking), 4 = Confirmed & Instant Video Connect
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
@@ -113,6 +111,8 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
       }
     }
   }, [isOpen, currentPatient]);
+
+  if (!isOpen || !doctor) return null;
 
   // 30-Minute Interval Time Slots
   const morningSlots = [

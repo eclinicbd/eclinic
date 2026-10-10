@@ -120,6 +120,10 @@ export const HomeDoctorConsultationSection: React.FC<HomeDoctorConsultationSecti
     }
   };
 
+  if (activeDoctors.length === 0) {
+    return null;
+  }
+
   return (
     <section id="doctors-consultation" className="py-8 md:py-20 bg-gradient-to-b from-sky-50/50 via-white to-slate-50 border-t border-sky-100/70 relative overflow-hidden">
       {/* Background Decorative Blobs */}
