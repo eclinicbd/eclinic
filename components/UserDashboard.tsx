@@ -27,7 +27,14 @@ import {
   Printer,
   Receipt,
   Stethoscope,
-  Video
+  Video,
+  Eye,
+  EyeOff,
+  Building2,
+  Copy,
+  Check,
+  CreditCard,
+  QrCode
 } from 'lucide-react';
 import { Button } from './Button';
 import { ProfilePictureModal, PRESET_AVATARS } from './ProfilePictureModal';
@@ -82,7 +89,27 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   const [profileAvatar, setProfileAvatar] = useState(currentPatient.avatar || '');
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [copiedOrderId, setCopiedOrderId] = useState<string | null>(null);
   const [selectedInvoiceBooking, setSelectedInvoiceBooking] = useState<BookingHistoryItem | null>(null);
+  const [mobileProfileTab, setMobileProfileTab] = useState<'all' | 'personal' | 'contact' | 'security' | 'card'>('all');
+  const [copiedPatientId, setCopiedPatientId] = useState(false);
+
+  const patientDisplayId = currentPatient.id?.startsWith('PAT-') 
+    ? currentPatient.id 
+    : (currentPatient.phone ? `PAT-${currentPatient.phone.replace(/[^0-9]/g, '').slice(-6) || '849201'}` : 'PAT-849201');
+
+  const handleCopyPatientId = () => {
+    navigator.clipboard?.writeText(patientDisplayId);
+    setCopiedPatientId(true);
+    setTimeout(() => setCopiedPatientId(false), 2000);
+  };
+
+  const handleCopyOrderId = (id: string) => {
+    navigator.clipboard?.writeText(id);
+    setCopiedOrderId(id);
+    setTimeout(() => setCopiedOrderId(null), 2000);
+  };
 
   useEffect(() => {
     setProfileName(currentPatient.name || '');
@@ -247,11 +274,131 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   );
 
   return (
-    <div className="bg-slate-50 min-h-[calc(100vh-64px)] p-4 md:p-8">
-      <div className="max-w-7xl mx-auto grid md:grid-cols-4 gap-6">
+    <div className="bg-slate-50 min-h-[calc(100vh-64px)] p-3 sm:p-4 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-4 md:space-y-0 md:grid md:grid-cols-4 md:gap-6">
         
-        {/* Sidebar */}
-        <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-5 h-fit">
+        {/* MOBILE TOP PROFILE HEADER & HORIZONTAL TABS (Mobile View Only) */}
+        <div className="block md:hidden space-y-3">
+          {/* Mobile Profile Card */}
+          <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="relative shrink-0">
+                {currentPatient.avatar || profileAvatar ? (
+                  <img 
+                    src={profileAvatar || currentPatient.avatar} 
+                    alt={currentPatient.name} 
+                    className="w-13 h-13 rounded-full border-2 border-sky-100 object-cover shadow-2xs cursor-pointer"
+                    onClick={() => setIsPictureModalOpen(true)} 
+                  />
+                ) : (
+                  <div 
+                    onClick={() => setIsPictureModalOpen(true)}
+                    className="w-13 h-13 rounded-full bg-gradient-to-tr from-sky-600 to-primary text-white font-black text-lg flex items-center justify-center border-2 border-sky-100 shadow-2xs cursor-pointer"
+                  >
+                    {initials}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setIsPictureModalOpen(true)}
+                  className="absolute -bottom-1 -right-1 bg-primary text-white p-1 rounded-full shadow border-2 border-white"
+                  title={lang === 'bn' ? 'ছবি পরিবর্তন' : 'Change Photo'}
+                >
+                  <Camera size={10} />
+                </button>
+              </div>
+
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <h3 className="font-bold text-slate-900 text-sm truncate leading-snug">{currentPatient.name}</h3>
+                  <button
+                    type="button"
+                    onClick={handleCopyPatientId}
+                    className="text-[10px] font-mono text-sky-700 bg-sky-50 hover:bg-sky-100 px-1.5 py-0.2 rounded border border-sky-100 font-bold flex items-center gap-1 cursor-pointer"
+                    title="Copy Patient ID"
+                  >
+                    <span>{patientDisplayId}</span>
+                    {copiedPatientId ? <Check size={10} className="text-emerald-600" /> : <Copy size={9} />}
+                  </button>
+                </div>
+                <p className="text-slate-500 text-xs flex items-center gap-1 mt-0.5 truncate">
+                  <Phone size={11} className="text-primary shrink-0" />
+                  <span>{currentPatient.phone}</span>
+                </p>
+                <div className="flex items-center gap-1 mt-1 flex-wrap">
+                  {currentPatient.bloodGroup && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.2 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-100">
+                      <HeartPulse size={10} />
+                      <span>{currentPatient.bloodGroup}</span>
+                    </span>
+                  )}
+                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-100">
+                    <CheckCircle size={10} />
+                    <span>{lang === 'bn' ? 'ভেরিফাইড' : 'Verified'}</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Actions for Mobile */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              {onBookNewTest && (
+                <button
+                  onClick={onBookNewTest}
+                  className="p-2 rounded-xl bg-sky-50 text-primary border border-sky-200 hover:bg-sky-100 transition-all cursor-pointer"
+                  title={lang === 'bn' ? 'নতুন টেস্ট বুক করুন' : 'Book New Test'}
+                >
+                  <PlusCircle size={16} />
+                </button>
+              )}
+              <button 
+                onClick={onLogout}
+                className="p-2 rounded-xl bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-all cursor-pointer"
+                title={lang === 'bn' ? 'লগআউট' : 'Logout'}
+              >
+                <LogOut size={16} />
+              </button>
+            </div>
+          </div>
+
+          {/* Horizontal Scrolling Segmented Tabs */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 px-0.5">
+            {[
+              { id: 'overview' as const, icon: LayoutDashboard, label: lang === 'bn' ? 'ওভারভিউ' : 'Overview' },
+              { id: 'bookings' as const, icon: CalendarDays, label: lang === 'bn' ? 'বুকিং' : 'Bookings', count: userBookings.length },
+              { id: 'consultations' as const, icon: Stethoscope, label: lang === 'bn' ? 'ডাক্তার' : 'Doctors', count: doctorAppointments.length },
+              { id: 'reports' as const, icon: FileText, label: lang === 'bn' ? 'রিপোর্টস' : 'Reports', count: userReports.length },
+              { id: 'profile' as const, icon: User, label: lang === 'bn' ? 'প্রোফাইল' : 'Profile' }
+            ].map(tab => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border shrink-0 cursor-pointer ${
+                    isActive
+                      ? 'bg-primary text-white border-primary shadow-xs shadow-sky-500/20'
+                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                  }`}
+                >
+                  <Icon size={14} className={isActive ? 'text-white' : 'text-slate-500'} />
+                  <span>{tab.label}</span>
+                  {tab.count !== undefined && tab.count > 0 && (
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
+                      isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700 border border-slate-200'
+                    }`}>
+                      {tab.count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Desktop Sidebar (Hidden on mobile) */}
+        <div className="hidden md:block bg-white rounded-3xl shadow-sm border border-slate-100 p-5 h-fit">
           <div className="flex flex-col items-center mb-6 pb-6 border-b border-slate-100 text-center">
             
             {/* Interactive Avatar with Change Picture Trigger */}
@@ -314,7 +461,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               {onBookNewTest && (
                 <button
                   onClick={onBookNewTest}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-sky-50 text-primary hover:bg-sky-100 transition-all font-bold text-xs"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-sky-50 text-primary hover:bg-sky-100 transition-all font-bold text-xs cursor-pointer"
                 >
                   <PlusCircle size={15} />
                   <span>{t.navAppointment}</span>
@@ -323,7 +470,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
 
               <button 
                 onClick={onLogout}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-red-600 hover:bg-red-50 transition-all text-xs font-bold"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-red-600 hover:bg-red-50 transition-all text-xs font-bold cursor-pointer"
               >
                 <LogOut size={16} />
                 <span>{t.authLogout}</span>
@@ -357,37 +504,37 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                 )}
               </div>
 
-              {/* Stats Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                    <Activity size={24} />
+              {/* Stats Cards - Compact 3-col on Mobile */}
+              <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                <div className="bg-white p-3 sm:p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col sm:flex-row items-center sm:gap-4 text-center sm:text-left">
+                  <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mb-1.5 sm:mb-0">
+                    <Activity size={18} className="sm:w-6 sm:h-6" />
                   </div>
-                  <div>
-                    <p className="text-slate-500 text-xs font-semibold">{t.dashStatTests}</p>
-                    <h4 className="text-2xl font-bold text-slate-800">{userBookings.length}</h4>
+                  <div className="min-w-0">
+                    <p className="text-slate-500 text-[10px] sm:text-xs font-semibold truncate">{t.dashStatTests}</p>
+                    <h4 className="text-lg sm:text-2xl font-bold text-slate-800 leading-tight">{userBookings.length}</h4>
                   </div>
                 </div>
 
-                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-yellow-50 text-yellow-600 flex items-center justify-center">
-                    <Clock size={24} />
+                <div className="bg-white p-3 sm:p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col sm:flex-row items-center sm:gap-4 text-center sm:text-left">
+                  <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-yellow-50 text-yellow-600 flex items-center justify-center shrink-0 mb-1.5 sm:mb-0">
+                    <Clock size={18} className="sm:w-6 sm:h-6" />
                   </div>
-                  <div>
-                    <p className="text-slate-500 text-xs font-semibold">{t.dashStatPending}</p>
-                    <h4 className="text-2xl font-bold text-slate-800">
+                  <div className="min-w-0">
+                    <p className="text-slate-500 text-[10px] sm:text-xs font-semibold truncate">{t.dashStatPending}</p>
+                    <h4 className="text-lg sm:text-2xl font-bold text-slate-800 leading-tight">
                       {userBookings.filter(b => b.status === 'pending').length}
                     </h4>
                   </div>
                 </div>
 
-                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                    <FileText size={24} />
+                <div className="bg-white p-3 sm:p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col sm:flex-row items-center sm:gap-4 text-center sm:text-left">
+                  <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 mb-1.5 sm:mb-0">
+                    <FileText size={18} className="sm:w-6 sm:h-6" />
                   </div>
-                  <div>
-                    <p className="text-slate-500 text-xs font-semibold">{lang === 'bn' ? 'রিপোর্ট তৈরি' : 'Reports Ready'}</p>
-                    <h4 className="text-2xl font-bold text-slate-800">{userReports.length}</h4>
+                  <div className="min-w-0">
+                    <p className="text-slate-500 text-[10px] sm:text-xs font-semibold truncate">{lang === 'bn' ? 'রিপোর্ট রেডি' : 'Reports Ready'}</p>
+                    <h4 className="text-lg sm:text-2xl font-bold text-slate-800 leading-tight">{userReports.length}</h4>
                   </div>
                 </div>
               </div>
@@ -485,7 +632,8 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                   </Button>
                 )}
               </div>
-              <div className="overflow-x-auto">
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-sm text-left">
                   <thead className="bg-slate-50 text-slate-500 font-semibold text-xs uppercase tracking-wider">
                     <tr>
@@ -531,6 +679,84 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                     )}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Mobile Card View (Optimized for Mobile Screens) */}
+              <div className="block md:hidden divide-y divide-slate-100">
+                {userBookings.map(booking => (
+                  <div key={booking.id} className="p-4 space-y-3 bg-white">
+                    {/* Header: Order ID & Status */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono font-bold text-primary text-xs bg-sky-50 px-2 py-0.5 rounded border border-sky-100">
+                          {formatOrderId(booking.id)}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyOrderId(formatOrderId(booking.id))}
+                          className="text-slate-400 hover:text-primary transition-colors p-0.5"
+                          title="Copy ID"
+                        >
+                          {copiedOrderId === formatOrderId(booking.id) ? (
+                            <Check size={12} className="text-emerald-600" />
+                          ) : (
+                            <Copy size={12} />
+                          )}
+                        </button>
+                      </div>
+                      {getStatusBadge(booking.status)}
+                    </div>
+
+                    {/* Diagnostic Center & Date/Time */}
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1.5 text-slate-900 text-xs font-bold">
+                        <Building2 size={14} className="text-primary shrink-0" />
+                        <span className="truncate">{booking.labName}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-slate-500 text-xs">
+                        <Clock size={12} className="text-slate-400 shrink-0" />
+                        <span>{booking.date} • {booking.time}</span>
+                      </div>
+                    </div>
+
+                    {/* Selected Tests */}
+                    <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-100 text-xs">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                        {lang === 'bn' ? 'নির্বাচিত টেস্টসমূহ:' : 'Selected Tests:'}
+                      </p>
+                      <p className="text-slate-700 font-medium leading-relaxed">
+                        {booking.testNames.join(', ')}
+                      </p>
+                    </div>
+
+                    {/* Footer: Amount & Download Invoice Button */}
+                    <div className="flex items-center justify-between pt-1">
+                      <div>
+                        <span className="text-[10px] text-slate-400 block font-medium">
+                          {lang === 'bn' ? 'মোট বিল' : 'Total Amount'}
+                        </span>
+                        <span className="text-sm font-black text-slate-900">
+                          ৳ {booking.totalCost}
+                        </span>
+                      </div>
+
+                      <button
+                        onClick={() => setSelectedInvoiceBooking(booking)}
+                        className="px-3.5 py-2 bg-sky-50 hover:bg-primary text-primary hover:text-white rounded-xl text-xs font-bold transition-all border border-sky-200 flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                      >
+                        <Download size={13} />
+                        <span>{lang === 'bn' ? 'ইনভয়েস ডাউনলোড' : 'Invoice'}</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                {userBookings.length === 0 && (
+                  <div className="p-8 text-center text-slate-400">
+                    <CalendarDays size={32} className="mx-auto mb-2 opacity-40" />
+                    <p className="text-xs">{t.dashNoData}</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -601,11 +827,11 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto shrink-0">
+                      <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
                         {apt.consultationType === 'video' && onOpenVideoRoom && (
                           <button
                             onClick={() => onOpenVideoRoom(apt)}
-                            className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm"
+                            className="flex-1 sm:flex-initial px-3.5 py-2.5 sm:py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
                           >
                             <Video size={14} />
                             <span>{lang === 'bn' ? 'ভিডিও রুমে প্রবেশ' : 'Join Video'}</span>
@@ -615,7 +841,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                         {apt.prescription && onOpenPrescription && (
                           <button
                             onClick={() => onOpenPrescription(apt.prescription!)}
-                            className="px-3.5 py-2 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 font-bold text-xs flex items-center gap-1.5 border border-sky-200"
+                            className="flex-1 sm:flex-initial px-3.5 py-2.5 sm:py-2 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 font-bold text-xs flex items-center justify-center gap-1.5 border border-sky-200 cursor-pointer"
                           >
                             <FileText size={14} />
                             <span>{lang === 'bn' ? 'ই-প্রেসক্রিপশন' : 'Prescription'}</span>
@@ -655,7 +881,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                     <Button 
                       onClick={() => alert(lang === 'bn' ? 'রিপোর্ট ডাউনলোড শুরু হচ্ছে...' : 'Downloading report PDF...')} 
                       variant="outline" 
-                      className="flex items-center justify-center gap-2 text-xs font-bold"
+                      className="w-full sm:w-auto flex items-center justify-center gap-2 text-xs font-bold py-2.5 sm:py-2"
                     >
                       <Download size={15} /> {t.dashDownload} PDF
                     </Button>
@@ -665,52 +891,136 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
             </div>
           )}
 
-          {/* PROFILE EDIT TAB */}
+          {/* PROFILE EDIT TAB - MOBILE-OPTIMIZED & ORGANIZED */}
           {activeTab === 'profile' && (
-            <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 md:p-8 animate-in fade-in duration-300">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-6 border-b border-slate-100 gap-3">
-                <div>
-                  <h3 className="font-bold text-slate-800 text-lg">{t.dashProfile}</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {lang === 'bn' ? 'আপনার ব্যক্তিগত তথ্য, যোগাযোগের ঠিকানা এবং নিরাপত্তা পাসওয়ার্ড আপডেট করুন' : 'Update your personal info, contact address, and security details'}
-                  </p>
+            <div className="bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-slate-100 p-3.5 sm:p-6 md:p-8 animate-in fade-in duration-300">
+              
+              {/* Profile Tab Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3.5 sm:pb-4 mb-4 sm:mb-6 border-b border-slate-100 gap-2.5 sm:gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-sky-50 text-primary flex items-center justify-center shrink-0 border border-sky-100">
+                    <User size={18} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-bold text-slate-800 text-base sm:text-lg">{t.dashProfile}</h3>
+                      <button
+                        type="button"
+                        onClick={handleCopyPatientId}
+                        className="text-[10px] font-mono text-sky-700 bg-sky-50 hover:bg-sky-100 px-2 py-0.5 rounded-md border border-sky-200 font-bold flex items-center gap-1 cursor-pointer"
+                        title="Copy Patient ID"
+                      >
+                        <span>{patientDisplayId}</span>
+                        {copiedPatientId ? <Check size={10} className="text-emerald-600" /> : <Copy size={9} />}
+                      </button>
+                    </div>
+                    <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">
+                      {lang === 'bn' ? 'ব্যক্তিগত তথ্য, যোগাযোগ ঠিকানা, ডিজিটাল কার্ড ও সিকিউরিটি' : 'Personal info, contact address, digital card & security'}
+                    </p>
+                  </div>
                 </div>
+
                 {saveSuccess && (
-                  <span className="px-3.5 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold flex items-center gap-1.5 animate-in fade-in self-start sm:self-auto">
-                    <CheckCircle size={15} /> {lang === 'bn' ? 'প্রোফাইল সফলভাবে আপডেট হয়েছে!' : 'Profile updated successfully!'}
+                  <span className="px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold flex items-center gap-1.5 animate-in fade-in self-start sm:self-auto shrink-0 shadow-2xs">
+                    <CheckCircle size={14} /> {lang === 'bn' ? 'প্রোফাইল সফলভাবে সংরক্ষিত!' : 'Profile updated successfully!'}
                   </span>
                 )}
               </div>
 
+              {/* Mobile Quick Option Navigator Pills (Mobile Only) */}
+              <div className="block md:hidden mb-4">
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 px-0.5 -mx-1">
+                  {[
+                    { id: 'all' as const, label: lang === 'bn' ? 'সব অপশন' : 'All Options', icon: Sparkles },
+                    { id: 'personal' as const, label: lang === 'bn' ? 'ব্যক্তিগত' : 'Personal', icon: User },
+                    { id: 'contact' as const, label: lang === 'bn' ? 'যোগাযোগ' : 'Contact', icon: MapPin },
+                    { id: 'security' as const, label: lang === 'bn' ? 'পাসওয়ার্ড' : 'Password', icon: ShieldCheck },
+                    { id: 'card' as const, label: lang === 'bn' ? 'আইডি কার্ড' : 'ID Card', icon: CreditCard }
+                  ].map(sec => {
+                    const Icon = sec.icon;
+                    const isSecActive = mobileProfileTab === sec.id;
+                    return (
+                      <button
+                        key={sec.id}
+                        type="button"
+                        onClick={() => setMobileProfileTab(sec.id)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border shrink-0 cursor-pointer ${
+                          isSecActive
+                            ? 'bg-primary text-white border-primary shadow-xs'
+                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        <Icon size={12} className={isSecActive ? 'text-white' : 'text-slate-400'} />
+                        <span>{sec.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {saveError && (
-                <div className="mb-5 p-3.5 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl flex items-center gap-2">
-                  <XCircle size={16} className="text-red-500 flex-shrink-0" />
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl flex items-center gap-2">
+                  <XCircle size={16} className="text-red-500 shrink-0" />
                   <span>{saveError}</span>
                 </div>
               )}
 
-              <form onSubmit={handleProfileSubmit} className="space-y-6 max-w-3xl">
+              <form onSubmit={handleProfileSubmit} className="space-y-4 sm:space-y-5 max-w-3xl">
                 
-                {/* 1. Personal Information */}
-                <div className="bg-slate-50/70 p-5 rounded-2xl border border-slate-100 space-y-4">
-                  <div className="flex items-center gap-2 text-slate-800 font-bold text-sm border-b border-slate-200/60 pb-2.5">
-                    <User size={16} className="text-primary" />
-                    <span>{lang === 'bn' ? '১. ব্যক্তিগত তথ্য (Personal Information)' : '1. Personal Information'}</span>
-                  </div>
+                {/* 1. Profile Picture & Avatar Option */}
+                {(mobileProfileTab === 'all' || mobileProfileTab === 'personal') && (
+                  <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-3.5">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                      <div className="flex items-center gap-2 text-slate-800 font-bold text-xs sm:text-sm">
+                        <Camera size={16} className="text-primary" />
+                        <span>{lang === 'bn' ? '১. প্রোফাইল ছবি ও অ্যাভাটার' : '1. Profile Picture & Avatar'}</span>
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-medium">
+                        {lang === 'bn' ? 'পেশেন্ট ফটো' : 'Patient Photo'}
+                      </span>
+                    </div>
 
-                  {/* Profile Picture Management Card */}
-                  <div className="bg-white p-4 rounded-xl border border-slate-200/80 space-y-3">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
-                          {lang === 'bn' ? 'প্রোফাইল ছবি ও অ্যাভাটার' : 'Profile Picture & Avatar'}
-                        </label>
-                        <p className="text-[11px] text-slate-500">
-                          {lang === 'bn' ? 'কম্পিউটার বা মোবাইল থেকে ছবি আপলোড করুন, ক্যামেরা দিয়ে তুলুন অথবা অ্যাভাটার বাছুন' : 'Upload photo from device, snap with camera, or select an avatar'}
-                        </p>
+                    {/* Mobile Avatar Visual Card */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
+                      <div className="flex items-center gap-3">
+                        <div className="relative shrink-0">
+                          {profileAvatar || currentPatient.avatar ? (
+                            <img 
+                              src={profileAvatar || currentPatient.avatar} 
+                              alt={currentPatient.name} 
+                              className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-sky-200 object-cover shadow-2xs cursor-pointer hover:opacity-90 transition-opacity"
+                              onClick={() => setIsPictureModalOpen(true)}
+                            />
+                          ) : (
+                            <div 
+                              onClick={() => setIsPictureModalOpen(true)}
+                              className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-tr from-sky-600 to-primary text-white font-black text-xl flex items-center justify-center border-2 border-sky-200 shadow-2xs cursor-pointer"
+                            >
+                              {initials}
+                            </div>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setIsPictureModalOpen(true)}
+                            className="absolute -bottom-1 -right-1 bg-primary text-white p-1 rounded-full shadow border-2 border-white cursor-pointer hover:bg-sky-600 transition-colors"
+                            title={lang === 'bn' ? 'ছবি পরিবর্তন' : 'Change Photo'}
+                          >
+                            <Camera size={11} />
+                          </button>
+                        </div>
+
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-800 leading-snug">
+                            {lang === 'bn' ? 'বর্তমান প্রোফাইল ফটো' : 'Current Profile Photo'}
+                          </p>
+                          <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
+                            {lang === 'bn' ? 'ছবি পরিবর্তন করুন বা গ্যালারি থেকে আপলোড করুন' : 'Change avatar or upload from device gallery'}
+                          </p>
+                        </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      {/* Mobile Action Buttons */}
+                      <div className="flex items-center gap-2 flex-wrap pt-1 sm:pt-0">
                         <input 
                           type="file" 
                           ref={fileInputRef} 
@@ -723,22 +1033,22 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                           }}
                         />
 
-                        <Button
+                        <button
                           type="button"
                           onClick={() => setIsPictureModalOpen(true)}
-                          className="text-xs !py-2 !px-3 font-bold flex items-center gap-1.5 shadow-sm"
+                          className="flex-1 sm:flex-initial px-3 py-2 bg-primary hover:bg-sky-600 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-all cursor-pointer"
                         >
-                          <Camera size={14} />
-                          <span>{lang === 'bn' ? 'ছবি যুক্ত / পরিবর্তন করুন' : 'Add / Change Picture'}</span>
-                        </Button>
+                          <Camera size={13} />
+                          <span>{lang === 'bn' ? 'ছবি পরিবর্তন' : 'Change Photo'}</span>
+                        </button>
 
                         <button
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
-                          className="p-2 rounded-xl border border-slate-200 hover:border-primary hover:bg-sky-50 text-slate-600 hover:text-primary transition-all text-xs font-semibold flex items-center gap-1"
-                          title={lang === 'bn' ? 'ডিভাইস থেকে দ্রুত আপলোড' : 'Quick File Upload'}
+                          className="flex-1 sm:flex-initial px-3 py-2 rounded-xl border border-slate-200 hover:border-primary hover:bg-sky-50 text-slate-700 hover:text-primary transition-all text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer bg-white"
                         >
-                          <Upload size={14} />
+                          <Upload size={13} />
+                          <span>{lang === 'bn' ? 'আপলোড' : 'Upload'}</span>
                         </button>
 
                         {(profileAvatar || currentPatient.avatar) && (
@@ -748,107 +1058,152 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                               setProfileAvatar('');
                               onUpdateProfile({ avatar: '' });
                             }}
-                            className="p-2 rounded-xl border border-red-200 hover:bg-red-50 text-red-500 transition-all text-xs font-semibold"
+                            className="p-2 rounded-xl border border-red-200 hover:bg-red-50 text-red-500 transition-all text-xs font-semibold cursor-pointer shrink-0"
                             title={lang === 'bn' ? 'ছবি মুছে ডিফল্ট রাখুন' : 'Remove Photo'}
                           >
-                            <Trash2 size={14} />
+                            <Trash2 size={13} />
                           </button>
                         )}
                       </div>
                     </div>
 
                     {/* Quick Avatar Strip */}
-                    <div className="pt-2 border-t border-slate-100 flex items-center gap-2 flex-wrap">
-                      <span className="text-[11px] font-semibold text-slate-500 mr-1">
-                        {lang === 'bn' ? 'দ্রুত নির্বাচন:' : 'Quick Select:'}
-                      </span>
-                      {PRESET_AVATARS.slice(0, 7).map((preset) => {
-                        const isSelected = (profileAvatar === preset.url || (!profileAvatar && currentPatient.avatar === preset.url));
-                        return (
-                          <button
-                            key={preset.id}
-                            type="button"
-                            onClick={() => {
-                              setProfileAvatar(preset.url);
-                              onUpdateProfile({ avatar: preset.url });
-                            }}
-                            className={`relative rounded-full p-0.5 border-2 transition-all ${
-                              isSelected
-                                ? 'border-primary ring-2 ring-primary/30 scale-105' 
-                                : 'border-transparent hover:border-slate-300'
-                            }`}
-                            title={preset.label}
-                          >
-                            <img src={preset.url} alt={preset.label} className="w-9 h-9 rounded-full object-cover" />
-                          </button>
-                        );
-                      })}
+                    <div className="pt-2 border-t border-slate-100 space-y-1.5">
+                      <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500">
+                        <span>{lang === 'bn' ? 'জনপ্রিয় অ্যাভাটার নির্বাচন:' : 'Quick Preset Avatars:'}</span>
+                        <button
+                          type="button"
+                          onClick={() => setIsPictureModalOpen(true)}
+                          className="text-primary hover:underline font-bold text-[11px] flex items-center gap-1 cursor-pointer"
+                        >
+                          <Sparkles size={11} />
+                          <span>{lang === 'bn' ? 'আরও অ্যাভাটার...' : 'More Avatars...'}</span>
+                        </button>
+                      </div>
 
-                      <button
-                        type="button"
-                        onClick={() => setIsPictureModalOpen(true)}
-                        className="px-2.5 py-1.5 rounded-full border border-sky-200 bg-sky-50 hover:bg-sky-100 text-primary text-[11px] font-bold transition-all flex items-center gap-1"
-                      >
-                        <Sparkles size={12} />
-                        <span>{lang === 'bn' ? 'আরও অ্যাভাটার...' : 'More Avatars...'}</span>
-                      </button>
+                      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+                        {PRESET_AVATARS.slice(0, 8).map((preset) => {
+                          const isSelected = (profileAvatar === preset.url || (!profileAvatar && currentPatient.avatar === preset.url));
+                          return (
+                            <button
+                              key={preset.id}
+                              type="button"
+                              onClick={() => {
+                                setProfileAvatar(preset.url);
+                                onUpdateProfile({ avatar: preset.url });
+                              }}
+                              className={`relative rounded-full p-0.5 border-2 transition-all shrink-0 cursor-pointer ${
+                                isSelected
+                                  ? 'border-primary ring-2 ring-primary/40 scale-105' 
+                                  : 'border-transparent hover:border-slate-300'
+                              }`}
+                              title={preset.label}
+                            >
+                              <img src={preset.url} alt={preset.label} className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover" />
+                              {isSelected && (
+                                <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-primary text-white rounded-full flex items-center justify-center text-[8px] font-black">
+                                  ✓
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
+                )}
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                {/* 2. Personal Information Option */}
+                {(mobileProfileTab === 'all' || mobileProfileTab === 'personal') && (
+                  <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-3.5">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                      <div className="flex items-center gap-2 text-slate-800 font-bold text-xs sm:text-sm">
+                        <User size={16} className="text-primary" />
+                        <span>{lang === 'bn' ? '২. ব্যক্তিগত তথ্য' : '2. Personal Information'}</span>
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-medium">
+                        {lang === 'bn' ? 'নাম, লিঙ্গ ও বয়স' : 'Name, Gender & Age'}
+                      </span>
+                    </div>
+
+                    {/* Patient Full Name */}
                     <div>
                       <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                         {t.nameLabel} <span className="text-red-500">*</span>
                       </label>
-                      <input 
-                        type="text" 
-                        required
-                        value={profileName} 
-                        onChange={(e) => setProfileName(e.target.value)}
-                        placeholder={lang === 'bn' ? 'যেমন: রাহিম আহমেদ' : 'e.g. Rahim Ahmed'}
-                        className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none" 
-                      />
+                      <div className="relative">
+                        <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                        <input 
+                          type="text" 
+                          required
+                          value={profileName} 
+                          onChange={(e) => setProfileName(e.target.value)}
+                          placeholder={lang === 'bn' ? 'যেমন: রাহিম আহমেদ' : 'e.g. Rahim Ahmed'}
+                          className="w-full pl-10 pr-4 py-2.5 bg-slate-50/60 focus:bg-white border border-slate-200 rounded-xl text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" 
+                        />
+                      </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-2">
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                          {t.authGender}
-                        </label>
-                        <select
-                          value={profileGender}
-                          onChange={(e) => setProfileGender(e.target.value as any)}
-                          className="w-full px-2.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:border-primary outline-none"
-                        >
-                          <option value="male">{t.authMale}</option>
-                          <option value="female">{t.authFemale}</option>
-                          <option value="other">{t.authOther}</option>
-                        </select>
+                    {/* Gender Selection: 3-Column Mobile Tactile Cards */}
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        {t.authGender}
+                      </label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { id: 'male', labelBn: 'পুরুষ', labelEn: 'Male', emoji: '👨' },
+                          { id: 'female', labelBn: 'মহিলা', labelEn: 'Female', emoji: '👩' },
+                          { id: 'other', labelBn: 'অন্যান্য', labelEn: 'Other', emoji: '🧑' }
+                        ].map(g => (
+                          <button
+                            key={g.id}
+                            type="button"
+                            onClick={() => setProfileGender(g.id as any)}
+                            className={`py-2 px-2 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                              profileGender === g.id
+                                ? 'bg-sky-50 text-primary border-primary ring-2 ring-primary/20 font-black shadow-2xs'
+                                : 'bg-slate-50/60 text-slate-600 border-slate-200 hover:bg-slate-100'
+                            }`}
+                          >
+                            <span className="text-sm">{g.emoji}</span>
+                            <span className="truncate">{lang === 'bn' ? g.labelBn : g.labelEn}</span>
+                          </button>
+                        ))}
                       </div>
+                    </div>
 
+                    {/* Age & Blood Group: Clean 2-Column Grid */}
+                    <div className="grid grid-cols-2 gap-3 pt-0.5">
                       <div>
-                        <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                          {t.authAge}
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                          {t.authAge} ({lang === 'bn' ? 'বছর' : 'Yrs'})
                         </label>
                         <input 
                           type="number"
+                          inputMode="numeric"
                           min="1"
                           max="120"
                           value={profileAge} 
                           onChange={(e) => setProfileAge(e.target.value)}
-                          placeholder="32"
-                          className="w-full px-2.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:border-primary outline-none" 
+                          placeholder="30"
+                          className="w-full px-3.5 py-2.5 bg-slate-50/60 focus:bg-white border border-slate-200 rounded-xl text-sm font-semibold focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" 
                         />
                       </div>
 
                       <div>
-                        <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                          {t.authBloodGroup}
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                          <span className="flex items-center gap-1">
+                            <HeartPulse size={12} className="text-rose-500" />
+                            <span>{t.authBloodGroup}</span>
+                          </span>
+                          <span className="text-[10px] font-black text-rose-600 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">
+                            {profileBloodGroup}
+                          </span>
                         </label>
                         <select
                           value={profileBloodGroup}
                           onChange={(e) => setProfileBloodGroup(e.target.value)}
-                          className="w-full px-2 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:border-primary outline-none"
+                          className="w-full px-3 py-2.5 bg-slate-50/60 focus:bg-white border border-slate-200 rounded-xl text-sm font-semibold focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none cursor-pointer transition-all"
                         >
                           {BLOOD_GROUPS.map(bg => (
                             <option key={bg} value={bg}>{bg}</option>
@@ -857,107 +1212,296 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                       </div>
                     </div>
                   </div>
-                </div>
+                )}
 
-                {/* 2. Contact & Address */}
-                <div className="bg-slate-50/70 p-5 rounded-2xl border border-slate-100 space-y-4">
-                  <div className="flex items-center gap-2 text-slate-800 font-bold text-sm border-b border-slate-200/60 pb-2.5">
-                    <MapPin size={16} className="text-primary" />
-                    <span>{lang === 'bn' ? '২. যোগাযোগ ও ঠিকানা (Contact & Address)' : '2. Contact & Address'}</span>
-                  </div>
+                {/* 3. Contact & Address Option */}
+                {(mobileProfileTab === 'all' || mobileProfileTab === 'contact') && (
+                  <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-3.5">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                      <div className="flex items-center gap-2 text-slate-800 font-bold text-xs sm:text-sm">
+                        <MapPin size={16} className="text-primary" />
+                        <span>{lang === 'bn' ? '৩. যোগাযোগ ও স্যাম্পল কালেকশন ঠিকানা' : '3. Contact & Address'}</span>
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-medium">
+                        {lang === 'bn' ? 'ফোন ও ঠিকানা' : 'Phone & Location'}
+                      </span>
+                    </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {/* Primary Phone */}
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                        {t.phoneLabel} <span className="text-red-500">*</span>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                        <span>{t.phoneLabel} <span className="text-red-500">*</span></span>
+                        <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-100">
+                          {lang === 'bn' ? 'লগইন নম্বর' : 'Login Phone'}
+                        </span>
                       </label>
-                      <input 
-                        type="tel" 
-                        required
-                        value={profilePhone} 
-                        onChange={(e) => setProfilePhone(e.target.value)}
-                        placeholder="01712345678"
-                        className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none" 
-                      />
+                      <div className="relative">
+                        <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                        <input 
+                          type="tel" 
+                          inputMode="tel"
+                          required
+                          value={profilePhone} 
+                          onChange={(e) => setProfilePhone(e.target.value)}
+                          placeholder="01712345678"
+                          className="w-full pl-10 pr-4 py-2.5 bg-slate-50/60 focus:bg-white border border-slate-200 rounded-xl text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all font-medium" 
+                        />
+                      </div>
+                    </div>
+
+                    {/* Email & Emergency Phone (Stacked on Mobile, 2-Col on Desktop) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                          {t.authEmail}
+                        </label>
+                        <div className="relative">
+                          <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                          <input 
+                            type="email" 
+                            inputMode="email"
+                            value={profileEmail} 
+                            onChange={(e) => setProfileEmail(e.target.value)}
+                            placeholder="patient@example.com"
+                            className="w-full pl-10 pr-4 py-2.5 bg-slate-50/60 focus:bg-white border border-slate-200 rounded-xl text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" 
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                          {lang === 'bn' ? 'জরুরি ফোন নম্বর' : 'Emergency Contact'}
+                        </label>
+                        <div className="relative">
+                          <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                          <input 
+                            type="tel" 
+                            inputMode="tel"
+                            value={profileEmergencyContact} 
+                            onChange={(e) => setProfileEmergencyContact(e.target.value)}
+                            placeholder="01800000000"
+                            className="w-full pl-10 pr-4 py-2.5 bg-slate-50/60 focus:bg-white border border-slate-200 rounded-xl text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" 
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Address Textarea */}
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                        <span>{t.addrLabel} <span className="text-red-500">*</span></span>
+                        <span className="text-[10px] text-slate-400">
+                          {lang === 'bn' ? 'হোম স্যাম্পল কালেকশন' : 'Home Sample Dispatch'}
+                        </span>
+                      </label>
+                      <div className="relative">
+                        <MapPin className="absolute left-3.5 top-3 text-slate-400 w-4 h-4" />
+                        <textarea 
+                          rows={3} 
+                          required
+                          value={profileAddress} 
+                          onChange={(e) => setProfileAddress(e.target.value)}
+                          placeholder={lang === 'bn' ? 'বাড়ি নং, ফ্ল্যাট, রোড নং, এলাকা/থানা, জেলা (যেমন: ধানমন্ডি, ঢাকা)' : 'House No, Flat, Road No, Area, City (e.g. Dhanmondi, Dhaka)'}
+                          className="w-full pl-10 pr-4 py-2.5 bg-slate-50/60 focus:bg-white border border-slate-200 rounded-xl text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none resize-none leading-relaxed transition-all" 
+                        />
+                      </div>
+                      <p className="text-[11px] text-slate-400 mt-1">
+                        {lang === 'bn' ? '💡 ল্যাব টেস্টের হোম স্যাম্পল কালেকশনের জন্য আমাদের টেকনোলজিস্ট এই ঠিকানায় উপস্থিত হবেন।' : '💡 Certified phlebotomist will visit this address for safe home sample collection.'}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* 4. Security Details Option */}
+                {(mobileProfileTab === 'all' || mobileProfileTab === 'security') && (
+                  <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-3.5">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                      <div className="flex items-center gap-2 text-slate-800 font-bold text-xs sm:text-sm">
+                        <ShieldCheck size={16} className="text-primary" />
+                        <span>{lang === 'bn' ? '৪. একাউন্ট নিরাপত্তা ও পাসওয়ার্ড' : '4. Security Details & Password'}</span>
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-medium">
+                        {lang === 'bn' ? 'লগইন পাসওয়ার্ড' : 'Access Credentials'}
+                      </span>
                     </div>
 
                     <div>
                       <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                        {t.authEmail}
+                        {lang === 'bn' ? 'নতুন পাসওয়ার্ড' : 'Account Password'}
                       </label>
-                      <input 
-                        type="email" 
-                        value={profileEmail} 
-                        onChange={(e) => setProfileEmail(e.target.value)}
-                        placeholder="patient@example.com"
-                        className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none" 
-                      />
+                      <div className="relative max-w-md">
+                        <input 
+                          type={showPassword ? 'text' : 'password'} 
+                          value={profilePassword} 
+                          onChange={(e) => setProfilePassword(e.target.value)}
+                          placeholder="••••••••"
+                          className="w-full pl-4 pr-11 py-2.5 bg-slate-50/60 focus:bg-white border border-slate-200 rounded-xl text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all font-medium" 
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer transition-colors"
+                          title={showPassword ? 'পাসওয়ার্ড লুকান' : 'পাসওয়ার্ড দেখুন'}
+                        >
+                          {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </div>
+                      <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                        {lang === 'bn' ? 'পাসওয়ার্ড পরিবর্তন করতে নতুন পাসওয়ার্ড লিখুন এবং নিচের সেভ বাটনে চাপুন।' : 'Enter a new password to update your login security credentials.'}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* 5. Digital Patient ID Card Option */}
+                {(mobileProfileTab === 'all' || mobileProfileTab === 'card') && (
+                  <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-3.5">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                      <div className="flex items-center gap-2 text-slate-800 font-bold text-xs sm:text-sm">
+                        <CreditCard size={16} className="text-primary" />
+                        <span>{lang === 'bn' ? '৫. ডিজিটাল পেশেন্ট কার্ড' : '5. Digital Patient ID Card'}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleCopyPatientId}
+                        className="text-[11px] font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <Copy size={11} />
+                        <span>{copiedPatientId ? (lang === 'bn' ? 'কপি হয়েছে!' : 'Copied!') : (lang === 'bn' ? 'আইডি কপি' : 'Copy ID')}</span>
+                      </button>
                     </div>
 
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                        {lang === 'bn' ? 'জরুরি ফোন নম্বর' : 'Emergency Contact'}
-                      </label>
-                      <input 
-                        type="tel" 
-                        value={profileEmergencyContact} 
-                        onChange={(e) => setProfileEmergencyContact(e.target.value)}
-                        placeholder="01800000000"
-                        className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none" 
-                      />
+                    {/* Mobile Health Card Visual Presentation */}
+                    <div className="bg-gradient-to-br from-slate-900 via-sky-950 to-sky-900 text-white rounded-2xl p-4 sm:p-5 shadow-md border border-sky-500/20 relative overflow-hidden">
+                      {/* Decorative background glows */}
+                      <div className="absolute top-0 right-0 w-36 h-36 bg-sky-500/10 rounded-full blur-2xl pointer-events-none" />
+                      <div className="absolute bottom-0 left-0 w-28 h-28 bg-emerald-500/10 rounded-full blur-xl pointer-events-none" />
+
+                      {/* Card Header */}
+                      <div className="flex items-center justify-between pb-3 border-b border-white/10 relative z-10">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-lg bg-sky-500/20 border border-sky-400/30 flex items-center justify-center text-sky-300">
+                            <Stethoscope size={15} />
+                          </div>
+                          <div>
+                            <span className="text-[11px] font-black tracking-wider text-sky-200 uppercase block leading-tight">eClinic Bangladesh</span>
+                            <span className="text-[9px] text-white/60 block">{lang === 'bn' ? 'ডিজিটাল মেডিকেল পেশেন্ট কার্ড' : 'Digital Medical Patient Card'}</span>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 flex items-center gap-1">
+                          <CheckCircle size={10} />
+                          <span>VERIFIED</span>
+                        </span>
+                      </div>
+
+                      {/* Card Body */}
+                      <div className="py-3.5 flex items-center gap-3 relative z-10">
+                        <div className="relative shrink-0">
+                          {profileAvatar || currentPatient.avatar ? (
+                            <img 
+                              src={profileAvatar || currentPatient.avatar} 
+                              alt={currentPatient.name} 
+                              className="w-13 h-13 rounded-full border-2 border-sky-400/60 object-cover shadow-sm"
+                            />
+                          ) : (
+                            <div className="w-13 h-13 rounded-full bg-sky-600 text-white font-black text-lg flex items-center justify-center border-2 border-sky-400/60 shadow-sm">
+                              {initials}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-bold text-white text-sm sm:text-base leading-snug truncate">{currentPatient.name}</h4>
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            <span className="font-mono text-[11px] text-sky-300 font-bold bg-white/10 px-1.5 py-0.5 rounded border border-white/10">
+                              {patientDisplayId}
+                            </span>
+                            {currentPatient.bloodGroup && (
+                              <span className="text-[11px] font-black text-white bg-rose-600 px-2 py-0.5 rounded-full shadow-2xs">
+                                {currentPatient.bloodGroup}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-white/70 mt-1 flex items-center gap-1">
+                            <Phone size={10} className="text-sky-300 shrink-0" />
+                            <span>{currentPatient.phone}</span>
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Card Footer */}
+                      <div className="pt-2.5 border-t border-white/10 flex items-center justify-between text-[10px] text-white/60 relative z-10">
+                        <div className="truncate max-w-[200px]">
+                          <span>{currentPatient.address || (lang === 'bn' ? 'ঢাকা, বাংলাদেশ' : 'Dhaka, Bangladesh')}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-sky-300 font-mono font-bold shrink-0">
+                          <QrCode size={13} />
+                          <span>ID-SECURED</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
+                )}
 
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                      {t.addrLabel} <span className="text-red-500">*</span>
-                    </label>
-                    <textarea 
-                      rows={2} 
-                      required
-                      value={profileAddress} 
-                      onChange={(e) => setProfileAddress(e.target.value)}
-                      placeholder={lang === 'bn' ? 'বাড়ি নং, রোড নং, এলাকা, ঢাকা' : 'House No, Road No, Area, City'}
-                      className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none resize-none" 
-                    />
+                {/* 6. Quick Dashboard Shortcuts (When All is Selected) */}
+                {mobileProfileTab === 'all' && (
+                  <div className="block md:hidden bg-white p-3.5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-2.5">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                      <div className="flex items-center gap-2 text-slate-800 font-bold text-xs">
+                        <Sparkles size={14} className="text-amber-500" />
+                        <span>{lang === 'bn' ? '৬. কুইক অপশন শর্টকাট' : '6. Quick Service Shortcuts'}</span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('bookings')}
+                        className="p-2.5 rounded-xl bg-sky-50/70 border border-sky-100 flex flex-col items-center text-center cursor-pointer hover:bg-sky-100 transition-colors"
+                      >
+                        <CalendarDays size={18} className="text-primary mb-1" />
+                        <span className="text-[11px] font-bold text-slate-800 leading-tight">{lang === 'bn' ? 'বুকিংস' : 'Bookings'}</span>
+                        <span className="text-[9px] text-slate-500 mt-0.5">{userBookings.length} {lang === 'bn' ? 'টি' : 'Items'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('consultations')}
+                        className="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-100 flex flex-col items-center text-center cursor-pointer hover:bg-emerald-100 transition-colors"
+                      >
+                        <Stethoscope size={18} className="text-emerald-600 mb-1" />
+                        <span className="text-[11px] font-bold text-slate-800 leading-tight">{lang === 'bn' ? 'ডাক্তার' : 'Doctors'}</span>
+                        <span className="text-[9px] text-slate-500 mt-0.5">{doctorAppointments.length} {lang === 'bn' ? 'টি' : 'Appts'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('reports')}
+                        className="p-2.5 rounded-xl bg-purple-50/70 border border-purple-100 flex flex-col items-center text-center cursor-pointer hover:bg-purple-100 transition-colors"
+                      >
+                        <FileText size={18} className="text-purple-600 mb-1" />
+                        <span className="text-[11px] font-bold text-slate-800 leading-tight">{lang === 'bn' ? 'রিপোর্টস' : 'Reports'}</span>
+                        <span className="text-[9px] text-slate-500 mt-0.5">{userReports.length} {lang === 'bn' ? 'টি' : 'Ready'}</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
+                )}
 
-                {/* 3. Security Details */}
-                <div className="bg-slate-50/70 p-5 rounded-2xl border border-slate-100 space-y-4">
-                  <div className="flex items-center gap-2 text-slate-800 font-bold text-sm border-b border-slate-200/60 pb-2.5">
-                    <ShieldCheck size={16} className="text-primary" />
-                    <span>{lang === 'bn' ? '৩. নিরাপত্তা ও পাসওয়ার্ড (Security Details)' : '3. Security Details'}</span>
-                  </div>
-
-                  <div className="max-w-md">
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                      {lang === 'bn' ? 'একাউন্ট পাসওয়ার্ড' : 'Account Password'}
-                    </label>
-                    <input 
-                      type="password" 
-                      value={profilePassword} 
-                      onChange={(e) => setProfilePassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none" 
-                    />
-                    <p className="text-[11px] text-slate-400 mt-1">
-                      {lang === 'bn' ? 'পাসওয়ার্ড পরিবর্তন করতে নতুন পাসওয়ার্ড লিখুন এবং সেভ করুন।' : 'Enter a new password to update your login security.'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Submit button */}
-                <div className="flex items-center gap-3 pt-2">
-                  <Button type="submit" className="px-8 py-3 text-xs sm:text-sm font-bold shadow-lg shadow-sky-100 flex items-center gap-2">
-                    <ShieldCheck size={17} />
+                {/* Submit / Save Changes Button - Mobile-first Prominent Touch Target */}
+                <div className="pt-2">
+                  <Button 
+                    type="submit" 
+                    className="w-full sm:w-auto px-8 py-3.5 sm:py-3 text-sm font-bold shadow-md shadow-sky-100 flex items-center justify-center gap-2 cursor-pointer transition-all"
+                  >
+                    <ShieldCheck size={18} />
                     <span>{lang === 'bn' ? 'প্রোফাইল পরিবর্তন সংরক্ষণ করুন' : 'Save Profile Changes'}</span>
                   </Button>
 
                   {saveSuccess && (
-                    <span className="text-xs text-emerald-700 font-bold flex items-center gap-1">
-                      <CheckCircle size={15} /> {lang === 'bn' ? 'সফলভাবে সংরক্ষিত!' : 'Saved successfully!'}
-                    </span>
+                    <div className="mt-2.5 p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 font-bold flex items-center justify-center gap-1.5 animate-in fade-in">
+                      <CheckCircle size={15} className="text-emerald-600" />
+                      <span>{lang === 'bn' ? 'সকল তথ্য সফলভাবে আপডেট হয়েছে!' : 'All profile changes saved successfully!'}</span>
+                    </div>
                   )}
                 </div>
               </form>
