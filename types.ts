@@ -306,6 +306,8 @@ export interface Doctor {
   about?: string;
   isActive?: boolean;
   orderCount?: number;
+  customSlots?: string[]; // e.g. ["06:00 PM - 06:20 PM", "06:20 PM - 06:40 PM", ...]
+  offDays?: string[]; // Weekly off days e.g. ["Friday"] or specific dates e.g. ["2026-10-16"]
 }
 
 export interface PrescribedMedicine {

@@ -1340,15 +1340,19 @@ export const getStoredDoctors = (lang: Language = 'bn'): Doctor[] => {
       doctorsList = doctorsList.map((d: Doctor) => {
         const otherDoc = otherMap.get(d.id);
         if (otherDoc) {
+          const isDocActive = d.isActive !== undefined ? (d.isActive !== false) : (otherDoc.isActive !== false);
           return {
             ...d,
-            // If explicitly marked inactive or modified in the other language, sync it!
-            isActive: otherDoc.isActive !== undefined ? otherDoc.isActive : d.isActive,
-            orderCount: otherDoc.orderCount !== undefined ? otherDoc.orderCount : d.orderCount,
-            totalConsultations: otherDoc.totalConsultations !== undefined ? otherDoc.totalConsultations : d.totalConsultations,
-            consultationFee: otherDoc.consultationFee || d.consultationFee,
-            originalFee: otherDoc.originalFee || d.originalFee,
-            discountPercent: otherDoc.discountPercent !== undefined ? otherDoc.discountPercent : d.discountPercent,
+            isActive: isDocActive,
+            orderCount: d.orderCount !== undefined ? d.orderCount : otherDoc.orderCount,
+            totalConsultations: d.totalConsultations !== undefined ? d.totalConsultations : otherDoc.totalConsultations,
+            consultationFee: d.consultationFee || otherDoc.consultationFee,
+            originalFee: d.originalFee || otherDoc.originalFee,
+            discountPercent: d.discountPercent !== undefined ? d.discountPercent : otherDoc.discountPercent,
+            slotIntervalMinutes: d.slotIntervalMinutes !== undefined ? d.slotIntervalMinutes : otherDoc.slotIntervalMinutes,
+            customSlots: (d.customSlots && d.customSlots.length > 0) ? d.customSlots : otherDoc.customSlots,
+            offDays: (d.offDays && d.offDays.length > 0) ? d.offDays : otherDoc.offDays,
+            availableTimeText: d.availableTimeText || otherDoc.availableTimeText
           };
         }
         return d;
@@ -1380,7 +1384,7 @@ export const setStoredDoctors = (doctors: Doctor[], lang: Language = 'bn'): void
         if (match) {
           return {
             ...od,
-            isActive: match.isActive !== false,
+            isActive: match.isActive !== undefined ? Boolean(match.isActive) : (od.isActive !== false),
             orderCount: match.orderCount,
             totalConsultations: match.totalConsultations,
             consultationFee: match.consultationFee,
@@ -1390,7 +1394,9 @@ export const setStoredDoctors = (doctors: Doctor[], lang: Language = 'bn'): void
             gender: match.gender,
             image: match.image || od.image,
             slotIntervalMinutes: match.slotIntervalMinutes,
-            availableTimeText: match.availableTimeText || od.availableTimeText
+            availableTimeText: match.availableTimeText || od.availableTimeText,
+            customSlots: match.customSlots,
+            offDays: match.offDays
           };
         }
         return od;

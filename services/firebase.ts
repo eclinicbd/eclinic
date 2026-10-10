@@ -40,7 +40,8 @@ import {
   PaymentGatewaysConfig,
   AdminCredentials,
   StaffUser,
-  DateSlotConfig
+  DateSlotConfig,
+  Doctor
 } from '../types';
 import { sendPatientRegistrationNotificationEmail } from './emailNotificationService';
 
@@ -518,6 +519,27 @@ export const saveSiteSettingsToFirestore = async (lang: Language, settings: Site
       ...settings,
       updatedAt: new Date().toISOString()
     }), { merge: true });
+
+    // Also sync global visibility toggles to the other language in Firestore
+    const otherLang = lang === 'en' ? 'bn' : 'en';
+    const otherDoc = doc(db, 'site_settings', `config_${otherLang}`);
+    const globalVisibilityFields: Record<string, any> = {};
+    if (settings.showDoctorsSection !== undefined) globalVisibilityFields.showDoctorsSection = settings.showDoctorsSection;
+    if (settings.showNursingSection !== undefined) globalVisibilityFields.showNursingSection = settings.showNursingSection;
+    if (settings.showPartnerSection !== undefined) globalVisibilityFields.showPartnerSection = settings.showPartnerSection;
+    if (settings.showPopularTestsSection !== undefined) globalVisibilityFields.showPopularTestsSection = settings.showPopularTestsSection;
+    if (settings.showPackagesSection !== undefined) globalVisibilityFields.showPackagesSection = settings.showPackagesSection;
+    if (settings.showAppDownloadSection !== undefined) globalVisibilityFields.showAppDownloadSection = settings.showAppDownloadSection;
+    if (settings.showHowItWorksSection !== undefined) globalVisibilityFields.showHowItWorksSection = settings.showHowItWorksSection;
+    if (settings.showServicesSection !== undefined) globalVisibilityFields.showServicesSection = settings.showServicesSection;
+
+    if (Object.keys(globalVisibilityFields).length > 0) {
+      await setDoc(otherDoc, cleanFirestoreData({
+        ...globalVisibilityFields,
+        updatedAt: new Date().toISOString()
+      }), { merge: true });
+    }
+
     return true;
   } catch (error) {
     console.error("Error saving site settings to Firestore:", error);
@@ -665,6 +687,69 @@ export const subscribeToPackages = (lang: Language, callback: (packages: HealthP
         const data = snapshot.data();
         if (Array.isArray(data.items) && data.items.length > 0) {
           callback(data.items as HealthPackage[]);
+        }
+      }
+    }, (_error) => {
+      // Handled quietly
+    });
+  } catch (_error) {
+    return () => {};
+  }
+};
+
+export const saveDoctorsToFirestore = async (lang: Language, doctors: Doctor[]): Promise<boolean> => {
+  try {
+    const docRef = doc(db, 'doctors', `list_${lang}`);
+    await setDoc(docRef, cleanFirestoreData({
+      items: doctors,
+      updatedAt: new Date().toISOString()
+    }), { merge: true });
+
+    // Also sync doctor active status, slot intervals and offDays to the other language list in Firestore
+    const otherLang = lang === 'en' ? 'bn' : 'en';
+    const otherDocRef = doc(db, 'doctors', `list_${otherLang}`);
+    const otherSnap = await getDoc(otherDocRef);
+    if (otherSnap.exists()) {
+      const otherData = otherSnap.data();
+      if (Array.isArray(otherData?.items)) {
+        const currentMap = new Map(doctors.map(d => [d.id, d]));
+        const updatedOther = otherData.items.map((od: Doctor) => {
+          const match = currentMap.get(od.id);
+          if (match) {
+            return {
+              ...od,
+              isActive: match.isActive !== undefined ? Boolean(match.isActive) : (od.isActive !== false),
+              orderCount: match.orderCount,
+              totalConsultations: match.totalConsultations,
+              consultationFee: match.consultationFee,
+              slotIntervalMinutes: match.slotIntervalMinutes,
+              customSlots: match.customSlots,
+              offDays: match.offDays
+            };
+          }
+          return od;
+        });
+        await setDoc(otherDocRef, cleanFirestoreData({
+          items: updatedOther,
+          updatedAt: new Date().toISOString()
+        }), { merge: true });
+      }
+    }
+    return true;
+  } catch (error) {
+    console.error("Error saving doctors to Firestore:", error);
+    return false;
+  }
+};
+
+export const subscribeToDoctors = (lang: Language, callback: (doctors: Doctor[]) => void) => {
+  try {
+    const docRef = doc(db, 'doctors', `list_${lang}`);
+    return onSnapshot(docRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        if (Array.isArray(data.items) && data.items.length > 0) {
+          callback(data.items as Doctor[]);
         }
       }
     }, (_error) => {

@@ -42,6 +42,10 @@ export const DoctorsView: React.FC<DoctorsViewProps> = ({
   emergencyHotline = '09612-000000'
 }) => {
   const isBn = lang === 'bn';
+  const toBnNumber = (n: number | string): string => {
+    const bnDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+    return String(n).replace(/[0-9]/g, d => bnDigits[Number(d)]);
+  };
   const [selectedDept, setSelectedDept] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sortBy, setSortBy] = useState<'recommended' | 'fee_asc' | 'fee_desc' | 'rating' | 'experience'>('recommended');

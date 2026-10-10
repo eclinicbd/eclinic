@@ -120,14 +120,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'reports' | 'tests' | 'packages' | 'categories' | 'labs' | 'doctors' | 'slots' | 'staff' | 'payments' | 'customers' | 'cms' | 'settings'>('overview');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Doctors Internal State fallback
+  // Doctors State
   const [internalDoctors, setInternalDoctors] = useState<Doctor[]>(() => propDoctors || getStoredDoctors(lang));
+  
+  useEffect(() => {
+    if (propDoctors) {
+      setInternalDoctors(propDoctors);
+    }
+  }, [propDoctors]);
+
   const activeDoctorsList = propDoctors || internalDoctors;
   const handleUpdateDoctorsList = (newDocs: Doctor[]) => {
+    setInternalDoctors(newDocs);
     if (propOnUpdateDoctors) {
       propOnUpdateDoctors(newDocs);
     } else {
-      setInternalDoctors(newDocs);
       setStoredDoctors(newDocs, lang);
     }
   };

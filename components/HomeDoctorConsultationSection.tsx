@@ -53,6 +53,10 @@ export const HomeDoctorConsultationSection: React.FC<HomeDoctorConsultationSecti
   onViewAllDoctors
 }) => {
   const isBn = lang === 'bn';
+  const toBnNumber = (n: number | string): string => {
+    const bnDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+    return String(n).replace(/[0-9]/g, d => bnDigits[Number(d)]);
+  };
   const [selectedDept, setSelectedDept] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isAutoScrolling, setIsAutoScrolling] = useState<boolean>(true);
@@ -303,6 +307,8 @@ export const HomeDoctorConsultationSection: React.FC<HomeDoctorConsultationSecti
               const hasDiscount = doctor.originalFee && doctor.originalFee > doctor.consultationFee;
               const discount = doctor.discountPercent || (hasDiscount ? Math.round(((doctor.originalFee! - doctor.consultationFee) / doctor.originalFee!) * 100) : 0);
 
+              const interval = doctor.slotIntervalMinutes || 30;
+
               return (
                 <div
                   key={doctor.id}
@@ -311,17 +317,15 @@ export const HomeDoctorConsultationSection: React.FC<HomeDoctorConsultationSecti
                   {/* Card Top & Avatar Banner */}
                   <div className="p-5 pb-3 relative">
                     {/* Top Badges */}
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-bold">
+                    <div className="flex items-center justify-between mb-3 gap-2">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-bold shrink-0">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
                         {isBn ? 'অনলাইন চেম্বার' : 'Online Chamber'}
                       </span>
 
-                      {doctor.bmdcRegNo && (
-                        <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200" title="BMDC Registration">
-                          BMDC: {doctor.bmdcRegNo}
-                        </span>
-                      )}
+                      <span className="text-[10px] font-bold text-sky-800 bg-sky-50 px-2 py-0.5 rounded-md border border-sky-200 shrink-0" title="Schedule Interval">
+                        ⏱️ {interval}-Min Schedule
+                      </span>
                     </div>
 
                     {/* Doctor Header (Avatar + Details) */}
@@ -386,8 +390,8 @@ export const HomeDoctorConsultationSection: React.FC<HomeDoctorConsultationSecti
                         <Clock size={12} className="text-sky-600 shrink-0" />
                         <span className="truncate">{doctor.availableTimeText || (isBn ? 'প্রতিদিন সন্ধ্যা ৬:০০ - ৯:০০' : 'Daily 6:00 PM - 9:00 PM')}</span>
                       </div>
-                      <span className="text-[10px] font-bold text-sky-700 bg-white px-1.5 py-0.5 rounded shrink-0 border border-sky-200">
-                        {doctor.slotIntervalMinutes || 30}m {isBn ? 'স্লট' : 'slot'}
+                      <span className="text-[10px] font-bold text-sky-700 bg-white px-2 py-0.5 rounded shrink-0 border border-sky-200">
+                        {isBn ? `${toBnNumber(interval)} মিনিট স্লট` : `${interval}-Min Slots`}
                       </span>
                     </div>
                   </div>
@@ -423,9 +427,10 @@ export const HomeDoctorConsultationSection: React.FC<HomeDoctorConsultationSecti
                       <button
                         onClick={() => onBookDoctor(doctor)}
                         className="w-full py-2.5 px-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm hover:shadow-md transition-all cursor-pointer"
+                        title={isBn ? `${toBnNumber(interval)} মিনিটের স্লট বুক করুন` : `Book ${interval}-Min Virtual Slot`}
                       >
                         <Calendar size={14} />
-                        <span>{isBn ? 'স্লট বুক করুন' : 'Book Slot'}</span>
+                        <span>{isBn ? `বুক ${toBnNumber(interval)}-মি.` : `Book ${interval}-Min`}</span>
                       </button>
 
                       <button

@@ -1792,8 +1792,12 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                             type="button"
                             onClick={() => {
                               const nextState = formData.showDoctorsSection === false ? true : false;
-                              setFormData({ ...formData, showDoctorsSection: nextState });
-                              showToast(nextState ? 'ডাক্তার কন্সালটেন্সি সেকশন সক্রিয় করা হয়েছে' : 'ডাক্তার কন্সালটেন্সি সেকশন নিষ্ক্রিয় করা হয়েছে');
+                              const updatedSettings = { ...formData, showDoctorsSection: nextState };
+                              setFormData(updatedSettings);
+                              onUpdateSiteSettings(updatedSettings);
+                              showToast(nextState 
+                                ? (lang === 'bn' ? 'ডাক্তার কন্সালটেন্সি সেকশন সক্রিয় করা হয়েছে' : 'Doctor consultation section activated!') 
+                                : (lang === 'bn' ? 'ডাক্তার কন্সালটেন্সি সেকশন নিষ্ক্রিয় করা হয়েছে' : 'Doctor consultation section deactivated!'));
                             }}
                             className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all border cursor-pointer ${
                               isActive

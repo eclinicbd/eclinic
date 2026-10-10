@@ -43,6 +43,8 @@ import {
   subscribeToTests,
   savePackagesToFirestore,
   subscribeToPackages,
+  saveDoctorsToFirestore,
+  subscribeToDoctors,
   subscribeToUsers,
   subscribeToPaymentConfig,
   subscribeToAdminCredentials,
@@ -377,6 +379,10 @@ export default function App() {
   const handleUpdateDoctors = (updated: Doctor[]) => {
     setDoctors(updated);
     setStoredDoctors(updated, language);
+    saveDoctorsToFirestore(language, updated);
+    const otherLang = language === 'en' ? 'bn' : 'en';
+    const otherStored = getStoredDoctors(otherLang);
+    saveDoctorsToFirestore(otherLang, otherStored);
   };
 
   // Check if Doctor Telemedicine Module is currently active
@@ -480,6 +486,17 @@ export default function App() {
       if (livePkgs && livePkgs.length > 0) {
         setPackages(livePkgs);
         saveStoredPackages(language, livePkgs);
+      }
+    });
+    return () => unsubscribe();
+  }, [language]);
+
+  // Real-time subscription to Doctors
+  useEffect(() => {
+    const unsubscribe = subscribeToDoctors(language, (liveDoctors) => {
+      if (liveDoctors && liveDoctors.length > 0) {
+        setDoctors(liveDoctors);
+        setStoredDoctors(liveDoctors, language);
       }
     });
     return () => unsubscribe();

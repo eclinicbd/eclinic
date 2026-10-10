@@ -23,7 +23,8 @@ import {
   Check,
   Building2,
   Wallet,
-  Smartphone
+  Smartphone,
+  CalendarOff
 } from 'lucide-react';
 import { saveDoctorAppointment, getStoredPaymentConfig, getStoredSiteSettings, getStoredCurrentPatient } from '../services/dataStorage';
 
@@ -114,39 +115,60 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
 
   if (!isOpen || !doctor) return null;
 
-  // 30-Minute Interval Time Slots
-  const morningSlots = [
-    '09:00 AM - 09:30 AM',
-    '09:30 AM - 10:00 AM',
-    '10:00 AM - 10:30 AM',
-    '10:30 AM - 11:00 AM',
-    '11:00 AM - 11:30 AM',
-    '11:30 AM - 12:00 PM'
-  ];
+  const toBnNumber = (n: number | string): string => {
+    const bnDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+    return String(n).replace(/[0-9]/g, d => bnDigits[Number(d)]);
+  };
 
-  const afternoonSlots = [
-    '03:00 PM - 03:30 PM',
-    '03:30 PM - 04:00 PM',
-    '04:00 PM - 04:30 PM',
-    '04:30 PM - 05:00 PM'
-  ];
+  const slotInterval = doctor.slotIntervalMinutes || 30;
 
-  const eveningSlots = [
-    '05:00 PM - 05:30 PM',
-    '05:30 PM - 06:00 PM',
-    '06:00 PM - 06:30 PM',
-    '06:30 PM - 07:00 PM',
-    '07:00 PM - 07:30 PM',
-    '07:30 PM - 08:00 PM',
-    '08:00 PM - 08:30 PM',
-    '08:30 PM - 09:00 PM'
-  ];
+  // Off day check for selected doctor (weekly days and specific dates)
+  const isDateOffDay = (dateStr: string) => {
+    if (!doctor.offDays || doctor.offDays.length === 0) return false;
+    const d = new Date(dateStr);
+    const englishDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const dayNameEn = englishDays[d.getDay()];
+    const banglaDays = ['রবিবার', 'সোমবার', 'মঙ্গলবার', 'বুধবার', 'বৃহস্পতিবার', 'শুক্রবার', 'শনিবার'];
+    const dayNameBn = banglaDays[d.getDay()];
+    const shortBn = ['রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহঃ', 'শুক্র', 'শনি'][d.getDay()];
 
-  const nightSlots = [
-    '09:00 PM - 09:30 PM',
-    '09:30 PM - 10:00 PM',
-    '10:00 PM - 10:30 PM'
-  ];
+    return doctor.offDays.some(off => 
+      off === dayNameEn || 
+      off === dayNameBn || 
+      off === shortBn || 
+      off === dateStr
+    );
+  };
+
+  // Generate slots dynamically based on interval or use doctor's custom slots
+  const allActiveSlots = React.useMemo(() => {
+    if (doctor.customSlots && doctor.customSlots.length > 0) {
+      return doctor.customSlots;
+    }
+    const slots: string[] = [];
+    const startHour = 17; // 05:00 PM
+    const endHour = 21;   // 09:00 PM
+    const totalStartMinutes = startHour * 60;
+    const totalEndMinutes = endHour * 60;
+    for (let m = totalStartMinutes; m + slotInterval <= totalEndMinutes; m += slotInterval) {
+      const formatTime = (minutes: number) => {
+        let h = Math.floor(minutes / 60);
+        const mins = minutes % 60;
+        const period = h >= 12 ? 'PM' : 'AM';
+        if (h > 12) h -= 12;
+        if (h === 0) h = 12;
+        return `${h.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')} ${period}`;
+      };
+      slots.push(`${formatTime(m)} - ${formatTime(m + slotInterval)}`);
+    }
+    return slots;
+  }, [doctor.customSlots, slotInterval]);
+
+  useEffect(() => {
+    if (allActiveSlots.length > 0 && !allActiveSlots.includes(selectedSlot)) {
+      setSelectedSlot(allActiveSlots[0]);
+    }
+  }, [allActiveSlots, selectedSlot]);
 
   // Generate Next 7 Days
   const availableDates = Array.from({ length: 7 }, (_, i) => {
@@ -165,13 +187,22 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
       day: dayName,
       dateNum: d.getDate(),
       month: monthName,
-      isToday: i === 0
+      isToday: i === 0,
+      isOffDay: isDateOffDay(dateStr)
     };
   });
 
   const handleProceedToDetails = () => {
+    if (isDateOffDay(selectedDate)) {
+      setValidationError(isBn 
+        ? '⚠️ এই তারিখে ডাক্তার চেম্বার/অনলাইন কনসালটেন্সিতে উপস্থিত নেই (ছুটির দিন / অফ ডে)। অনুগ্রহ করে অন্য তারিখ নির্বাচন করুন।' 
+        : '⚠️ Doctor is unavailable on this date (Weekly Off Day / Leave). Please select another date.');
+      return;
+    }
     if (!selectedDate || !selectedSlot) {
-      setValidationError(isBn ? 'অনুগ্রহ করে তারিখ ও ৩০ মিনিটের সময় স্লট নির্বাচন করুন।' : 'Please select appointment date and 30-minute time slot.');
+      setValidationError(isBn 
+        ? `অনুগ্রহ করে তারিখ ও ${toBnNumber(slotInterval)} মিনিটের সময় স্লট নির্বাচন করুন।` 
+        : `Please select appointment date and ${slotInterval}-minute time slot.`);
       return;
     }
     setValidationError(null);
@@ -329,8 +360,8 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
           {/* Stepper progress - Responsive labels to prevent broken multi-line wraps on mobile */}
           <div className="mt-3.5 sm:mt-5 grid grid-cols-4 gap-1 sm:gap-2 pt-2.5 sm:pt-3 border-t border-white/15 text-[10px] sm:text-[11px] font-semibold text-center">
             <div className={`pb-1 border-b-2 transition-all ${step >= 1 ? 'border-sky-300 text-white font-bold' : 'border-white/20 text-white/50'}`}>
-              <span className="sm:hidden">১. স্লট</span>
-              <span className="hidden sm:inline">1. {isBn ? 'তারিখ ও স্লট' : 'Date & Slot'}</span>
+              <span className="sm:hidden">১. {toBnNumber(slotInterval)}-মি.</span>
+              <span className="hidden sm:inline">1. {isBn ? `তারিখ ও ${toBnNumber(slotInterval)}-মি. স্লট` : `Date & ${slotInterval}-Min Slot`}</span>
             </div>
             <div className={`pb-1 border-b-2 transition-all ${step >= 2 ? 'border-sky-300 text-white font-bold' : 'border-white/20 text-white/50'}`}>
               <span className="sm:hidden">২. তথ্য</span>
@@ -357,7 +388,7 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
 
         {/* Modal Body */}
         <div className="p-4 sm:p-6 overflow-y-auto flex-1">
-          {/* STEP 1: DATE & 30-MINUTE SLOT SELECTION */}
+          {/* STEP 1: DATE & DYNAMIC INTERVAL SLOT SELECTION */}
           {step === 1 && (
             <div className="space-y-5 sm:space-y-6">
               {/* Date Selector */}
@@ -369,51 +400,77 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
                 <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5 sm:gap-2">
                   {availableDates.map(item => {
                     const isSelected = selectedDate === item.date;
+                    const isOff = item.isOffDay;
                     return (
                       <button
                         key={item.date}
                         type="button"
                         onClick={() => setSelectedDate(item.date)}
-                        className={`p-2 sm:p-2.5 rounded-xl sm:rounded-2xl border text-center transition-all cursor-pointer ${
+                        className={`p-2 sm:p-2.5 rounded-xl sm:rounded-2xl border text-center transition-all cursor-pointer relative ${
                           isSelected
-                            ? 'bg-sky-600 border-sky-600 text-white shadow-md shadow-sky-200 ring-2 ring-sky-300 scale-102'
-                            : 'bg-white hover:bg-sky-50 border-slate-200 text-slate-700'
+                            ? (isOff ? 'bg-rose-600 border-rose-600 text-white shadow-md ring-2 ring-rose-300 scale-102' : 'bg-sky-600 border-sky-600 text-white shadow-md shadow-sky-200 ring-2 ring-sky-300 scale-102')
+                            : (isOff ? 'bg-rose-50/70 hover:bg-rose-100 border-rose-200 text-rose-800' : 'bg-white hover:bg-sky-50 border-slate-200 text-slate-700')
                         }`}
                       >
-                        <span className={`block text-[9px] sm:text-[10px] font-medium uppercase ${isSelected ? 'text-sky-100' : 'text-slate-400'}`}>
+                        <span className={`block text-[9px] sm:text-[10px] font-medium uppercase ${isSelected ? 'text-white/80' : (isOff ? 'text-rose-600' : 'text-slate-400')}`}>
                           {item.day}
                         </span>
                         <span className="block text-sm sm:text-base font-extrabold my-0.5">
                           {item.dateNum}
                         </span>
-                        <span className={`block text-[8px] sm:text-[9px] font-semibold ${isSelected ? 'text-sky-100' : 'text-slate-500'}`}>
+                        <span className={`block text-[8px] sm:text-[9px] font-semibold ${isSelected ? 'text-white/80' : (isOff ? 'text-rose-600' : 'text-slate-500')}`}>
                           {item.month}
                         </span>
+                        {isOff && (
+                          <span className={`block text-[8px] font-bold mt-0.5 ${isSelected ? 'text-rose-200' : 'text-rose-600'}`}>
+                            {isBn ? '🚫 অফ' : '🚫 Off'}
+                          </span>
+                        )}
                       </button>
                     );
                   })}
                 </div>
               </div>
 
-              {/* 30-Minute Interval Time Slots */}
-              <div className="space-y-4">
+              {/* Off-Day Warning Banner if selected date is doctor off-day */}
+              {isDateOffDay(selectedDate) && (
+                <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-2xl text-rose-800 text-xs font-semibold flex items-center gap-2.5 shadow-2xs animate-fadeIn">
+                  <CalendarOff size={18} className="text-rose-600 shrink-0" />
+                  <div>
+                    <span className="font-bold block">
+                      {isBn ? '⚠️ ডাক্তার এই তারিখে উপস্থিত নেই (ছুটির দিন / অফ ডে)' : '⚠️ Doctor is unavailable on this date (Off Day / Leave)'}
+                    </span>
+                    <span className="text-[11px] text-rose-700 block mt-0.5">
+                      {isBn 
+                        ? 'অনলাইন ভিডিও পরামর্শের জন্য অনুগ্রহ করে উপরের ক্যালেন্ডার থেকে অন্য কোনো কার্যদিবস নির্বাচন করুন।' 
+                        : 'Please choose an alternate active working date from the calendar above.'}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Dynamic Interval Time Slots */}
+              <div className="space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                   <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
                     <Clock size={14} className="text-sky-600 shrink-0" />
-                    <span>{isBn ? '৩০ মিনিট স্লট নির্বাচন করুন (Time Slot):' : 'Select 30-Min Time Slot:'}</span>
+                    <span>
+                      {isBn ? `${toBnNumber(slotInterval)} মিনিট স্লট নির্বাচন করুন (Time Slot):` : `Select ${slotInterval}-Min Time Slot:`}
+                    </span>
                   </label>
-                  <span className="text-[10px] sm:text-[11px] font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded-full border border-sky-200 self-start sm:self-auto">
-                    ⏱️ {isBn ? 'প্রতি স্লট ৩০ মিনিট' : '30-Minute Slots'}
+                  <span className="text-[10px] sm:text-[11px] font-bold text-sky-700 bg-sky-50 px-2.5 py-0.5 rounded-full border border-sky-200 self-start sm:self-auto">
+                    ⏱️ {slotInterval}-Min Schedule ({isBn ? `${toBnNumber(slotInterval)} মিনিট স্লট` : `${slotInterval}-min interval`})
                   </span>
                 </div>
 
-                {/* Evening Slots */}
-                <div>
-                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
-                    🌆 {isBn ? 'সন্ধ্যা ও রাত' : 'Evening & Night'}
-                  </span>
+                {isDateOffDay(selectedDate) ? (
+                  <div className="p-6 bg-slate-50 border border-dashed border-slate-300 rounded-2xl text-center text-slate-500 text-xs">
+                    <CalendarOff size={24} className="mx-auto text-slate-400 mb-1.5" />
+                    <span>{isBn ? 'এই তারিখে অফ ডে থাকায় কোনো টাইম স্লট উপলব্ধ নেই।' : 'No time slots available because this date is marked as an off day.'}</span>
+                  </div>
+                ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                    {eveningSlots.map(slot => {
+                    {allActiveSlots.map(slot => {
                       const isSelected = selectedSlot === slot;
                       return (
                         <button
@@ -426,40 +483,13 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
                               : 'bg-slate-50 hover:bg-sky-50 border-slate-200 text-slate-700'
                           }`}
                         >
-                          <span>{slot}</span>
+                          <span className="font-mono">{slot}</span>
                           {isSelected && <Check size={14} className="text-white shrink-0 ml-1" />}
                         </button>
                       );
                     })}
                   </div>
-                </div>
-
-                {/* Morning Slots */}
-                <div>
-                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
-                    ☀️ {isBn ? 'সকাল' : 'Morning'}
-                  </span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                    {morningSlots.slice(0, 4).map(slot => {
-                      const isSelected = selectedSlot === slot;
-                      return (
-                        <button
-                          key={slot}
-                          type="button"
-                          onClick={() => setSelectedSlot(slot)}
-                          className={`px-3 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-between whitespace-nowrap ${
-                            isSelected
-                              ? 'bg-sky-600 border-sky-600 text-white shadow-sm ring-2 ring-sky-300'
-                              : 'bg-slate-50 hover:bg-sky-50 border-slate-200 text-slate-700'
-                          }`}
-                        >
-                          <span>{slot}</span>
-                          {isSelected && <Check size={14} className="text-white shrink-0 ml-1" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
+                )}
               </div>
 
               {/* Consultation Type Selector (Online Telemedicine Only) */}
@@ -928,8 +958,8 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
                 </h3>
                 <p className="text-xs text-slate-500">
                   {isBn 
-                    ? 'আপনার ৩০ মিনিটের ভিডিও কনসালটেন্সি স্লট বুকিং ও পেমেন্ট সফল হয়েছে।' 
-                    : 'Your 30-minute virtual consultation slot and fee payment are confirmed.'}
+                    ? `আপনার ${toBnNumber(slotInterval)} মিনিটের ভিডিও কনসালটেন্সি স্লট বুকিং ও পেমেন্ট সফল হয়েছে।` 
+                    : `Your ${slotInterval}-minute virtual consultation slot and fee payment are confirmed.`}
                 </p>
               </div>
 

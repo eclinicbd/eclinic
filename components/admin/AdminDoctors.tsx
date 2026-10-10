@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Doctor, Language, DoctorAppointment, EPrescription } from '../../types';
 import { 
   Stethoscope, 
@@ -26,7 +26,16 @@ import {
   Upload,
   Camera,
   Minus,
-  Link
+  Link,
+  CalendarClock,
+  CalendarOff,
+  RotateCcw,
+  Save,
+  CheckCircle,
+  XCircle,
+  Sliders,
+  ChevronRight,
+  Info
 } from 'lucide-react';
 import { 
   getStoredDoctors, 
@@ -44,6 +53,57 @@ interface AdminDoctorsProps {
   onJoinVideoAsDoctor?: (appointment: DoctorAppointment) => void;
 }
 
+export const toBnNumber = (num: number | string): string => {
+  const bnDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+  return String(num).replace(/[0-9]/g, (d) => bnDigits[parseInt(d, 10)]);
+};
+
+export const parseTimeToMinutes = (timeStr: string): number => {
+  const match = timeStr.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (!match) return 0;
+  let hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  const period = match[3].toUpperCase();
+  if (period === 'PM' && hours < 12) hours += 12;
+  if (period === 'AM' && hours === 12) hours = 0;
+  return hours * 60 + minutes;
+};
+
+export const formatMinutesToTime = (totalMinutes: number): string => {
+  let hours = Math.floor(totalMinutes / 60) % 24;
+  const minutes = totalMinutes % 60;
+  const period = hours >= 12 ? 'PM' : 'AM';
+  if (hours > 12) hours -= 12;
+  if (hours === 0) hours = 12;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(hours)}:${pad(minutes)} ${period}`;
+};
+
+export const generateSlotsByInterval = (startStr: string, endStr: string, intervalMin: number): string[] => {
+  const startMin = parseTimeToMinutes(startStr);
+  const endMin = parseTimeToMinutes(endStr);
+  if (endMin <= startMin || intervalMin <= 0) return [];
+  const slots: string[] = [];
+  let cur = startMin;
+  while (cur + intervalMin <= endMin) {
+    const sTime = formatMinutesToTime(cur);
+    const eTime = formatMinutesToTime(cur + intervalMin);
+    slots.push(`${sTime} - ${eTime}`);
+    cur += intervalMin;
+  }
+  return slots;
+};
+
+export const WEEKLY_DAYS_MAP = [
+  { id: 'Friday', bn: 'শুক্রবার', shortBn: 'শুক্র', en: 'Friday' },
+  { id: 'Saturday', bn: 'শনিবার', shortBn: 'শনি', en: 'Saturday' },
+  { id: 'Sunday', bn: 'রবিবার', shortBn: 'রবি', en: 'Sunday' },
+  { id: 'Monday', bn: 'সোমবার', shortBn: 'সোম', en: 'Monday' },
+  { id: 'Tuesday', bn: 'মঙ্গলবার', shortBn: 'মঙ্গল', en: 'Tuesday' },
+  { id: 'Wednesday', bn: 'বুধবার', shortBn: 'বুধ', en: 'Wednesday' },
+  { id: 'Thursday', bn: 'বৃহস্পতিবার', shortBn: 'বৃহঃ', en: 'Thursday' }
+];
+
 export const AdminDoctors: React.FC<AdminDoctorsProps> = ({
   lang,
   doctors,
@@ -52,9 +112,15 @@ export const AdminDoctors: React.FC<AdminDoctorsProps> = ({
   onJoinVideoAsDoctor
 }) => {
   const isBn = lang === 'bn';
-  const [activeSubTab, setActiveSubTab] = useState<'doctors' | 'appointments'>('doctors');
+  const [activeSubTab, setActiveSubTab] = useState<'doctors' | 'slots' | 'appointments'>('doctors');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [departmentFilter, setDepartmentFilter] = useState<string>('all');
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
 
   // Modals state
   const [editingDoctor, setEditingDoctor] = useState<Doctor | null>(null);
@@ -65,6 +131,70 @@ export const AdminDoctors: React.FC<AdminDoctorsProps> = ({
   // Appointments state
   const [appointments, setAppointments] = useState<DoctorAppointment[]>(getStoredDoctorAppointments);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+
+  // ==========================================
+  // DATE, SLOT & OFF-DAYS MANAGEMENT STATE
+  // ==========================================
+  const [slotDoctorId, setSlotDoctorId] = useState<string>('all');
+  const [slotInterval, setSlotInterval] = useState<number>(30);
+  const [weeklyOffDays, setWeeklyOffDays] = useState<string[]>(['Friday']);
+  const [specificOffDates, setSpecificOffDates] = useState<string[]>([]);
+  const [newOffDateInput, setNewOffDateInput] = useState<string>('');
+  const [customSlotList, setCustomSlotList] = useState<string[]>([
+    '05:00 PM - 05:30 PM',
+    '05:30 PM - 06:00 PM',
+    '06:00 PM - 06:30 PM',
+    '06:30 PM - 07:00 PM',
+    '07:00 PM - 07:30 PM',
+    '07:30 PM - 08:00 PM',
+    '08:00 PM - 08:30 PM',
+    '08:30 PM - 09:00 PM'
+  ]);
+  const [newCustomSlotInput, setNewCustomSlotInput] = useState<string>('');
+  const [editingSlotIdx, setEditingSlotIdx] = useState<number | null>(null);
+  const [editingSlotVal, setEditingSlotVal] = useState<string>('');
+  const [autoGenStart, setAutoGenStart] = useState<string>('05:00 PM');
+  const [autoGenEnd, setAutoGenEnd] = useState<string>('09:00 PM');
+
+  // Load slot config when selected doctor changes
+  useEffect(() => {
+    if (slotDoctorId === 'all') {
+      const firstDoc = doctors[0];
+      const interval = firstDoc?.slotIntervalMinutes || 30;
+      setSlotInterval(interval);
+      if (firstDoc?.customSlots && firstDoc.customSlots.length > 0) {
+        setCustomSlotList(firstDoc.customSlots);
+      } else {
+        setCustomSlotList(generateSlotsByInterval('05:00 PM', '09:00 PM', interval));
+      }
+      if (firstDoc?.offDays && firstDoc.offDays.length > 0) {
+        const weekly = firstDoc.offDays.filter(d => !d.includes('-'));
+        const dates = firstDoc.offDays.filter(d => d.includes('-'));
+        setWeeklyOffDays(weekly.length > 0 ? weekly : ['Friday']);
+        setSpecificOffDates(dates);
+      }
+    } else {
+      const doc = doctors.find(d => d.id === slotDoctorId);
+      if (doc) {
+        const interval = doc.slotIntervalMinutes || 30;
+        setSlotInterval(interval);
+        if (doc.customSlots && doc.customSlots.length > 0) {
+          setCustomSlotList(doc.customSlots);
+        } else {
+          setCustomSlotList(generateSlotsByInterval('05:00 PM', '09:00 PM', interval));
+        }
+        if (doc.offDays && doc.offDays.length > 0) {
+          const weekly = doc.offDays.filter(d => !d.includes('-'));
+          const dates = doc.offDays.filter(d => d.includes('-'));
+          setWeeklyOffDays(weekly);
+          setSpecificOffDates(dates);
+        } else {
+          setWeeklyOffDays(['Friday']);
+          setSpecificOffDates([]);
+        }
+      }
+    }
+  }, [slotDoctorId, doctors]);
 
   // Form State for Add / Edit
   const [formData, setFormData] = useState<Partial<Doctor>>({
@@ -90,7 +220,8 @@ export const AdminDoctors: React.FC<AdminDoctorsProps> = ({
     slotIntervalMinutes: 30,
     consultationTypes: ['video', 'audio'],
     about: '',
-    isActive: true
+    isActive: true,
+    offDays: ['Friday']
   });
 
   const departments = [
@@ -118,16 +249,21 @@ export const AdminDoctors: React.FC<AdminDoctorsProps> = ({
     return matchDept && matchSearch;
   });
 
-  // Toggle Doctor Active / Inactive
+  // Toggle Doctor Active / Inactive with Instant Toast & Global Sync
   const handleToggleDoctorStatus = (doctor: Doctor) => {
+    const nextStatus = doctor.isActive === false ? true : false;
     const updated = doctors.map(d => {
       if (d.id === doctor.id) {
-        return { ...d, isActive: d.isActive === false ? true : false };
+        return { ...d, isActive: nextStatus };
       }
       return d;
     });
     onUpdateDoctors(updated);
     setStoredDoctors(updated, lang);
+    showToast(nextStatus 
+      ? (isBn ? `✓ ${doctor.name} সক্রিয় (Active) করা হয়েছে - হোমপেজে প্রদর্শিত হবে` : `✓ ${doctor.name} is now Active (visible on homepage)`)
+      : (isBn ? `✕ ${doctor.name} নিষ্ক্রিয় (Inactive) করা হয়েছে - হোমপেজ থেকে লুকানো হয়েছে` : `✕ ${doctor.name} is now Inactive (hidden from homepage)`)
+    );
   };
 
   // Quick adjust consult count (+ / -)
@@ -288,7 +424,7 @@ export const AdminDoctors: React.FC<AdminDoctorsProps> = ({
 
         {/* Subtabs Switch */}
         <div className="flex items-center gap-2">
-          <div className="bg-slate-100 p-1 rounded-xl flex items-center gap-1 border border-slate-200 text-xs font-bold">
+          <div className="bg-slate-100 p-1 rounded-xl flex items-center gap-1 border border-slate-200 text-xs font-bold flex-wrap">
             <button
               onClick={() => setActiveSubTab('doctors')}
               className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
@@ -296,6 +432,15 @@ export const AdminDoctors: React.FC<AdminDoctorsProps> = ({
               }`}
             >
               {isBn ? `ডাক্তার তালিকা (${doctors.length})` : `Doctors (${doctors.length})`}
+            </button>
+            <button
+              onClick={() => setActiveSubTab('slots')}
+              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                activeSubTab === 'slots' ? 'bg-white text-sky-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <CalendarClock size={14} className="text-sky-600" />
+              <span>{isBn ? 'তারিখ, স্লট ও অফ ডে' : 'Date, Slots & Off Days'}</span>
             </button>
             <button
               onClick={() => {
@@ -321,6 +466,14 @@ export const AdminDoctors: React.FC<AdminDoctorsProps> = ({
           )}
         </div>
       </div>
+
+      {/* Floating Toast Notification */}
+      {toastMessage && (
+        <div className="fixed top-5 right-5 z-50 bg-slate-900 text-white px-4 py-2.5 rounded-2xl shadow-xl border border-sky-400 text-xs font-bold animate-slideDown flex items-center gap-2">
+          <CheckCircle size={16} className="text-emerald-400 shrink-0" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
 
       {/* SUBTAB 1: DOCTOR PROFILES LIST */}
       {activeSubTab === 'doctors' && (
@@ -466,16 +619,19 @@ export const AdminDoctors: React.FC<AdminDoctorsProps> = ({
                           <button
                             type="button"
                             onClick={() => handleToggleDoctorStatus(doctor)}
-                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shadow-2xs border ${
                               isActive
-                                ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
-                                : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
+                                ? 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border-emerald-300'
+                                : 'bg-rose-50 text-rose-700 hover:bg-rose-100 border-rose-300'
                             }`}
-                            title={isActive ? 'সক্রিয় (Click to make Inactive)' : 'নিষ্ক্রিয় (Click to make Active)'}
+                            title={isActive ? 'সক্রিয় (Click to make Inactive - hide from website)' : 'নিষ্ক্রিয় (Click to make Active - show on website)'}
                           >
-                            <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                            <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
                             <span>{isActive ? (isBn ? 'একটিভ' : 'Active') : (isBn ? 'ইনএকটিভ' : 'Inactive')}</span>
                           </button>
+                          <span className="block text-[10px] text-sky-700 font-semibold mt-1">
+                            ⏱️ {doctor.slotIntervalMinutes || 30}m
+                          </span>
                         </td>
 
                         {/* Actions (Edit & Delete) */}
@@ -507,7 +663,533 @@ export const AdminDoctors: React.FC<AdminDoctorsProps> = ({
         </div>
       )}
 
-      {/* SUBTAB 2: APPOINTMENTS & VIDEO ROOMS */}
+      {/* SUBTAB 2: DATE, SLOTS & OFF-DAYS MANAGER */}
+      {activeSubTab === 'slots' && (
+        <div className="space-y-6">
+          {/* Top Banner & Quick Explanation */}
+          <div className="bg-gradient-to-r from-sky-900 via-slate-900 to-indigo-950 text-white p-6 rounded-3xl shadow-lg relative overflow-hidden">
+            <div className="relative z-10 space-y-2 max-w-2xl">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/20 text-sky-300 border border-sky-400/30 text-xs font-bold">
+                <CalendarClock size={14} />
+                <span>{isBn ? 'ডাক্তার সিডিউল, স্লট ও অফ ডে ম্যানেজার' : 'Doctor Schedule, Slots & Off Days'}</span>
+              </div>
+              <h3 className="text-xl font-extrabold tracking-tight">
+                {isBn 
+                  ? 'তারিখ ও স্লট কাস্টমাইজেশন (৩০ মিনিট এর কম/বেশি)' 
+                  : 'Date & Slot Customization (< / > 30 Minutes)'}
+              </h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                {isBn 
+                  ? 'এখানে ডাক্তারের সময় স্লটের দৈর্ঘ্য (যেমন: ১৫, ২০, ৩০, ৪৫ বা ৬০ মিনিট) পরিবর্তন করতে পারবেন। স্লট ২০ মিনিট নির্ধারণ করলে হোমপেজ ও কার্ডে "20-Min Schedule" ও "Book 20-Min" হিসেবে শো করবে। এছাড়া সাপ্তাহিক অফ ডে ও নির্দিষ্ট ছুটির দিন নির্ধারণ করা যায়।' 
+                  : 'Customize slot durations (< or > 30 minutes, e.g. 20-Min). Setting 20 minutes dynamically shows "20-Min Schedule" and "Book 20-Min" on home page cards and booking modals. Configure weekly off-days and leave dates easily.'}
+              </p>
+            </div>
+          </div>
+
+          {/* Doctor Selector */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="space-y-1 w-full sm:w-auto">
+              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
+                {isBn ? 'ডাক্তার নির্বাচন করুন (Select Doctor):' : 'Select Doctor:'}
+              </label>
+              <select
+                value={slotDoctorId}
+                onChange={e => setSlotDoctorId(e.target.value)}
+                className="w-full sm:w-80 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-sky-500 outline-none"
+              >
+                <option value="all">
+                  {isBn ? '⭐ সকল ডাক্তার (All Doctors - Global Setup)' : '⭐ All Doctors (Global Setup)'}
+                </option>
+                {doctors.map(d => (
+                  <option key={d.id} value={d.id}>
+                    {d.name} ({d.specialty}) - {d.slotIntervalMinutes || 30}m
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2 text-xs">
+              <span className="px-3 py-1.5 bg-sky-50 text-sky-800 rounded-xl font-bold border border-sky-200">
+                {slotDoctorId === 'all' 
+                  ? (isBn ? `সকল ${doctors.length} জন ডাক্তারের উপর প্রযোজ্য` : `Applies to all ${doctors.length} doctors`)
+                  : (isBn ? `নির্বাচিত: ${doctors.find(d => d.id === slotDoctorId)?.name}` : `Selected: ${doctors.find(d => d.id === slotDoctorId)?.name}`)}
+              </span>
+            </div>
+          </div>
+
+          {/* Slot Interval Settings & Live Preview */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left 2 Cols: Slot Interval & Off-Days Configuration */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* SECTION A: SLOT INTERVAL (MINUTES) */}
+              <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 bg-sky-100 text-sky-700 rounded-xl">
+                      <Clock size={16} />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm text-slate-900">
+                        {isBn ? '১. সময় স্লটের দৈর্ঘ্য (Slot Duration)' : '1. Slot Duration (Minutes)'}
+                      </h4>
+                      <p className="text-[11px] text-slate-500">
+                        {isBn ? '৩০ মিনিট এর কম বা বেশি করতে নিচের বোতামে চাপুন' : 'Select or type minutes (< or > 30-min)'}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-xs font-extrabold text-sky-700 bg-sky-50 px-3 py-1 rounded-xl border border-sky-200">
+                    {slotInterval} {isBn ? 'মিনিট' : 'Mins'}
+                  </span>
+                </div>
+
+                {/* Preset Interval Buttons */}
+                <div className="space-y-2">
+                  <span className="text-xs font-bold text-slate-700 block">
+                    {isBn ? 'কুইক প্রিসেট (Quick Presets):' : 'Quick Presets:'}
+                  </span>
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                    {[15, 20, 30, 45, 60].map(mins => {
+                      const isSelected = slotInterval === mins;
+                      return (
+                        <button
+                          key={mins}
+                          type="button"
+                          onClick={() => {
+                            setSlotInterval(mins);
+                            setCustomSlotList(generateSlotsByInterval(autoGenStart, autoGenEnd, mins));
+                          }}
+                          className={`py-2.5 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex flex-col items-center justify-center ${
+                            isSelected
+                              ? 'bg-sky-600 border-sky-600 text-white shadow-md shadow-sky-200 ring-2 ring-sky-300'
+                              : 'bg-slate-50 hover:bg-sky-50 border-slate-200 text-slate-700'
+                          }`}
+                        >
+                          <span className="text-sm">{mins}m</span>
+                          <span className={`text-[10px] ${isSelected ? 'text-sky-100' : 'text-slate-500'}`}>
+                            {mins === 20 ? (isBn ? '২০ মিনিট' : '20-Min') : mins === 30 ? (isBn ? 'ডিফল্ট ৩০' : '30-Min') : `${mins} min`}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Custom Minutes Input */}
+                <div className="pt-2 flex flex-col sm:flex-row sm:items-center gap-3">
+                  <label className="text-xs font-bold text-slate-700 whitespace-nowrap">
+                    {isBn ? 'অথবা কাস্টম মিনিট লিখুন:' : 'Or Enter Custom Minutes:'}
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={5}
+                      max={180}
+                      value={slotInterval}
+                      onChange={e => {
+                        const val = Math.max(5, Math.min(180, Number(e.target.value) || 30));
+                        setSlotInterval(val);
+                        setCustomSlotList(generateSlotsByInterval(autoGenStart, autoGenEnd, val));
+                      }}
+                      className="w-24 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:ring-2 focus:ring-sky-500 outline-none"
+                    />
+                    <span className="text-xs text-slate-500 font-semibold">{isBn ? 'মিনিট' : 'minutes'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION B: WEEKLY OFF DAYS (সাপ্তাহিক ছুটির দিন) */}
+              <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 bg-rose-100 text-rose-700 rounded-xl">
+                      <CalendarOff size={16} />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm text-slate-900">
+                        {isBn ? '২. সাপ্তাহিক অফ ডে (Weekly Off Days)' : '2. Weekly Off Days'}
+                      </h4>
+                      <p className="text-[11px] text-slate-500">
+                        {isBn ? 'যে যে বারে ডাক্তার চেম্বার বা অনলাইন কন্সালটেন্সিতে বসবেন না তা সিলেক্ট করুন' : 'Select days when the doctor is off / unavailable'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
+                  {WEEKLY_DAYS_MAP.map(dayItem => {
+                    const isOff = weeklyOffDays.includes(dayItem.id) || weeklyOffDays.includes(dayItem.bn) || weeklyOffDays.includes(dayItem.shortBn);
+                    return (
+                      <button
+                        key={dayItem.id}
+                        type="button"
+                        onClick={() => {
+                          if (isOff) {
+                            setWeeklyOffDays(weeklyOffDays.filter(d => d !== dayItem.id && d !== dayItem.bn && d !== dayItem.shortBn));
+                          } else {
+                            setWeeklyOffDays([...weeklyOffDays, dayItem.id]);
+                          }
+                        }}
+                        className={`p-3 rounded-xl border text-center transition-all cursor-pointer ${
+                          isOff
+                            ? 'bg-rose-50 border-rose-300 text-rose-800 shadow-2xs font-extrabold ring-1 ring-rose-300'
+                            : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-600 font-medium'
+                        }`}
+                      >
+                        <span className="block text-xs">{isBn ? dayItem.bn : dayItem.en}</span>
+                        <span className={`block text-[10px] mt-0.5 ${isOff ? 'text-rose-600 font-bold' : 'text-slate-400'}`}>
+                          {isOff ? (isBn ? '🚫 অফ ডে' : '🚫 Off Day') : (isBn ? '✓ চালু' : 'Active')}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* SECTION C: SPECIFIC VACATION / LEAVE DATES */}
+              <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 bg-amber-100 text-amber-700 rounded-xl">
+                      <Calendar size={16} />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm text-slate-900">
+                        {isBn ? '৩. নির্দিষ্ট ছুটির তারিখ (Specific Vacation / Leave Dates)' : '3. Specific Vacation / Leave Dates'}
+                      </h4>
+                      <p className="text-[11px] text-slate-500">
+                        {isBn ? 'ছুটির নির্দিষ্ট তারিখ যোগ করুন (ঐ তারিখে বুকিং বন্ধ থাকবে)' : 'Add specific dates when appointments are blocked'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center gap-2">
+                  <input
+                    type="date"
+                    value={newOffDateInput}
+                    onChange={e => setNewOffDateInput(e.target.value)}
+                    className="w-full sm:w-auto px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-sky-500 outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!newOffDateInput) return;
+                      if (!specificOffDates.includes(newOffDateInput)) {
+                        setSpecificOffDates([...specificOffDates, newOffDateInput]);
+                      }
+                      setNewOffDateInput('');
+                    }}
+                    className="w-full sm:w-auto px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <Plus size={14} />
+                    <span>{isBn ? 'ছুটির তারিখ যোগ করুন' : 'Add Leave Date'}</span>
+                  </button>
+                </div>
+
+                {specificOffDates.length > 0 ? (
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {specificOffDates.map(dateStr => (
+                      <span
+                        key={dateStr}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 border border-amber-300 text-amber-900 rounded-xl text-xs font-bold shadow-2xs"
+                      >
+                        <CalendarOff size={12} className="text-amber-700" />
+                        <span>{dateStr}</span>
+                        <button
+                          type="button"
+                          onClick={() => setSpecificOffDates(specificOffDates.filter(d => d !== dateStr))}
+                          className="hover:text-rose-600 ml-1 text-slate-400 font-bold"
+                          title="Remove leave date"
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-slate-400 italic">
+                    {isBn ? 'কোনো নির্দিষ্ট ছুটির তারিখ যোগ করা হয়নি।' : 'No specific vacation dates added.'}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Right Col: Live Preview Banner & Active Time Slots Generator */}
+            <div className="space-y-6">
+              {/* LIVE PREVIEW BOX */}
+              <div className="bg-gradient-to-b from-sky-50 to-indigo-50/40 p-5 rounded-2xl border border-sky-200 space-y-4">
+                <div className="flex items-center gap-2 text-sky-900 font-extrabold text-xs uppercase tracking-wider">
+                  <Sparkles size={14} className="text-sky-600" />
+                  <span>{isBn ? 'লাইভ প্রিভিউ (হোমপেজ ও কার্ডে প্রদর্শন)' : 'Live Preview on Cards'}</span>
+                </div>
+
+                <div className="bg-white p-4 rounded-xl border border-slate-200/90 shadow-sm space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">Doctor Card Pill</span>
+                    <span className="text-[10px] font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-200">
+                      ⏱️ {slotInterval}-Min Schedule
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between border-t border-slate-100 pt-3">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">Booking Button</span>
+                    <span className="px-3 py-1.5 rounded-lg bg-sky-600 text-white text-xs font-bold flex items-center gap-1 shadow-xs">
+                      <Calendar size={12} />
+                      <span>Book {slotInterval}-Min</span>
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between border-t border-slate-100 pt-3">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">বাংলায় বাটন</span>
+                    <span className="px-3 py-1.5 rounded-lg bg-sky-600 text-white text-xs font-bold flex items-center gap-1 shadow-xs">
+                      <Calendar size={12} />
+                      <span>{toBnNumber(slotInterval)}-মি. স্লট বুক</span>
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between border-t border-slate-100 pt-3">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">মডাল স্টেপ</span>
+                    <span className="text-xs font-bold text-slate-800">
+                      Date & {slotInterval}-Min Slot
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-white/80 rounded-xl border border-sky-100 text-[11px] text-sky-900 space-y-1">
+                  <p className="font-bold flex items-center gap-1">
+                    <Info size={13} className="text-sky-600" />
+                    <span>ইউজার রিকুয়েস্ট অনুযায়ী:</span>
+                  </p>
+                  <p className="text-slate-600 leading-relaxed">
+                    স্লট {slotInterval} মিনিট সেভ করার পর ইউজার হোমপেজে ডাক্তার কার্ডে <span className="font-bold text-sky-700">{slotInterval}-Min Schedule</span> এবং বুকিং বাটনে <span className="font-bold text-sky-700">Book {slotInterval}-Min</span> দেখতে পাবেন।
+                  </p>
+                </div>
+              </div>
+
+              {/* SAVE CONFIGURATION BUTTON */}
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const combinedOffDays = [...weeklyOffDays, ...specificOffDates];
+                    let updated: Doctor[];
+
+                    if (slotDoctorId === 'all') {
+                      updated = doctors.map(d => ({
+                        ...d,
+                        slotIntervalMinutes: slotInterval,
+                        customSlots: customSlotList,
+                        offDays: combinedOffDays,
+                        availableTimeText: `প্রতিদিন ${autoGenStart} - ${autoGenEnd} (${slotInterval} মিনিট স্লট)`
+                      }));
+                    } else {
+                      updated = doctors.map(d => d.id === slotDoctorId ? ({
+                        ...d,
+                        slotIntervalMinutes: slotInterval,
+                        customSlots: customSlotList,
+                        offDays: combinedOffDays,
+                        availableTimeText: `প্রতিদিন ${autoGenStart} - ${autoGenEnd} (${slotInterval} মিনিট স্লট)`
+                      }) : d);
+                    }
+
+                    onUpdateDoctors(updated);
+                    setStoredDoctors(updated, lang);
+                    showToast(isBn 
+                      ? `✓ ${slotInterval} মিনিট স্লট ও অফ ডে সফলভাবে সংরক্ষণ করা হয়েছে!` 
+                      : `✓ ${slotInterval}-min slot schedule saved successfully!`);
+                  }}
+                  className="w-full py-3 px-4 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-sky-200 transition-all cursor-pointer"
+                >
+                  <Save size={16} />
+                  <span>{isBn ? 'স্লট সেটিংস সংরক্ষণ করুন' : 'Save Slot & Schedule Settings'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSlotInterval(30);
+                    setWeeklyOffDays(['Friday']);
+                    setSpecificOffDates([]);
+                    setAutoGenStart('05:00 PM');
+                    setAutoGenEnd('09:00 PM');
+                    setCustomSlotList(generateSlotsByInterval('05:00 PM', '09:00 PM', 30));
+                    showToast(isBn ? 'ডিফল্ট ৩০ মিনিট স্লটে রিসেট করা হয়েছে' : 'Reset to default 30-min slots');
+                  }}
+                  className="w-full py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <RotateCcw size={13} />
+                  <span>{isBn ? 'ডিফল্ট ৩০-মিনিটে রিসেট' : 'Reset to Default 30-Min'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION D: TIME SLOTS MANAGER (ইডিট, ডিলেট ও নতুন স্লট যোগ) */}
+          <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+              <div>
+                <h4 className="font-bold text-sm text-slate-900 flex items-center gap-2">
+                  <Clock size={16} className="text-sky-600" />
+                  <span>{isBn ? '৪. সময় স্লট তালিকা (Time Slots Manager - Edit, Delete, Add)' : '4. Time Slots Manager (Edit, Delete, Add)'}</span>
+                </h4>
+                <p className="text-[11px] text-slate-500">
+                  {isBn 
+                    ? `বর্তমান মোট স্লট: ${customSlotList.length}টি (প্রতিটি ${slotInterval} মিনিট)` 
+                    : `Active Slots: ${customSlotList.length} (${slotInterval}-min interval each)`}
+                </p>
+              </div>
+
+              {/* Auto Generator Controls */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-1.5 text-xs bg-slate-50 p-1.5 rounded-xl border border-slate-200">
+                  <span className="text-slate-500 font-semibold">{isBn ? 'শুরু:' : 'Start:'}</span>
+                  <input
+                    type="text"
+                    value={autoGenStart}
+                    onChange={e => setAutoGenStart(e.target.value)}
+                    placeholder="05:00 PM"
+                    className="w-20 px-1.5 py-0.5 rounded bg-white border border-slate-200 font-mono text-[11px] text-center"
+                  />
+                  <span className="text-slate-500 font-semibold">{isBn ? 'শেষ:' : 'End:'}</span>
+                  <input
+                    type="text"
+                    value={autoGenEnd}
+                    onChange={e => setAutoGenEnd(e.target.value)}
+                    placeholder="09:00 PM"
+                    className="w-20 px-1.5 py-0.5 rounded bg-white border border-slate-200 font-mono text-[11px] text-center"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const generated = generateSlotsByInterval(autoGenStart, autoGenEnd, slotInterval);
+                    if (generated.length > 0) {
+                      setCustomSlotList(generated);
+                      showToast(isBn ? `${generated.length}টি নতুন স্লট তৈরি করা হয়েছে!` : `Generated ${generated.length} new slots!`);
+                    } else {
+                      showToast(isBn ? 'সময় ফরম্যাট সঠিক নয় (যেমন: 05:00 PM ও 09:00 PM)' : 'Invalid time format (e.g. 05:00 PM & 09:00 PM)');
+                    }
+                  }}
+                  className="px-3 py-2 bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-300 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <RotateCcw size={13} />
+                  <span>{isBn ? `${slotInterval}মিনিট স্লট অটো তৈরি` : `Auto Generate`}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Add Custom Slot Input Bar */}
+            <div className="flex flex-col sm:flex-row items-center gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200">
+              <span className="text-xs font-bold text-slate-700 whitespace-nowrap">
+                {isBn ? 'নতুন কাস্টম স্লট যোগ:' : 'Add Custom Slot:'}
+              </span>
+              <input
+                type="text"
+                value={newCustomSlotInput}
+                onChange={e => setNewCustomSlotInput(e.target.value)}
+                placeholder="e.g. 09:00 PM - 09:20 PM"
+                className="flex-1 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-mono focus:ring-2 focus:ring-sky-500 outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (!newCustomSlotInput.trim()) return;
+                  setCustomSlotList([...customSlotList, newCustomSlotInput.trim()]);
+                  setNewCustomSlotInput('');
+                }}
+                className="w-full sm:w-auto px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1"
+              >
+                <Plus size={14} />
+                <span>{isBn ? 'স্লট যুক্ত করুন' : 'Add Slot'}</span>
+              </button>
+            </div>
+
+            {/* Slots Grid with Edit and Delete */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
+              {customSlotList.map((slot, index) => {
+                const isEditing = editingSlotIdx === index;
+                return (
+                  <div
+                    key={`${slot}-${index}`}
+                    className="p-3 bg-slate-50 hover:bg-white rounded-xl border border-slate-200 hover:border-sky-300 transition-all shadow-2xs flex items-center justify-between gap-2"
+                  >
+                    {isEditing ? (
+                      <div className="flex items-center gap-1 w-full">
+                        <input
+                          type="text"
+                          value={editingSlotVal}
+                          onChange={e => setEditingSlotVal(e.target.value)}
+                          className="flex-1 px-2 py-1 bg-white border border-sky-400 rounded-lg text-xs font-mono outline-none"
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (editingSlotVal.trim()) {
+                              const updated = [...customSlotList];
+                              updated[index] = editingSlotVal.trim();
+                              setCustomSlotList(updated);
+                            }
+                            setEditingSlotIdx(null);
+                          }}
+                          className="p-1 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 cursor-pointer"
+                          title="Save slot time"
+                        >
+                          <Check size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingSlotIdx(null)}
+                          className="p-1 bg-slate-200 text-slate-700 rounded-md hover:bg-slate-300 cursor-pointer"
+                          title="Cancel edit"
+                        >
+                          <X size={13} />
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <Clock size={13} className="text-sky-600 shrink-0" />
+                          <span className="font-mono text-xs font-bold text-slate-800 truncate">
+                            {slot}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingSlotIdx(index);
+                              setEditingSlotVal(slot);
+                            }}
+                            className="p-1 text-sky-600 hover:bg-sky-100 rounded-md transition-colors cursor-pointer"
+                            title="Edit slot time"
+                          >
+                            <Edit size={13} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCustomSlotList(customSlotList.filter((_, i) => i !== index));
+                            }}
+                            className="p-1 text-rose-500 hover:bg-rose-100 rounded-md transition-colors cursor-pointer"
+                            title="Delete slot"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SUBTAB 3: APPOINTMENTS & VIDEO ROOMS */}
       {activeSubTab === 'appointments' && (
         <div className="space-y-4">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
@@ -788,49 +1470,123 @@ export const AdminDoctors: React.FC<AdminDoctorsProps> = ({
                 </div>
               </div>
 
-              {/* Schedule timing and photo URL / upload */}
-              <div className="grid sm:grid-cols-2 gap-3">
+              {/* Slot Interval and Timing Text */}
+              <div className="grid sm:grid-cols-2 gap-3 p-3 bg-sky-50/50 rounded-2xl border border-sky-100">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">
-                    {isBn ? 'পরামর্শের সময় টেক্সট (৩০ মিনিট স্লট)' : 'Schedule Timing Text'}
+                  <label className="block font-bold text-slate-800 mb-1 flex items-center justify-between">
+                    <span>{isBn ? 'স্লটের দৈর্ঘ্য (মিনিট)' : 'Slot Duration (Minutes)'}</span>
+                    <span className="text-sky-700 font-extrabold text-[11px] bg-white px-2 py-0.5 rounded border border-sky-200">
+                      {formData.slotIntervalMinutes || 30} {isBn ? 'মিনিট' : 'min'}
+                    </span>
+                  </label>
+                  <div className="grid grid-cols-5 gap-1 mb-1.5">
+                    {[15, 20, 30, 45, 60].map(mins => (
+                      <button
+                        key={mins}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, slotIntervalMinutes: mins })}
+                        className={`py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
+                          (formData.slotIntervalMinutes || 30) === mins
+                            ? 'bg-sky-600 border-sky-600 text-white shadow-xs'
+                            : 'bg-white hover:bg-sky-50 border-slate-200 text-slate-700'
+                        }`}
+                      >
+                        {mins}m
+                      </button>
+                    ))}
+                  </div>
+                  <input
+                    type="number"
+                    min="5"
+                    max="180"
+                    value={formData.slotIntervalMinutes || 30}
+                    onChange={e => setFormData({ ...formData, slotIntervalMinutes: Number(e.target.value) || 30 })}
+                    className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none text-xs font-bold"
+                  />
+                  <p className="text-[10px] text-sky-800 font-medium mt-1">
+                    💡 প্রিভিউ: <span className="font-bold">{formData.slotIntervalMinutes || 30}-Min Schedule</span> ও <span className="font-bold">Book {formData.slotIntervalMinutes || 30}-Min</span>
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-800 mb-1">
+                    {isBn ? 'পরামর্শের সময় টেক্সট' : 'Schedule Timing Text'}
                   </label>
                   <input
                     type="text"
                     value={formData.availableTimeText || ''}
                     onChange={e => setFormData({ ...formData, availableTimeText: e.target.value })}
                     placeholder="প্রতিদিন বিকাল ৫:০০ - রাত ৯:০০"
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none"
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none text-xs"
                   />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">
-                    {isBn ? 'ডাক্তারের ছবির URL বা ফাইল আপলোড' : 'Doctor Photo URL / Upload'}
+                  
+                  {/* Weekly Off Days Selection */}
+                  <label className="block font-bold text-slate-800 mt-2 mb-1">
+                    {isBn ? 'সাপ্তাহিক ছুটির দিন (Off Days)' : 'Weekly Off Days'}
                   </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="url"
-                      value={formData.image || ''}
-                      onChange={e => setFormData({ ...formData, image: e.target.value })}
-                      placeholder="https://..."
-                      className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold flex items-center gap-1 cursor-pointer"
-                      title="Upload Image from Device"
-                    >
-                      <Upload size={14} />
-                    </button>
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={handleImageUpload}
-                      accept="image/*"
-                      className="hidden"
-                    />
+                  <div className="flex flex-wrap gap-1">
+                    {WEEKLY_DAYS_MAP.map(dayItem => {
+                      const currentOff = formData.offDays || [];
+                      const isOff = currentOff.includes(dayItem.id) || currentOff.includes(dayItem.bn) || currentOff.includes(dayItem.shortBn);
+                      return (
+                        <button
+                          key={dayItem.id}
+                          type="button"
+                          onClick={() => {
+                            if (isOff) {
+                              setFormData({
+                                ...formData,
+                                offDays: currentOff.filter(d => d !== dayItem.id && d !== dayItem.bn && d !== dayItem.shortBn)
+                              });
+                            } else {
+                              setFormData({
+                                ...formData,
+                                offDays: [...currentOff, dayItem.id]
+                              });
+                            }
+                          }}
+                          className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
+                            isOff
+                              ? 'bg-rose-100 text-rose-800 border-rose-300'
+                              : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                          }`}
+                        >
+                          {isBn ? dayItem.shortBn : dayItem.en.slice(0, 3)}
+                        </button>
+                      );
+                    })}
                   </div>
+                </div>
+              </div>
+
+              {/* Photo URL / upload */}
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  {isBn ? 'ডাক্তারের ছবির URL বা ফাইল আপলোড' : 'Doctor Photo URL / Upload'}
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    value={formData.image || ''}
+                    onChange={e => setFormData({ ...formData, image: e.target.value })}
+                    placeholder="https://..."
+                    className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold flex items-center gap-1 cursor-pointer"
+                    title="Upload Image from Device"
+                  >
+                    <Upload size={14} />
+                  </button>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleImageUpload}
+                    accept="image/*"
+                    className="hidden"
+                  />
                 </div>
               </div>
 
