@@ -129,6 +129,7 @@ const getViewFromLocation = (): 'home' | 'tests' | 'packages' | 'doctors' | 'das
     path === '/admin' || 
     path.startsWith('/admin/') || 
     hash === '#admin' || 
+    hash.startsWith('#admin') || 
     hash.startsWith('#/admin') || 
     search.includes('view=admin') ||
     search.includes('admin=true')
@@ -223,8 +224,32 @@ export default function App() {
       window.history.replaceState({ view: currentLocView }, '', window.location.href);
     }
 
+    const handleLocationChange = () => {
+      const targetView = getViewFromLocation();
+      if (targetView === 'admin') {
+        const hasSession = getIsAdminSessionActive();
+        setIsAdminAuthenticated(hasSession);
+        setIsAdminLoginModalOpen(!hasSession);
+        setCurrentView('admin');
+      } else {
+        setIsAdminLoginModalOpen(false);
+        setCurrentView(targetView);
+      }
+    };
+
     const handlePopState = (e: PopStateEvent) => {
-      // 1. If any modal is open, close the modal first instead of navigating away
+      // If modal is open, close modal only if we aren't explicitly navigating to admin
+      const targetView: 'home' | 'tests' | 'packages' | 'dashboard' | 'admin' = 
+        (e.state && e.state.view) ? e.state.view : getViewFromLocation();
+
+      if (targetView === 'admin') {
+        const hasSession = getIsAdminSessionActive();
+        setIsAdminAuthenticated(hasSession);
+        setIsAdminLoginModalOpen(!hasSession);
+        setCurrentView('admin');
+        return;
+      }
+
       if (isBookingModalOpen) {
         setIsBookingModalOpen(false);
         return;
@@ -237,35 +262,18 @@ export default function App() {
         setIsAuthModalOpen(false);
         return;
       }
-      if (isAdminLoginModalOpen && currentView !== 'admin') {
-        setIsAdminLoginModalOpen(false);
-        return;
-      }
 
-      // 2. Otherwise navigate to the target view from history state or URL
-      const targetView: 'home' | 'tests' | 'packages' | 'dashboard' | 'admin' = 
-        (e.state && e.state.view) ? e.state.view : getViewFromLocation();
-      
-      if (targetView === 'admin') {
-        const hasSession = getIsAdminSessionActive();
-        setIsAdminAuthenticated(hasSession);
-        if (!hasSession) {
-          setIsAdminLoginModalOpen(true);
-        }
-        setCurrentView('admin');
-      } else {
-        setIsAdminLoginModalOpen(false);
-        setCurrentView(targetView);
-      }
+      setIsAdminLoginModalOpen(false);
+      setCurrentView(targetView);
     };
 
     window.addEventListener('popstate', handlePopState);
-    window.addEventListener('hashchange', handlePopState);
+    window.addEventListener('hashchange', handleLocationChange);
     return () => {
       window.removeEventListener('popstate', handlePopState);
-      window.removeEventListener('hashchange', handlePopState);
+      window.removeEventListener('hashchange', handleLocationChange);
     };
-  }, [isBookingModalOpen, selectedPackageForDetail, isAuthModalOpen, isAdminLoginModalOpen, currentView]);
+  }, [isBookingModalOpen, selectedPackageForDetail, isAuthModalOpen, currentView]);
 
   const [isLabPaused, setIsLabPaused] = useState(false);
   const labScrollRef = useRef<HTMLDivElement>(null);
@@ -749,21 +757,25 @@ export default function App() {
   };
 
   const handleOpenAdminPortal = () => {
-    if (window.location.pathname !== '/admin' && window.location.hash !== '#admin') {
-      window.history.pushState({ view: 'admin' }, '', '/admin');
+    if (window.location.pathname !== '/admin' && !window.location.hash.startsWith('#admin')) {
+      window.location.hash = 'admin';
     }
-    if (isAdminAuthenticated) {
+    const hasSession = getIsAdminSessionActive();
+    if (hasSession) {
+      setIsAdminAuthenticated(true);
       setCurrentView('admin');
     } else {
       setIsAdminLoginModalOpen(true);
+      setCurrentView('admin');
     }
   };
 
   const handleAdminLoginSuccess = () => {
+    setAdminSessionActive(true);
     setIsAdminAuthenticated(true);
     setIsAdminLoginModalOpen(false);
-    if (window.location.pathname !== '/admin' && window.location.hash !== '#admin') {
-      window.history.pushState({ view: 'admin' }, '', '/admin');
+    if (window.location.pathname !== '/admin' && !window.location.hash.startsWith('#admin')) {
+      window.location.hash = 'admin';
     }
     setCurrentView('admin');
   };
@@ -1104,31 +1116,48 @@ export default function App() {
       )}
 
       {/* CONDITIONAL RENDERING: ADMIN vs DASHBOARD vs HOME */}
-      {currentView === 'admin' && isAdminAuthenticated ? (
-        <AdminDashboard 
-          lang={language} 
-          onToggleLanguage={toggleLanguage}
-          tests={tests}
-          onUpdateTests={handleUpdateTests}
-          packages={packages}
-          onUpdatePackages={handleUpdatePackages}
-          categories={categories}
-          onUpdateCategories={handleUpdateCategories}
-          labs={labs}
-          onUpdateLabs={handleUpdateLabs}
-          bookings={bookings}
-          onUpdateBookings={handleUpdateBookings}
-          patients={patients}
-          onUpdatePatients={handleUpdatePatients}
-          doctors={doctors}
-          onUpdateDoctors={handleUpdateDoctors}
-          onOpenPrescriptionViewer={(presc) => setSelectedPrescriptionForView(presc)}
-          onJoinVideoAsDoctor={(apt) => setSelectedAppointmentForVideo(apt)}
-          siteSettings={siteSettings}
-          onUpdateSiteSettings={handleUpdateSiteSettings}
-          onResetAllData={handleResetAllData}
-          onLogout={handleAdminLogout} 
-        />
+      {currentView === 'admin' ? (
+        isAdminAuthenticated ? (
+          <AdminDashboard 
+            lang={language} 
+            onToggleLanguage={toggleLanguage}
+            tests={tests}
+            onUpdateTests={handleUpdateTests}
+            packages={packages}
+            onUpdatePackages={handleUpdatePackages}
+            categories={categories}
+            onUpdateCategories={handleUpdateCategories}
+            labs={labs}
+            onUpdateLabs={handleUpdateLabs}
+            bookings={bookings}
+            onUpdateBookings={handleUpdateBookings}
+            patients={patients}
+            onUpdatePatients={handleUpdatePatients}
+            doctors={doctors}
+            onUpdateDoctors={handleUpdateDoctors}
+            onOpenPrescriptionViewer={(presc) => setSelectedPrescriptionForView(presc)}
+            onJoinVideoAsDoctor={(apt) => setSelectedAppointmentForVideo(apt)}
+            siteSettings={siteSettings}
+            onUpdateSiteSettings={handleUpdateSiteSettings}
+            onResetAllData={handleResetAllData}
+            onLogout={handleAdminLogout} 
+          />
+        ) : (
+          <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4">
+            <AdminLoginModal
+              isOpen={true}
+              onClose={() => {
+                setIsAdminLoginModalOpen(false);
+                if (window.location.hash.includes('admin') || window.location.pathname === '/admin') {
+                  window.history.pushState(null, '', '/');
+                }
+                setCurrentView('home');
+              }}
+              onSuccess={handleAdminLoginSuccess}
+              lang={language}
+            />
+          </div>
+        )
       ) : currentView === 'dashboard' ? (
         <UserDashboard 
           lang={language} 
@@ -1831,20 +1860,16 @@ export default function App() {
         onSuccess={handleAuthSuccess}
       />
 
-      <AdminLoginModal
-        isOpen={isAdminLoginModalOpen || (currentView === 'admin' && !isAdminAuthenticated)}
-        onClose={() => {
-          setIsAdminLoginModalOpen(false);
-          if (currentView === 'admin') {
-            if (window.location.pathname === '/admin' || window.location.hash.includes('admin')) {
-              window.history.pushState(null, '', '/');
-            }
-            setCurrentView('home');
-          }
-        }}
-        onSuccess={handleAdminLoginSuccess}
-        lang={language}
-      />
+      {currentView !== 'admin' && (
+        <AdminLoginModal
+          isOpen={isAdminLoginModalOpen}
+          onClose={() => {
+            setIsAdminLoginModalOpen(false);
+          }}
+          onSuccess={handleAdminLoginSuccess}
+          lang={language}
+        />
+      )}
 
       {/* Doctor Booking Modal */}
       {selectedDoctorForBooking && (
@@ -2078,8 +2103,14 @@ export default function App() {
                   </button>
                 </li>
                 <li>
-                  <button onClick={() => scrollToSection('how-it-works')} className="hover:text-white transition-colors">
+                  <button onClick={() => scrollToSection('how-it-works')} className="hover:text-white transition-colors cursor-pointer">
                     {t.navHowItWorks}
+                  </button>
+                </li>
+                <li>
+                  <button onClick={handleOpenAdminPortal} className="text-slate-400 hover:text-sky-400 flex items-center gap-1.5 transition-colors cursor-pointer font-medium">
+                    <ShieldCheck size={14} className="text-sky-400" />
+                    <span>{language === 'bn' ? 'অ্যাডমিন পোর্টাল' : 'Admin Portal'}</span>
                   </button>
                 </li>
                 <li>

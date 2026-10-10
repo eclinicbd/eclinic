@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Language } from '../types';
 import { TRANSLATIONS } from '../translations';
 import { 
@@ -30,18 +30,28 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
   onSuccess,
   lang
 }) => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const currentCreds = getStoredAdminCredentials();
+  const staffList = getStoredStaffUsers();
+
+  const [username, setUsername] = useState(() => currentCreds.username || 'admin');
+  const [password, setPassword] = useState(() => currentCreds.password || 'admin123');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [showHint, setShowHint] = useState(false);
+  const [showHint, setShowHint] = useState(true);
   const [selectedQuickRole, setSelectedQuickRole] = useState<'admin' | 'manager' | 'phleb' | 'nurse' | 'delivery'>('admin');
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (isOpen) {
+      const freshCreds = getStoredAdminCredentials();
+      setUsername(freshCreds.username || 'admin');
+      setPassword(freshCreds.password || 'admin123');
+      setError(null);
+      setIsLoading(false);
+    }
+  }, [isOpen]);
 
-  const currentCreds = getStoredAdminCredentials();
-  const staffList = getStoredStaffUsers();
+  if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
