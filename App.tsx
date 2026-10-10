@@ -270,7 +270,8 @@ export default function App() {
 
   const scrollLabs = (direction: 'left' | 'right') => {
     if (labScrollRef.current) {
-      const scrollAmount = 240;
+      const isMobile = window.innerWidth < 640;
+      const scrollAmount = isMobile ? labScrollRef.current.clientWidth : 240;
       labScrollRef.current.scrollBy({
         left: direction === 'left' ? -scrollAmount : scrollAmount,
         behavior: 'smooth'
@@ -278,17 +279,18 @@ export default function App() {
     }
   };
 
-  // Auto-scroll partner labs horizontally
+  // Auto-scroll partner labs horizontally (1 lab at a time)
   useEffect(() => {
     if (currentView !== 'home' || isLabPaused) return;
 
     const interval = setInterval(() => {
       if (labScrollRef.current) {
         const { scrollLeft, scrollWidth, clientWidth } = labScrollRef.current;
+        const step = window.innerWidth < 640 ? clientWidth : 240;
         if (scrollLeft + clientWidth >= scrollWidth - 15) {
           labScrollRef.current.scrollTo({ left: 0, behavior: 'smooth' });
         } else {
-          labScrollRef.current.scrollBy({ left: 240, behavior: 'smooth' });
+          labScrollRef.current.scrollBy({ left: step, behavior: 'smooth' });
         }
       }
     }, 2800);
@@ -1038,54 +1040,30 @@ export default function App() {
                 </button>
               </div>
 
-              <div className="md:hidden flex items-center gap-1.5">
-                {/* Mobile Doctor Button */}
-                {siteSettings.showDoctorsSection !== false && (
+              <div className="md:hidden flex items-center">
+                {/* Mobile: Only Login / Profile Option */}
+                {currentPatient ? (
                   <button 
-                    onClick={navigateToDoctors}
-                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-bold border transition-colors cursor-pointer ${
-                      currentView === 'doctors'
-                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                        : 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                    }`}
+                    onClick={handlePatientNavClick} 
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sky-50 text-primary border border-sky-200 hover:bg-sky-100 transition-all font-semibold text-xs shadow-xs cursor-pointer"
+                    title="Profile"
                   >
-                    <Stethoscope size={13} className={currentView === 'doctors' ? 'text-white' : 'text-emerald-600'} />
-                    <span>{language === 'bn' ? 'ডাক্তার' : 'Doctor'}</span>
-                  </button>
-                )}
-
-                {/* Mobile Book Test Button */}
-                <button 
-                  onClick={handleHeaderBookTestClick}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-primary text-white text-xs font-bold shadow-xs cursor-pointer"
-                >
-                  <FlaskConical size={13} />
-                  <span>{language === 'bn' ? 'টেস্ট' : 'Test'}</span>
-                  {cart.length > 0 && (
-                    <span className="bg-amber-400 text-slate-900 text-[9px] font-black px-1 rounded-full">
-                      {cart.length}
-                    </span>
-                  )}
-                </button>
-
-                <button 
-                  onClick={toggleLanguage}
-                  className="flex items-center gap-1 px-2 py-1 rounded-full bg-slate-100 text-slate-600 cursor-pointer"
-                >
-                  <Globe size={16} />
-                  <span className="uppercase text-xs font-bold">{language}</span>
-                </button>
-                <button onClick={handlePatientNavClick} className="p-1.5 rounded-full hover:bg-slate-100 text-slate-700 cursor-pointer">
-                  {currentPatient ? (
                     <img 
                       src={currentPatient.avatar || "https://images.unsplash.com/photo-1633332755192-727a05c4013d?auto=format&fit=crop&q=80&w=100"} 
                       alt={currentPatient.name} 
-                      className="w-7 h-7 rounded-full object-cover border-2 border-primary"
+                      className="w-6 h-6 rounded-full object-cover border border-primary/40"
                     />
-                  ) : (
-                    <User size={20} className="text-slate-600" />
-                  )}
-                </button>
+                    <span className="truncate max-w-[100px] text-xs font-bold">{currentPatient.name.split(' ')[0]}</span>
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => handleOpenAuth('login')}
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-primary hover:bg-sky-600 text-white transition-all text-xs font-bold shadow-xs cursor-pointer"
+                  >
+                    <LogIn size={14} />
+                    <span>{language === 'bn' ? 'লগইন' : 'Login'}</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -1362,14 +1340,14 @@ export default function App() {
                           onMouseLeave={() => setIsLabPaused(false)}
                           onTouchStart={() => setIsLabPaused(true)}
                           onTouchEnd={() => setIsLabPaused(false)}
-                          className="flex gap-4 overflow-x-auto scroll-smooth pb-3 pt-1 px-1 no-scrollbar select-none"
+                          className="flex gap-4 overflow-x-auto scroll-smooth pb-3 pt-1 px-1 no-scrollbar select-none snap-x snap-mandatory"
                           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                         >
                           {labs.filter(l => !l.isHidden).map((lab) => (
                             <div
                               key={lab.id}
                               onClick={() => navigateToTests('All', lab.id, '')}
-                              className="w-48 sm:w-56 flex-shrink-0 bg-white rounded-2xl border border-slate-200 hover:border-primary hover:shadow-lg transition-all duration-200 p-4 flex flex-col items-center justify-between text-center cursor-pointer group relative overflow-hidden"
+                              className="w-full sm:w-56 flex-shrink-0 snap-center bg-white rounded-2xl border border-slate-200 hover:border-primary hover:shadow-lg transition-all duration-200 p-4 sm:p-4 flex flex-col items-center justify-between text-center cursor-pointer group relative overflow-hidden"
                             >
                               {/* Optional Discount Tag on Corner */}
                               {lab.discountBadge && (
@@ -1475,7 +1453,7 @@ export default function App() {
                 case 'services':
                   if (siteSettings.showServicesSection === false || activeServices.length === 0) return null;
                   return (
-                    <section key="services" id="services" className="py-20 bg-white border-b border-slate-100">
+                    <section key="services" id="services" className="hidden md:block py-20 bg-white border-b border-slate-100">
                       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="text-center max-w-3xl mx-auto mb-14">
                           <span className="inline-block py-1 px-3 rounded-full bg-sky-100 text-primary text-xs font-bold mb-3 uppercase tracking-wider">
@@ -1598,7 +1576,7 @@ export default function App() {
                 case 'howItWorks':
                   if (siteSettings.showHowItWorksSection === false) return null;
                   return (
-                    <section key="howItWorks" id="how-it-works" className="py-20 bg-slate-50">
+                    <section key="howItWorks" id="how-it-works" className="hidden md:block py-20 bg-slate-50">
                       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="text-center mb-16">
                           <h2 className="text-3xl font-bold text-secondary mb-4">
@@ -1841,6 +1819,7 @@ export default function App() {
         isOpen={Boolean(selectedDoctorForBooking)}
         onClose={() => setSelectedDoctorForBooking(null)}
         lang={language}
+        currentPatient={currentPatient}
         onBookingSuccess={(appointment) => {
           // Keep doctor appointment state updated
         }}

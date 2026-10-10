@@ -63,20 +63,22 @@ export const DoctorsView: React.FC<DoctorsViewProps> = ({
 
   const filteredDoctors = activeDoctors
     .filter(doctor => {
-      const matchDept = selectedDept === 'all' || doctor.department === selectedDept;
-      const matchGender = genderFilter === 'all' || doctor.gender === genderFilter;
       const query = searchQuery.toLowerCase().trim();
-      
-      if (!query) return matchDept && matchGender;
-
       const matchSearch = 
+        !query ||
         doctor.name.toLowerCase().includes(query) ||
         doctor.specialty.toLowerCase().includes(query) ||
+        doctor.department.toLowerCase().includes(query) ||
         doctor.hospital.toLowerCase().includes(query) ||
         doctor.degrees.toLowerCase().includes(query) ||
         (doctor.bmdcRegNo && doctor.bmdcRegNo.toLowerCase().includes(query));
 
-      return matchDept && matchGender && matchSearch;
+      const matchDept = selectedDept === 'all' || doctor.department === selectedDept;
+      const matchGender = genderFilter === 'all' || doctor.gender === genderFilter;
+
+      // On mobile view, show all active doctors filtered purely by doctor search
+      const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+      return matchSearch && (isMobile ? true : (matchDept && matchGender));
     })
     .sort((a, b) => {
       if (sortBy === 'fee_asc') return a.consultationFee - b.consultationFee;
@@ -87,10 +89,41 @@ export const DoctorsView: React.FC<DoctorsViewProps> = ({
     });
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8 animate-fadeIn">
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Navigation Breadcrumb & Emergency Banner */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="min-h-screen bg-slate-50 py-4 md:py-8 pb-24 md:pb-12 px-3 sm:px-6 lg:px-8 animate-fadeIn">
+      <div className="max-w-7xl mx-auto space-y-4 md:space-y-8">
+        {/* Mobile View: ONLY Doctor Search bar & Back to Home */}
+        <div className="md:hidden">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onBackToHome}
+              className="w-10 h-10 shrink-0 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-700 hover:text-sky-600 shadow-2xs active:scale-95 transition-all cursor-pointer"
+              aria-label={isBn ? 'হোমপেজে ফিরে যান' : 'Back to Home'}
+            >
+              <ArrowLeft size={18} />
+            </button>
+            <div className="relative flex-1">
+              <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder={isBn ? 'ডাক্তারের নাম বা স্পেশালিটি খুঁজুন...' : 'Search doctor or specialty...'}
+                className="w-full pl-10 pr-9 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-900 text-sm font-medium shadow-2xs focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 hover:text-slate-600 p-1"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop Navigation Breadcrumb & Emergency Banner - Hidden on Mobile */}
+        <div className="hidden md:flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <button
             onClick={onBackToHome}
             className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-sky-600 transition-colors bg-white px-3.5 py-2 rounded-xl border border-slate-200 shadow-2xs self-start cursor-pointer"
@@ -110,8 +143,8 @@ export const DoctorsView: React.FC<DoctorsViewProps> = ({
           )}
         </div>
 
-        {/* Page Header */}
-        <div className="bg-gradient-to-r from-sky-800 via-sky-700 to-indigo-900 rounded-3xl p-6 sm:p-10 text-white shadow-xl relative overflow-hidden">
+        {/* Desktop Page Header - Hidden on Mobile */}
+        <div className="hidden md:block bg-gradient-to-r from-sky-800 via-sky-700 to-indigo-900 rounded-3xl p-6 sm:p-10 text-white shadow-xl relative overflow-hidden">
           <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
 
           <div className="max-w-3xl relative z-10 space-y-4">
@@ -130,7 +163,7 @@ export const DoctorsView: React.FC<DoctorsViewProps> = ({
                 : 'Book virtual appointments at 30-minute intervals, consult with top BMDC-registered specialist doctors over HD video calls, and get instant digital e-prescriptions.'}
             </p>
 
-            {/* Search Bar */}
+            {/* Desktop Search Bar */}
             <div className="pt-2">
               <div className="relative max-w-xl">
                 <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -154,8 +187,8 @@ export const DoctorsView: React.FC<DoctorsViewProps> = ({
           </div>
         </div>
 
-        {/* Department Filter Tabs */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+        {/* Desktop Department Filter Tabs - Hidden on Mobile */}
+        <div className="hidden md:flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
           {departments.map(dept => {
             const isSelected = selectedDept === dept.id;
             return (
@@ -174,8 +207,8 @@ export const DoctorsView: React.FC<DoctorsViewProps> = ({
           })}
         </div>
 
-        {/* Filters and Sorting Bar */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3 text-xs">
+        {/* Desktop Filters and Sorting Bar - Hidden on Mobile */}
+        <div className="hidden md:flex bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2 text-slate-600">
             <span className="font-bold text-slate-900">{filteredDoctors.length}</span>
             <span>{isBn ? 'জন চিকিৎসক পাওয়া গেছে' : 'Specialist Doctors available'}</span>

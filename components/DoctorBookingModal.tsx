@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Doctor, Language, PaymentMethod, DoctorAppointment, PaymentGatewaysConfig } from '../types';
+import { Doctor, Language, PaymentMethod, DoctorAppointment, PaymentGatewaysConfig, PatientUser } from '../types';
 import { 
   X, 
   Calendar, 
@@ -25,7 +25,7 @@ import {
   Wallet,
   Smartphone
 } from 'lucide-react';
-import { saveDoctorAppointment, getStoredPaymentConfig, getStoredSiteSettings } from '../services/dataStorage';
+import { saveDoctorAppointment, getStoredPaymentConfig, getStoredSiteSettings, getStoredCurrentPatient } from '../services/dataStorage';
 
 interface DoctorBookingModalProps {
   doctor: Doctor | null;
@@ -34,6 +34,7 @@ interface DoctorBookingModalProps {
   lang: Language;
   onBookingSuccess: (appointment: DoctorAppointment) => void;
   onStartVideoCall?: (appointment: DoctorAppointment) => void;
+  currentPatient?: PatientUser | null;
 }
 
 export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
@@ -42,7 +43,8 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
   onClose,
   lang,
   onBookingSuccess,
-  onStartVideoCall
+  onStartVideoCall,
+  currentPatient
 }) => {
   if (!isOpen || !doctor) return null;
 
@@ -59,37 +61,58 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
   const [selectedSlot, setSelectedSlot] = useState<string>('06:00 PM - 06:30 PM');
   const [consultationType, setConsultationType] = useState<'video' | 'audio'>('video');
 
-  // Patient Details
-  const [patientName, setPatientName] = useState<string>('');
-  const [patientPhone, setPatientPhone] = useState<string>('');
-  const [patientEmail, setPatientEmail] = useState<string>('');
-  const [patientAge, setPatientAge] = useState<string>('');
-  const [patientGender, setPatientGender] = useState<'male' | 'female' | 'other'>('male');
+  // Patient Details - Auto-initialized from logged-in patient
+  const initialPatient = currentPatient || getStoredCurrentPatient();
+  const [patientName, setPatientName] = useState<string>(() => initialPatient?.name || '');
+  const [patientPhone, setPatientPhone] = useState<string>(() => initialPatient?.phone || '');
+  const [patientEmail, setPatientEmail] = useState<string>(() => initialPatient?.email || '');
+  const [patientAge, setPatientAge] = useState<string>(() => initialPatient?.age ? String(initialPatient.age) : '');
+  const [patientGender, setPatientGender] = useState<'male' | 'female' | 'other'>(() => 
+    (initialPatient?.gender === 'female' || initialPatient?.gender === 'other') ? initialPatient.gender : 'male'
+  );
   const [problemDescription, setProblemDescription] = useState<string>('');
 
   // Payment Options matching Test Booking
   const [paymentConfig, setPaymentConfig] = useState<PaymentGatewaysConfig>(getStoredPaymentConfig);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('bkash');
-  const [senderPhone, setSenderPhone] = useState<string>('');
+  const [senderPhone, setSenderPhone] = useState<string>(() => initialPatient?.phone || '');
   const [transactionId, setTransactionId] = useState<string>('');
   
   // Card Inputs
   const [cardNumber, setCardNumber] = useState('');
   const [cardExpiry, setCardExpiry] = useState('');
   const [cardCvv, setCardCvv] = useState('');
-  const [cardHolder, setCardHolder] = useState('');
+  const [cardHolder, setCardHolder] = useState(() => initialPatient?.name || '');
 
   const [validationError, setValidationError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [completedAppointment, setCompletedAppointment] = useState<DoctorAppointment | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
 
+  // Auto-populate patient details whenever modal opens or currentPatient changes
   useEffect(() => {
     if (isOpen) {
       setPaymentConfig(getStoredPaymentConfig());
       setValidationError(null);
+
+      const pat = currentPatient || getStoredCurrentPatient();
+      if (pat) {
+        if (pat.name) {
+          setPatientName(pat.name);
+          setCardHolder(pat.name);
+        }
+        if (pat.phone) {
+          setPatientPhone(pat.phone);
+          setSenderPhone(prev => prev || pat.phone);
+        }
+        if (pat.email) setPatientEmail(pat.email);
+        if (pat.age) setPatientAge(String(pat.age));
+        if (pat.gender && (pat.gender === 'male' || pat.gender === 'female' || pat.gender === 'other')) {
+          setPatientGender(pat.gender);
+        }
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, currentPatient]);
 
   // 30-Minute Interval Time Slots
   const morningSlots = [
@@ -272,73 +295,78 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/80 backdrop-blur-xs overflow-y-auto animate-fadeIn">
-      <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-2xl overflow-hidden my-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/80 backdrop-blur-xs overflow-y-auto animate-fadeIn">
+      <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 w-full max-w-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-sky-700 via-sky-800 to-indigo-900 text-white p-5 sm:p-6 relative">
+        <div className="bg-gradient-to-r from-sky-700 via-sky-800 to-indigo-900 text-white p-4 sm:p-6 relative shrink-0">
           <button
             onClick={onClose}
-            className="absolute top-5 right-5 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
+            className="absolute top-3.5 sm:top-5 right-3.5 sm:right-5 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer z-10"
+            aria-label="Close"
           >
             <X size={18} />
           </button>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4 pr-8">
             <img 
               src={doctor.image} 
               alt={doctor.name} 
-              className="w-16 h-16 rounded-2xl object-cover border-2 border-white/40 shadow-md shrink-0"
+              className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl object-cover border-2 border-white/40 shadow-md shrink-0"
               onError={(e) => {
                 (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=400';
               }}
             />
             <div className="min-w-0 flex-1">
-              <span className="inline-block px-2.5 py-0.5 rounded-full bg-sky-400/20 text-sky-200 text-[10px] font-bold uppercase tracking-wider mb-1">
-                {isBn ? 'অনলাইন ডাক্তার বুকিং ও ভিডিও কনসালটেন্সি' : 'Doctor Booking & Telemedicine'}
+              <span className="inline-block px-2 sm:px-2.5 py-0.5 rounded-full bg-sky-400/20 text-sky-200 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider mb-0.5 truncate max-w-full">
+                {isBn ? 'ডাক্তার বুকিং ও টেলিমেডিসিন' : 'Doctor Booking & Telemedicine'}
               </span>
-              <h3 className="text-lg sm:text-xl font-bold truncate">{doctor.name}</h3>
+              <h3 className="text-base sm:text-xl font-bold truncate">{doctor.name}</h3>
               <p className="text-xs text-sky-200 truncate">{doctor.specialty}</p>
               <p className="text-[11px] text-white/70 truncate">{doctor.hospital}</p>
             </div>
           </div>
 
-          {/* Stepper progress */}
-          <div className="mt-5 grid grid-cols-4 gap-2 pt-3 border-t border-white/15 text-[11px] font-semibold text-center">
+          {/* Stepper progress - Responsive labels to prevent broken multi-line wraps on mobile */}
+          <div className="mt-3.5 sm:mt-5 grid grid-cols-4 gap-1 sm:gap-2 pt-2.5 sm:pt-3 border-t border-white/15 text-[10px] sm:text-[11px] font-semibold text-center">
             <div className={`pb-1 border-b-2 transition-all ${step >= 1 ? 'border-sky-300 text-white font-bold' : 'border-white/20 text-white/50'}`}>
-              1. {isBn ? 'তারিখ ও স্লট' : 'Date & Slot'}
+              <span className="sm:hidden">১. স্লট</span>
+              <span className="hidden sm:inline">1. {isBn ? 'তারিখ ও স্লট' : 'Date & Slot'}</span>
             </div>
             <div className={`pb-1 border-b-2 transition-all ${step >= 2 ? 'border-sky-300 text-white font-bold' : 'border-white/20 text-white/50'}`}>
-              2. {isBn ? 'রোগীর তথ্য' : 'Patient Info'}
+              <span className="sm:hidden">২. তথ্য</span>
+              <span className="hidden sm:inline">2. {isBn ? 'রোগীর তথ্য' : 'Patient Info'}</span>
             </div>
             <div className={`pb-1 border-b-2 transition-all ${step >= 3 ? 'border-sky-300 text-white font-bold' : 'border-white/20 text-white/50'}`}>
-              3. {isBn ? 'ফি পেমেন্ট' : 'Payment'}
+              <span className="sm:hidden">৩. পেমেন্ট</span>
+              <span className="hidden sm:inline">3. {isBn ? 'ফি পেমেন্ট' : 'Payment'}</span>
             </div>
             <div className={`pb-1 border-b-2 transition-all ${step >= 4 ? 'border-sky-300 text-white font-bold' : 'border-white/20 text-white/50'}`}>
-              4. {isBn ? 'ভিডিও কানেক্ট' : 'Video Connect'}
+              <span className="sm:hidden">৪. ভিডিও</span>
+              <span className="hidden sm:inline">4. {isBn ? 'ভিডিও কানেক্ট' : 'Video Connect'}</span>
             </div>
           </div>
         </div>
 
         {/* Validation error banner */}
         {validationError && (
-          <div className="bg-red-50 border-b border-red-200 px-5 py-2.5 flex items-center gap-2 text-red-700 text-xs font-semibold">
+          <div className="bg-red-50 border-b border-red-200 px-4 sm:px-5 py-2.5 flex items-center gap-2 text-red-700 text-xs font-semibold shrink-0">
             <AlertCircle size={15} className="shrink-0 text-red-500" />
             <span>{validationError}</span>
           </div>
         )}
 
         {/* Modal Body */}
-        <div className="p-5 sm:p-6 max-h-[72vh] overflow-y-auto">
+        <div className="p-4 sm:p-6 overflow-y-auto flex-1">
           {/* STEP 1: DATE & 30-MINUTE SLOT SELECTION */}
           {step === 1 && (
-            <div className="space-y-6">
+            <div className="space-y-5 sm:space-y-6">
               {/* Date Selector */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                  <Calendar size={14} className="text-sky-600" />
+                  <Calendar size={14} className="text-sky-600 shrink-0" />
                   <span>{isBn ? 'অ্যাপয়েন্টমেন্টের তারিখ নির্বাচন করুন:' : 'Select Appointment Date:'}</span>
                 </label>
-                <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+                <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5 sm:gap-2">
                   {availableDates.map(item => {
                     const isSelected = selectedDate === item.date;
                     return (
@@ -346,19 +374,19 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
                         key={item.date}
                         type="button"
                         onClick={() => setSelectedDate(item.date)}
-                        className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer ${
+                        className={`p-2 sm:p-2.5 rounded-xl sm:rounded-2xl border text-center transition-all cursor-pointer ${
                           isSelected
                             ? 'bg-sky-600 border-sky-600 text-white shadow-md shadow-sky-200 ring-2 ring-sky-300 scale-102'
                             : 'bg-white hover:bg-sky-50 border-slate-200 text-slate-700'
                         }`}
                       >
-                        <span className={`block text-[10px] font-medium uppercase ${isSelected ? 'text-sky-100' : 'text-slate-400'}`}>
+                        <span className={`block text-[9px] sm:text-[10px] font-medium uppercase ${isSelected ? 'text-sky-100' : 'text-slate-400'}`}>
                           {item.day}
                         </span>
-                        <span className="block text-base font-extrabold my-0.5">
+                        <span className="block text-sm sm:text-base font-extrabold my-0.5">
                           {item.dateNum}
                         </span>
-                        <span className={`block text-[9px] font-semibold ${isSelected ? 'text-sky-100' : 'text-slate-500'}`}>
+                        <span className={`block text-[8px] sm:text-[9px] font-semibold ${isSelected ? 'text-sky-100' : 'text-slate-500'}`}>
                           {item.month}
                         </span>
                       </button>
@@ -369,12 +397,12 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
 
               {/* 30-Minute Interval Time Slots */}
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                   <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                    <Clock size={14} className="text-sky-600" />
+                    <Clock size={14} className="text-sky-600 shrink-0" />
                     <span>{isBn ? '৩০ মিনিট স্লট নির্বাচন করুন (Time Slot):' : 'Select 30-Min Time Slot:'}</span>
                   </label>
-                  <span className="text-[11px] font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded-full border border-sky-200">
+                  <span className="text-[10px] sm:text-[11px] font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded-full border border-sky-200 self-start sm:self-auto">
                     ⏱️ {isBn ? 'প্রতি স্লট ৩০ মিনিট' : '30-Minute Slots'}
                   </span>
                 </div>
@@ -384,7 +412,7 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
                   <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
                     🌆 {isBn ? 'সন্ধ্যা ও রাত' : 'Evening & Night'}
                   </span>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                     {eveningSlots.map(slot => {
                       const isSelected = selectedSlot === slot;
                       return (
@@ -392,7 +420,7 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
                           key={slot}
                           type="button"
                           onClick={() => setSelectedSlot(slot)}
-                          className={`px-3 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-between ${
+                          className={`px-3 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-between whitespace-nowrap ${
                             isSelected
                               ? 'bg-sky-600 border-sky-600 text-white shadow-sm ring-2 ring-sky-300'
                               : 'bg-slate-50 hover:bg-sky-50 border-slate-200 text-slate-700'
@@ -411,7 +439,7 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
                   <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
                     ☀️ {isBn ? 'সকাল' : 'Morning'}
                   </span>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                     {morningSlots.slice(0, 4).map(slot => {
                       const isSelected = selectedSlot === slot;
                       return (
@@ -419,7 +447,7 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
                           key={slot}
                           type="button"
                           onClick={() => setSelectedSlot(slot)}
-                          className={`px-3 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-between ${
+                          className={`px-3 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-between whitespace-nowrap ${
                             isSelected
                               ? 'bg-sky-600 border-sky-600 text-white shadow-sm ring-2 ring-sky-300'
                               : 'bg-slate-50 hover:bg-sky-50 border-slate-200 text-slate-700'
@@ -435,16 +463,16 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
               </div>
 
               {/* Consultation Type Selector (Online Telemedicine Only) */}
-              <div className="p-4 bg-sky-50/70 rounded-2xl border border-sky-200/80 space-y-3">
+              <div className="p-3.5 sm:p-4 bg-sky-50/70 rounded-2xl border border-sky-200/80 space-y-2.5 sm:space-y-3">
                 <label className="block text-xs font-bold text-sky-900 uppercase tracking-wider flex items-center gap-1.5">
-                  <Video size={14} className="text-sky-700" />
+                  <Video size={14} className="text-sky-700 shrink-0" />
                   <span>{isBn ? 'কন্সালটেন্সির মাধ্যম (Online Telemedicine):' : 'Consultation Mode:'}</span>
                 </label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                   <button
                     type="button"
                     onClick={() => setConsultationType('video')}
-                    className={`p-3.5 rounded-xl border text-left flex items-start gap-3 transition-all cursor-pointer ${
+                    className={`p-3 sm:p-3.5 rounded-xl border text-left flex items-start gap-3 transition-all cursor-pointer ${
                       consultationType === 'video'
                         ? 'bg-white border-sky-600 shadow-md ring-2 ring-sky-300 text-sky-900'
                         : 'bg-white/60 hover:bg-white border-slate-200 text-slate-700'
@@ -462,7 +490,7 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setConsultationType('audio')}
-                    className={`p-3.5 rounded-xl border text-left flex items-start gap-3 transition-all cursor-pointer ${
+                    className={`p-3 sm:p-3.5 rounded-xl border text-left flex items-start gap-3 transition-all cursor-pointer ${
                       consultationType === 'audio'
                         ? 'bg-white border-sky-600 shadow-md ring-2 ring-sky-300 text-sky-900'
                         : 'bg-white/60 hover:bg-white border-slate-200 text-slate-700'
@@ -480,11 +508,11 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
               </div>
 
               {/* Consultation Fee Summary */}
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex items-center justify-between">
+              <div className="bg-slate-50 p-3.5 sm:p-4 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <span className="text-xs font-semibold text-slate-500 block">{isBn ? 'কন্সালটেন্সি ফি (Consultation Fee):' : 'Consultation Fee:'}</span>
-                  <div className="flex items-baseline gap-2 mt-0.5">
-                    <span className="text-2xl font-black text-slate-900">৳ {doctor.consultationFee}</span>
+                  <span className="text-[11px] sm:text-xs font-semibold text-slate-500 block">{isBn ? 'কন্সালটেন্সি ফি (Consultation Fee):' : 'Consultation Fee:'}</span>
+                  <div className="flex items-baseline gap-2 mt-0.5 flex-wrap">
+                    <span className="text-xl sm:text-2xl font-black text-slate-900">৳ {doctor.consultationFee}</span>
                     {doctor.originalFee && doctor.originalFee > doctor.consultationFee && (
                       <span className="text-xs text-slate-400 line-through">৳ {doctor.originalFee}</span>
                     )}
@@ -499,9 +527,9 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
                 <button
                   type="button"
                   onClick={handleProceedToDetails}
-                  className="px-6 py-3 rounded-2xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-sky-200 transition-all cursor-pointer"
+                  className="w-full sm:w-auto px-6 py-2.5 sm:py-3 rounded-2xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-sky-200 transition-all cursor-pointer"
                 >
-                  <span>{isBn ? 'পরবর্তী ধাপ' : 'Next Step'}</span>
+                  <span>{isBn ? 'রোগীর তথ্য দিন (পরবর্তী ধাপ)' : 'Next: Patient Info'}</span>
                   <ChevronRight size={16} />
                 </button>
               </div>
@@ -511,6 +539,26 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
           {/* STEP 2: PATIENT DETAILS */}
           {step === 2 && (
             <div className="space-y-4">
+              {/* Logged-in Patient Profile Auto-fill Badge */}
+              {((currentPatient || getStoredCurrentPatient())) && (
+                <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-200 text-xs text-emerald-800 flex items-center justify-between gap-2 animate-fadeIn">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+                    <div className="min-w-0">
+                      <span className="font-bold block text-emerald-900 truncate">
+                        {isBn ? 'লগইনকৃত রোগী প্রোফাইল' : 'Logged-in Patient'}
+                      </span>
+                      <span className="text-[11px] text-emerald-700 truncate block">
+                        {(currentPatient || getStoredCurrentPatient())?.name} &bull; {(currentPatient || getStoredCurrentPatient())?.phone}
+                      </span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold bg-emerald-200/80 text-emerald-900 px-2 py-0.5 rounded-full shrink-0">
+                    {isBn ? 'স্বয়ংক্রিয় পূরণ' : 'Auto-filled'}
+                  </span>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {/* Patient Name */}
                 <div>
@@ -606,15 +654,15 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
               </div>
 
               {/* Appointment summary info badge */}
-              <div className="p-3 bg-sky-50 rounded-xl border border-sky-200 text-xs text-sky-900 flex items-center justify-between">
-                <div>
+              <div className="p-3 bg-sky-50 rounded-xl border border-sky-200 text-xs text-sky-900 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                <div className="truncate">
                   <span className="font-bold">{doctor.name}</span> &bull; {selectedDate} ({selectedSlot})
                 </div>
-                <span className="font-black text-sky-800">৳ {doctor.consultationFee}</span>
+                <span className="font-black text-sky-800 text-sm">৳ {doctor.consultationFee}</span>
               </div>
 
               {/* Controls */}
-              <div className="flex items-center justify-between pt-2">
+              <div className="flex items-center justify-between pt-2 gap-2">
                 <button
                   type="button"
                   onClick={() => setStep(1)}
@@ -626,7 +674,7 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
                 <button
                   type="button"
                   onClick={handleProceedToPayment}
-                  className="px-6 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-sky-200 cursor-pointer"
+                  className="px-5 sm:px-6 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-sky-200 cursor-pointer"
                 >
                   <span>{isBn ? 'পেমেন্ট ধাপে যান' : 'Proceed to Payment'}</span>
                   <ChevronRight size={16} />
@@ -637,16 +685,16 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
 
           {/* STEP 3: PAYMENT FLOW IDENTICAL TO LAB TEST BOOKING */}
           {step === 3 && (
-            <div className="space-y-5">
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex items-center justify-between">
+            <div className="space-y-4 sm:space-y-5">
+              <div className="bg-slate-50 p-3.5 sm:p-4 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
                   <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
                     {isBn ? 'মোট প্রদেয় কনসালটেন্সি ফি' : 'Total Payable Consultation Fee'}
                   </span>
-                  <span className="text-2xl font-black text-slate-900">৳ {doctor.consultationFee}</span>
+                  <span className="text-xl sm:text-2xl font-black text-slate-900">৳ {doctor.consultationFee}</span>
                 </div>
-                <div className="text-right text-xs">
-                  <span className="font-bold text-slate-700 block">{doctor.name}</span>
+                <div className="sm:text-right text-xs">
+                  <span className="font-bold text-slate-700 block truncate">{doctor.name}</span>
                   <span className="text-slate-500 text-[11px]">{selectedDate} &bull; {selectedSlot}</span>
                 </div>
               </div>
@@ -654,11 +702,11 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
               {/* Payment Method Selector matching Test Booking */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                  <CreditCard size={14} className="text-sky-600" />
+                  <CreditCard size={14} className="text-sky-600 shrink-0" />
                   <span>{isBn ? 'পেমেন্ট মাধ্যম নির্বাচন করুন:' : 'Select Payment Method:'}</span>
                 </label>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
                   {/* bKash */}
                   <button
                     type="button"
@@ -727,12 +775,12 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
 
               {/* Mobile Banking Instructions & Inputs (bKash / Nagad / Rocket) */}
               {(paymentMethod === 'bkash' || paymentMethod === 'nagad' || paymentMethod === 'rocket') && (
-                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
-                  <div className="flex items-center justify-between text-xs">
+                <div className="p-3.5 sm:p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs">
                     <span className="font-bold text-slate-800">
                       {paymentMethod === 'bkash' ? 'bKash Merchant / Personal No:' : paymentMethod === 'nagad' ? 'Nagad Account No:' : 'Rocket Account No:'}
                     </span>
-                    <span className="font-mono font-bold text-sky-700 bg-sky-100 px-2 py-0.5 rounded">
+                    <span className="font-mono font-bold text-sky-700 bg-sky-100 px-2 py-0.5 rounded self-start sm:self-auto">
                       {paymentMethod === 'bkash' 
                         ? (paymentConfig.bkashNumber || '01712-345678')
                         : paymentMethod === 'nagad'
@@ -741,7 +789,7 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
                     </span>
                   </div>
 
-                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                  <p className="text-[11px] sm:text-xs text-slate-500 leading-relaxed">
                     {isBn 
                       ? `অনুগ্রহ করে উপরের নম্বরে ৳${doctor.consultationFee} ফি 'Send Money' বা 'Payment' করুন এবং আপনার প্রেরক নম্বর ও TrxID নিচে লিখুন:`
                       : `Please send ৳${doctor.consultationFee} to the number above and enter your Sender Phone & TrxID below:`}
@@ -780,7 +828,7 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
 
               {/* Card Inputs */}
               {paymentMethod === 'card' && (
-                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                <div className="p-3.5 sm:p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
                   <div className="flex items-center justify-between text-xs mb-1">
                     <span className="font-bold text-slate-800">{isBn ? 'কার্ডের তথ্য দিন (Visa / Mastercard)' : 'Debit / Credit Card Details'}</span>
                     <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-bold">256-Bit SSL Encrypted</span>
@@ -835,11 +883,11 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
               )}
 
               {/* Controls */}
-              <div className="flex items-center justify-between pt-2">
+              <div className="flex items-center justify-between pt-2 gap-2">
                 <button
                   type="button"
                   onClick={() => setStep(2)}
-                  className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold cursor-pointer shrink-0"
                 >
                   {isBn ? 'পূর্ববর্তী' : 'Back'}
                 </button>
@@ -848,17 +896,18 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
                   type="button"
                   disabled={isProcessing}
                   onClick={handleConfirmAppointment}
-                  className="px-6 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-200 cursor-pointer disabled:opacity-50"
+                  className="flex-1 sm:flex-none px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 sm:gap-2 shadow-lg shadow-emerald-200 cursor-pointer disabled:opacity-50"
                 >
                   {isProcessing ? (
                     <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>{isBn ? 'পেমেন্ট সম্পন্ন হচ্ছে...' : 'Processing...'}</span>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin shrink-0" />
+                      <span>{isBn ? 'প্রসেসিং...' : 'Processing...'}</span>
                     </>
                   ) : (
                     <>
-                      <ShieldCheck size={16} />
-                      <span>{isBn ? `পেমেন্ট করুন ও বুকিং কনফার্ম করুন (৳ ${doctor.consultationFee})` : `Confirm & Pay ৳ ${doctor.consultationFee}`}</span>
+                      <ShieldCheck size={16} className="shrink-0" />
+                      <span className="sm:hidden">{isBn ? `পেমেন্ট সম্পন্ন (৳${doctor.consultationFee})` : `Pay (৳${doctor.consultationFee})`}</span>
+                      <span className="hidden sm:inline">{isBn ? `পেমেন্ট ও বুকিং কনফার্ম (৳${doctor.consultationFee})` : `Confirm & Pay ৳${doctor.consultationFee}`}</span>
                     </>
                   )}
                 </button>
@@ -868,14 +917,14 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
 
           {/* STEP 4: SUCCESS CONFIRMATION & DIRECT INSTANT VIDEO CONNECT */}
           {step === 4 && completedAppointment && (
-            <div className="text-center py-4 space-y-6 animate-fadeIn">
-              <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-inner ring-8 ring-emerald-50">
-                <CheckCircle2 size={36} />
+            <div className="text-center py-4 space-y-5 sm:space-y-6 animate-fadeIn">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-inner ring-8 ring-emerald-50">
+                <CheckCircle2 size={32} className="sm:size-[36px]" />
               </div>
 
               <div>
-                <h3 className="text-2xl font-extrabold text-slate-900 mb-1">
-                  {isBn ? 'ডাক্তার অ্যাপয়েন্টমেন্ট কনফার্মড!' : 'Appointment Confirmed Successfully!'}
+                <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 mb-1">
+                  {isBn ? 'ডাক্তার অ্যাপয়েন্টমেন্ট কনফার্মড!' : 'Appointment Confirmed!'}
                 </h3>
                 <p className="text-xs text-slate-500">
                   {isBn 
@@ -884,14 +933,14 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
                 </p>
               </div>
 
-              {/* Instant Join Video Call Button (Doctor & Patient can connect seamlessly) */}
-              <div className="p-5 bg-gradient-to-r from-emerald-600 via-teal-600 to-sky-700 rounded-3xl text-white shadow-xl shadow-emerald-600/20 space-y-3">
+              {/* Instant Join Video Call Button */}
+              <div className="p-4 sm:p-5 bg-gradient-to-r from-emerald-600 via-teal-600 to-sky-700 rounded-2xl sm:rounded-3xl text-white shadow-xl shadow-emerald-600/20 space-y-3">
                 <div className="flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-100">
                   <Sparkles size={15} className="animate-pulse" />
                   <span>{isBn ? 'লাইভ এইচডি ভিডিও কনসালটেন্সি' : 'Live HD Video Consultation'}</span>
                 </div>
                 
-                <h4 className="text-lg font-bold">
+                <h4 className="text-base sm:text-lg font-bold">
                   {isBn ? 'এখনই চিকিৎসকের সাথে ভিডিও কলে যুক্ত হোন' : 'Join Video Call with Doctor Now'}
                 </h4>
                 
@@ -901,23 +950,23 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
                     : 'Both Doctor & Patient can join this private video room instantly.'}
                 </p>
 
-                <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+                <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-2.5 sm:gap-3">
                   <button
                     type="button"
                     onClick={() => {
                       onClose();
                       onStartVideoCall?.(completedAppointment);
                     }}
-                    className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-white hover:bg-emerald-50 text-emerald-800 font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg transition-transform hover:scale-105 cursor-pointer"
+                    className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-3.5 rounded-2xl bg-white hover:bg-emerald-50 text-emerald-800 font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg transition-transform hover:scale-105 cursor-pointer"
                   >
-                    <Video size={18} className="text-emerald-600" />
-                    <span>{isBn ? 'ভিডিও কল শুরু করুন (Join Now)' : 'Start Video Consultation'}</span>
+                    <Video size={18} className="text-emerald-600 shrink-0" />
+                    <span>{isBn ? 'ভিডিও কল শুরু করুন' : 'Start Video Consultation'}</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => handleCopyMeetingLink(completedAppointment.videoRoomId || completedAppointment.id)}
-                    className="w-full sm:w-auto px-4 py-3 rounded-2xl bg-white/20 hover:bg-white/30 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    className="w-full sm:w-auto px-4 py-2.5 sm:py-3 rounded-2xl bg-white/20 hover:bg-white/30 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                   >
                     {copiedLink ? <Check size={14} className="text-emerald-300" /> : <Copy size={14} />}
                     <span>{copiedLink ? (isBn ? 'লিঙ্ক কপি হয়েছে' : 'Link Copied') : (isBn ? 'রুম লিঙ্ক কপি করুন' : 'Copy Room Link')}</span>
@@ -926,7 +975,7 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
               </div>
 
               {/* Appointment Receipt Details */}
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-left space-y-2 text-xs">
+              <div className="bg-slate-50 p-3.5 sm:p-4 rounded-2xl border border-slate-200 text-left space-y-2 text-xs">
                 <div className="flex justify-between border-b border-slate-200/80 pb-2">
                   <span className="text-slate-500">{isBn ? 'অ্যাপয়েন্টমেন্ট আইডি:' : 'Appointment ID:'}</span>
                   <span className="font-mono font-bold text-sky-700">{completedAppointment.id}</span>
@@ -939,7 +988,7 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
                   <span className="text-slate-500">{isBn ? 'রোগীর নাম:' : 'Patient Name:'}</span>
                   <span className="font-semibold text-slate-800">{completedAppointment.patientName} ({completedAppointment.patientAge} Y)</span>
                 </div>
-                <div className="flex justify-between border-b border-slate-200/80 pb-2">
+                <div className="flex flex-col sm:flex-row sm:justify-between border-b border-slate-200/80 pb-2 gap-0.5">
                   <span className="text-slate-500">{isBn ? 'তারিখ ও সময়সূচি:' : 'Date & Slot:'}</span>
                   <span className="font-semibold text-slate-800">{completedAppointment.appointmentDate} &bull; {completedAppointment.appointmentTimeSlot}</span>
                 </div>
@@ -949,11 +998,11 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
                 </div>
               </div>
 
-              <div className="pt-2">
+              <div className="pt-1">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-6 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-bold cursor-pointer"
+                  className="w-full sm:w-auto px-6 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-bold cursor-pointer"
                 >
                   {isBn ? 'উইন্ডো বন্ধ করুন' : 'Close Window'}
                 </button>

@@ -215,41 +215,43 @@ export const DoctorVideoConsultationModal: React.FC<DoctorVideoConsultationModal
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/90 backdrop-blur-md overflow-hidden animate-fadeIn">
       <div className="bg-slate-900 rounded-3xl border border-slate-800 w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden shadow-2xl text-white">
         {/* Video Call Top Bar */}
-        <div className="p-4 px-6 bg-slate-950/90 border-b border-slate-800 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
-            <div>
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <span>{appointment.doctorName}</span>
-                <span className="text-[10px] font-normal text-sky-400 bg-sky-950/80 px-2 py-0.5 rounded-full border border-sky-800">
+        <div className="p-3 sm:p-4 px-3.5 sm:px-6 bg-slate-950/90 border-b border-slate-800 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+            <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+            <div className="min-w-0">
+              <h3 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5 truncate">
+                <span className="truncate">{appointment.doctorName}</span>
+                <span className="hidden sm:inline text-[10px] font-normal text-sky-400 bg-sky-950/80 px-2 py-0.5 rounded-full border border-sky-800 shrink-0">
                   {appointment.doctorSpecialty}
                 </span>
               </h3>
-              <p className="text-[11px] text-slate-400">{appointment.hospital}</p>
+              <p className="text-[10px] sm:text-[11px] text-slate-400 truncate">{appointment.hospital}</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             {/* Live Call Duration */}
-            <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-800 rounded-full border border-slate-700 text-xs font-mono text-emerald-400">
-              <Clock size={13} />
+            <div className="flex items-center gap-1 px-2 sm:px-3 py-1 bg-slate-800 rounded-full border border-slate-700 text-[11px] sm:text-xs font-mono text-emerald-400">
+              <Clock size={12} className="shrink-0" />
               <span>{formatTimer(callDuration)}</span>
             </div>
 
             {/* View E-Prescription button in header */}
             <button
               onClick={handleGenerateAndOpenPrescription}
-              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+              className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] sm:text-xs font-bold flex items-center gap-1 transition-all cursor-pointer shadow-xs whitespace-nowrap"
             >
-              <FileText size={14} />
-              <span>{isBn ? 'ই-প্রেসক্রিপশন দেখুন' : 'E-Prescription'}</span>
+              <FileText size={13} className="shrink-0" />
+              <span className="hidden sm:inline">{isBn ? 'ই-প্রেসক্রিপশন দেখুন' : 'E-Prescription'}</span>
+              <span className="sm:hidden">{isBn ? 'প্রেসক্রিপশন' : 'Rx'}</span>
             </button>
 
             <button
               onClick={onClose}
-              className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+              aria-label="Close"
             >
-              <X size={16} />
+              <X size={15} />
             </button>
           </div>
         </div>
@@ -257,7 +259,7 @@ export const DoctorVideoConsultationModal: React.FC<DoctorVideoConsultationModal
         {/* Video Call Center Layout (Video Stream + Side Panel) */}
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
           {/* Main Video Screen Area (8 Cols) */}
-          <div className="lg:col-span-8 bg-black relative flex items-center justify-center overflow-hidden p-4">
+          <div className="lg:col-span-8 bg-black relative flex items-center justify-center overflow-hidden p-2 sm:p-4">
             {/* Doctor Simulated Stream */}
             <div className="w-full h-full rounded-2xl overflow-hidden relative flex items-center justify-center bg-slate-900 border border-slate-800">
               <img 
@@ -267,73 +269,73 @@ export const DoctorVideoConsultationModal: React.FC<DoctorVideoConsultationModal
               />
 
               {/* Overlay Doctor Name Tag */}
-              <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                <span className="text-xs font-bold text-white">{appointment.doctorName}</span>
-                <span className="text-[10px] text-slate-300">(HD Video)</span>
+              <div className="absolute top-3 sm:top-4 left-3 sm:left-4 bg-black/60 backdrop-blur-md px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl border border-white/10 flex items-center gap-1.5 sm:gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                <span className="text-xs font-bold text-white truncate max-w-[130px] sm:max-w-none">{appointment.doctorName}</span>
+                <span className="text-[10px] text-slate-300 hidden sm:inline">(HD Video)</span>
               </div>
 
               {/* Patient PIP (Self Video View) */}
-              <div className="absolute bottom-4 right-4 w-32 sm:w-44 h-24 sm:h-32 rounded-xl overflow-hidden border-2 border-slate-700 bg-slate-800 shadow-2xl z-20">
+              <div className="absolute bottom-3 sm:bottom-4 right-3 sm:right-4 w-28 sm:w-44 h-20 sm:h-32 rounded-xl overflow-hidden border-2 border-slate-700 bg-slate-800 shadow-2xl z-20">
                 {isVideoOn ? (
-                  <div className="w-full h-full bg-gradient-to-tr from-slate-800 to-sky-900 flex flex-col items-center justify-center text-center p-2 relative">
+                  <div className="w-full h-full bg-gradient-to-tr from-slate-800 to-sky-900 flex flex-col items-center justify-center text-center p-1.5 sm:p-2 relative">
                     <img 
                       src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300" 
                       alt="You" 
                       className="w-full h-full object-cover absolute inset-0 opacity-85"
                     />
-                    <div className="absolute bottom-1 left-1.5 bg-black/70 px-1.5 py-0.5 rounded text-[9px] font-bold text-white">
+                    <div className="absolute bottom-1 left-1.5 bg-black/70 px-1.5 py-0.5 rounded text-[8px] sm:text-[9px] font-bold text-white truncate max-w-[90%]">
                       {appointment.patientName} (You)
                     </div>
                   </div>
                 ) : (
                   <div className="w-full h-full bg-slate-900 flex flex-col items-center justify-center text-slate-500">
-                    <VideoOff size={20} className="mb-1" />
-                    <span className="text-[10px]">Camera Off</span>
+                    <VideoOff size={18} className="mb-1" />
+                    <span className="text-[9px] sm:text-[10px]">Camera Off</span>
                   </div>
                 )}
               </div>
             </div>
 
             {/* In-Video Bottom Controls Bar */}
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-slate-900/90 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-slate-700 shadow-2xl z-30">
+            <div className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 sm:gap-3 bg-slate-900/90 backdrop-blur-md px-3 sm:px-5 py-2 sm:py-2.5 rounded-2xl border border-slate-700 shadow-2xl z-30 max-w-[95%]">
               <button
                 onClick={() => setIsMicOn(!isMicOn)}
-                className={`p-3 rounded-full transition-all cursor-pointer ${
+                className={`p-2.5 sm:p-3 rounded-full transition-all cursor-pointer shrink-0 ${
                   isMicOn ? 'bg-slate-800 hover:bg-slate-700 text-white' : 'bg-rose-600 text-white shadow-lg'
                 }`}
                 title={isMicOn ? 'Mute Mic' : 'Unmute Mic'}
               >
-                {isMicOn ? <Mic size={18} /> : <MicOff size={18} />}
+                {isMicOn ? <Mic size={16} /> : <MicOff size={16} />}
               </button>
 
               <button
                 onClick={() => setIsVideoOn(!isVideoOn)}
-                className={`p-3 rounded-full transition-all cursor-pointer ${
+                className={`p-2.5 sm:p-3 rounded-full transition-all cursor-pointer shrink-0 ${
                   isVideoOn ? 'bg-slate-800 hover:bg-slate-700 text-white' : 'bg-rose-600 text-white shadow-lg'
                 }`}
                 title={isVideoOn ? 'Turn Off Camera' : 'Turn On Camera'}
               >
-                {isVideoOn ? <Video size={18} /> : <VideoOff size={18} />}
+                {isVideoOn ? <Video size={16} /> : <VideoOff size={16} />}
               </button>
 
               <button
                 onClick={() => setIsScreenSharing(!isScreenSharing)}
-                className={`p-3 rounded-full transition-all cursor-pointer ${
+                className={`hidden sm:flex p-2.5 sm:p-3 rounded-full transition-all cursor-pointer shrink-0 ${
                   isScreenSharing ? 'bg-sky-600 text-white' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
                 }`}
                 title="Share Screen / Reports"
               >
-                <Share2 size={18} />
+                <Share2 size={16} />
               </button>
 
               <button
                 onClick={onClose}
-                className="p-3 px-5 rounded-full bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-lg cursor-pointer"
+                className="p-2.5 sm:p-3 px-3.5 sm:px-5 rounded-full bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-lg cursor-pointer whitespace-nowrap shrink-0"
                 title="End Consultation Call"
               >
-                <PhoneOff size={16} />
-                <span>{isBn ? 'কল শেষ করুন' : 'End Call'}</span>
+                <PhoneOff size={15} />
+                <span>{isBn ? 'কল শেষ' : 'End'}</span>
               </button>
             </div>
           </div>

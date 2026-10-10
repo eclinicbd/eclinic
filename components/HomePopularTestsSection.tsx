@@ -56,19 +56,19 @@ export const HomePopularTestsSection: React.FC<HomePopularTestsSectionProps> = (
     .sort((a, b) => (b.orderCount || 0) - (a.orderCount || 0))
     .slice(0, 12);
 
-  // Auto-scroll single row effect
+  // Auto-scroll single row effect (1 test at a time on mobile)
   useEffect(() => {
     if (popularTests.length <= 1 || isPaused) return;
 
     const interval = setInterval(() => {
       if (scrollRef.current) {
         const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+        const step = window.innerWidth < 640 ? clientWidth : 320;
         // If reached end, reset to start smoothly
         if (scrollLeft + clientWidth >= scrollWidth - 25) {
           scrollRef.current.scrollTo({ left: 0, behavior: 'smooth' });
         } else {
-          // Scroll by one card width (~320px)
-          scrollRef.current.scrollBy({ left: 320, behavior: 'smooth' });
+          scrollRef.current.scrollBy({ left: step, behavior: 'smooth' });
         }
       }
     }, 3400);
@@ -78,7 +78,8 @@ export const HomePopularTestsSection: React.FC<HomePopularTestsSectionProps> = (
 
   const handleScroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
-      const scrollAmount = 340;
+      const isMobile = window.innerWidth < 640;
+      const scrollAmount = isMobile ? scrollRef.current.clientWidth : 340;
       scrollRef.current.scrollBy({
         left: direction === 'left' ? -scrollAmount : scrollAmount,
         behavior: 'smooth'
@@ -152,14 +153,14 @@ export const HomePopularTestsSection: React.FC<HomePopularTestsSectionProps> = (
           </div>
         </div>
 
-        {/* Auto-Scrolling Single Row Carousel */}
+        {/* Auto-Scrolling Single Row Carousel - 1 card per view on mobile */}
         <div 
           ref={scrollRef}
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
           onTouchStart={() => setIsPaused(true)}
           onTouchEnd={() => setIsPaused(false)}
-          className="flex flex-nowrap gap-4 sm:gap-5 overflow-x-auto pb-4 pt-1 scroll-smooth no-scrollbar select-none"
+          className="flex flex-nowrap gap-4 sm:gap-5 overflow-x-auto pb-4 pt-1 scroll-smooth no-scrollbar select-none snap-x snap-mandatory"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {popularTests.map((test, index) => {
@@ -188,7 +189,7 @@ export const HomePopularTestsSection: React.FC<HomePopularTestsSectionProps> = (
               <div
                 key={test.id}
                 onClick={() => onNavigateToTests('All', selectedLabId, '', test.id)}
-                className="w-72 sm:w-80 flex-shrink-0 bg-white rounded-2xl border border-slate-200/90 hover:border-primary hover:shadow-xl transition-all duration-300 flex flex-col group relative overflow-hidden cursor-pointer active:scale-[0.99]"
+                className="w-full sm:w-80 flex-shrink-0 snap-center bg-white rounded-2xl border border-slate-200/90 hover:border-primary hover:shadow-xl transition-all duration-300 flex flex-col group relative overflow-hidden cursor-pointer active:scale-[0.99]"
               >
                 {/* Ranking Tag on Top Left Corner */}
                 <div className="absolute top-0 left-0 pointer-events-none">

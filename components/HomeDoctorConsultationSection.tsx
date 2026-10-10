@@ -95,10 +95,11 @@ export const HomeDoctorConsultationSection: React.FC<HomeDoctorConsultationSecti
     if (!container) return;
 
     const interval = setInterval(() => {
+      const step = window.innerWidth < 640 ? container.clientWidth : 340;
       if (container.scrollLeft + container.clientWidth >= container.scrollWidth - 10) {
         container.scrollTo({ left: 0, behavior: 'smooth' });
       } else {
-        container.scrollBy({ left: 340, behavior: 'smooth' });
+        container.scrollBy({ left: step, behavior: 'smooth' });
       }
     }, 3500);
 
@@ -107,25 +108,27 @@ export const HomeDoctorConsultationSection: React.FC<HomeDoctorConsultationSecti
 
   const handleScrollLeft = () => {
     if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: -340, behavior: 'smooth' });
+      const step = window.innerWidth < 640 ? scrollContainerRef.current.clientWidth : 340;
+      scrollContainerRef.current.scrollBy({ left: -step, behavior: 'smooth' });
     }
   };
 
   const handleScrollRight = () => {
     if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: 340, behavior: 'smooth' });
+      const step = window.innerWidth < 640 ? scrollContainerRef.current.clientWidth : 340;
+      scrollContainerRef.current.scrollBy({ left: step, behavior: 'smooth' });
     }
   };
 
   return (
-    <section id="doctors-consultation" className="py-20 bg-gradient-to-b from-sky-50/50 via-white to-slate-50 border-t border-sky-100/70 relative overflow-hidden">
+    <section id="doctors-consultation" className="py-8 md:py-20 bg-gradient-to-b from-sky-50/50 via-white to-slate-50 border-t border-sky-100/70 relative overflow-hidden">
       {/* Background Decorative Blobs */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-sky-200/20 rounded-full blur-3xl pointer-events-none -mr-32 -mt-32" />
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-teal-200/20 rounded-full blur-3xl pointer-events-none -ml-32 -mb-32" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-10">
+        {/* Section Header - Hidden on mobile view, shown on desktop */}
+        <div className="hidden md:block text-center max-w-3xl mx-auto mb-10">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-700 text-xs font-bold uppercase tracking-wider mb-4 shadow-xs animate-pulse">
             <Stethoscope size={14} className="text-emerald-600" />
             <span>{badge || (isBn ? '👨‍⚕️ অনলাইন ডাক্তার কন্সালটেন্সি ও ভিডিও চ্যাট' : '👨‍⚕️ Online Doctor Consultation & Video Chat')}</span>
@@ -142,8 +145,8 @@ export const HomeDoctorConsultationSection: React.FC<HomeDoctorConsultationSecti
           </p>
         </div>
 
-        {/* Feature Highlights Pills */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-4xl mx-auto mb-10">
+        {/* Feature Highlights Pills - Hidden on mobile view */}
+        <div className="hidden md:grid grid-cols-2 md:grid-cols-4 gap-3 max-w-4xl mx-auto mb-10">
           <div className="bg-white/90 backdrop-blur-sm border border-slate-200/80 rounded-xl p-3 flex items-center gap-3 shadow-xs">
             <div className="w-10 h-10 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
               <Clock size={20} />
@@ -185,8 +188,8 @@ export const HomeDoctorConsultationSection: React.FC<HomeDoctorConsultationSecti
           </div>
         </div>
 
-        {/* Filter and Search Controls */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm mb-8 space-y-4">
+        {/* Filter and Search Controls - Hidden on mobile view */}
+        <div className="hidden md:block bg-white border border-slate-200 rounded-2xl p-4 shadow-sm mb-8 space-y-4">
           {/* Department Chips */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
             <span className="text-xs font-bold text-slate-400 uppercase shrink-0 flex items-center gap-1 pl-1">
@@ -289,8 +292,8 @@ export const HomeDoctorConsultationSection: React.FC<HomeDoctorConsultationSecti
             ref={scrollContainerRef}
             onMouseEnter={() => setIsAutoScrolling(false)}
             onMouseLeave={() => setIsAutoScrolling(true)}
-            className="flex items-stretch gap-6 overflow-x-auto pb-4 pt-1 scroll-smooth snap-x scrollbar-thin scrollbar-thumb-sky-200 hover:scrollbar-thumb-sky-400"
-            style={{ scrollSnapType: 'x mandatory' }}
+            className="flex items-stretch gap-4 sm:gap-6 overflow-x-auto pb-4 pt-1 scroll-smooth snap-x snap-mandatory no-scrollbar"
+            style={{ scrollSnapType: 'x mandatory', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {filteredDoctors.map(doctor => {
               const hasDiscount = doctor.originalFee && doctor.originalFee > doctor.consultationFee;
@@ -299,7 +302,7 @@ export const HomeDoctorConsultationSection: React.FC<HomeDoctorConsultationSecti
               return (
                 <div
                   key={doctor.id}
-                  className="w-[320px] sm:w-[350px] shrink-0 bg-white rounded-2xl border border-slate-200/90 hover:border-sky-400 hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden group snap-start"
+                  className="w-full sm:w-[350px] shrink-0 bg-white rounded-2xl border border-slate-200/90 hover:border-sky-400 hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden group snap-center"
                 >
                   {/* Card Top & Avatar Banner */}
                   <div className="p-5 pb-3 relative">
@@ -436,8 +439,8 @@ export const HomeDoctorConsultationSection: React.FC<HomeDoctorConsultationSecti
           </div>
         )}
 
-        {/* Doctor Consultation Emergency / Hotline Banner */}
-        <div className="mt-12 bg-gradient-to-r from-sky-900 via-slate-900 to-indigo-950 rounded-3xl p-6 sm:p-8 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
+        {/* Doctor Consultation Emergency / Hotline Banner - Hidden on mobile view */}
+        <div className="hidden md:flex mt-12 bg-gradient-to-r from-sky-900 via-slate-900 to-indigo-950 rounded-3xl p-6 sm:p-8 text-white shadow-xl flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
           <div className="space-y-2 text-center md:text-left z-10">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-bold uppercase tracking-wider">
               <Zap size={13} className="animate-bounce" />
