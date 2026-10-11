@@ -906,3 +906,314 @@ export const printOrdersListReport = (params: OrdersListReportParams): void => {
   }
 };
 
+/**
+ * Phlebotomist Dispatch Report Data Interface
+ */
+export interface PhlebotomistReportParams {
+  dateTarget: 'today' | 'tomorrow' | 'both';
+  todayStr: string;
+  tomorrowStr: string;
+  todayBookings: BookingHistoryItem[];
+  tomorrowBookings: BookingHistoryItem[];
+  lang: Language;
+}
+
+/**
+ * Export Phlebotomist Dispatch List to CSV
+ */
+export const exportPhlebotomistDispatchCSV = (params: PhlebotomistReportParams) => {
+  const { dateTarget, todayStr, tomorrowStr, todayBookings, tomorrowBookings, lang } = params;
+  const isBn = lang === 'bn';
+
+  let bookingsToExport: Array<BookingHistoryItem & { targetDay: string }> = [];
+
+  if (dateTarget === 'today' || dateTarget === 'both') {
+    todayBookings.forEach(b => bookingsToExport.push({ ...b, targetDay: `Today (${todayStr})` }));
+  }
+  if (dateTarget === 'tomorrow' || dateTarget === 'both') {
+    tomorrowBookings.forEach(b => bookingsToExport.push({ ...b, targetDay: `Tomorrow (${tomorrowStr})` }));
+  }
+
+  const headers = [
+    'SL',
+    'Schedule Day',
+    'Order ID',
+    'Time Slot',
+    'Patient Name',
+    'Phone',
+    'Area',
+    'Address',
+    'Diagnostic Lab',
+    'Tests to Collect',
+    'Test Count',
+    'Payment Method',
+    'Payment Status',
+    'Amount (BDT)',
+    'Assigned Collector',
+    'Collection Status'
+  ];
+
+  const csvRows = [headers.join(',')];
+
+  bookingsToExport.forEach((b, idx) => {
+    const cleanId = (b.id || '').replace(/^#?EC-?/i, '').replace(/^#?BK-?/i, '');
+    const testsStr = (b.testNames || []).join(' + ');
+    const testCount = b.testNames ? b.testNames.length : 1;
+
+    const row = [
+      idx + 1,
+      `"${b.targetDay}"`,
+      `"${cleanId}"`,
+      `"${b.time || 'Standard'}"`,
+      `"${(b.customerName || 'Patient').replace(/"/g, '""')}"`,
+      `"${b.customerPhone || ''}"`,
+      `"${(b.area || '').replace(/"/g, '""')}"`,
+      `"${(b.customerAddress || '').replace(/"/g, '""')}"`,
+      `"${(b.labName || '').replace(/"/g, '""')}"`,
+      `"${testsStr.replace(/"/g, '""')}"`,
+      testCount,
+      `"${b.paymentMethod || 'cash'}"`,
+      `"${b.paymentStatus || 'unpaid'}"`,
+      b.totalCost || 0,
+      `"${(b.assignedStaffName || 'Unassigned').replace(/"/g, '""')}"`,
+      `"${b.status}"`
+    ];
+
+    csvRows.push(row.join(','));
+  });
+
+  const csvContent = '\uFEFF' + csvRows.join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', `Phlebotomist_Sample_Collection_Report_${dateTarget}_${todayStr}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+/**
+ * Print Printable Phlebotomist Dispatch & Duty Sheet
+ */
+export const printPhlebotomistDispatchReport = (params: PhlebotomistReportParams) => {
+  const { dateTarget, todayStr, tomorrowStr, todayBookings, tomorrowBookings, lang } = params;
+  const isBn = lang === 'bn';
+
+  const generatedAt = new Date().toLocaleString(isBn ? 'bn-BD' : 'en-US', {
+    dateStyle: 'full',
+    timeStyle: 'medium'
+  });
+
+  let bookingsToPrint: Array<BookingHistoryItem & { dayLabel: string }> = [];
+
+  if (dateTarget === 'today' || dateTarget === 'both') {
+    todayBookings.forEach(b => bookingsToPrint.push({ ...b, dayLabel: isBn ? `আজ (${todayStr})` : `Today (${todayStr})` }));
+  }
+  if (dateTarget === 'tomorrow' || dateTarget === 'both') {
+    tomorrowBookings.forEach(b => bookingsToPrint.push({ ...b, dayLabel: isBn ? `আগামীকাল (${tomorrowStr})` : `Tomorrow (${tomorrowStr})` }));
+  }
+
+  const totalVisits = bookingsToPrint.length;
+  const totalTests = bookingsToPrint.reduce((sum, b) => sum + (b.testNames ? b.testNames.length : 1), 0);
+  const totalCodRevenue = bookingsToPrint.reduce((sum, b) => b.paymentStatus !== 'paid' ? sum + b.totalCost : sum, 0);
+
+  // Group by Area
+  const areaCounts: Record<string, number> = {};
+  bookingsToPrint.forEach(b => {
+    const a = b.area || (isBn ? 'সাধারণ এরিয়া' : 'General Area');
+    areaCounts[a] = (areaCounts[a] || 0) + 1;
+  });
+
+  const htmlContent = `
+<!DOCTYPE html>
+<html lang="${isBn ? 'bn' : 'en'}">
+<head>
+  <meta charset="UTF-8">
+  <title>Phlebotomist Sample Collection Dispatch Sheet - eClinic BD</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', 'Hind Siliguri', sans-serif;
+      background: #fff;
+      color: #0f172a;
+      padding: 20px;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .sheet-header {
+      border-bottom: 3px solid #0d9488;
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .brand-title { font-size: 20px; font-weight: 800; color: #0f172a; }
+    .sheet-subtitle { font-size: 13px; font-weight: 700; color: #0d9488; margin-top: 2px; }
+    .meta-info { font-size: 10px; color: #64748b; text-align: right; }
+    
+    .stats-bar {
+      display: flex;
+      gap: 12px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      padding: 10px 14px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-size: 11px;
+    }
+    .stat-pill { font-weight: 700; color: #166534; }
+    
+    .area-summary {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+      font-size: 11px;
+    }
+
+    table.dispatch-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+    table.dispatch-table th, table.dispatch-table td {
+      border: 1px solid #cbd5e1;
+      padding: 8px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    table.dispatch-table th {
+      background: #0f172a;
+      color: #ffffff;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .patient-name { font-weight: 800; font-size: 12px; color: #0f172a; }
+    .patient-phone { font-weight: 700; color: #0d9488; }
+    .patient-addr { color: #475569; font-size: 10px; margin-top: 3px; }
+    .test-badge {
+      display: inline-block;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      padding: 2px 5px;
+      margin: 1px;
+      font-size: 10px;
+      font-weight: 600;
+    }
+    .tag-today { background: #dcfce7; color: #166534; font-weight: 800; padding: 2px 6px; border-radius: 4px; font-size: 9px; }
+    .tag-tomorrow { background: #e0f2fe; color: #075985; font-weight: 800; padding: 2px 6px; border-radius: 4px; font-size: 9px; }
+    .checkbox-box { display: inline-block; width: 14px; height: 14px; border: 1.5px solid #475569; border-radius: 3px; vertical-align: middle; margin-right: 4px; }
+    .signature-row { margin-top: 30px; display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: #475569; }
+    .sig-line { border-top: 1px solid #94a3b8; width: 180px; text-align: center; padding-top: 4px; }
+
+    @media print {
+      body { padding: 10px; }
+      .no-print { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="sheet-header">
+    <div>
+      <div class="brand-title">eClinic Bangladesh</div>
+      <div class="sheet-subtitle">🩸 ${isBn ? 'ফ্লেবোটমিস্ট স্যাম্পল কালেকশন ও ডেসপ্যাচ শিট' : 'Phlebotomist Home Sample Collection Dispatch Sheet'}</div>
+    </div>
+    <div class="meta-info">
+      <div><strong>Target:</strong> ${dateTarget.toUpperCase()}</div>
+      <div><strong>Date Generated:</strong> ${generatedAt}</div>
+    </div>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat-pill">📋 ${isBn ? 'মোট কালেকশন পয়েন্ট/ভিজিট:' : 'Total Home Visits:'} ${totalVisits} ${isBn ? 'টি' : 'locations'}</div>
+    <div class="stat-pill">🧪 ${isBn ? 'মোট কালেকশন টেস্ট:' : 'Total Tests to Collect:'} ${totalTests} ${isBn ? 'টি' : 'items'}</div>
+    <div class="stat-pill">💵 ${isBn ? 'আদায়ের বকেয়া (COD):' : 'Pending Amount (COD):'} ৳ ${totalCodRevenue.toLocaleString()}</div>
+  </div>
+
+  <div class="area-summary">
+    <strong>📍 ${isBn ? 'এলাকাভিত্তিক কালেকশন সমাহার (Area Breakdown):' : 'Area Wise Summary:'}</strong>
+    ${Object.entries(areaCounts).map(([area, cnt]) => `<span style="margin-left: 12px; font-weight: 700; color: #0f172a;">${area}: ${cnt} ${isBn ? 'টি' : 'visits'}</span>`).join(' • ')}
+  </div>
+
+  <table class="dispatch-table">
+    <thead>
+      <tr>
+        <th style="width: 25px;">SL</th>
+        <th style="width: 80px;">Schedule</th>
+        <th>Patient & Location Details</th>
+        <th>Diagnostic Center & Tests</th>
+        <th style="width: 90px; text-align: right;">Collect Payment</th>
+        <th style="width: 80px; text-align: center;">Collection Check</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${bookingsToPrint.length === 0 ? `
+        <tr><td colspan="6" style="text-align: center; padding: 30px; color: #94a3b8;">No sample collection scheduled for this period.</td></tr>
+      ` : bookingsToPrint.map((b, i) => {
+        const cleanId = (b.id || '').replace(/^#?EC-?/i, '').replace(/^#?BK-?/i, '');
+        const isToday = b.dayLabel.toLowerCase().includes('today') || b.dayLabel.includes('আজ');
+        return `
+        <tr>
+          <td style="text-align: center; font-weight: 800;">${i + 1}</td>
+          <td>
+            <span class="${isToday ? 'tag-today' : 'tag-tomorrow'}">${b.dayLabel}</span>
+            <div style="font-weight: 700; margin-top: 4px; font-size: 10px;">⏰ ${b.time || '08:00 - 10:00 AM'}</div>
+            <div style="font-size: 9px; color: #64748b;">ID: #${cleanId}</div>
+          </td>
+          <td>
+            <div class="patient-name">${b.customerName || 'Patient'}</div>
+            <div class="patient-phone">📞 ${b.customerPhone || 'N/A'}</div>
+            <div class="patient-addr">📍 <strong>${b.area || 'City Area'}:</strong> ${b.customerAddress || 'Address on file'}</div>
+            ${b.notes ? `<div style="color: #d97706; font-size: 9px; margin-top: 2px;">📝 ${b.notes}</div>` : ''}
+          </td>
+          <td>
+            <div style="font-weight: 700; color: #0284c7; font-size: 11px;">🏥 ${b.labName}</div>
+            <div style="margin-top: 4px;">
+              ${(b.testNames || []).map(t => `<span class="test-badge"><span class="checkbox-box"></span>${t}</span>`).join('')}
+            </div>
+          </td>
+          <td style="text-align: right;">
+            <div style="font-weight: 800; font-size: 12px; color: #0f172a;">৳ ${b.totalCost}</div>
+            <div style="font-size: 9px; font-weight: 700; color: ${b.paymentStatus === 'paid' ? '#166534' : '#b91c1c'};">
+              ${b.paymentStatus === 'paid' ? '✓ PAID' : '💵 COLLECT COD'}
+            </div>
+          </td>
+          <td style="text-align: center; vertical-align: middle;">
+            <div style="font-size: 10px; color: #64748b;">
+              [ &nbsp; ] Collected<br/>
+              <span style="font-size: 8px;">Time: ____:____</span>
+            </div>
+          </td>
+        </tr>
+      `;
+      }).join('')}
+    </tbody>
+  </table>
+
+  <div class="signature-row">
+    <div class="sig-line">Phlebotomist Signature</div>
+    <div class="sig-line">Lab In-Charge Verification</div>
+  </div>
+</body>
+</html>
+  `;
+
+  const printWindow = window.open('', '_blank', 'width=950,height=900');
+  if (printWindow) {
+    printWindow.document.open();
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    setTimeout(() => {
+      printWindow.focus();
+      printWindow.print();
+    }, 450);
+  }
+};
+
+

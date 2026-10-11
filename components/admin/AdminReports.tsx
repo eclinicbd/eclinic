@@ -22,11 +22,13 @@ import {
   ShieldCheck,
   CalendarDays,
   Eye,
-  Check
+  Check,
+  Syringe
 } from 'lucide-react';
 import { Button } from '../Button';
 import { printExecutiveReport, exportReportToCSV, ReportDataParams } from '../../services/reportService';
 import { ReportPreviewModal } from './ReportPreviewModal';
+import { PhlebotomistReport } from './PhlebotomistReport';
 
 interface AdminReportsProps {
   lang: Language;
@@ -36,6 +38,7 @@ interface AdminReportsProps {
 }
 
 type TimeframeOption = 'today' | 'week' | 'month' | 'year' | 'all' | 'custom';
+type ReportTab = 'analytics' | 'phlebotomist';
 
 export const AdminReports: React.FC<AdminReportsProps> = ({
   lang,
@@ -46,6 +49,7 @@ export const AdminReports: React.FC<AdminReportsProps> = ({
   const isBn = lang === 'bn';
   const t = TRANSLATIONS[lang];
 
+  const [activeReportTab, setActiveReportTab] = useState<ReportTab>('analytics');
   const [timeframe, setTimeframe] = useState<TimeframeOption>('month');
   const [selectedLabId, setSelectedLabId] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
@@ -269,6 +273,42 @@ export const AdminReports: React.FC<AdminReportsProps> = ({
   return (
     <div className="space-y-6">
       
+      {/* Primary Report Module Tabs (Analytics vs Phlebotomist Dispatch) */}
+      <div className="bg-slate-900 text-white p-2 rounded-2xl shadow-sm flex flex-wrap gap-1.5 print:hidden">
+        <button
+          onClick={() => setActiveReportTab('analytics')}
+          className={`flex-1 min-w-[200px] px-4 py-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer ${
+            activeReportTab === 'analytics'
+              ? 'bg-primary text-white shadow-md'
+              : 'text-slate-300 hover:text-white hover:bg-slate-800'
+          }`}
+        >
+          <BarChart3 size={18} />
+          <span>{isBn ? '📊 ল্যাব টেস্ট ও আর্থিক আয় রিপোর্ট' : 'Analytics & Revenue Reports'}</span>
+        </button>
+
+        <button
+          onClick={() => setActiveReportTab('phlebotomist')}
+          className={`flex-1 min-w-[200px] px-4 py-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer ${
+            activeReportTab === 'phlebotomist'
+              ? 'bg-emerald-600 text-white shadow-md'
+              : 'text-emerald-300 hover:text-white hover:bg-slate-800'
+          }`}
+        >
+          <Syringe size={18} />
+          <span>{isBn ? '🩸 ফেলোবটমিস্ট স্যাম্পল কালেকশন (আজ ও কাল)' : 'Phlebotomist Sample Collection (Today/Tomorrow)'}</span>
+        </button>
+      </div>
+
+      {activeReportTab === 'phlebotomist' ? (
+        <PhlebotomistReport
+          lang={lang}
+          bookings={bookings}
+          labs={labs}
+          onSelectOrder={onSelectOrder}
+        />
+      ) : (
+        <>
       {/* Top Banner and Filter Header */}
       <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
@@ -664,6 +704,8 @@ export const AdminReports: React.FC<AdminReportsProps> = ({
         onClose={() => setIsPreviewOpen(false)}
         reportParams={reportDataParams}
       />
+        </>
+      )}
     </div>
   );
 };

@@ -66,9 +66,18 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
   const visibleLabs = labs.filter(l => !l.isHidden).length;
   const visibleTests = tests.filter(t => !t.isHidden).length;
 
-  // Calculate Today's Scheduled Tests & Bookings
+  // Calculate Today's & Tomorrow's Scheduled Tests & Bookings
   const todayStr = (() => {
     const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  })();
+
+  const tomorrowStr = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
@@ -81,6 +90,13 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
     return bDate.startsWith(todayStr);
   });
   const todayTestsCount = todayActiveBookings.reduce((sum, b) => sum + (b.testNames?.length || 1), 0);
+
+  const tomorrowActiveBookings = bookings.filter(b => {
+    if (b.status === 'cancelled') return false;
+    const bDate = b.date || (b.createdAt ? b.createdAt.slice(0, 10) : '');
+    return bDate.startsWith(tomorrowStr);
+  });
+  const tomorrowTestsCount = tomorrowActiveBookings.reduce((sum, b) => sum + (b.testNames?.length || 1), 0);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -143,6 +159,42 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
             </>
           )}
         </div>
+      </div>
+
+      {/* Phlebotomist Sample Collection Schedule Banner (Today & Tomorrow) */}
+      <div 
+        onClick={() => onNavigateTab('reports')}
+        className="bg-gradient-to-r from-teal-950 via-emerald-900 to-slate-900 text-white p-5 rounded-2xl shadow-md border border-emerald-800/80 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 cursor-pointer hover:border-emerald-500 transition-all group"
+      >
+        <div className="flex items-center gap-3.5">
+          <div className="p-3 bg-emerald-500/20 text-emerald-300 rounded-xl border border-emerald-400/30 group-hover:scale-105 transition-transform">
+            <FlaskConical size={24} />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-base sm:text-lg font-black text-white">
+                {isBn ? '🩸 ফ্লেবোটমিস্ট স্যাম্পল কালেকশন রিপোর্ট (আজ ও কাল)' : 'Phlebotomist Sample Dispatch (Today & Tomorrow)'}
+              </h2>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-400/20 text-emerald-200 border border-emerald-400/40">
+                {isBn ? 'স্যাম্পল কালেকশন রান' : 'Dispatch Sheet'}
+              </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-emerald-100/90 mt-1">
+              <span>
+                🗓️ <strong>{isBn ? 'আজকে:' : 'Today:'}</strong> {todayTestsCount} {isBn ? 'টি টেস্ট' : 'tests'} ({todayActiveBookings.length} {isBn ? 'টি পেশেন্ট' : 'patients'})
+              </span>
+              <span>•</span>
+              <span>
+                📅 <strong>{isBn ? 'আগামীকাল:' : 'Tomorrow:'}</strong> {tomorrowTestsCount} {isBn ? 'টি টেস্ট' : 'tests'} ({tomorrowActiveBookings.length} {isBn ? 'টি পেশেন্ট' : 'patients'})
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <button className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-sm shrink-0">
+          <span>{isBn ? 'রিপোর্ট ও ডিউটি শিট দেখুন' : 'View Dispatch Report'}</span>
+          <ArrowUpRight size={14} />
+        </button>
       </div>
 
       {/* KPI Cards */}

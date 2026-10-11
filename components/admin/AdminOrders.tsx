@@ -98,6 +98,28 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({
     return breakdown;
   }, [todayBookings]);
 
+  // Tomorrow's Scheduled Tests Metrics
+  const tomorrowStr = React.useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }, []);
+
+  const tomorrowBookings = React.useMemo(() => {
+    return bookings.filter(b => {
+      if (b.status === 'cancelled') return false;
+      const bDate = b.date || (b.createdAt ? b.createdAt.slice(0, 10) : '');
+      return bDate.startsWith(tomorrowStr);
+    });
+  }, [bookings, tomorrowStr]);
+
+  const tomorrowTestsCount = React.useMemo(() => {
+    return tomorrowBookings.reduce((sum, b) => sum + (b.testNames?.length || 1), 0);
+  }, [tomorrowBookings]);
+
   // Helper date boundaries
   const getPresetDateRange = (preset: typeof datePreset) => {
     const today = new Date();
