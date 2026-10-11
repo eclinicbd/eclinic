@@ -844,16 +844,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm space-y-1">
             <NavButton id="overview" icon={LayoutDashboard} label="Dashboard" />
             
-            {staffPermissions.canViewOrders && (
+            {(isSuperAdmin || staffPermissions.canViewOrders) && (
               <NavButton id="orders" icon={ShoppingBag} label={t.adminTotalOrders} badge={pendingCount} />
             )}
 
-            {staffPermissions.canViewReports && (
+            {(isSuperAdmin || staffPermissions.canViewReports) && (
               <NavButton id="reports" icon={BarChart3} label={lang === 'bn' ? 'রিপোর্ট ও অ্যানালিটিক্স' : 'Reports & Analytics'} />
             )}
 
-            {staffPermissions.canViewTests && (
-              <NavButton id="tests" icon={FlaskConical} label={t.adminManageTests} />
+            {(isSuperAdmin || staffPermissions.canViewTests) && (
+              <NavButton id="tests" icon={FlaskConical} label={t.adminManageTests} badge={tests.length} />
             )}
 
             {isSuperAdmin && (
