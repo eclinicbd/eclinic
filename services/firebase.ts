@@ -718,13 +718,29 @@ export const saveDoctorsToFirestore = async (lang: Language, doctors: Doctor[]):
           if (match) {
             return {
               ...od,
+              name: match.name || od.name,
+              title: match.title || od.title,
+              specialty: match.specialty || od.specialty,
+              department: match.department || od.department,
+              degrees: match.degrees || od.degrees,
+              bmdcRegNo: match.bmdcRegNo || od.bmdcRegNo,
+              hospital: match.hospital || od.hospital,
               isActive: match.isActive !== undefined ? Boolean(match.isActive) : (od.isActive !== false),
               orderCount: match.orderCount,
               totalConsultations: match.totalConsultations,
               consultationFee: match.consultationFee,
+              originalFee: match.originalFee,
+              discountPercent: match.discountPercent,
+              followupFee: match.followupFee,
+              rating: match.rating,
+              experienceYears: match.experienceYears,
+              gender: match.gender || od.gender,
+              image: match.image || od.image,
               slotIntervalMinutes: match.slotIntervalMinutes,
+              availableTimeText: match.availableTimeText || od.availableTimeText,
               customSlots: match.customSlots,
-              offDays: match.offDays
+              offDays: match.offDays,
+              about: match.about || od.about
             };
           }
           return od;

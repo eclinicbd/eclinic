@@ -1068,6 +1068,15 @@ export const AdminPaymentSettings: React.FC<AdminPaymentSettingsProps> = ({
               </div>
             </div>
 
+            <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-xl text-amber-900 text-xs flex items-center gap-2">
+              <AlertCircle size={16} className="text-amber-600 shrink-0" />
+              <span>
+                {isBn 
+                  ? 'নোট: ক্যাশ অন ডেলিভারি (COD) কেবল ডায়াগনস্টিক টেস্ট ও স্যাম্পল কালেকশনের জন্য প্রযোজ্য। ডাক্তার অ্যাপয়েন্টমেন্ট / কনসালটেশনে এটি থাকবে না।' 
+                  : 'Note: Cash on Delivery (COD) applies only to Diagnostic Tests / Home Sample Collections and is excluded from Doctor Consultations.'}
+              </span>
+            </div>
+
             <div>
               <label className="text-xs font-bold text-slate-700 block mb-1">
                 {isBn ? 'পেমেন্ট অপশন টাইটেল:' : 'Payment Option Title:'}

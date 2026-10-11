@@ -9,13 +9,10 @@ import {
   EyeOff, 
   ArrowLeft, 
   LogIn, 
-  AlertCircle,
-  KeyRound,
-  Info,
-  CheckCircle2
+  AlertCircle
 } from 'lucide-react';
 import { Button } from './Button';
-import { verifyStaffOrAdminLogin, setAdminSessionActive, getStoredAdminCredentials, getStoredStaffUsers } from '../services/dataStorage';
+import { verifyStaffOrAdminLogin, setAdminSessionActive, getStoredAdminCredentials } from '../services/dataStorage';
 
 interface AdminLoginModalProps {
   isOpen: boolean;
@@ -31,15 +28,12 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
   lang
 }) => {
   const currentCreds = getStoredAdminCredentials();
-  const staffList = getStoredStaffUsers();
 
   const [username, setUsername] = useState(() => currentCreds.username || 'admin');
   const [password, setPassword] = useState(() => currentCreds.password || 'admin123');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [showHint, setShowHint] = useState(true);
-  const [selectedQuickRole, setSelectedQuickRole] = useState<'admin' | 'manager' | 'phleb' | 'nurse' | 'delivery'>('admin');
 
   useEffect(() => {
     if (isOpen) {
@@ -87,31 +81,6 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
         );
       }
     }, 400);
-  };
-
-  const handleQuickFillRole = (roleKey: 'admin' | 'manager' | 'phleb' | 'nurse' | 'delivery') => {
-    setSelectedQuickRole(roleKey);
-    if (roleKey === 'admin') {
-      setUsername(currentCreds.username);
-      setPassword(currentCreds.password);
-    } else if (roleKey === 'manager') {
-      const mgr = staffList.find(s => s.role === 'manager') || { emailOrUsername: 'manager', password: 'manager123' };
-      setUsername(mgr.emailOrUsername);
-      setPassword(mgr.password);
-    } else if (roleKey === 'phleb') {
-      const phleb = staffList.find(s => s.role === 'phlebotomist') || { emailOrUsername: 'phleb', password: 'phleb123' };
-      setUsername(phleb.emailOrUsername);
-      setPassword(phleb.password);
-    } else if (roleKey === 'nurse') {
-      const nurse = staffList.find(s => s.role === 'nurse') || { emailOrUsername: 'nurse', password: 'nurse123' };
-      setUsername(nurse.emailOrUsername);
-      setPassword(nurse.password);
-    } else if (roleKey === 'delivery') {
-      const deliv = staffList.find(s => s.role === 'delivery') || { emailOrUsername: 'delivery', password: 'delivery123' };
-      setUsername(deliv.emailOrUsername);
-      setPassword(deliv.password);
-    }
-    setError(null);
   };
 
   return (
@@ -188,14 +157,6 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
                 {lang === 'bn' ? 'পাসওয়ার্ড' : 'Password'}
               </label>
-              <button
-                type="button"
-                onClick={() => setShowHint(!showHint)}
-                className="text-[11px] text-primary hover:underline flex items-center gap-1 font-semibold cursor-pointer"
-              >
-                <KeyRound size={12} />
-                {lang === 'bn' ? 'ডিফল্ট পাসওয়ার্ড?' : 'Default info?'}
-              </button>
             </div>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -218,48 +179,6 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
               </button>
             </div>
           </div>
-
-          {/* Default Credentials Hint Box */}
-          {showHint && (
-            <div className="bg-sky-50/90 border border-sky-200 rounded-2xl p-3.5 text-xs text-sky-950 space-y-2.5 animate-in fade-in">
-              <div className="flex items-center justify-between font-bold">
-                <span className="flex items-center gap-1.5 text-sky-900">
-                  <Info size={14} className="text-primary" />
-                  {lang === 'bn' ? 'ডেমো অ্যাকাউন্ট ও রোল সমূহ:' : 'Demo Accounts & Roles:'}
-                </span>
-              </div>
-
-              {/* Role Quick Selector Pills */}
-              <div className="flex flex-wrap gap-1.5">
-                {[
-                  { key: 'admin', label: lang === 'bn' ? 'Super Admin' : 'Super Admin' },
-                  { key: 'manager', label: lang === 'bn' ? 'Manager' : 'Manager' },
-                  { key: 'phleb', label: lang === 'bn' ? 'Phlebotomist' : 'Phlebotomist' },
-                  { key: 'nurse', label: lang === 'bn' ? 'Nurse' : 'Nurse' },
-                  { key: 'delivery', label: lang === 'bn' ? 'Delivery' : 'Delivery' },
-                ].map(item => (
-                  <button
-                    key={item.key}
-                    type="button"
-                    onClick={() => handleQuickFillRole(item.key as any)}
-                    className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
-                      selectedQuickRole === item.key
-                        ? 'bg-primary text-white shadow-xs'
-                        : 'bg-white text-slate-700 border border-sky-100 hover:bg-sky-100/70'
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-
-              <p className="text-[10px] text-slate-500">
-                {lang === 'bn' 
-                  ? 'বাটনটিতে ক্লিক করলে স্বয়ংক্রিয়ভাবে সংশ্লিষ্ট রোলের ইউজারনেম ও পাসওয়ার্ড পূরণ হয়ে যাবে।' 
-                  : 'Click any role button above to auto-fill its credentials.'}
-              </p>
-            </div>
-          )}
 
           {/* Submit Button */}
           <Button

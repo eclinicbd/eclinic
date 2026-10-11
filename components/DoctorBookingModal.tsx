@@ -140,8 +140,9 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
     }
   ];
 
-  // Strictly filter out any payment method disabled in Admin Settings
+  // Strictly filter out any payment method disabled in Admin Settings, and strictly exclude 'cod' (Cash on Delivery) for Doctor Payment
   const paymentOptions = allPaymentOptions.filter(opt => {
+    if (opt.id === 'cod') return false; // Cash on delivery is NOT available for Doctor Consultation
     const gateway = paymentConfig?.[opt.id];
     return gateway ? gateway.isActive !== false : true;
   });

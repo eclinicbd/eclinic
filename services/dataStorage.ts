@@ -1389,19 +1389,29 @@ export const setStoredDoctors = (doctors: Doctor[], lang: Language = 'bn'): void
         if (match) {
           return {
             ...od,
+            name: match.name || od.name,
+            title: match.title || od.title,
+            specialty: match.specialty || od.specialty,
+            department: match.department || od.department,
+            degrees: match.degrees || od.degrees,
+            bmdcRegNo: match.bmdcRegNo || od.bmdcRegNo,
+            hospital: match.hospital || od.hospital,
             isActive: match.isActive !== undefined ? Boolean(match.isActive) : (od.isActive !== false),
-            orderCount: match.orderCount,
-            totalConsultations: match.totalConsultations,
-            consultationFee: match.consultationFee,
-            originalFee: match.originalFee,
-            discountPercent: match.discountPercent,
-            rating: match.rating,
-            gender: match.gender,
+            orderCount: match.orderCount !== undefined ? match.orderCount : od.orderCount,
+            totalConsultations: match.totalConsultations !== undefined ? match.totalConsultations : od.totalConsultations,
+            consultationFee: match.consultationFee !== undefined ? match.consultationFee : od.consultationFee,
+            originalFee: match.originalFee !== undefined ? match.originalFee : od.originalFee,
+            discountPercent: match.discountPercent !== undefined ? match.discountPercent : od.discountPercent,
+            followupFee: match.followupFee !== undefined ? match.followupFee : od.followupFee,
+            rating: match.rating !== undefined ? match.rating : od.rating,
+            experienceYears: match.experienceYears !== undefined ? match.experienceYears : od.experienceYears,
+            gender: match.gender || od.gender,
             image: match.image || od.image,
-            slotIntervalMinutes: match.slotIntervalMinutes,
+            slotIntervalMinutes: match.slotIntervalMinutes !== undefined ? match.slotIntervalMinutes : od.slotIntervalMinutes,
             availableTimeText: match.availableTimeText || od.availableTimeText,
-            customSlots: match.customSlots,
-            offDays: match.offDays
+            customSlots: match.customSlots || od.customSlots,
+            offDays: match.offDays || od.offDays,
+            about: match.about || od.about
           };
         }
         return od;

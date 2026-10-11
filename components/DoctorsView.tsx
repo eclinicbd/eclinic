@@ -370,7 +370,9 @@ export const DoctorsView: React.FC<DoctorsViewProps> = ({
                       <div className="flex items-center gap-2 text-xs text-slate-600 bg-sky-50/60 p-2.5 rounded-xl border border-sky-100">
                         <Clock size={14} className="text-sky-600 shrink-0" />
                         <div className="min-w-0 flex-1">
-                          <span className="text-[10px] font-bold text-sky-900 block">{isBn ? '৩০ মিনিট সময়সূচি:' : '30-Min Schedule:'}</span>
+                          <span className="text-[10px] font-bold text-sky-900 block">
+                            {isBn ? `${toBnNumber(doctor.slotIntervalMinutes || 30)} মিনিট সময়সূচি:` : `${doctor.slotIntervalMinutes || 30}-Min Schedule:`}
+                          </span>
                           <span className="text-[11px] text-slate-700 font-medium truncate block">{doctor.availableTimeText || (isBn ? 'প্রতিদিন সন্ধ্যা ৬:০০ - রাত ৯:০০' : 'Daily 6:00 PM - 9:00 PM')}</span>
                         </div>
                       </div>
@@ -415,7 +417,7 @@ export const DoctorsView: React.FC<DoctorsViewProps> = ({
                         className="px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-sky-200 transition-all hover:scale-102 cursor-pointer"
                       >
                         <Calendar size={14} />
-                        <span>{isBn ? 'স্লট বুক করুন' : 'Book 30-Min'}</span>
+                        <span>{isBn ? `${toBnNumber(doctor.slotIntervalMinutes || 30)} মি. স্লট` : `Book ${doctor.slotIntervalMinutes || 30}-Min`}</span>
                       </button>
                     </div>
                   </div>
