@@ -907,31 +907,52 @@ export const printOrdersListReport = (params: OrdersListReportParams): void => {
 };
 
 /**
- * Phlebotomist Dispatch Report Data Interface
+ * Phlebotomist Dispatch Report Data Interface (7 Days Support)
  */
 export interface PhlebotomistReportParams {
-  dateTarget: 'today' | 'tomorrow' | 'both';
+  dateTarget: '7days' | 'today' | 'tomorrow' | string;
+  sevenDaysList?: Array<{
+    dateStr: string;
+    dayName: string;
+    formattedDate: string;
+    isToday: boolean;
+    isTomorrow: boolean;
+  }>;
+  all7DaysBookings?: BookingHistoryItem[];
   todayStr: string;
   tomorrowStr: string;
   todayBookings: BookingHistoryItem[];
   tomorrowBookings: BookingHistoryItem[];
+  filteredBookings?: Array<BookingHistoryItem & { dayType?: string; dayDateStr?: string }>;
   lang: Language;
 }
 
 /**
- * Export Phlebotomist Dispatch List to CSV
+ * Export Phlebotomist Dispatch List to CSV (Supports 7 Days & Custom Target)
  */
 export const exportPhlebotomistDispatchCSV = (params: PhlebotomistReportParams) => {
-  const { dateTarget, todayStr, tomorrowStr, todayBookings, tomorrowBookings, lang } = params;
+  const { dateTarget, todayStr, tomorrowStr, todayBookings, tomorrowBookings, all7DaysBookings, filteredBookings, lang } = params;
   const isBn = lang === 'bn';
 
   let bookingsToExport: Array<BookingHistoryItem & { targetDay: string }> = [];
 
-  if (dateTarget === 'today' || dateTarget === 'both') {
-    todayBookings.forEach(b => bookingsToExport.push({ ...b, targetDay: `Today (${todayStr})` }));
-  }
-  if (dateTarget === 'tomorrow' || dateTarget === 'both') {
-    tomorrowBookings.forEach(b => bookingsToExport.push({ ...b, targetDay: `Tomorrow (${tomorrowStr})` }));
+  if (filteredBookings && filteredBookings.length > 0) {
+    filteredBookings.forEach(b => {
+      const dStr = b.dayDateStr || b.date || b.createdAt?.slice(0, 10) || '';
+      bookingsToExport.push({ ...b, targetDay: `Scheduled Date (${dStr})` });
+    });
+  } else if (dateTarget === '7days' && all7DaysBookings) {
+    all7DaysBookings.forEach(b => {
+      const dStr = b.date || b.createdAt?.slice(0, 10) || '';
+      bookingsToExport.push({ ...b, targetDay: `7 Days Schedule (${dStr})` });
+    });
+  } else {
+    if (dateTarget === 'today' || dateTarget === 'both' || dateTarget === '7days') {
+      todayBookings.forEach(b => bookingsToExport.push({ ...b, targetDay: `Today (${todayStr})` }));
+    }
+    if (dateTarget === 'tomorrow' || dateTarget === 'both' || dateTarget === '7days') {
+      tomorrowBookings.forEach(b => bookingsToExport.push({ ...b, targetDay: `Tomorrow (${tomorrowStr})` }));
+    }
   }
 
   const headers = [
@@ -987,17 +1008,17 @@ export const exportPhlebotomistDispatchCSV = (params: PhlebotomistReportParams) 
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.setAttribute('href', url);
-  link.setAttribute('download', `Phlebotomist_Sample_Collection_Report_${dateTarget}_${todayStr}.csv`);
+  link.setAttribute('download', `Phlebotomist_7Day_Sample_Collection_Report_${dateTarget}_${todayStr}.csv`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
 };
 
 /**
- * Print Printable Phlebotomist Dispatch & Duty Sheet
+ * Print Printable Phlebotomist Dispatch & Duty Sheet (7 Days Support)
  */
 export const printPhlebotomistDispatchReport = (params: PhlebotomistReportParams) => {
-  const { dateTarget, todayStr, tomorrowStr, todayBookings, tomorrowBookings, lang } = params;
+  const { dateTarget, todayStr, tomorrowStr, todayBookings, tomorrowBookings, all7DaysBookings, filteredBookings, lang } = params;
   const isBn = lang === 'bn';
 
   const generatedAt = new Date().toLocaleString(isBn ? 'bn-BD' : 'en-US', {
@@ -1007,11 +1028,23 @@ export const printPhlebotomistDispatchReport = (params: PhlebotomistReportParams
 
   let bookingsToPrint: Array<BookingHistoryItem & { dayLabel: string }> = [];
 
-  if (dateTarget === 'today' || dateTarget === 'both') {
-    todayBookings.forEach(b => bookingsToPrint.push({ ...b, dayLabel: isBn ? `আজ (${todayStr})` : `Today (${todayStr})` }));
-  }
-  if (dateTarget === 'tomorrow' || dateTarget === 'both') {
-    tomorrowBookings.forEach(b => bookingsToPrint.push({ ...b, dayLabel: isBn ? `আগামীকাল (${tomorrowStr})` : `Tomorrow (${tomorrowStr})` }));
+  if (filteredBookings && filteredBookings.length > 0) {
+    filteredBookings.forEach(b => {
+      const dStr = b.dayDateStr || b.date || b.createdAt?.slice(0, 10) || '';
+      bookingsToPrint.push({ ...b, dayLabel: `${dStr}` });
+    });
+  } else if (dateTarget === '7days' && all7DaysBookings) {
+    all7DaysBookings.forEach(b => {
+      const dStr = b.date || b.createdAt?.slice(0, 10) || '';
+      bookingsToPrint.push({ ...b, dayLabel: `${dStr}` });
+    });
+  } else {
+    if (dateTarget === 'today' || dateTarget === 'both' || dateTarget === '7days') {
+      todayBookings.forEach(b => bookingsToPrint.push({ ...b, dayLabel: isBn ? `আজ (${todayStr})` : `Today (${todayStr})` }));
+    }
+    if (dateTarget === 'tomorrow' || dateTarget === 'both' || dateTarget === '7days') {
+      tomorrowBookings.forEach(b => bookingsToPrint.push({ ...b, dayLabel: isBn ? `আগামীকাল (${tomorrowStr})` : `Tomorrow (${tomorrowStr})` }));
+    }
   }
 
   const totalVisits = bookingsToPrint.length;

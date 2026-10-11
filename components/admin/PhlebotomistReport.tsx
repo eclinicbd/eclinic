@@ -20,7 +20,8 @@ import {
   ChevronRight,
   AlertCircle,
   Building2,
-  ListFilter
+  ListFilter,
+  Layers
 } from 'lucide-react';
 import { printPhlebotomistDispatchReport, exportPhlebotomistDispatchCSV, PhlebotomistReportParams } from '../../services/reportService';
 
@@ -42,42 +43,45 @@ export const PhlebotomistReport: React.FC<PhlebotomistReportProps> = ({
   const isBn = lang === 'bn';
   const t = TRANSLATIONS[lang];
 
-  // Active Date Filter
-  const [dateTarget, setDateTarget] = useState<'today' | 'tomorrow' | 'both'>('both');
+  // Active Date Filter (Default: '7days' for Next 7 Days)
+  const [dateTarget, setDateTarget] = useState<string>('7days');
   const [selectedArea, setSelectedArea] = useState<string>('all');
   const [selectedLab, setSelectedLab] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Date calculation strings
-  const { todayStr, tomorrowStr, displayTodayFormatted, displayTomorrowFormatted } = useMemo(() => {
-    const d1 = new Date();
-    const y1 = d1.getFullYear();
-    const m1 = String(d1.getMonth() + 1).padStart(2, '0');
-    const day1 = String(d1.getDate()).padStart(2, '0');
-    const todayStr = `${y1}-${m1}-${day1}`;
+  // Generate 7 Days Date List (Day 0: Today to Day 6)
+  const sevenDaysList = useMemo(() => {
+    const list = [];
+    const now = new Date();
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(now);
+      d.setDate(now.getDate() + i);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const dateStr = `${y}-${m}-${day}`;
 
-    const d2 = new Date();
-    d2.setDate(d2.getDate() + 1);
-    const y2 = d2.getFullYear();
-    const m2 = String(d2.getMonth() + 1).padStart(2, '0');
-    const day2 = String(d2.getDate()).padStart(2, '0');
-    const tomorrowStr = `${y2}-${m2}-${day2}`;
+      const dayName = d.toLocaleDateString(isBn ? 'bn-BD' : 'en-US', { weekday: 'short' });
+      const formattedDate = d.toLocaleDateString(isBn ? 'bn-BD' : 'en-US', {
+        month: 'short',
+        day: 'numeric'
+      });
 
-    const displayTodayFormatted = d1.toLocaleDateString(isBn ? 'bn-BD' : 'en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric'
-    });
-
-    const displayTomorrowFormatted = d2.toLocaleDateString(isBn ? 'bn-BD' : 'en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric'
-    });
-
-    return { todayStr, tomorrowStr, displayTodayFormatted, displayTomorrowFormatted };
+      list.push({
+        index: i,
+        dateStr,
+        dayName,
+        formattedDate,
+        isToday: i === 0,
+        isTomorrow: i === 1
+      });
+    }
+    return list;
   }, [isBn]);
+
+  const todayStr = sevenDaysList[0]?.dateStr || '';
+  const tomorrowStr = sevenDaysList[1]?.dateStr || '';
 
   // Helper date matching function
   const isMatchingDate = (booking: BookingHistoryItem, targetDateStr: string): boolean => {
@@ -92,7 +96,15 @@ export const PhlebotomistReport: React.FC<PhlebotomistReportProps> = ({
     return false;
   };
 
-  // Filter Today and Tomorrow Bookings (exclude cancelled)
+  // All 7 Days active bookings
+  const all7DaysBookings = useMemo(() => {
+    return bookings.filter(b => {
+      if (b.status === 'cancelled') return false;
+      return sevenDaysList.some(day => isMatchingDate(b, day.dateStr));
+    });
+  }, [bookings, sevenDaysList]);
+
+  // Today and Tomorrow Filtered Bookings
   const todayBookings = useMemo(() => {
     return bookings.filter(b => b.status !== 'cancelled' && isMatchingDate(b, todayStr));
   }, [bookings, todayStr]);
@@ -101,15 +113,27 @@ export const PhlebotomistReport: React.FC<PhlebotomistReportProps> = ({
     return bookings.filter(b => b.status !== 'cancelled' && isMatchingDate(b, tomorrowStr));
   }, [bookings, tomorrowStr]);
 
-  // Combined Active Bookings based on Date Target & Dropdowns
+  // Filtered Bookings list based on dateTarget and Search / Dropdowns
   const filteredBookings = useMemo(() => {
-    let list: Array<BookingHistoryItem & { dayType: 'today' | 'tomorrow'; dayDateStr: string }> = [];
+    let list: Array<BookingHistoryItem & { dayType: string; dayDateStr: string }> = [];
 
-    if (dateTarget === 'today' || dateTarget === 'both') {
+    if (dateTarget === '7days') {
+      sevenDaysList.forEach(dayItem => {
+        const dayBookings = bookings.filter(b => b.status !== 'cancelled' && isMatchingDate(b, dayItem.dateStr));
+        dayBookings.forEach(b => list.push({
+          ...b,
+          dayType: dayItem.isToday ? 'today' : dayItem.isTomorrow ? 'tomorrow' : 'upcoming',
+          dayDateStr: dayItem.dateStr
+        }));
+      });
+    } else if (dateTarget === 'today') {
       todayBookings.forEach(b => list.push({ ...b, dayType: 'today', dayDateStr: todayStr }));
-    }
-    if (dateTarget === 'tomorrow' || dateTarget === 'both') {
+    } else if (dateTarget === 'tomorrow') {
       tomorrowBookings.forEach(b => list.push({ ...b, dayType: 'tomorrow', dayDateStr: tomorrowStr }));
+    } else {
+      // Specific date selected among the 7 days
+      const specificBookings = bookings.filter(b => b.status !== 'cancelled' && isMatchingDate(b, dateTarget));
+      specificBookings.forEach(b => list.push({ ...b, dayType: 'specific', dayDateStr: dateTarget }));
     }
 
     // Filter by Area
@@ -136,7 +160,7 @@ export const PhlebotomistReport: React.FC<PhlebotomistReportProps> = ({
     }
 
     return list;
-  }, [dateTarget, todayBookings, tomorrowBookings, selectedArea, selectedLab, searchQuery, todayStr, tomorrowStr]);
+  }, [dateTarget, bookings, sevenDaysList, todayBookings, tomorrowBookings, selectedArea, selectedLab, searchQuery, todayStr, tomorrowStr]);
 
   // Unique Areas list for dropdown filter
   const uniqueAreas = useMemo(() => {
@@ -147,7 +171,7 @@ export const PhlebotomistReport: React.FC<PhlebotomistReportProps> = ({
     return Array.from(set).sort();
   }, [bookings]);
 
-  // Metrics for Today vs Tomorrow
+  // Comprehensive 7 Days Metrics
   const metrics = useMemo(() => {
     const todayVisitCount = todayBookings.length;
     const todayTestCount = todayBookings.reduce((sum, b) => sum + (b.testNames ? b.testNames.length : 1), 0);
@@ -156,6 +180,18 @@ export const PhlebotomistReport: React.FC<PhlebotomistReportProps> = ({
     const tomorrowVisitCount = tomorrowBookings.length;
     const tomorrowTestCount = tomorrowBookings.reduce((sum, b) => sum + (b.testNames ? b.testNames.length : 1), 0);
     const tomorrowCodAmount = tomorrowBookings.reduce((sum, b) => b.paymentStatus !== 'paid' ? sum + b.totalCost : sum, 0);
+
+    const total7DaysVisits = all7DaysBookings.length;
+    const total7DaysTests = all7DaysBookings.reduce((sum, b) => sum + (b.testNames ? b.testNames.length : 1), 0);
+    const total7DaysCodAmount = all7DaysBookings.reduce((sum, b) => b.paymentStatus !== 'paid' ? sum + b.totalCost : sum, 0);
+
+    // Daily breakdown for the 7 days
+    const dailyCounts = sevenDaysList.map(day => {
+      const dayBookings = bookings.filter(b => b.status !== 'cancelled' && isMatchingDate(b, day.dateStr));
+      const visits = dayBookings.length;
+      const tests = dayBookings.reduce((sum, b) => sum + (b.testNames ? b.testNames.length : 1), 0);
+      return { ...day, visits, tests };
+    });
 
     // Itemized test frequency for active filter selection
     const testMap = new Map<string, number>();
@@ -176,19 +212,24 @@ export const PhlebotomistReport: React.FC<PhlebotomistReportProps> = ({
       tomorrowVisitCount,
       tomorrowTestCount,
       tomorrowCodAmount,
-      totalVisits: todayVisitCount + tomorrowVisitCount,
-      totalTests: todayTestCount + tomorrowTestCount,
+      total7DaysVisits,
+      total7DaysTests,
+      total7DaysCodAmount,
+      dailyCounts,
       testItemBreakdown
     };
-  }, [todayBookings, tomorrowBookings, filteredBookings]);
+  }, [todayBookings, tomorrowBookings, all7DaysBookings, bookings, sevenDaysList, filteredBookings]);
 
   // Report Params for Print and Export
   const reportParams: PhlebotomistReportParams = {
     dateTarget,
+    sevenDaysList,
+    all7DaysBookings,
     todayStr,
     tomorrowStr,
     todayBookings,
     tomorrowBookings,
+    filteredBookings,
     lang
   };
 
@@ -214,13 +255,13 @@ export const PhlebotomistReport: React.FC<PhlebotomistReportProps> = ({
                   {isBn ? 'ফ্লেবোটমিস্ট স্যাম্পল কালেকশন ও ডেসপ্যাচ রিপোর্ট' : 'Phlebotomist Sample Collection Report'}
                 </h1>
                 <span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-emerald-400/20 text-emerald-200 border border-emerald-400/40">
-                  {isBn ? 'আজ ও আগামীকাল' : 'Today & Tomorrow'}
+                  {isBn ? 'আগামী ৭ দিনের রিপোর্ট' : 'Next 7 Days Report'}
                 </span>
               </div>
               <p className="text-emerald-100/80 text-xs mt-1">
                 {isBn 
-                  ? 'রোগীর বাসা থেকে ব্লাড/স্যাম্পল সংগ্রহের দৈনিক শিডিউল, এরিয়াভিত্তিক ভিজিট ও স্যাম্পল রান লিস্ট' 
-                  : 'Daily schedule for home sample collection, area visits, and test item counts'}
+                  ? 'রোগীর বাসা থেকে ব্লাড/স্যাম্পল সংগ্রহের ৭ দিনের শিডিউল, এরিয়াভিত্তিক ভিজিট ও স্যাম্পল রান লিস্ট' 
+                  : '7-day schedule for home sample collection, area visits, and test item counts'}
               </p>
             </div>
           </div>
@@ -241,23 +282,55 @@ export const PhlebotomistReport: React.FC<PhlebotomistReportProps> = ({
             className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-emerald-200 font-bold rounded-xl text-xs flex items-center gap-2 transition-all border border-emerald-700/50 cursor-pointer"
           >
             <Download size={16} />
-            <span>{isBn ? 'CSV এক্সপোর্ট' : 'Export CSV'}</span>
+            <span>{isBn ? 'CSV এক্সপোর্ট (৭ দিন)' : 'Export 7-Day CSV'}</span>
           </button>
         </div>
       </div>
 
-      {/* KPI Stats Comparison (Today vs Tomorrow) */}
+      {/* KPI Stats Comparison (7 Days Overview Cards) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         
-        {/* Today's KPI */}
+        {/* 7-Day Total Aggregate KPI */}
         <div className={`p-5 rounded-2xl border transition-all ${
-          dateTarget === 'today' || dateTarget === 'both' 
-            ? 'bg-emerald-900/90 border-emerald-600 text-white shadow-sm' 
-            : 'bg-white border-slate-200 text-slate-800 opacity-80'
+          dateTarget === '7days' 
+            ? 'bg-slate-900 border-emerald-500 text-white shadow-md' 
+            : 'bg-white border-slate-200 text-slate-800'
         }`}>
           <div className="flex justify-between items-start mb-3">
             <span className="px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider bg-emerald-400/20 text-emerald-300 border border-emerald-400/30">
-              🗓️ {isBn ? 'আজকে (Today)' : 'Today'} • {displayTodayFormatted}
+              ⚡ {isBn ? 'আগামী ৭ দিনের মোট সমাহার' : '7-Day Total Aggregate'}
+            </span>
+            <FlaskConical size={20} className="text-emerald-400" />
+          </div>
+          <div className="grid grid-cols-2 gap-2 mt-2">
+            <div>
+              <p className="text-[11px] opacity-80 uppercase font-semibold">{isBn ? '৭ দিনের মোট ভিজিট' : '7-Day Visits'}</p>
+              <h3 className="text-2xl sm:text-3xl font-black mt-0.5">
+                {metrics.total7DaysVisits} <span className="text-xs font-normal opacity-80">{isBn ? 'জন রোগী' : 'patients'}</span>
+              </h3>
+            </div>
+            <div>
+              <p className="text-[11px] opacity-80 uppercase font-semibold">{isBn ? 'মোট টেস্ট সংখ্যা' : 'Tests to Collect'}</p>
+              <h3 className="text-2xl sm:text-3xl font-black mt-0.5 text-emerald-400">
+                {metrics.total7DaysTests} <span className="text-xs font-normal opacity-80">{isBn ? 'টি টেস্ট' : 'tests'}</span>
+              </h3>
+            </div>
+          </div>
+          <div className="mt-3 pt-3 border-t border-slate-700/60 flex justify-between items-center text-xs">
+            <span className="opacity-80">{isBn ? '৭ দিনের বকেয়া আদায় (COD):' : '7-Day Pending COD:'}</span>
+            <span className="font-extrabold text-amber-300 text-sm">৳ {metrics.total7DaysCodAmount.toLocaleString()}</span>
+          </div>
+        </div>
+
+        {/* Today's KPI */}
+        <div className={`p-5 rounded-2xl border transition-all ${
+          dateTarget === 'today' 
+            ? 'bg-emerald-900 border-emerald-600 text-white shadow-sm' 
+            : 'bg-white border-slate-200 text-slate-800'
+        }`}>
+          <div className="flex justify-between items-start mb-3">
+            <span className="px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider bg-emerald-100 text-emerald-900 border border-emerald-300">
+              🗓️ {isBn ? 'আজকে (Today)' : 'Today'} • {sevenDaysList[0]?.formattedDate}
             </span>
             <span className="text-xs font-bold opacity-80">{todayStr}</span>
           </div>
@@ -265,31 +338,31 @@ export const PhlebotomistReport: React.FC<PhlebotomistReportProps> = ({
             <div>
               <p className="text-[11px] opacity-80 uppercase font-semibold">{isBn ? 'স্যাম্পল ভিজিট' : 'Sample Visits'}</p>
               <h3 className="text-2xl sm:text-3xl font-black mt-0.5">
-                {metrics.todayVisitCount} <span className="text-xs font-normal opacity-80">{isBn ? 'টি রোগী' : 'patients'}</span>
+                {metrics.todayVisitCount} <span className="text-xs font-normal opacity-80">{isBn ? 'জন' : 'patients'}</span>
               </h3>
             </div>
             <div>
-              <p className="text-[11px] opacity-80 uppercase font-semibold">{isBn ? 'মোট টেস্ট সংখ্যা' : 'Tests to Collect'}</p>
-              <h3 className="text-2xl sm:text-3xl font-black mt-0.5 text-emerald-300">
-                {metrics.todayTestCount} <span className="text-xs font-normal opacity-80">{isBn ? 'টি টেস্ট' : 'tests'}</span>
+              <p className="text-[11px] opacity-80 uppercase font-semibold">{isBn ? 'টেস্ট সংখ্যা' : 'Tests'}</p>
+              <h3 className="text-2xl sm:text-3xl font-black mt-0.5 text-emerald-600">
+                {metrics.todayTestCount} <span className="text-xs font-normal opacity-80">{isBn ? 'টি' : 'tests'}</span>
               </h3>
             </div>
           </div>
-          <div className="mt-3 pt-3 border-t border-emerald-700/50 flex justify-between items-center text-xs">
-            <span className="opacity-80">{isBn ? 'আদায়ের টাকা (COD/Pending):' : 'Pending COD Amount:'}</span>
-            <span className="font-extrabold text-amber-300 text-sm">৳ {metrics.todayCodAmount.toLocaleString()}</span>
+          <div className="mt-3 pt-3 border-t border-slate-200 flex justify-between items-center text-xs">
+            <span className="opacity-80">{isBn ? 'আজকের COD:' : 'Today COD:'}</span>
+            <span className="font-extrabold text-amber-600 text-sm">৳ {metrics.todayCodAmount.toLocaleString()}</span>
           </div>
         </div>
 
         {/* Tomorrow's KPI */}
         <div className={`p-5 rounded-2xl border transition-all ${
-          dateTarget === 'tomorrow' || dateTarget === 'both' 
-            ? 'bg-sky-900/90 border-sky-600 text-white shadow-sm' 
-            : 'bg-white border-slate-200 text-slate-800 opacity-80'
+          dateTarget === 'tomorrow' 
+            ? 'bg-sky-900 border-sky-600 text-white shadow-sm' 
+            : 'bg-white border-slate-200 text-slate-800'
         }`}>
           <div className="flex justify-between items-start mb-3">
-            <span className="px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider bg-sky-400/20 text-sky-200 border border-sky-400/30">
-              📅 {isBn ? 'আগামীকাল (Tomorrow)' : 'Tomorrow'} • {displayTomorrowFormatted}
+            <span className="px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider bg-sky-100 text-sky-900 border border-sky-300">
+              📅 {isBn ? 'আগামীকাল (Tomorrow)' : 'Tomorrow'} • {sevenDaysList[1]?.formattedDate}
             </span>
             <span className="text-xs font-bold opacity-80">{tomorrowStr}</span>
           </div>
@@ -297,87 +370,67 @@ export const PhlebotomistReport: React.FC<PhlebotomistReportProps> = ({
             <div>
               <p className="text-[11px] opacity-80 uppercase font-semibold">{isBn ? 'স্যাম্পল ভিজিট' : 'Sample Visits'}</p>
               <h3 className="text-2xl sm:text-3xl font-black mt-0.5">
-                {metrics.tomorrowVisitCount} <span className="text-xs font-normal opacity-80">{isBn ? 'টি রোগী' : 'patients'}</span>
+                {metrics.tomorrowVisitCount} <span className="text-xs font-normal opacity-80">{isBn ? 'জন' : 'patients'}</span>
               </h3>
             </div>
             <div>
-              <p className="text-[11px] opacity-80 uppercase font-semibold">{isBn ? 'মোট টেস্ট সংখ্যা' : 'Tests to Collect'}</p>
-              <h3 className="text-2xl sm:text-3xl font-black mt-0.5 text-sky-300">
-                {metrics.tomorrowTestCount} <span className="text-xs font-normal opacity-80">{isBn ? 'টি টেস্ট' : 'tests'}</span>
+              <p className="text-[11px] opacity-80 uppercase font-semibold">{isBn ? 'টেস্ট সংখ্যা' : 'Tests'}</p>
+              <h3 className="text-2xl sm:text-3xl font-black mt-0.5 text-sky-600">
+                {metrics.tomorrowTestCount} <span className="text-xs font-normal opacity-80">{isBn ? 'টি' : 'tests'}</span>
               </h3>
             </div>
           </div>
-          <div className="mt-3 pt-3 border-t border-sky-700/50 flex justify-between items-center text-xs">
-            <span className="opacity-80">{isBn ? 'আদায়ের টাকা (COD/Pending):' : 'Pending COD Amount:'}</span>
-            <span className="font-extrabold text-amber-300 text-sm">৳ {metrics.tomorrowCodAmount.toLocaleString()}</span>
-          </div>
-        </div>
-
-        {/* Combined 2-Day Total KPI */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-          <div className="flex justify-between items-start mb-2">
-            <span className="px-2.5 py-1 rounded-lg text-xs font-black bg-purple-100 text-purple-800">
-              ⚡ {isBn ? '২ দিনের মোট সমাহার' : '2-Day Aggregate'}
-            </span>
-            <FlaskConical size={20} className="text-purple-600" />
-          </div>
-          <div className="space-y-2 my-1">
-            <div className="flex justify-between items-center">
-              <span className="text-slate-500 text-xs font-bold">{isBn ? 'মোট রোগী ভিজিট:' : 'Total Patient Visits:'}</span>
-              <span className="text-slate-900 font-black text-lg">{metrics.totalVisits} {isBn ? 'জন' : 'visits'}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-slate-500 text-xs font-bold">{isBn ? 'মোট সংগ্রহযোগ্য টেস্ট:' : 'Total Tests to Collect:'}</span>
-              <span className="text-emerald-700 font-black text-lg">{metrics.totalTests} {isBn ? 'টি' : 'tests'}</span>
-            </div>
-          </div>
-          <div className="pt-2 border-t border-slate-100 text-[11px] text-slate-500 font-medium">
-            {isBn ? 'ফেলোবটমিস্টদের নমুনা সংগ্রহের রুট ম্যাপ তৈরি ও ট্র্যাকিং সহজ করতে ব্যবহৃত।' : 'Utilized for phlebotomist route planning & sample batching.'}
+          <div className="mt-3 pt-3 border-t border-slate-200 flex justify-between items-center text-xs">
+            <span className="opacity-80">{isBn ? 'আগামীকালের COD:' : 'Tomorrow COD:'}</span>
+            <span className="font-extrabold text-amber-600 text-sm">৳ {metrics.tomorrowCodAmount.toLocaleString()}</span>
           </div>
         </div>
 
       </div>
 
-      {/* Date Switcher & Search / Area Filters Bar */}
+      {/* Date Switcher & Day Selector Bar (7 Days Pills) */}
       <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+        
         <div className="flex flex-wrap items-center justify-between gap-3">
           
-          {/* Target Date Pill Toggle */}
-          <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
+          {/* Main Date Target Pills */}
+          <div className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-xl overflow-x-auto w-full lg:w-auto">
+            <button
+              onClick={() => setDateTarget('7days')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer whitespace-nowrap ${
+                dateTarget === '7days'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              ⚡ {isBn ? 'আগামী ৭ দিনের সম্পূর্ণ রিপোর্ট' : 'All 7 Days Report'} ({metrics.total7DaysVisits})
+            </button>
+
             <button
               onClick={() => setDateTarget('today')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer whitespace-nowrap ${
                 dateTarget === 'today'
                   ? 'bg-emerald-600 text-white shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              {isBn ? 'আজকে (Today)' : 'Today Only'}
+              {isBn ? 'আজকে' : 'Today'} ({metrics.todayVisitCount})
             </button>
+
             <button
               onClick={() => setDateTarget('tomorrow')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer whitespace-nowrap ${
                 dateTarget === 'tomorrow'
                   ? 'bg-sky-600 text-white shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              {isBn ? 'আগামীকাল (Tomorrow)' : 'Tomorrow Only'}
-            </button>
-            <button
-              onClick={() => setDateTarget('both')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
-                dateTarget === 'both'
-                  ? 'bg-slate-900 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              {isBn ? 'আজ ও আগামীকাল উভয়ই (Both)' : 'Both Days'}
+              {isBn ? 'আগামীকাল' : 'Tomorrow'} ({metrics.tomorrowVisitCount})
             </button>
           </div>
 
-          {/* Area & Diagnostic Lab Filters */}
-          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          {/* Search Box & Filters */}
+          <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
             {/* Area filter */}
             <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs">
               <MapPin size={14} className="text-emerald-600" />
@@ -409,7 +462,7 @@ export const PhlebotomistReport: React.FC<PhlebotomistReportProps> = ({
             </div>
 
             {/* Search Box */}
-            <div className="relative flex-1 sm:w-60">
+            <div className="relative flex-1 sm:w-56">
               <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
               <input
                 type="text"
@@ -422,6 +475,37 @@ export const PhlebotomistReport: React.FC<PhlebotomistReportProps> = ({
           </div>
 
         </div>
+
+        {/* 7-Day Individual Day Selector Pills */}
+        <div className="pt-2 border-t border-slate-100 flex items-center gap-2 overflow-x-auto pb-1">
+          <span className="text-[11px] font-extrabold text-slate-400 shrink-0 uppercase tracking-wider flex items-center gap-1">
+            <Calendar size={13} />
+            {isBn ? 'দিন নির্বাচন:' : 'Pick Day:'}
+          </span>
+          {metrics.dailyCounts.map((dayItem) => {
+            const isSelected = dateTarget === dayItem.dateStr;
+            return (
+              <button
+                key={dayItem.dateStr}
+                onClick={() => setDateTarget(dayItem.dateStr)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 flex items-center gap-1.5 cursor-pointer ${
+                  isSelected
+                    ? 'bg-emerald-600 text-white shadow-xs border border-emerald-500'
+                    : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200'
+                }`}
+              >
+                <span>{dayItem.isToday ? (isBn ? 'আজ' : 'Today') : dayItem.isTomorrow ? (isBn ? 'কাল' : 'Tomorrow') : dayItem.dayName}</span>
+                <span className="text-[10px] opacity-80">{dayItem.formattedDate}</span>
+                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                  isSelected ? 'bg-white text-emerald-900' : 'bg-slate-200 text-slate-800'
+                }`}>
+                  {dayItem.visits}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
       </div>
 
       {/* Itemized Test Count Breakdown Pills Box */}
@@ -430,10 +514,10 @@ export const PhlebotomistReport: React.FC<PhlebotomistReportProps> = ({
           <div className="flex justify-between items-center text-xs font-bold text-emerald-950">
             <span className="flex items-center gap-1.5">
               <FlaskConical size={16} className="text-emerald-700" />
-              {isBn ? 'সংগ্রহযোগ্য টেস্ট আইটেমের তালিকা ও পরিমাণ:' : 'Sample Tests Required Breakdown:'}
+              {isBn ? 'সংগ্রহযোগ্য স্যাম্পল/টেস্ট আইটেমের তালিকা ও পরিমাণ:' : 'Sample Tests Required Breakdown:'}
             </span>
             <span className="text-[11px] text-emerald-700 font-bold">
-              {metrics.testItemBreakdown.length} {isBn ? 'টি ভিন্ন টেস্ট' : 'unique test items'}
+              {metrics.testItemBreakdown.length} {isBn ? 'টি ভিন্ন টেস্ট আইটেম' : 'unique test items'}
             </span>
           </div>
           <div className="flex flex-wrap gap-2 pt-1">
@@ -452,51 +536,72 @@ export const PhlebotomistReport: React.FC<PhlebotomistReportProps> = ({
         </div>
       )}
 
-      {/* Patients & Sample Visits List */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden space-y-0">
-        <div className="p-4 sm:p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-          <div className="flex items-center gap-2">
-            <Syringe size={18} className="text-emerald-600" />
-            <h3 className="font-extrabold text-slate-900 text-sm sm:text-base">
-              {isBn ? 'স্যাম্পল সংগ্রহের রোগী তালিকা ও ঠিকানা' : 'Scheduled Patient Sample Collection Visits'}
+      {/* Patient Dispatch Collection Run Sheet */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        
+        {/* Table Title Bar */}
+        <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-wrap justify-between items-center gap-3 bg-slate-50/60">
+          <div>
+            <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+              <ListFilter size={18} className="text-emerald-600" />
+              {isBn ? 'ফ্লেবোটমিস্ট স্যাম্পল কালেকশন লিস্ট' : 'Phlebotomist Dispatch Schedule'}
+              <span className="text-xs font-bold text-slate-500 bg-slate-200 px-2.5 py-0.5 rounded-full">
+                {filteredBookings.length} {isBn ? 'টি পেশেন্ট ভিজিট' : 'visits'}
+              </span>
             </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              {dateTarget === '7days' 
+                ? (isBn ? 'আগামী ৭ দিনের সকল নমুনা সংগ্রহের ডিউটি শিডিউল' : 'Duty schedule for all 7 days') 
+                : (isBn ? `নির্বাচনকৃত তারিখের রোগীর বাসা থেকে স্যাম্পল সংগ্রহের তালিকা (${dateTarget})` : `Sample collection list for ${dateTarget}`)}
+            </p>
           </div>
-          <span className="px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-black rounded-full">
-            {filteredBookings.length} {isBn ? 'টি কালেকশন অ্যাপয়েন্টমেন্ট' : 'appointments'}
-          </span>
+
+          <div className="text-xs text-slate-500 font-semibold">
+            {isBn ? 'প্রতি রোগীর ভিজিটের জন্য কল দিন বা সরাসরি লোকেশন কপি করুন' : 'Click phone to call patient or copy address for maps'}
+          </div>
         </div>
 
+        {/* Patient Cards List */}
         {filteredBookings.length === 0 ? (
-          <div className="p-12 text-center text-slate-400 space-y-2">
-            <AlertCircle size={36} className="mx-auto text-slate-300" />
-            <p className="font-bold text-sm text-slate-600">
-              {isBn ? 'নির্বাচিত ফিল্টারে কোনো স্যাম্পল কালেকশন অ্যাপয়েন্টমেন্ট পাওয়া যায়নি।' : 'No sample collection appointments match this filter criteria.'}
-            </p>
-            <p className="text-xs text-slate-400">
-              {isBn ? 'তারিখের অপশন পরিবর্তন করে অথবা ফিল্টার রিকসেট করে চেষ্টা করুন।' : 'Try selecting a different date range or clear the area/search filter.'}
+          <div className="p-12 text-center text-slate-500 space-y-3">
+            <Syringe size={40} className="mx-auto text-slate-300 stroke-1" />
+            <h4 className="font-bold text-slate-700">
+              {isBn ? 'কোন স্যাম্পল সংগ্রহের বুকিং পাওয়া যায়নি' : 'No sample collection visits found'}
+            </h4>
+            <p className="text-xs text-slate-400 max-w-sm mx-auto">
+              {isBn ? 'বাছাইকৃত ফিল্টার বা তারিখে কোন রোগীর স্যাম্পল কালেকশন নির্ধারণ করা নেই।' : 'No active bookings matched the selected date or search filters.'}
             </p>
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
-            {filteredBookings.map((b, index) => {
+            {filteredBookings.map((b, idx) => {
               const cleanId = (b.id || '').replace(/^#?EC-?/i, '').replace(/^#?BK-?/i, '');
-              const isToday = b.dayType === 'today';
+              const displayDayStr = b.dayDateStr || b.date?.slice(0, 10) || todayStr;
+              const isToday = displayDayStr === todayStr;
+              const isTomorrow = displayDayStr === tomorrowStr;
 
               return (
-                <div key={b.id || index} className="p-4 sm:p-5 hover:bg-slate-50/80 transition-colors flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div 
+                  key={b.id || idx}
+                  className="p-4 sm:p-5 hover:bg-emerald-50/30 transition-colors flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
+                >
                   
-                  {/* Left Column: Date Tag, Patient Info, Address */}
+                  {/* Left Column: Schedule & Patient Info */}
                   <div className="space-y-2 flex-1">
+                    
+                    {/* Badge Row */}
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className={`px-2.5 py-0.5 rounded-md text-[11px] font-black uppercase tracking-wider ${
+                      <span className={`px-2.5 py-0.5 rounded-md text-[11px] font-black ${
                         isToday 
                           ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' 
-                          : 'bg-sky-100 text-sky-800 border border-sky-300'
+                          : isTomorrow 
+                          ? 'bg-sky-100 text-sky-800 border border-sky-300'
+                          : 'bg-slate-100 text-slate-800 border border-slate-300'
                       }`}>
-                        {isToday ? (isBn ? `আজ (${todayStr})` : `Today (${todayStr})`) : (isBn ? `আগামীকাল (${tomorrowStr})` : `Tomorrow (${tomorrowStr})`)}
+                        🗓️ {isToday ? (isBn ? 'আজকে' : 'Today') : isTomorrow ? (isBn ? 'আগামীকাল' : 'Tomorrow') : displayDayStr}
                       </span>
 
-                      <span className="text-xs font-bold text-slate-700 bg-slate-100 px-2.5 py-0.5 rounded-md flex items-center gap-1">
+                      <span className="px-2.5 py-0.5 bg-slate-100 text-slate-700 font-bold rounded-md text-xs border border-slate-200 flex items-center gap-1">
                         <Clock size={12} className="text-slate-500" />
                         {b.time || '08:00 AM - 10:00 AM'}
                       </span>
