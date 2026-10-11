@@ -607,14 +607,38 @@ export const getStoredTests = (lang: Language): TestPackage[] => {
     if (stored) {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        // If stored has fewer tests than defaultList, merge remaining defaults
-        if (parsed.length < defaultList.length) {
-          const existingIds = new Set(parsed.map((p: TestPackage) => p.id));
-          const merged = [...parsed, ...defaultList.filter(d => !existingIds.has(d.id))];
-          localStorage.setItem(key, JSON.stringify(merged));
-          return merged;
+        let changed = false;
+        const existingIds = new Set(parsed.map((p: TestPackage) => p.id));
+        const missingDefaults = defaultList.filter(d => !existingIds.has(d.id));
+        let updatedList: TestPackage[] = parsed;
+        if (missingDefaults.length > 0) {
+          updatedList = [...parsed, ...missingDefaults];
+          changed = true;
         }
-        return parsed;
+
+        // Always ensure Popular Diagnostic Centre Ltd (lab_popular) price is 250 for default tests
+        updatedList = updatedList.map(test => {
+          const isDefault = defaultList.some(d => d.id === test.id);
+          if (isDefault) {
+            const currentPopularPrice = test.priceByLab?.['lab_popular'];
+            if (currentPopularPrice !== 250) {
+              changed = true;
+              return {
+                ...test,
+                priceByLab: {
+                  ...(test.priceByLab || {}),
+                  'lab_popular': 250
+                }
+              };
+            }
+          }
+          return test;
+        });
+
+        if (changed) {
+          localStorage.setItem(key, JSON.stringify(updatedList));
+        }
+        return updatedList;
       }
     }
   } catch (e) {
