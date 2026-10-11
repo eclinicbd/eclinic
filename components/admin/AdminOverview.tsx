@@ -66,6 +66,22 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
   const visibleLabs = labs.filter(l => !l.isHidden).length;
   const visibleTests = tests.filter(t => !t.isHidden).length;
 
+  // Calculate Today's Scheduled Tests & Bookings
+  const todayStr = (() => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  })();
+
+  const todayActiveBookings = bookings.filter(b => {
+    if (b.status === 'cancelled') return false;
+    const bDate = b.date || (b.createdAt ? b.createdAt.slice(0, 10) : '');
+    return bDate.startsWith(todayStr);
+  });
+  const todayTestsCount = todayActiveBookings.reduce((sum, b) => sum + (b.testNames?.length || 1), 0);
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending': 
@@ -130,7 +146,7 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         {/* Card 1: Revenue for Admin/Managers OR Operational Task Queue for Phleb/Nurse/Delivery */}
         {canViewRevenue ? (
           <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:border-slate-300 transition-all cursor-pointer" onClick={() => onNavigateTab('orders')}>
@@ -171,6 +187,31 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
           </div>
         )}
 
+        {/* Card 2: Today's Tests to Perform (NEW REQUESTED FEATURE) */}
+        <div 
+          className="bg-gradient-to-br from-teal-800 via-emerald-800 to-slate-900 text-white p-5 rounded-2xl shadow-sm hover:shadow-md transition-all cursor-pointer relative overflow-hidden group border border-teal-700/50"
+          onClick={() => onNavigateTab('orders')}
+        >
+          <div className="flex justify-between items-start mb-3">
+            <div className="bg-emerald-500/20 border border-emerald-400/30 p-2.5 rounded-xl text-emerald-300">
+              <FlaskConical size={22} />
+            </div>
+            <span className="text-[11px] font-black text-emerald-950 bg-emerald-400 px-2 py-0.5 rounded-md shadow-2xs">
+              {isBn ? 'আজকের শিডিউল' : "Today"}
+            </span>
+          </div>
+          <p className="text-emerald-200/90 text-[11px] font-extrabold uppercase tracking-wider">
+            {isBn ? 'আজকে টেস্ট করতে হবে' : "Today's Tests to Perform"}
+          </p>
+          <div className="flex items-baseline gap-2 mt-1">
+            <h3 className="text-2xl sm:text-3xl font-black text-white">{todayTestsCount}</h3>
+            <span className="text-xs font-bold text-emerald-200">
+              {isBn ? `টি টেস্ট (${todayActiveBookings.length} বুকিং)` : `tests (${todayActiveBookings.length} orders)`}
+            </span>
+          </div>
+        </div>
+
+        {/* Card 3: Total Orders */}
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:border-slate-300 transition-all cursor-pointer" onClick={() => onNavigateTab('orders')}>
           <div className="flex justify-between items-start mb-3">
             <div className="bg-blue-50 p-3 rounded-xl text-blue-600">

@@ -67,6 +67,37 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({
 
   const t = TRANSLATIONS[lang];
 
+  // Today's Scheduled Tests Metrics
+  const todayStr = React.useMemo(() => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }, []);
+
+  const todayBookings = React.useMemo(() => {
+    return bookings.filter(b => {
+      if (b.status === 'cancelled') return false;
+      const bDate = b.date || (b.createdAt ? b.createdAt.slice(0, 10) : '');
+      return bDate.startsWith(todayStr);
+    });
+  }, [bookings, todayStr]);
+
+  const todayTestsCount = React.useMemo(() => {
+    return todayBookings.reduce((sum, b) => sum + (b.testNames?.length || 1), 0);
+  }, [todayBookings]);
+
+  const todayTestBreakdown = React.useMemo(() => {
+    const breakdown: Record<string, number> = {};
+    todayBookings.forEach(b => {
+      (b.testNames || []).forEach(name => {
+        breakdown[name] = (breakdown[name] || 0) + 1;
+      });
+    });
+    return breakdown;
+  }, [todayBookings]);
+
   // Helper date boundaries
   const getPresetDateRange = (preset: typeof datePreset) => {
     const today = new Date();
@@ -207,6 +238,44 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({
           </span>
         </div>
       )}
+
+      {/* Today's Scheduled Tests Header Banner */}
+      <div className="bg-gradient-to-r from-teal-950 via-emerald-900 to-slate-900 text-white p-5 rounded-2xl shadow-sm border border-emerald-800/60 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-400/30 flex items-center justify-center shrink-0">
+            <FlaskConical size={24} />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="font-extrabold text-base text-white">
+                {isBn ? 'আজকে কতগুলো টেস্ট করতে হবে:' : 'Tests Scheduled for Today:'}
+              </h2>
+              <span className="text-[11px] bg-emerald-400 text-emerald-950 font-black px-2.5 py-0.5 rounded-full uppercase shadow-2xs">
+                {todayTestsCount} {isBn ? 'টি টেস্ট' : 'Tests'}
+              </span>
+            </div>
+            <p className="text-xs text-emerald-200/80 mt-0.5">
+              {isBn 
+                ? `আজকের দিনে মোট ${todayBookings.length} টি বুকিং এর বিপরীতে সর্বমোট ${todayTestsCount} টি প্যাথলজি/ডায়াগনস্টিক টেস্ট সম্পন্ন করতে হবে।` 
+                : `${todayTestsCount} individual tests to be performed across ${todayBookings.length} orders today.`}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => handleDatePresetChange('today')}
+            className={`px-4 py-2.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all shadow-md cursor-pointer ${
+              datePreset === 'today'
+                ? 'bg-emerald-400 text-emerald-950 ring-2 ring-emerald-300'
+                : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+            }`}
+          >
+            <CalendarDays size={15} />
+            <span>{isBn ? 'আজকের টেস্ট বুকিংসমূহ ফিল্টার করুন' : "Filter Today's Test Bookings"}</span>
+          </button>
+        </div>
+      </div>
 
       {/* Header and Controls */}
       <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
@@ -384,6 +453,38 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({
             )}
           </div>
         </div>
+
+        {/* Itemized Test Breakdown Box for Today */}
+        {datePreset === 'today' && (
+          <div className="bg-emerald-50/90 border border-emerald-200/90 rounded-2xl p-4 space-y-3 animate-in fade-in">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <h3 className="text-xs font-extrabold text-emerald-950 uppercase tracking-wider flex items-center gap-1.5">
+                <FlaskConical size={15} className="text-emerald-600" />
+                {isBn ? 'আজকের প্রয়োজনীয় প্যাথলজি ও ডায়াগনস্টিক টেস্ট সমূহের ব্রেকডাউন (Today\'s Itemized Tests):' : "Today's Itemized Tests List:"}
+              </h3>
+              <span className="text-xs font-black text-emerald-900 bg-emerald-100 border border-emerald-200 px-2.5 py-0.5 rounded-lg">
+                {isBn ? `সর্বমোট টেস্ট: ${todayTestsCount} টি (${todayBookings.length} বুকিং)` : `Total Tests: ${todayTestsCount} (${todayBookings.length} orders)`}
+              </span>
+            </div>
+
+            {Object.keys(todayTestBreakdown).length > 0 ? (
+              <div className="flex flex-wrap gap-2 pt-1">
+                {Object.entries(todayTestBreakdown).map(([testName, count]) => (
+                  <div key={testName} className="bg-white border border-emerald-200 px-3 py-1.5 rounded-xl text-xs flex items-center gap-2 shadow-2xs">
+                    <span className="font-bold text-slate-800">{testName}</span>
+                    <span className="px-2 py-0.5 bg-emerald-600 text-white font-black text-[11px] rounded-md">
+                      {count} {isBn ? 'টি' : ''}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-slate-500 italic">
+                {isBn ? 'আজকের দিনে সম্পন্ন করার মতো কোনো সক্রিয় টেস্টের বুকিং পাওয়া যায়নি।' : 'No test appointments scheduled for today.'}
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Filter Results Summary Banner */}
         <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs">

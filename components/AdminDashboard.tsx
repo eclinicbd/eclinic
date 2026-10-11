@@ -684,6 +684,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const visibleBookings = filterOrdersForStaff(bookings, currentStaff);
   const pendingCount = visibleBookings.filter(b => b.status === 'pending').length;
 
+  const todayStr = (() => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  })();
+
+  const todayBookings = visibleBookings.filter(b => {
+    if (b.status === 'cancelled') return false;
+    const bDate = b.date || (b.createdAt ? b.createdAt.slice(0, 10) : '');
+    return bDate.startsWith(todayStr);
+  });
+  const todayTestsCount = todayBookings.reduce((sum, b) => sum + (b.testNames?.length || 1), 0);
+
   const NavButton = ({ 
     id, 
     icon: Icon, 
@@ -907,6 +922,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div className="flex justify-between text-slate-600">
               <span>{isSuperAdmin ? 'Total Orders:' : 'My Area Orders:'}</span>
               <strong className="text-slate-900">{visibleBookings.length}</strong>
+            </div>
+            <div className="flex items-center justify-between text-emerald-800 font-bold bg-emerald-50/90 px-2.5 py-1.5 rounded-xl border border-emerald-200 mt-2 text-xs shadow-2xs">
+              <span className="flex items-center gap-1">
+                <span>🩸</span>
+                <span>{lang === 'bn' ? 'আজকে টেস্ট করতে হবে:' : "Today's Tests:"}</span>
+              </span>
+              <span className="text-emerald-900 font-black">{todayTestsCount} {lang === 'bn' ? 'টি' : 'tests'}</span>
             </div>
           </div>
         </aside>
