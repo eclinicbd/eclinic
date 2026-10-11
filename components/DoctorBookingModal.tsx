@@ -24,6 +24,7 @@ import {
   Building2,
   Wallet,
   Smartphone,
+  Banknote,
   CalendarOff
 } from 'lucide-react';
 import { saveDoctorAppointment, getStoredPaymentConfig, getStoredSiteSettings, getStoredCurrentPatient } from '../services/dataStorage';
@@ -71,12 +72,19 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
   );
   const [problemDescription, setProblemDescription] = useState<string>('');
 
-  // Payment Options matching Test Booking
+  // Payment Options unified with Test Booking
   const [paymentConfig, setPaymentConfig] = useState<PaymentGatewaysConfig>(getStoredPaymentConfig);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('bkash');
   const [senderPhone, setSenderPhone] = useState<string>(() => initialPatient?.phone || '');
   const [transactionId, setTransactionId] = useState<string>('');
-  
+  const [copiedNumber, setCopiedNumber] = useState<string | null>(null);
+
+  const handleCopyPaymentNumber = (num: string) => {
+    navigator.clipboard.writeText(num);
+    setCopiedNumber(num);
+    setTimeout(() => setCopiedNumber(null), 2000);
+  };
+
   // Card Inputs
   const [cardNumber, setCardNumber] = useState('');
   const [cardExpiry, setCardExpiry] = useState('');
@@ -87,6 +95,65 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [completedAppointment, setCompletedAppointment] = useState<DoctorAppointment | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
+
+  // Unified Payment method options data - identical to Tests Booking
+  const allPaymentOptions: { id: PaymentMethod; title: string; subtitle: string; icon: any; color: string; badge?: string }[] = [
+    {
+      id: 'cod',
+      title: paymentConfig?.cod?.title || (isBn ? 'ক্যাশ অন কনসালটেশন (Cash on Visit)' : 'Pay Cash on Visit / Consultation'),
+      subtitle: isBn ? 'চেম্বারে বা কনসালটেশনের পর সরাসরি ফি পরিশোধ' : 'Pay consultation fee directly during your visit',
+      icon: Banknote,
+      color: 'emerald',
+      badge: isBn ? 'সরাসরি পরিশোধ' : 'Pay on Visit'
+    },
+    {
+      id: 'bkash',
+      title: isBn ? 'বিকাশ (bKash Payment)' : 'bKash Mobile Banking',
+      subtitle: isBn ? 'বিকাশ অ্যাপ অথবা ডায়াল করে ইনস্ট্যান্ট পেমেন্ট' : 'Direct Send Money / Merchant Payment',
+      icon: Smartphone,
+      color: 'pink',
+      badge: paymentConfig?.bkash?.merchantNumber || '01712-345678'
+    },
+    {
+      id: 'nagad',
+      title: isBn ? 'নগদ (Nagad Payment)' : 'Nagad Mobile Banking',
+      subtitle: isBn ? 'নগদ অ্যাপ অথবা ইউএসএসডি কোডে সহজ পেমেন্ট' : 'Fast payment via Nagad app',
+      icon: Smartphone,
+      color: 'orange',
+      badge: paymentConfig?.nagad?.merchantNumber || '01812-345678'
+    },
+    {
+      id: 'rocket',
+      title: isBn ? 'রকেট (Rocket / DBBL)' : 'DBBL Rocket Payment',
+      subtitle: isBn ? 'ডাচ-বাংলা রকেট একাউন্ট থেকে নিরাপদ পেমেন্ট' : 'DBBL Rocket Mobile Payment',
+      icon: Wallet,
+      color: 'purple',
+      badge: paymentConfig?.rocket?.accountNumber || '01912-345678-9'
+    },
+    {
+      id: 'card',
+      title: isBn ? 'কার্ড / অনলাইন পেমেন্ট (Debit/Credit Card)' : 'Debit / Credit Card (Online)',
+      subtitle: isBn ? 'ভিসা, মাস্টারকার্ড, এমেক্স ও নেক্সাস পে সুরক্ষিত গেটওয়ে' : 'Visa, MasterCard, AMEX, NexusPay',
+      icon: CreditCard,
+      color: 'sky',
+      badge: paymentConfig?.card?.provider?.toUpperCase() || 'Instant SSL'
+    }
+  ];
+
+  // Strictly filter out any payment method disabled in Admin Settings
+  const paymentOptions = allPaymentOptions.filter(opt => {
+    const gateway = paymentConfig?.[opt.id];
+    return gateway ? gateway.isActive !== false : true;
+  });
+
+  // Ensure paymentMethod always stays on an enabled payment method
+  useEffect(() => {
+    if (paymentOptions.length > 0) {
+      if (!paymentOptions.some(opt => opt.id === paymentMethod)) {
+        setPaymentMethod(paymentOptions[0].id);
+      }
+    }
+  }, [paymentOptions, paymentMethod]);
 
   // Auto-populate patient details whenever modal opens or currentPatient changes
   useEffect(() => {
@@ -729,188 +796,395 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
                 </div>
               </div>
 
-              {/* Payment Method Selector matching Test Booking */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                  <CreditCard size={14} className="text-sky-600 shrink-0" />
-                  <span>{isBn ? 'পেমেন্ট মাধ্যম নির্বাচন করুন:' : 'Select Payment Method:'}</span>
+              {/* Payment Methods Selector (Unified with Test Booking) */}
+              <div className="space-y-2.5">
+                <label className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                  <Wallet size={15} className="text-primary" />
+                  <span>{isBn ? 'পেমেন্ট মাধ্যম নির্বাচন করুন (Payment Option):' : 'Select Payment Method:'}</span>
                 </label>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
-                  {/* bKash */}
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod('bkash')}
-                    className={`p-3 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
-                      paymentMethod === 'bkash'
-                        ? 'bg-pink-50/80 border-[#D12053] text-[#D12053] ring-2 ring-pink-300 font-bold shadow-xs'
-                        : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
-                    }`}
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-[#D12053] text-white flex items-center justify-center font-black text-xs mb-1">
-                      ব
-                    </div>
-                    <span className="text-xs font-bold">bKash</span>
-                  </button>
+                <div className="space-y-2">
+                  {paymentOptions.map((opt) => {
+                    const isSelected = paymentMethod === opt.id;
+                    const IconComp = opt.icon;
 
-                  {/* Nagad */}
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod('nagad')}
-                    className={`p-3 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
-                      paymentMethod === 'nagad'
-                        ? 'bg-orange-50/80 border-[#F7931E] text-[#F7931E] ring-2 ring-orange-300 font-bold shadow-xs'
-                        : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
-                    }`}
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-[#F7931E] text-white flex items-center justify-center font-black text-xs mb-1">
-                      ন
-                    </div>
-                    <span className="text-xs font-bold">Nagad</span>
-                  </button>
+                    return (
+                      <div
+                        key={opt.id}
+                        onClick={() => {
+                          setPaymentMethod(opt.id);
+                          if (validationError) setValidationError(null);
+                        }}
+                        className={`p-3 rounded-2xl border cursor-pointer transition-all ${
+                          isSelected
+                            ? 'border-sky-500 bg-sky-50/70 ring-2 ring-sky-500/20 shadow-xs'
+                            : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/60'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
+                              isSelected ? 'bg-sky-600 text-white' : 'bg-slate-100 text-slate-700'
+                            }`}>
+                              <IconComp size={18} />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h4 className="text-xs font-black text-slate-900 leading-tight">{opt.title}</h4>
+                                {opt.badge && (
+                                  <span className="text-[9px] font-bold bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded-md border border-slate-200">
+                                    {opt.badge}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[10px] text-slate-500 mt-0.5">{opt.subtitle}</p>
+                            </div>
+                          </div>
 
-                  {/* Rocket */}
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod('rocket')}
-                    className={`p-3 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
-                      paymentMethod === 'rocket'
-                        ? 'bg-purple-50/80 border-[#8C3494] text-[#8C3494] ring-2 ring-purple-300 font-bold shadow-xs'
-                        : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
-                    }`}
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-[#8C3494] text-white flex items-center justify-center font-black text-xs mb-1">
-                      র
-                    </div>
-                    <span className="text-xs font-bold">Rocket</span>
-                  </button>
+                          <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${
+                            isSelected ? 'border-sky-600 bg-sky-600 text-white' : 'border-slate-300 bg-white'
+                          }`}>
+                            {isSelected && <Check size={12} strokeWidth={3} />}
+                          </div>
+                        </div>
 
-                  {/* Credit / Debit Card */}
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod('card')}
-                    className={`p-3 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
-                      paymentMethod === 'card'
-                        ? 'bg-blue-50/80 border-blue-600 text-blue-700 ring-2 ring-blue-300 font-bold shadow-xs'
-                        : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
-                    }`}
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center mb-1">
-                      <CreditCard size={16} />
-                    </div>
-                    <span className="text-xs font-bold">{isBn ? 'কার্ড' : 'Card'}</span>
-                  </button>
+                        {/* Expandable Details based on selection */}
+                        {isSelected && (
+                          <div className="mt-3 pt-3 border-t border-slate-200/80 animate-in fade-in space-y-3 text-xs" onClick={e => e.stopPropagation()}>
+                            
+                            {/* COD Instructions */}
+                            {opt.id === 'cod' && (
+                              <div className="p-3 bg-emerald-50/80 border border-emerald-200 rounded-xl text-emerald-950 space-y-1">
+                                <p className="font-bold flex items-center gap-1.5 text-emerald-800">
+                                  <ShieldCheck size={15} />
+                                  <span>{isBn ? 'ক্যাশ অন কনসালটেশন নিশ্চিতকরণ' : 'Cash on Consultation'}</span>
+                                </p>
+                                <p className="text-[11px] text-emerald-800 leading-relaxed">
+                                  {isBn
+                                    ? `আপনি ডক্টর ${doctor.name}-এর চেম্বারে উপস্থিত হয়ে অথবা ভিডিও কনসালটেশনের পর সরাসরি ৳${doctor.consultationFee} ফি ক্যাশ পরিশোধ করতে পারবেন।`
+                                    : `You can pay the ৳${doctor.consultationFee} fee in cash directly during or after your consultation with Dr. ${doctor.name}.`}
+                                </p>
+                              </div>
+                            )}
+
+                            {/* bKash Instructions & Inputs */}
+                            {opt.id === 'bkash' && (
+                              <div className="space-y-2.5">
+                                <div className="p-3 bg-pink-50 border border-pink-200 rounded-xl text-pink-950 space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-bold text-xs text-pink-900">
+                                      {isBn ? 'বিকাশ পেমেন্ট / সেন্ড মানি নম্বর:' : 'bKash Number:'}
+                                    </span>
+                                    <div className="flex items-center gap-1">
+                                      <span className="font-mono font-black text-xs text-pink-900">
+                                        {paymentConfig.bkash.merchantNumber || '01712-345678'}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleCopyPaymentNumber((paymentConfig.bkash.merchantNumber || '01712345678').replace(/[^0-9]/g, ''))}
+                                        className="px-2 py-0.5 bg-pink-200/80 hover:bg-pink-300 text-pink-900 rounded-md text-[10px] font-bold cursor-pointer"
+                                      >
+                                        {copiedNumber === (paymentConfig.bkash.merchantNumber || '01712345678').replace(/[^0-9]/g, '') ? (isBn ? 'কপি হয়েছে' : 'Copied') : (isBn ? 'কপি' : 'Copy')}
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <ol className="list-decimal list-inside text-[11px] text-pink-800 space-y-0.5">
+                                    <li>{isBn ? 'বিকাশ অ্যাপে যান বা *247# ডায়াল করুন।' : 'Open bKash App or dial *247#.'}</li>
+                                    <li>
+                                      {isBn 
+                                        ? `নম্বর ${paymentConfig.bkash.merchantNumber || '01712-345678'} এ মোট ৳${doctor.consultationFee} ফি Send Money / Payment করুন।` 
+                                        : `Send Money / Pay ৳${doctor.consultationFee} to ${paymentConfig.bkash.merchantNumber || '01712-345678'}.`}
+                                    </li>
+                                    <li>{isBn ? 'নিচে আপনার বিকাশ প্রেরক নম্বর ও TrxID প্রদান করুন।' : 'Enter your sender phone number and TrxID below.'}</li>
+                                  </ol>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                  <div>
+                                    <label className="text-[11px] font-bold text-slate-700 flex items-center justify-between mb-1">
+                                      <span>{isBn ? 'বিকাশ মোবাইল নম্বর (Sender Phone):' : 'bKash Sender Phone:'}</span>
+                                      <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* বাধ্যতামূলক' : '* Required'}</span>
+                                    </label>
+                                    <input 
+                                      type="tel"
+                                      required
+                                      placeholder="017XXXXXXXX"
+                                      value={senderPhone}
+                                      onChange={(e) => {
+                                        setSenderPhone(e.target.value);
+                                        if (validationError) setValidationError(null);
+                                      }}
+                                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 outline-none"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-[11px] font-bold text-slate-700 flex items-center justify-between mb-1">
+                                      <span>{isBn ? 'ট্রানজেকশন আইডি (TrxID):' : 'Transaction ID (TrxID):'}</span>
+                                      <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* বাধ্যতামূলক' : '* Required'}</span>
+                                    </label>
+                                    <input 
+                                      type="text"
+                                      required
+                                      placeholder="e.g. 9J87AKL9"
+                                      value={transactionId}
+                                      onChange={(e) => {
+                                        setTransactionId(e.target.value.toUpperCase());
+                                        if (validationError) setValidationError(null);
+                                      }}
+                                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono uppercase focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 outline-none"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Nagad Instructions & Inputs */}
+                            {opt.id === 'nagad' && (
+                              <div className="space-y-2.5">
+                                <div className="p-3 bg-orange-50 border border-orange-200 rounded-xl text-orange-950 space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-bold text-xs text-orange-900">
+                                      {isBn ? 'নগদ পেমেন্ট / সেন্ড মানি নম্বর:' : 'Nagad Number:'}
+                                    </span>
+                                    <div className="flex items-center gap-1">
+                                      <span className="font-mono font-black text-xs text-orange-900">
+                                        {paymentConfig.nagad.merchantNumber || '01812-345678'}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleCopyPaymentNumber((paymentConfig.nagad.merchantNumber || '01812345678').replace(/[^0-9]/g, ''))}
+                                        className="px-2 py-0.5 bg-orange-200/80 hover:bg-orange-300 text-orange-900 rounded-md text-[10px] font-bold cursor-pointer"
+                                      >
+                                        {copiedNumber === (paymentConfig.nagad.merchantNumber || '01812345678').replace(/[^0-9]/g, '') ? (isBn ? 'কপি হয়েছে' : 'Copied') : (isBn ? 'কপি' : 'Copy')}
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <ol className="list-decimal list-inside text-[11px] text-orange-800 space-y-0.5">
+                                    <li>{isBn ? 'নগদ অ্যাপ খুলুন বা *167# ডায়াল করুন।' : 'Open Nagad App or dial *167#.'}</li>
+                                    <li>
+                                      {isBn 
+                                        ? `নম্বর ${paymentConfig.nagad.merchantNumber || '01812-345678'} এ মোট ৳${doctor.consultationFee} ফি Send Money / Payment করুন।` 
+                                        : `Send ৳${doctor.consultationFee} to ${paymentConfig.nagad.merchantNumber || '01812-345678'}.`}
+                                    </li>
+                                    <li>{isBn ? 'নিচে আপনার প্রেরক নম্বর ও TrxID লিখুন।' : 'Enter sender phone and TrxID below.'}</li>
+                                  </ol>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                  <div>
+                                    <label className="text-[11px] font-bold text-slate-700 flex items-center justify-between mb-1">
+                                      <span>{isBn ? 'নগদ মোবাইল নম্বর (Sender Phone):' : 'Nagad Sender Phone:'}</span>
+                                      <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* বাধ্যতামূলক' : '* Required'}</span>
+                                    </label>
+                                    <input 
+                                      type="tel"
+                                      required
+                                      placeholder="018XXXXXXXX"
+                                      value={senderPhone}
+                                      onChange={(e) => {
+                                        setSenderPhone(e.target.value);
+                                        if (validationError) setValidationError(null);
+                                      }}
+                                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 outline-none"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-[11px] font-bold text-slate-700 flex items-center justify-between mb-1">
+                                      <span>{isBn ? 'ট্রানজেকশন আইডি (TrxID):' : 'Transaction ID (TrxID):'}</span>
+                                      <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* বাধ্যতামূলক' : '* Required'}</span>
+                                    </label>
+                                    <input 
+                                      type="text"
+                                      required
+                                      placeholder="e.g. 7K99NGD1"
+                                      value={transactionId}
+                                      onChange={(e) => {
+                                        setTransactionId(e.target.value.toUpperCase());
+                                        if (validationError) setValidationError(null);
+                                      }}
+                                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono uppercase focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 outline-none"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Rocket Instructions & Inputs */}
+                            {opt.id === 'rocket' && (
+                              <div className="space-y-2.5">
+                                <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl text-purple-950 space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-bold text-xs text-purple-900">
+                                      {isBn ? 'রকেট একাউন্ট নম্বর:' : 'DBBL Rocket Number:'}
+                                    </span>
+                                    <div className="flex items-center gap-1">
+                                      <span className="font-mono font-black text-xs text-purple-900">
+                                        {paymentConfig.rocket.accountNumber || '01912-345678-9'}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleCopyPaymentNumber((paymentConfig.rocket.accountNumber || '019123456789').replace(/[^0-9]/g, ''))}
+                                        className="px-2 py-0.5 bg-purple-200/80 hover:bg-purple-300 text-purple-900 rounded-md text-[10px] font-bold cursor-pointer"
+                                      >
+                                        {copiedNumber === (paymentConfig.rocket.accountNumber || '019123456789').replace(/[^0-9]/g, '') ? (isBn ? 'কপি হয়েছে' : 'Copied') : (isBn ? 'কপি' : 'Copy')}
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <ol className="list-decimal list-inside text-[11px] text-purple-800 space-y-0.5">
+                                    <li>{isBn ? 'রকেট অ্যাপ খুলুন বা *322# ডায়াল করুন।' : 'Open Rocket App or dial *322#.'}</li>
+                                    <li>
+                                      {isBn 
+                                        ? `রকেট একাউন্ট ${paymentConfig.rocket.accountNumber || '01912-345678-9'} এ মোট ৳${doctor.consultationFee} ফি সেন্ড মানি করুন।` 
+                                        : `Send ৳${doctor.consultationFee} to ${paymentConfig.rocket.accountNumber || '01912-345678-9'}.`}
+                                    </li>
+                                    <li>{isBn ? 'নিচে আপনার রকেট প্রেরক নম্বর ও TrxID প্রদান করুন।' : 'Enter sender phone and TrxID below.'}</li>
+                                  </ol>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                  <div>
+                                    <label className="text-[11px] font-bold text-slate-700 flex items-center justify-between mb-1">
+                                      <span>{isBn ? 'রকেট মোবাইল নম্বর (Sender Phone):' : 'Rocket Sender Phone:'}</span>
+                                      <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* বাধ্যতামূলক' : '* Required'}</span>
+                                    </label>
+                                    <input 
+                                      type="tel"
+                                      required
+                                      placeholder="019XXXXXXXX"
+                                      value={senderPhone}
+                                      onChange={(e) => {
+                                        setSenderPhone(e.target.value);
+                                        if (validationError) setValidationError(null);
+                                      }}
+                                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 outline-none"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-[11px] font-bold text-slate-700 flex items-center justify-between mb-1">
+                                      <span>{isBn ? 'ট্রানজেকশন আইডি (TrxID):' : 'Transaction ID (TrxID):'}</span>
+                                      <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* বাধ্যতামূলক' : '* Required'}</span>
+                                    </label>
+                                    <input 
+                                      type="text"
+                                      required
+                                      placeholder="e.g. 8ROC7712"
+                                      value={transactionId}
+                                      onChange={(e) => {
+                                        setTransactionId(e.target.value.toUpperCase());
+                                        if (validationError) setValidationError(null);
+                                      }}
+                                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono uppercase focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 outline-none"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Debit / Credit Card Form */}
+                            {opt.id === 'card' && (
+                              <div className="space-y-2.5">
+                                <div className="p-3 bg-sky-50 border border-sky-200 rounded-xl space-y-2">
+                                  <div className="flex items-center justify-between text-xs text-sky-950 font-bold">
+                                    <span>{isBn ? 'নিরাপদ কার্ড পেমেন্ট (Visa / MasterCard / AMEX)' : 'Secure Card Payment'}</span>
+                                    <span className="flex items-center gap-1 text-[10px] text-sky-700">
+                                      <Lock size={12} /> 256-bit SSL
+                                    </span>
+                                  </div>
+
+                                  <div className="space-y-2 pt-1">
+                                    <div>
+                                      <label className="text-[10px] font-bold text-slate-700 flex items-center justify-between mb-0.5">
+                                        <span>{isBn ? 'কার্ড নম্বর (১৬ ডিজিট):' : 'Card Number (16-digit):'}</span>
+                                        <span className="text-[9px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* বাধ্যতামূলক' : '* Required'}</span>
+                                      </label>
+                                      <input 
+                                        type="text" 
+                                        required
+                                        maxLength={19}
+                                        placeholder="4123 •••• •••• 9876"
+                                        value={cardNumber}
+                                        onChange={(e) => {
+                                          const v = e.target.value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+                                          const matches = v.match(/\d{4,16}/g);
+                                          const match = matches && matches[0] || '';
+                                          const parts = [];
+                                          for (let i = 0, len = match.length; i < len; i += 4) {
+                                            parts.push(match.substring(i, i + 4));
+                                          }
+                                          setCardNumber(parts.length ? parts.join(' ') : v);
+                                          if (validationError) setValidationError(null);
+                                        }}
+                                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 outline-none"
+                                      />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <div>
+                                        <label className="text-[10px] font-bold text-slate-700 flex items-center justify-between mb-0.5">
+                                          <span>{isBn ? 'মেয়াদ (MM/YY):' : 'Expiry (MM/YY):'}</span>
+                                        </label>
+                                        <input 
+                                          type="text" 
+                                          required
+                                          maxLength={5}
+                                          placeholder="MM/YY"
+                                          value={cardExpiry}
+                                          onChange={(e) => {
+                                            let v = e.target.value.replace(/[^0-9]/g, '');
+                                            if (v.length > 2) v = v.substring(0, 2) + '/' + v.substring(2, 4);
+                                            setCardExpiry(v);
+                                            if (validationError) setValidationError(null);
+                                          }}
+                                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono text-center focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 outline-none"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="text-[10px] font-bold text-slate-700 flex items-center justify-between mb-0.5">
+                                          <span>CVV / CVC:</span>
+                                        </label>
+                                        <input 
+                                          type="password" 
+                                          required
+                                          maxLength={4}
+                                          placeholder="•••"
+                                          value={cardCvv}
+                                          onChange={(e) => {
+                                            setCardCvv(e.target.value.replace(/[^0-9]/g, ''));
+                                            if (validationError) setValidationError(null);
+                                          }}
+                                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono text-center focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 outline-none"
+                                        />
+                                      </div>
+                                    </div>
+
+                                    <div>
+                                      <label className="text-[10px] font-bold text-slate-700 flex items-center justify-between mb-0.5">
+                                        <span>{isBn ? 'কার্ডধারীর নাম (Name on Card):' : 'Cardholder Name:'}</span>
+                                      </label>
+                                      <input 
+                                        type="text" 
+                                        required
+                                        placeholder="MD. PATIENT NAME"
+                                        value={cardHolder}
+                                        onChange={(e) => {
+                                          setCardHolder(e.target.value.toUpperCase());
+                                          if (validationError) setValidationError(null);
+                                        }}
+                                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs uppercase focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 outline-none"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-
-              {/* Mobile Banking Instructions & Inputs (bKash / Nagad / Rocket) */}
-              {(paymentMethod === 'bkash' || paymentMethod === 'nagad' || paymentMethod === 'rocket') && (
-                <div className="p-3.5 sm:p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs">
-                    <span className="font-bold text-slate-800">
-                      {paymentMethod === 'bkash' ? 'bKash Merchant / Personal No:' : paymentMethod === 'nagad' ? 'Nagad Account No:' : 'Rocket Account No:'}
-                    </span>
-                    <span className="font-mono font-bold text-sky-700 bg-sky-100 px-2 py-0.5 rounded self-start sm:self-auto">
-                      {paymentMethod === 'bkash' 
-                        ? (paymentConfig.bkashNumber || '01712-345678')
-                        : paymentMethod === 'nagad'
-                        ? (paymentConfig.nagadNumber || '01812-345678')
-                        : (paymentConfig.rocketNumber || '01912-345678-9')}
-                    </span>
-                  </div>
-
-                  <p className="text-[11px] sm:text-xs text-slate-500 leading-relaxed">
-                    {isBn 
-                      ? `অনুগ্রহ করে উপরের নম্বরে ৳${doctor.consultationFee} ফি 'Send Money' বা 'Payment' করুন এবং আপনার প্রেরক নম্বর ও TrxID নিচে লিখুন:`
-                      : `Please send ৳${doctor.consultationFee} to the number above and enter your Sender Phone & TrxID below:`}
-                  </p>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        {isBn ? 'আপনার প্রেরক নম্বর (Sender Phone) *' : 'Sender Phone Number *'}
-                      </label>
-                      <input
-                        type="tel"
-                        value={senderPhone}
-                        onChange={e => setSenderPhone(e.target.value)}
-                        placeholder="017XXXXXXXX"
-                        maxLength={11}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono focus:ring-2 focus:ring-sky-600 outline-none bg-white"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        {isBn ? 'ট্রানজেকশন আইডি (TrxID) *' : 'Transaction ID (TrxID) *'}
-                      </label>
-                      <input
-                        type="text"
-                        value={transactionId}
-                        onChange={e => setTransactionId(e.target.value.toUpperCase())}
-                        placeholder="e.g. 9B87F2K3"
-                        className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono font-bold focus:ring-2 focus:ring-sky-600 outline-none bg-white uppercase"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Card Inputs */}
-              {paymentMethod === 'card' && (
-                <div className="p-3.5 sm:p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
-                  <div className="flex items-center justify-between text-xs mb-1">
-                    <span className="font-bold text-slate-800">{isBn ? 'কার্ডের তথ্য দিন (Visa / Mastercard)' : 'Debit / Credit Card Details'}</span>
-                    <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-bold">256-Bit SSL Encrypted</span>
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1">{isBn ? 'কার্ডধারীর নাম' : 'Cardholder Name'}</label>
-                    <input
-                      type="text"
-                      value={cardHolder}
-                      onChange={e => setCardHolder(e.target.value)}
-                      placeholder="e.g. MD KARIM"
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-sky-600 outline-none bg-white uppercase"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    <div className="sm:col-span-2">
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">{isBn ? 'কার্ড নম্বর' : 'Card Number'}</label>
-                      <input
-                        type="text"
-                        value={cardNumber}
-                        onChange={e => setCardNumber(e.target.value)}
-                        placeholder="4123 4567 8901 2345"
-                        maxLength={19}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono focus:ring-2 focus:ring-sky-600 outline-none bg-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">MM/YY &bull; CVV</label>
-                      <div className="flex gap-1.5">
-                        <input
-                          type="text"
-                          value={cardExpiry}
-                          onChange={e => setCardExpiry(e.target.value)}
-                          placeholder="12/28"
-                          maxLength={5}
-                          className="w-1/2 px-2 py-2 rounded-xl border border-slate-200 text-xs font-mono text-center focus:ring-2 focus:ring-sky-600 outline-none bg-white"
-                        />
-                        <input
-                          type="password"
-                          value={cardCvv}
-                          onChange={e => setCardCvv(e.target.value)}
-                          placeholder="CVV"
-                          maxLength={4}
-                          className="w-1/2 px-2 py-2 rounded-xl border border-slate-200 text-xs font-mono text-center focus:ring-2 focus:ring-sky-600 outline-none bg-white"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {/* Controls */}
               <div className="flex items-center justify-between pt-2 gap-2">
@@ -1024,7 +1298,13 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
                 </div>
                 <div className="flex justify-between pt-1">
                   <span className="text-slate-500">{isBn ? 'পরিশোধিত ফি:' : 'Paid Fee:'}</span>
-                  <span className="font-black text-emerald-700">৳ {completedAppointment.doctorFee} ({completedAppointment.paymentMethod.toUpperCase()})</span>
+                  <span className="font-black text-emerald-700">
+                    ৳ {completedAppointment.doctorFee} ({
+                      completedAppointment.paymentMethod === 'cod'
+                        ? (isBn ? 'ক্যাশ অন কনসালটেশন' : 'Pay on Visit')
+                        : completedAppointment.paymentMethod.toUpperCase()
+                    })
+                  </span>
                 </div>
               </div>
 

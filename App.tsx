@@ -2108,12 +2108,6 @@ export default function App() {
                   </button>
                 </li>
                 <li>
-                  <button onClick={handleOpenAdminPortal} className="text-slate-400 hover:text-sky-400 flex items-center gap-1.5 transition-colors cursor-pointer font-medium">
-                    <ShieldCheck size={14} className="text-sky-400" />
-                    <span>{language === 'bn' ? 'অ্যাডমিন পোর্টাল' : 'Admin Portal'}</span>
-                  </button>
-                </li>
-                <li>
                   <span className="text-slate-500 cursor-default">{t.footerLinks.privacy}</span>
                 </li>
                 <li>

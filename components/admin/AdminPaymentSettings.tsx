@@ -177,6 +177,28 @@ export const AdminPaymentSettings: React.FC<AdminPaymentSettingsProps> = ({
         </div>
       </div>
 
+      {/* Unified System Info Banner */}
+      <div className="bg-gradient-to-r from-sky-50 via-indigo-50 to-emerald-50 border border-sky-200/90 rounded-2xl p-4 sm:p-5 flex items-start sm:items-center gap-3.5 shadow-xs">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+          <Sparkles size={20} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h4 className="text-xs sm:text-sm font-bold text-slate-900">
+              {isBn ? 'ইউনিফাইড পেমেন্ট মেথড (Tests & Doctor Payment)' : 'Unified Payment System (Tests & Doctor Payment)'}
+            </h4>
+            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+              {isBn ? 'উভয় সেবায় একই পেমেন্ট মেথড প্রযোজ্য' : 'Shared Single Method'}
+            </span>
+          </div>
+          <p className="text-[11px] sm:text-xs text-slate-600 mt-1 leading-relaxed">
+            {isBn
+              ? 'এখানে কনফিগার করা পেমেন্ট মেথড (ক্যাশ/সিওডি, বিকাশ, নগদ, রকেট, কার্ড) একইসাথে টেস্ট বুকিং (Diagnostic Tests) এবং ডাক্তার অ্যাপয়েন্টমেন্ট (Doctor Video Consultation) উভয় অপশনে কার্যকর থাকবে। একটি পরিবর্তন করলেই উভয় স্থানে কার্যকর হবে।'
+              : 'Payment gateways and merchant accounts configured here (Cash on Delivery/Visit, bKash, Nagad, Rocket, Card) apply uniformly to both Diagnostic Tests Booking and Doctor Appointments.'}
+          </p>
+        </div>
+      </div>
+
       {/* Gateway Selector Tabs */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
         

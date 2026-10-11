@@ -1257,6 +1257,9 @@ export const AdminDoctors: React.FC<AdminDoctorsProps> = ({
                         </td>
                         <td className="py-3 px-4">
                           <span className="font-bold text-slate-900 block">৳{apt.doctorFee}</span>
+                          <span className="text-[10px] text-slate-500 font-mono block">
+                            {apt.paymentMethod === 'cod' ? (isBn ? 'ক্যাশ (চেম্বার)' : 'Cash/Visit') : apt.paymentMethod.toUpperCase()} &bull; {apt.paymentStatus}
+                          </span>
                           <select
                             value={apt.status}
                             onChange={e => handleUpdateAppointmentStatus(apt.id, e.target.value as any)}
