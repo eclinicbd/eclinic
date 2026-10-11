@@ -1004,22 +1004,7 @@ export const AdminDoctors: React.FC<AdminDoctorsProps> = ({
                   <span>{isBn ? 'স্লট সেটিংস সংরক্ষণ করুন' : 'Save Slot & Schedule Settings'}</span>
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSlotInterval(30);
-                    setWeeklyOffDays(['Friday']);
-                    setSpecificOffDates([]);
-                    setAutoGenStart('05:00 PM');
-                    setAutoGenEnd('09:00 PM');
-                    setCustomSlotList(generateSlotsByInterval('05:00 PM', '09:00 PM', 30));
-                    showToast(isBn ? 'ডিফল্ট ৩০ মিনিট স্লটে রিসেট করা হয়েছে' : 'Reset to default 30-min slots');
-                  }}
-                  className="w-full py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  <RotateCcw size={13} />
-                  <span>{isBn ? 'ডিফল্ট ৩০-মিনিটে রিসেট' : 'Reset to Default 30-Min'}</span>
-                </button>
+
               </div>
             </div>
           </div>

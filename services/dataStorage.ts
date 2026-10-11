@@ -680,7 +680,17 @@ export const saveStoredTests = (lang: Language, tests: TestPackage[]): void => {
     const otherLang = lang === 'en' ? 'bn' : 'en';
     const otherKey = otherLang === 'en' ? STORAGE_KEYS.TESTS_EN : STORAGE_KEYS.TESTS_BN;
     const otherStored = localStorage.getItem(otherKey);
-    let otherTests: TestPackage[] = otherStored ? JSON.parse(otherStored) : getDefaultTests(otherLang);
+    let otherTests: TestPackage[] = [];
+    if (otherStored) {
+      try {
+        const parsedOther = JSON.parse(otherStored);
+        otherTests = Array.isArray(parsedOther) ? parsedOther : getDefaultTests(otherLang);
+      } catch {
+        otherTests = getDefaultTests(otherLang);
+      }
+    } else {
+      otherTests = getDefaultTests(otherLang);
+    }
     
     // Update existing or append new
     const updatedOtherTests = [...otherTests];
@@ -695,7 +705,9 @@ export const saveStoredTests = (lang: Language, tests: TestPackage[]): void => {
           priceByLab: test.priceByLab,
           originalPriceByLab: test.originalPriceByLab,
           isHidden: test.isHidden,
+          hiddenLabs: test.hiddenLabs || [],
           category: test.category,
+          categories: test.categories || (test.category ? [test.category] : []),
           turnaroundTime: test.turnaroundTime,
           image: test.image,
           orderCount: test.orderCount

@@ -65,16 +65,7 @@ export const AdminPaymentSettings: React.FC<AdminPaymentSettingsProps> = ({
     setTimeout(() => setIsSaved(false), 3000);
   };
 
-  const handleResetDefaults = () => {
-    if (window.confirm(isBn ? 'আপনি কি নিশ্চিত যে সকল পেমেন্ট ও API তথ্য ডিফল্ট মানে রিসেট করতে চান?' : 'Are you sure you want to reset payment gateway settings to default?')) {
-      setConfig(DEFAULT_PAYMENT_CONFIG);
-      saveStoredPaymentConfig(DEFAULT_PAYMENT_CONFIG);
-      savePaymentConfigToFirestore(DEFAULT_PAYMENT_CONFIG);
-      if (onShowToast) {
-        onShowToast(isBn ? 'পেমেন্ট সেটিংস ডিফল্টে রিসেট করা হয়েছে।' : 'Payment settings reset to default.');
-      }
-    }
-  };
+
 
   const handleTestConnection = (gatewayId: string) => {
     setTestingApi(gatewayId);
@@ -159,14 +150,7 @@ export const AdminPaymentSettings: React.FC<AdminPaymentSettingsProps> = ({
         </div>
 
         <div className="flex items-center gap-2 self-end sm:self-auto">
-          <Button
-            variant="outline"
-            onClick={handleResetDefaults}
-            className="text-xs border-slate-300 text-slate-700 hover:bg-slate-100 flex items-center gap-1.5 py-2"
-          >
-            <RotateCcw size={14} />
-            <span>{isBn ? 'ডিফল্ট রিসেট' : 'Reset Defaults'}</span>
-          </Button>
+
           <Button
             onClick={handleSave}
             className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md flex items-center gap-1.5 py-2 px-4"
