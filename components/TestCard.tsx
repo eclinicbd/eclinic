@@ -65,14 +65,9 @@ export const TestCard: React.FC<TestCardProps> = ({
         </div>
       )}
       
-      {/* Top Row: (Category, 🔥Order Count, Discount % OFF, Turnaround Time) in a single row */}
+      {/* Top Row: (🔥Order Count, Discount % OFF, Turnaround Time) in a single row */}
       <div className="p-4 pb-2 flex items-center gap-1.5 flex-nowrap overflow-x-auto no-scrollbar">
-        {/* 1. Category */}
-        <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md whitespace-nowrap flex-shrink-0">
-          {test.category}
-        </span>
-
-        {/* 2. Order Count */}
+        {/* 1. Order Count */}
         {typeof totalOrders === 'number' && (
           <span className="inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 bg-amber-50 text-amber-800 border border-amber-200/80 rounded-md shadow-2xs whitespace-nowrap flex-shrink-0">
             <span>🔥</span>

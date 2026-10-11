@@ -108,7 +108,7 @@ export const TestsView: React.FC<TestsViewProps> = ({
   // Derive visible categories list
   const activeCategoriesList = ['All', ...Array.from(new Set([
     ...categories.filter(c => !c.isHidden).map(c => c.name),
-    ...tests.filter(t => !t.isHidden).map(t => t.category).filter(Boolean)
+    ...tests.filter(t => !t.isHidden).flatMap(t => (t.categories && t.categories.length > 0 ? t.categories : [t.category])).filter(Boolean)
   ]))];
 
   // Filter and sort tests (Default: Most ordered / popular tests first)
@@ -119,7 +119,8 @@ export const TestsView: React.FC<TestsViewProps> = ({
         if (selectedLabId && test.hiddenLabs?.includes(selectedLabId)) return false;
         const matchesSearch = test.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                               (test.description && test.description.toLowerCase().includes(searchTerm.toLowerCase()));
-        const matchesCategory = activeCategory === 'All' || test.category === activeCategory;
+        const testCats = (test.categories && test.categories.length > 0) ? test.categories : [test.category];
+        const matchesCategory = activeCategory === 'All' || testCats.includes(activeCategory);
         return matchesSearch && matchesCategory;
       })
       .sort((a, b) => {

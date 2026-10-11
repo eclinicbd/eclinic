@@ -52,18 +52,19 @@ export const AdminTests: React.FC<AdminTestsProps> = ({
   // Derive unique categories from both categories prop and existing tests
   const categoryOptions = Array.from(new Set([
     ...categories.map(c => c.name),
-    ...tests.map(t => t.category).filter(Boolean)
+    ...tests.flatMap(t => (t.categories && t.categories.length > 0 ? t.categories : [t.category])).filter(Boolean)
   ]));
 
   // Filtering
   const filtered = tests.filter(test => {
     const term = searchTerm.toLowerCase();
+    const testCats = (test.categories && test.categories.length > 0) ? test.categories : [test.category || ''];
     const matchSearch = 
       test.name.toLowerCase().includes(term) || 
       test.description.toLowerCase().includes(term) ||
-      test.category.toLowerCase().includes(term);
+      testCats.some(c => c.toLowerCase().includes(term));
 
-    const matchCategory = categoryFilter === 'All' || test.category === categoryFilter;
+    const matchCategory = categoryFilter === 'All' || testCats.includes(categoryFilter);
     const matchVisibility = visibilityFilter === 'all' 
       ? true 
       : visibilityFilter === 'hidden' 
@@ -188,7 +189,7 @@ export const AdminTests: React.FC<AdminTestsProps> = ({
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span className="px-2 py-0.5 bg-white border border-slate-200/80 rounded-lg text-[10px] font-bold uppercase tracking-wider text-slate-700 shadow-xs flex items-center gap-1">
                       <FlaskConical size={11} className="text-sky-600" />
-                      {test.category}
+                      {(test.categories && test.categories.length > 0) ? test.categories.join(', ') : test.category}
                     </span>
 
                     {/* Order Count / Completed Badge with quick adjust */}

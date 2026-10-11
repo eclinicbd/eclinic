@@ -201,13 +201,9 @@ export const HomePopularTestsSection: React.FC<HomePopularTestsSectionProps> = (
                   </span>
                 </div>
 
-                {/* Top Meta: Category, Done Count & Turnaround */}
+                {/* Top Meta: Done Count & Turnaround */}
                 <div className="p-4 pt-4 pb-2 flex justify-between items-center gap-1.5 flex-wrap pl-22">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md">
-                      {test.category}
-                    </span>
-
                     {/* Test Done Count Badge */}
                     <span className="inline-flex items-center gap-1 text-[10px] font-extrabold px-1.5 py-0.5 bg-amber-50 text-amber-800 border border-amber-200/80 rounded-md shadow-2xs">
                       <Flame size={10} className="text-amber-500 fill-amber-500" />

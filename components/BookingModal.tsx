@@ -407,7 +407,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const suggestedTests = cleanSearch 
     ? availableToAddTests.filter(test => {
         const nameMatch = (test.name || '').toLowerCase().includes(cleanSearch);
-        const catMatch = (test.category || '').toLowerCase().includes(cleanSearch);
+        const testCats = (test.categories && test.categories.length > 0) ? test.categories : [test.category || ''];
+        const catMatch = testCats.some(c => c.toLowerCase().includes(cleanSearch));
         const descMatch = (test.description || '').toLowerCase().includes(cleanSearch);
         return nameMatch || catMatch || descMatch;
       }).slice(0, 8)

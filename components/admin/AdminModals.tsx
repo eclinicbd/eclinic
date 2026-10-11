@@ -94,6 +94,7 @@ export const TestFormModal: React.FC<TestModalProps> = ({
     hiddenLabs: [],
     isHidden: false
   });
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(['General']);
   const [targetLabForPricing, setTargetLabForPricing] = useState<string>('ALL');
   const [applySuccessMsg, setApplySuccessMsg] = useState<string | null>(null);
 
@@ -114,6 +115,11 @@ export const TestFormModal: React.FC<TestModalProps> = ({
         ? editingTest.discountPercent 
         : (origPrice > editingTest.price ? Math.round(((origPrice - editingTest.price) / origPrice) * 100) : 0);
 
+      const initCats = (editingTest.categories && editingTest.categories.length > 0)
+        ? [...editingTest.categories]
+        : (editingTest.category ? [editingTest.category] : ['General']);
+
+      setSelectedCategories(initCats);
       setFormData({
         ...editingTest,
         originalPrice: origPrice,
@@ -132,10 +138,12 @@ export const TestFormModal: React.FC<TestModalProps> = ({
         initialOrigPrices[l.id] = 600;
         initialPrices[l.id] = 500; 
       });
+      setSelectedCategories(['General']);
       setFormData({
         name: '',
         description: '',
         category: 'General',
+        categories: ['General'],
         originalPrice: 600,
         price: 500,
         discountPercent: 17,
@@ -279,11 +287,13 @@ export const TestFormModal: React.FC<TestModalProps> = ({
       }
     });
 
+    const finalCats = selectedCategories.length > 0 ? selectedCategories : ['General'];
     const testToSave: TestPackage = {
       id: editingTest ? editingTest.id : `test_${Date.now()}`,
       name: formData.name.trim(),
       description: formData.description || '',
-      category: formData.category || 'General',
+      category: finalCats[0],
+      categories: finalCats,
       originalPrice: baseOriginal,
       price: baseSelling,
       discountPercent: discountPct,
@@ -337,7 +347,7 @@ export const TestFormModal: React.FC<TestModalProps> = ({
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="block font-bold text-slate-700">
-                  {lang === 'bn' ? 'ক্যাটেগরি (Category) *' : 'Category *'}
+                  {lang === 'bn' ? 'ক্যাটেগরি (একাধিক নির্বাচন করা সম্ভব) *' : 'Categories (Select Multiple) *'}
                 </label>
                 <button
                   type="button"
@@ -348,35 +358,50 @@ export const TestFormModal: React.FC<TestModalProps> = ({
                   className="text-[11px] font-bold text-primary hover:text-sky-700 flex items-center gap-1 cursor-pointer transition-colors"
                 >
                   <Plus size={12} />
-                  <span>{isAddingNewCat ? (lang === 'bn' ? 'তালিকা দেখুন' : 'Select from list') : (lang === 'bn' ? '+ নতুন ক্যাটেগরি' : '+ New Category')}</span>
+                  <span>{isAddingNewCat ? (lang === 'bn' ? 'তালিকা দেখুন' : 'View List') : (lang === 'bn' ? '+ নতুন ক্যাটেগরি' : '+ New Category')}</span>
                 </button>
               </div>
 
               {!isAddingNewCat ? (
-                <div className="space-y-1">
-                  <select 
-                    value={formData.category || 'General'}
-                    onChange={(e) => {
-                      if (e.target.value === '__add_new__') {
-                        setIsAddingNewCat(true);
-                      } else {
-                        setFormData({ ...formData, category: e.target.value });
-                      }
-                    }}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none text-xs bg-white font-semibold cursor-pointer"
-                  >
-                    {(categories.length > 0 ? categories : PRESET_CATEGORIES.map(c => ({ id: c, name: c }))).map(c => (
-                      <option key={c.id || c.name} value={c.name}>
-                        {c.name} {c.nameBn ? `(${c.nameBn})` : ''}
-                      </option>
-                    ))}
-                    {formData.category && !(categories.length > 0 ? categories : PRESET_CATEGORIES.map(c => ({ name: c }))).some(c => c.name.toLowerCase() === formData.category?.toLowerCase()) && (
-                      <option value={formData.category}>{formData.category} (Custom)</option>
-                    )}
-                    <option value="__add_new__" className="text-primary font-bold">
-                      ➕ {lang === 'bn' ? '+ নতুন ক্যাটেগরি তৈরি করুন...' : '+ Create New Category...'}
-                    </option>
-                  </select>
+                <div className="space-y-2">
+                  <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200/80 max-h-36 overflow-y-auto flex flex-wrap gap-1.5">
+                    {Array.from(new Set([
+                      ...(categories.length > 0 ? categories.map(c => c.name) : PRESET_CATEGORIES),
+                      ...selectedCategories
+                    ])).map(catName => {
+                      const isSelected = selectedCategories.includes(catName);
+                      return (
+                        <button
+                          key={catName}
+                          type="button"
+                          onClick={() => {
+                            setSelectedCategories(prev => {
+                              if (prev.includes(catName)) {
+                                if (prev.length <= 1) return prev; // Keep at least one
+                                return prev.filter(c => c !== catName);
+                              } else {
+                                return [...prev, catName];
+                              }
+                            });
+                          }}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer border ${
+                            isSelected
+                              ? 'bg-primary text-white border-primary shadow-2xs'
+                              : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+                          }`}
+                        >
+                          <span>{isSelected ? '✓' : '+'}</span>
+                          <span>{catName}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="text-[10px] text-slate-500 font-semibold flex items-center gap-1 flex-wrap">
+                    <span>💡 {lang === 'bn' ? 'সিলেক্টেড ক্যাটেগরি:' : 'Selected:'}</span>
+                    <span className="font-bold text-primary bg-sky-50 px-2 py-0.5 rounded border border-sky-200/60">
+                      {selectedCategories.join(', ')}
+                    </span>
+                  </div>
                 </div>
               ) : (
                 /* Inline Quick Category Creator */
@@ -449,6 +474,7 @@ export const TestFormModal: React.FC<TestModalProps> = ({
                         if (onAddNewCategory) {
                           onAddNewCategory(newCatItem);
                         }
+                        setSelectedCategories(prev => Array.from(new Set([...prev, trimmed])));
                         setFormData(prev => ({ ...prev, category: trimmed }));
                         setNewCatName('');
                         setNewCatNameBn('');
@@ -951,7 +977,8 @@ export const LabFormModal: React.FC<LabModalProps> = ({
   const filteredTestsForSelection = tests.filter(test => {
     if (!testSearchTerm.trim()) return true;
     const term = testSearchTerm.toLowerCase();
-    return test.name.toLowerCase().includes(term) || (test.category && test.category.toLowerCase().includes(term));
+    const testCats = (test.categories && test.categories.length > 0) ? test.categories : [test.category || ''];
+    return test.name.toLowerCase().includes(term) || testCats.some(c => c.toLowerCase().includes(term));
   });
 
   return (
@@ -1497,7 +1524,8 @@ export const LabTestsManagerModal: React.FC<LabTestsManagerModalProps> = ({
     if (filterActiveState === 'active' && !isActive) return false;
     if (filterActiveState === 'inactive' && !isInactive) return false;
 
-    if (selectedCategory !== 'All' && test.category !== selectedCategory) return false;
+    const testCats = (test.categories && test.categories.length > 0) ? test.categories : [test.category || ''];
+    if (selectedCategory !== 'All' && !testCats.includes(selectedCategory)) return false;
 
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();

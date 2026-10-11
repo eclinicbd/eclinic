@@ -22,6 +22,7 @@ export interface TestPackage {
   priceByLab?: Record<string, number>; // Maps Lab ID to final price
   originalPriceByLab?: Record<string, number>; // Maps Lab ID to original regular price
   category: string;
+  categories?: string[];
   image: string;
   turnaroundTime: string; // Added turnaround time
   isHidden?: boolean; // When true, hidden from customer-facing catalog
