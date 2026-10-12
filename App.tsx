@@ -1874,7 +1874,7 @@ export default function App() {
       {/* Doctor Booking Modal */}
       {selectedDoctorForBooking && (
         <DoctorBookingModal 
-          doctor={selectedDoctorForBooking}
+          doctor={doctors.find(d => d.id === selectedDoctorForBooking.id) || selectedDoctorForBooking}
           isOpen={Boolean(selectedDoctorForBooking)}
           onClose={() => setSelectedDoctorForBooking(null)}
           lang={language}

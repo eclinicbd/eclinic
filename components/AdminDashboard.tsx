@@ -295,11 +295,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     onUpdateCategories(reordered);
   };
 
-  const handleResetDefaultCategories = () => {
-    if (!onUpdateCategories) return;
-    onUpdateCategories(DEFAULT_CATEGORIES);
-    showToast(lang === 'bn' ? 'ডিফল্ট ক্যাটেগরি সমূহ পুনঃস্থাপন করা হয়েছে!' : 'Default categories restored!');
-  };
+
 
   const handleQuickAddCategory = (categoryToSave: CategoryItem) => {
     if (!onUpdateCategories) return;
@@ -547,11 +543,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     showToast(lang === 'bn' ? `"${temp.name}" সেন্টারের ক্রম পরিবর্তন করা হয়েছে!` : `Diagnostic center "${temp.name}" moved ${direction}!`);
   };
 
-  const handleResetDefaultLabs = () => {
-    const defaultLabs = getLabs(lang);
-    onUpdateLabs(defaultLabs);
-    showToast(lang === 'bn' ? 'ডিফল্ট সেন্টারের তালিকা পুনঃস্থাপন করা হয়েছে!' : 'Default diagnostic centers list restored!');
-  };
+
 
   // ==========================================
   // ORDER HANDLERS
@@ -844,16 +836,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm space-y-1">
             <NavButton id="overview" icon={LayoutDashboard} label="Dashboard" />
             
-            {staffPermissions.canViewOrders && (
+            {(isSuperAdmin || staffPermissions.canViewOrders) && (
               <NavButton id="orders" icon={ShoppingBag} label={t.adminTotalOrders} badge={pendingCount} />
             )}
 
-            {staffPermissions.canViewReports && (
+            {(isSuperAdmin || staffPermissions.canViewReports) && (
               <NavButton id="reports" icon={BarChart3} label={lang === 'bn' ? 'রিপোর্ট ও অ্যানালিটিক্স' : 'Reports & Analytics'} />
             )}
 
-            {staffPermissions.canViewTests && (
-              <NavButton id="tests" icon={FlaskConical} label={t.adminManageTests} />
+            {(isSuperAdmin || staffPermissions.canViewTests) && (
+              <NavButton id="tests" icon={FlaskConical} label={t.adminManageTests} badge={tests.length} />
             )}
 
             {isSuperAdmin && (
@@ -1013,7 +1005,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               onToggleHideCategory={handleToggleHideCategory}
               onOpenDeleteCategory={(cat) => setDeleteTarget({ type: 'category', id: cat.id, name: `${cat.name} ${cat.nameBn ? `(${cat.nameBn})` : ''}` })}
               onReorderCategory={handleReorderCategory}
-              onResetDefaultCategories={handleResetDefaultCategories}
             />
           )}
 
@@ -1027,7 +1018,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               onToggleHideLab={handleToggleHideLab}
               onOpenDeleteLab={(lab) => setDeleteTarget({ type: 'lab', id: lab.id, name: lab.name })}
               onReorderLab={handleReorderLab}
-              onResetDefaultLabs={handleResetDefaultLabs}
               onManageLabTests={(lab) => setManagingLabTests(lab)}
             />
           )}
@@ -1094,10 +1084,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           {activeTab === 'settings' && (
             <AdminSettings 
               lang={lang}
-              onResetAllData={() => {
-                onResetAllData();
-                showToast(t.adminResetSuccess);
-              }}
               onDataRestored={() => {
                 showToast("Data restored successfully!");
               }}

@@ -23,7 +23,6 @@ import {
   ArrowUpDown,
   MoveUp,
   MoveDown,
-  RotateCcw,
   CheckCircle2,
   Stethoscope,
   Pill,
@@ -41,7 +40,7 @@ interface AdminCategoriesProps {
   onToggleHideCategory: (categoryId: string) => void;
   onOpenDeleteCategory: (category: CategoryItem) => void;
   onReorderCategory: (categoryId: string, direction: 'up' | 'down') => void;
-  onResetDefaultCategories: () => void;
+  onResetDefaultCategories?: () => void;
 }
 
 export const CATEGORY_ICON_MAP: Record<string, any> = {
@@ -85,8 +84,7 @@ export const AdminCategories: React.FC<AdminCategoriesProps> = ({
   onOpenEditCategory,
   onToggleHideCategory,
   onOpenDeleteCategory,
-  onReorderCategory,
-  onResetDefaultCategories
+  onReorderCategory
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [visibilityFilter, setVisibilityFilter] = useState<'all' | 'visible' | 'hidden'>('all');
@@ -150,15 +148,7 @@ export const AdminCategories: React.FC<AdminCategoriesProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
-          <button
-            type="button"
-            onClick={onResetDefaultCategories}
-            className="px-3 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl border border-slate-200 transition-colors flex items-center gap-1.5"
-            title="Reset standard medical categories"
-          >
-            <RotateCcw size={14} />
-            <span>{lang === 'bn' ? 'ডিফল্ট রিসেট' : 'Reset Defaults'}</span>
-          </button>
+
 
           <Button 
             onClick={onOpenAddCategory} 

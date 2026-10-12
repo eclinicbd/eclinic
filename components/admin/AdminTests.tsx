@@ -60,9 +60,9 @@ export const AdminTests: React.FC<AdminTestsProps> = ({
     const term = searchTerm.toLowerCase();
     const testCats = (test.categories && test.categories.length > 0) ? test.categories : [test.category || ''];
     const matchSearch = 
-      test.name.toLowerCase().includes(term) || 
-      test.description.toLowerCase().includes(term) ||
-      testCats.some(c => c.toLowerCase().includes(term));
+      (test.name || '').toLowerCase().includes(term) || 
+      (test.description || '').toLowerCase().includes(term) ||
+      testCats.some(c => (c || '').toLowerCase().includes(term));
 
     const matchCategory = categoryFilter === 'All' || testCats.includes(categoryFilter);
     const matchVisibility = visibilityFilter === 'all' 
@@ -270,7 +270,7 @@ export const AdminTests: React.FC<AdminTestsProps> = ({
                   <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 mb-3 space-y-1">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Center Pricing Matrix:</span>
                     <div className="grid grid-cols-2 gap-1 text-[11px]">
-                      {labs.slice(0, 4).map(lab => {
+                      {(labs || []).slice(0, 4).map(lab => {
                         const labSelling = test.priceByLab?.[lab.id] || test.price;
                         const labOrig = test.originalPriceByLab?.[lab.id] || test.originalPrice || labSelling;
                         const hasLabDisc = labOrig > labSelling;

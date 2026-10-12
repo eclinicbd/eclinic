@@ -296,7 +296,7 @@ export const AdminReports: React.FC<AdminReportsProps> = ({
           }`}
         >
           <Syringe size={18} />
-          <span>{isBn ? '🩸 ফেলোবটমিস্ট স্যাম্পল কালেকশন (আজ ও কাল)' : 'Phlebotomist Sample Collection (Today/Tomorrow)'}</span>
+          <span>{isBn ? '🩸 ফ্লেবোটমিস্ট স্যাম্পল কালেকশন (৭ দিনের রিপোর্ট)' : 'Phlebotomist Sample Collection (7 Days Report)'}</span>
         </button>
       </div>
 

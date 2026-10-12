@@ -980,7 +980,7 @@ export const AdminDoctors: React.FC<AdminDoctorsProps> = ({
                         slotIntervalMinutes: slotInterval,
                         customSlots: customSlotList,
                         offDays: combinedOffDays,
-                        availableTimeText: `প্রতিদিন ${autoGenStart} - ${autoGenEnd} (${slotInterval} মিনিট স্লট)`
+                        availableTimeText: isBn ? `প্রতিদিন ${autoGenStart} - ${autoGenEnd} (${slotInterval} মিনিট স্লট)` : `Daily ${autoGenStart} - ${autoGenEnd} (${slotInterval}-Min Slots)`
                       }));
                     } else {
                       updated = doctors.map(d => d.id === slotDoctorId ? ({
@@ -988,7 +988,7 @@ export const AdminDoctors: React.FC<AdminDoctorsProps> = ({
                         slotIntervalMinutes: slotInterval,
                         customSlots: customSlotList,
                         offDays: combinedOffDays,
-                        availableTimeText: `প্রতিদিন ${autoGenStart} - ${autoGenEnd} (${slotInterval} মিনিট স্লট)`
+                        availableTimeText: isBn ? `প্রতিদিন ${autoGenStart} - ${autoGenEnd} (${slotInterval} মিনিট স্লট)` : `Daily ${autoGenStart} - ${autoGenEnd} (${slotInterval}-Min Slots)`
                       }) : d);
                     }
 

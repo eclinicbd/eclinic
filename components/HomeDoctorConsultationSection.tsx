@@ -160,7 +160,7 @@ export const HomeDoctorConsultationSection: React.FC<HomeDoctorConsultationSecti
               <Clock size={20} />
             </div>
             <div>
-              <p className="text-xs font-bold text-slate-900">{isBn ? '৩০ মিনিট স্লট' : '30-Min Time Slots'}</p>
+              <p className="text-xs font-bold text-slate-900">{isBn ? 'নির্ধারিত টাইম স্লট' : 'Scheduled Time Slots'}</p>
               <p className="text-[11px] text-slate-500">{isBn ? 'নির্ধারিত সময়ে কল' : 'Scheduled punctual care'}</p>
             </div>
           </div>
