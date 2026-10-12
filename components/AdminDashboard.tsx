@@ -403,7 +403,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       }
     });
     onUpdateTests(deduplicatedDefaults);
-    showToast(lang === 'bn' ? '৩৮টি ইউনিক ডিফল্ট টেস্ট সফলভাবে রিস্টোর ও সিঙ্ক করা হয়েছে!' : 'All 38 unique default tests restored!');
+    showToast(lang === 'bn' ? '১০০টি ইউনিক ডিফল্ট টেস্ট সফলভাবে রিস্টোর ও সিঙ্ক করা হয়েছে!' : 'All 100 unique default tests restored!');
   };
 
   // ==========================================

@@ -159,12 +159,48 @@ export const TestsView: React.FC<TestsViewProps> = ({
   const totalBill = subTotal + (cartItems.length > 0 ? serviceCharge : 0) + accessoriesFee;
   const visibleLabs = labs.filter(l => !l.isHidden);
 
+  // Priority order: BIRDEM, Labaid, Popular, Ibn Sina, Praava, others
+  const sortedLabs = useMemo(() => {
+    return [...visibleLabs].sort((a, b) => {
+      const getPriority = (lab: LabPartner) => {
+        const n = (lab.name || '').toUpperCase();
+        if (n.includes('BIRDEM') || n.includes('বারডেম')) return 1;
+        if (n.includes('LABAID') || n.includes('ল্যাবএইড')) return 2;
+        if (n.includes('POPULAR') || n.includes('পপুলার')) return 3;
+        if (n.includes('IBN SINA') || n.includes('ইবনে সিনা')) return 4;
+        if (n.includes('PRAAVA') || n.includes('প্রাভা')) return 5;
+        return 10;
+      };
+      return getPriority(a) - getPriority(b);
+    });
+  }, [visibleLabs]);
+
+  const getLabBrandName = (lab: LabPartner) => {
+    const n = lab.name || '';
+    if (n.includes('বারডেম') || n.toUpperCase().includes('BIRDEM')) {
+      return lang === 'bn' ? 'বারডেম' : 'BIRDEM';
+    }
+    if (n.includes('ল্যাবএইড') || n.toUpperCase().includes('LABAID')) {
+      return lang === 'bn' ? 'ল্যাবএইড' : 'Labaid';
+    }
+    if (n.includes('পপুলার') || n.toUpperCase().includes('POPULAR')) {
+      return lang === 'bn' ? 'পপুলার' : 'Popular';
+    }
+    if (n.includes('ইবনে সিনা') || n.toUpperCase().includes('IBN SINA')) {
+      return lang === 'bn' ? 'ইবনে সিনা' : 'Ibn Sina';
+    }
+    if (n.includes('প্রাভা') || n.toUpperCase().includes('PRAAVA')) {
+      return lang === 'bn' ? 'প্রাভা হেলথ' : 'Praava';
+    }
+    return n.replace(/(ডায়াগনস্টিক সেন্টার.*|জেনারেল হাসপাতাল.*|Diagnostic Centre.*|Hospital.*|Centre Ltd.*)/gi, '').trim() || n;
+  };
+
   return (
     <div className="py-8 bg-slate-50 min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Breadcrumb & Header */}
-        <div className="mb-8">
+        <div className="mb-6">
           <nav className="flex items-center gap-2 text-xs text-slate-500 mb-3">
             <button 
               onClick={onBackToHome}
@@ -177,48 +213,120 @@ export const TestsView: React.FC<TestsViewProps> = ({
             <span className="text-slate-800 font-semibold">{t.sectionTestsTitle}</span>
           </nav>
 
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-slate-200">
-            <div>
-              <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-                {t.sectionTestsTitle}
-              </h1>
-              <p className="text-slate-600 text-sm sm:text-base mt-2 max-w-2xl">
-                {lang === 'bn' 
-                  ? 'আপনার পছন্দের ডায়াগনস্টিক ল্যাব নির্বাচন করুন, প্রয়োজনীয় টেস্ট বাছাই করুন এবং হোম কালেকশন বুক করুন।'
-                  : 'Compare prices across top accredited diagnostic labs, add your required tests to cart, and schedule home sample collection.'}
-              </p>
+          <div className="pb-5 border-b border-slate-200">
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+              {t.sectionTestsTitle}
+            </h1>
+            <p className="text-slate-600 text-sm sm:text-base mt-2 max-w-2xl">
+              {lang === 'bn' 
+                ? 'আপনার পছন্দের ডায়াগনস্টিক ল্যাব নির্বাচন করুন, প্রয়োজনীয় টেস্ট বাছাই করুন এবং হোম কালেকশন বুক করুন।'
+                : 'Compare prices across top accredited diagnostic labs, add your required tests to cart, and schedule home sample collection.'}
+            </p>
+          </div>
+
+          {/* Diagnostic Partner Labs Switcher Bar (Arranged in 2 Rows for Mobile, Logo & Name only) */}
+          <div className="mt-5 bg-white p-3.5 sm:p-4 rounded-2xl shadow-xs border border-slate-200/90">
+            <div className="flex items-center justify-between gap-2 mb-2.5">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-7 h-7 rounded-lg bg-sky-100 flex items-center justify-center text-primary flex-shrink-0">
+                  <Building2 size={16} />
+                </div>
+                <div className="flex items-baseline gap-1.5 sm:gap-2 min-w-0">
+                  <span className="text-xs sm:text-sm font-bold text-slate-900 flex-shrink-0">
+                    {lang === 'bn' ? 'ডায়াগনস্টিক পার্টনার্স:' : 'Partner Labs:'}
+                  </span>
+                  <span className="text-[11px] sm:text-xs text-slate-500 font-medium truncate">
+                    {selectedLab ? selectedLab.name : (lang === 'bn' ? 'সকল সেন্টার (All Centers)' : 'All Accredited Centers')}
+                  </span>
+                </div>
+              </div>
+
+              {selectedLabId ? (
+                <button
+                  onClick={() => setSelectedLabId('')}
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-primary hover:text-sky-700 bg-sky-50 hover:bg-sky-100 px-2.5 py-1 rounded-lg transition-colors flex-shrink-0"
+                  title={lang === 'bn' ? 'সব সেন্টারের টেস্ট দেখুন' : 'Show all centers'}
+                >
+                  <X size={12} />
+                  <span>{lang === 'bn' ? 'রিসেট' : 'Show All'}</span>
+                </button>
+              ) : (
+                <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full flex-shrink-0">
+                  {visibleLabs.length + 1} {lang === 'bn' ? 'টি অপশন' : 'Centers'}
+                </span>
+              )}
             </div>
 
-            {/* Quick Lab Switcher Pill Badges */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-semibold text-slate-500 mr-1 flex items-center gap-1">
-                <Building2 size={14} /> {lang === 'bn' ? 'সেন্টার:' : 'Partner:'}
-              </span>
+            {/* 2-Row Partner Grid on Mobile (Logo & Name only, clean & clear) */}
+            <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+              {/* All Centers Card */}
               <button
                 onClick={() => setSelectedLabId('')}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                className={`flex items-center justify-center gap-1.5 px-2 py-2.5 sm:px-3 sm:py-2.5 rounded-xl font-bold transition-all text-center min-w-0 min-h-[42px] cursor-pointer ${
                   !selectedLabId 
-                    ? 'bg-primary text-white shadow-xs' 
-                    : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                    ? 'bg-primary text-white shadow-md shadow-sky-200 ring-2 ring-primary/20 scale-[1.01]' 
+                    : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200/90 shadow-2xs hover:border-slate-300'
                 }`}
+                title={lang === 'bn' ? 'সকল সেন্টারের টেস্ট' : 'All Accredited Centers'}
               >
-                {t.allCenters}
+                <div className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 ${
+                  !selectedLabId ? 'text-white' : 'text-primary bg-sky-100/70'
+                }`}>
+                  <Building2 size={13} />
+                </div>
+                <span className="text-[11px] sm:text-xs font-bold truncate leading-tight">
+                  {t.allCenters}
+                </span>
               </button>
-              {visibleLabs.map(lab => (
-                <button
-                  key={lab.id}
-                  onClick={() => setSelectedLabId(lab.id)}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                    selectedLabId === lab.id 
-                      ? 'bg-primary text-white shadow-xs' 
-                      : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
-                  }`}
-                >
-                  <LabLogo name={lab.name} logo={lab.logo} size="xs" accentColor={lab.accentColor} className="!w-4 !h-4 !rounded-sm !p-0 border-none" />
-                  <span>{lab.name.split(' ')[0]}</span>
-                </button>
-              ))}
+
+              {/* Lab Partner Cards: BIRDEM, Labaid, Popular, Ibn Sina, Praava, etc. */}
+              {sortedLabs.map(lab => {
+                const isSelected = selectedLabId === lab.id;
+                const brandName = getLabBrandName(lab);
+                return (
+                  <button
+                    key={lab.id}
+                    onClick={() => setSelectedLabId(lab.id)}
+                    className={`flex items-center justify-center gap-1.5 px-2 py-2.5 sm:px-3 sm:py-2.5 rounded-xl font-bold transition-all text-center min-w-0 min-h-[42px] cursor-pointer ${
+                      isSelected
+                        ? 'bg-primary text-white shadow-md shadow-sky-200 ring-2 ring-primary/20 scale-[1.01]' 
+                        : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 shadow-2xs hover:border-slate-300'
+                    }`}
+                    title={lab.name}
+                  >
+                    <LabLogo 
+                      name={lab.name} 
+                      logo={lab.logo} 
+                      size="xs" 
+                      accentColor={lab.accentColor} 
+                      className="!w-5 !h-5 !rounded-md !p-0.5 border-none flex-shrink-0" 
+                    />
+                    <span className="text-[11px] sm:text-xs font-bold truncate leading-tight">
+                      {brandName}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
+
+            {/* Selected Lab Context Info Row */}
+            {selectedLab && (
+              <div className="mt-2.5 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-600">
+                <div className="flex items-center gap-1.5 truncate">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
+                  <span className="truncate">
+                    {lang === 'bn' 
+                      ? `${selectedLab.name}-এর টেস্ট ও মূল্য প্রদর্শিত হচ্ছে` 
+                      : `Showing tests & pricing for ${selectedLab.name}`}
+                  </span>
+                </div>
+                {selectedLab.discountBadge && (
+                  <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded flex-shrink-0">
+                    {selectedLab.discountBadge} {lang === 'bn' ? 'ছাড় প্রযোজ্য' : 'Discount'}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -360,6 +468,33 @@ export const TestsView: React.FC<TestsViewProps> = ({
                 <div className="hidden sm:flex items-center px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 flex-shrink-0">
                   <span>{filteredTests.length} {lang === 'bn' ? 'টি টেস্ট' : 'tests'}</span>
                 </div>
+              </div>
+            </div>
+
+            {/* Mobile Category Quick Filter Pills (Available on Mobile & Tablet) */}
+            <div className="lg:hidden mb-4">
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 scrollbar-none -mx-1 px-1 touch-pan-x">
+                {activeCategoriesList.map(cat => {
+                  const catObj = categories.find(c => c.name.toLowerCase() === cat.toLowerCase());
+                  const displayName = lang === 'bn' 
+                    ? (catObj?.nameBn || t.categories[cat as keyof typeof t.categories] || cat)
+                    : (t.categories[cat as keyof typeof t.categories] || cat);
+                  const isCatActive = activeCategory === cat;
+
+                  return (
+                    <button
+                      key={cat}
+                      onClick={() => setActiveCategory(cat)}
+                      className={`flex-shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                        isCatActive
+                          ? 'bg-teal-600 text-white shadow-xs scale-[1.02]'
+                          : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/90'
+                      }`}
+                    >
+                      {displayName}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 

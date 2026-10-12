@@ -1145,6 +1145,1866 @@ const TESTS_BN: TestPackage[] = [
     category: 'General',
     image: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=400',
     turnaroundTime: '১২ ঘন্টা'
+  },
+  {
+    id: '39',
+    name: 'ইউরিন কালচার অ্যান্ড সেনসিটিভিটি (Urine C/S)',
+    description: 'মূত্রনালীর ব্যাকটেরিয়াল সংক্রমণ (UTI) ও কার্যকর অ্যান্টিবায়োটিক নির্বাচন।',
+    price: 650,
+    originalPrice: 850,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 747,
+      'lab_ibnsina': 683,
+      'lab_birdem': 585,
+      'lab_bsmmu': 488,
+      'lab_praava': 780,
+      'lab_evercare': 910,
+      'lab_medinova': 650
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1020,
+      'lab_ibnsina': 935,
+      'lab_birdem': 808,
+      'lab_bsmmu': 680,
+      'lab_praava': 1063,
+      'lab_evercare': 1233,
+      'lab_medinova': 850
+    },
+    category: 'Kidney',
+    image: 'https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '৪৮-৭২ ঘন্টা'
+  },
+  {
+    id: '40',
+    name: 'ইউরিন মাইক্রোঅ্যালবুমিন ও এসিআর (Urine Microalbumin / ACR)',
+    description: 'ডায়াবেটিস ও উচ্চ রক্তচাপজনিত প্রাথমিক কিডনি ক্ষতির পূর্বাভাস ও প্রস্রাবে প্রোটিন পরিমাপ।',
+    price: 900,
+    originalPrice: 1200,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1035,
+      'lab_ibnsina': 945,
+      'lab_birdem': 810,
+      'lab_bsmmu': 675,
+      'lab_praava': 1080,
+      'lab_evercare': 1260,
+      'lab_medinova': 900
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1440,
+      'lab_ibnsina': 1320,
+      'lab_birdem': 1140,
+      'lab_bsmmu': 960,
+      'lab_praava': 1500,
+      'lab_evercare': 1740,
+      'lab_medinova': 1200
+    },
+    category: 'Kidney',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '২৪ ঘন্টা'
+  },
+  {
+    id: '41',
+    name: '২৪ ঘণ্টার ইউরিন টোটাল প্রোটিন (24-Hour Urine Total Protein)',
+    description: 'সারাদিনের প্রস্রাবে মোট প্রোটিনের সঠিক পরিমাণ ও নেফ্রোটিক সিন্ড্রোম মূল্যায়ন।',
+    price: 800,
+    originalPrice: 1050,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 920,
+      'lab_ibnsina': 840,
+      'lab_birdem': 720,
+      'lab_bsmmu': 600,
+      'lab_praava': 960,
+      'lab_evercare': 1120,
+      'lab_medinova': 800
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1260,
+      'lab_ibnsina': 1155,
+      'lab_birdem': 998,
+      'lab_bsmmu': 840,
+      'lab_praava': 1313,
+      'lab_evercare': 1523,
+      'lab_medinova': 1050
+    },
+    category: 'Kidney',
+    image: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '২৪ ঘন্টা'
+  },
+  {
+    id: '42',
+    name: 'ইউরিন প্রেগন্যান্সি টেস্ট (Urine Pregnancy Test - UPT)',
+    description: 'প্রস্রাবে হিউম্যান কোরিওনিক গোনাডোট্রপিন (hCG) হরমোন সনাক্তকরণের মাধ্যমে গর্ভধারণ নিশ্চিতকরণ।',
+    price: 200,
+    originalPrice: 300,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 230,
+      'lab_ibnsina': 210,
+      'lab_birdem': 180,
+      'lab_bsmmu': 150,
+      'lab_praava': 240,
+      'lab_evercare': 280,
+      'lab_medinova': 200
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 360,
+      'lab_ibnsina': 330,
+      'lab_birdem': 285,
+      'lab_bsmmu': 240,
+      'lab_praava': 375,
+      'lab_evercare': 435,
+      'lab_medinova': 300
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '২ ঘন্টা'
+  },
+  {
+    id: '43',
+    name: 'ইউরিন কিটোন বডিস (Urine Ketone Bodies)',
+    description: 'ডায়াবেটিস কিটোঅ্যাসিডোসিস (DKA), দীর্ঘ উপবাস ও মেটাবলিক জটিলতা দ্রুত সনাক্তকরণ।',
+    price: 250,
+    originalPrice: 350,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 288,
+      'lab_ibnsina': 263,
+      'lab_birdem': 225,
+      'lab_bsmmu': 188,
+      'lab_praava': 300,
+      'lab_evercare': 350,
+      'lab_medinova': 250
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 420,
+      'lab_ibnsina': 385,
+      'lab_birdem': 333,
+      'lab_bsmmu': 280,
+      'lab_praava': 438,
+      'lab_evercare': 508,
+      'lab_medinova': 350
+    },
+    category: 'Diabetes',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '৪ ঘন্টা'
+  },
+  {
+    id: '44',
+    name: 'ইউরিন ক্যালসিয়াম টেস্ট (Urine Calcium Test)',
+    description: 'কিডনিতে পাথর হওয়ার ঝুঁকি ও ক্যালসিয়াম নিঃসরণ মূল্যায়ন।',
+    price: 550,
+    originalPrice: 750,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 633,
+      'lab_ibnsina': 578,
+      'lab_birdem': 495,
+      'lab_bsmmu': 413,
+      'lab_praava': 660,
+      'lab_evercare': 770,
+      'lab_medinova': 550
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 900,
+      'lab_ibnsina': 825,
+      'lab_birdem': 713,
+      'lab_bsmmu': 600,
+      'lab_praava': 938,
+      'lab_evercare': 1088,
+      'lab_medinova': 750
+    },
+    category: 'Kidney',
+    image: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '২৪ ঘন্টা'
+  },
+  {
+    id: '45',
+    name: 'ইউরিন সাইটোলজি (Urine Cytology for Malignant Cells)',
+    description: 'মূত্রথলি ও মূত্রনালীর অস্বাভাবিক কোষ ও টিউমার স্ক্রিনিং।',
+    price: 850,
+    originalPrice: 1100,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 977,
+      'lab_ibnsina': 893,
+      'lab_birdem': 765,
+      'lab_bsmmu': 638,
+      'lab_praava': 1020,
+      'lab_evercare': 1190,
+      'lab_medinova': 850
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1320,
+      'lab_ibnsina': 1210,
+      'lab_birdem': 1045,
+      'lab_bsmmu': 880,
+      'lab_praava': 1375,
+      'lab_evercare': 1595,
+      'lab_medinova': 1100
+    },
+    category: 'Kidney',
+    image: 'https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '৪৮ ঘন্টা'
+  },
+  {
+    id: '46',
+    name: 'স্টুল ওবিটি / অকাল্ট ব্লাড টেস্ট (Stool Occult Blood - FOBT)',
+    description: 'মলে খালি চোখে অদৃশ্য রক্তক্ষরণ, পাইলস, পেপটিক আলসার ও কোলন পলিপ স্ক্রিনিং।',
+    price: 350,
+    originalPrice: 500,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 402,
+      'lab_ibnsina': 368,
+      'lab_birdem': 315,
+      'lab_bsmmu': 263,
+      'lab_praava': 420,
+      'lab_evercare': 490,
+      'lab_medinova': 350
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 600,
+      'lab_ibnsina': 550,
+      'lab_birdem': 475,
+      'lab_bsmmu': 400,
+      'lab_praava': 625,
+      'lab_evercare': 725,
+      'lab_medinova': 500
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '১২ ঘন্টা'
+  },
+  {
+    id: '47',
+    name: 'স্টুল কালচার অ্যান্ড সেনসিটিভিটি (Stool C/S)',
+    description: 'তীব্র ডায়রিয়া, আমাশয়, সালমোনেলা/শিগেলা ব্যাক্টেরিয়া ও কার্যকর অ্যান্টিবায়োটিক নির্ণয়।',
+    price: 650,
+    originalPrice: 850,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 747,
+      'lab_ibnsina': 683,
+      'lab_birdem': 585,
+      'lab_bsmmu': 488,
+      'lab_praava': 780,
+      'lab_evercare': 910,
+      'lab_medinova': 650
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1020,
+      'lab_ibnsina': 935,
+      'lab_birdem': 808,
+      'lab_bsmmu': 680,
+      'lab_praava': 1063,
+      'lab_evercare': 1233,
+      'lab_medinova': 850
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '৪৮-৭২ ঘন্টা'
+  },
+  {
+    id: '48',
+    name: 'স্টুল ক্যালপ্রোটেকটিন (Stool Calprotectin - IBD Test)',
+    description: 'অন্ত্রের দীর্ঘস্থায়ী প্রদাহ, ক্রোনস ডিজিজ ও আলসারেটিভ কোলাইটিস (IBD বনাম IBS) পার্থক্যকরণ।',
+    price: 2800,
+    originalPrice: 3500,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 3220,
+      'lab_ibnsina': 2940,
+      'lab_birdem': 2520,
+      'lab_bsmmu': 2100,
+      'lab_praava': 3360,
+      'lab_evercare': 3920,
+      'lab_medinova': 2800
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 4200,
+      'lab_ibnsina': 3850,
+      'lab_birdem': 3325,
+      'lab_bsmmu': 2800,
+      'lab_praava': 4375,
+      'lab_evercare': 5075,
+      'lab_medinova': 3500
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '৪৮ ঘন্টা'
+  },
+  {
+    id: '49',
+    name: 'স্টুল রিডিউসিং সাবস্ট্যান্স টেস্ট (Stool Reducing Substance)',
+    description: 'শিশুদের দুধ/ল্যাকটোজ হজমে সমস্যা (Lactose Intolerance) ও কার্বোহাইড্রেট শোষণ ত্রুটি নির্ণয়।',
+    price: 350,
+    originalPrice: 500,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 402,
+      'lab_ibnsina': 368,
+      'lab_birdem': 315,
+      'lab_bsmmu': 263,
+      'lab_praava': 420,
+      'lab_evercare': 490,
+      'lab_medinova': 350
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 600,
+      'lab_ibnsina': 550,
+      'lab_birdem': 475,
+      'lab_bsmmu': 400,
+      'lab_praava': 625,
+      'lab_evercare': 725,
+      'lab_medinova': 500
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '১২ ঘন্টা'
+  },
+  {
+    id: '50',
+    name: 'মলে হেলিকোব্যাক্টার পাইলোরি অ্যান্টিজেন (Stool H. Pylori Antigen)',
+    description: 'পাকস্থলীর আলসার, গ্যাস্ট্রিক ও এসিডিটি সৃষ্টিকারী এইচ. পাইলোরি ব্যাকটেরিয়ার নির্ভরযোগ্য প্রমাণ।',
+    price: 1100,
+    originalPrice: 1500,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1265,
+      'lab_ibnsina': 1155,
+      'lab_birdem': 990,
+      'lab_bsmmu': 825,
+      'lab_praava': 1320,
+      'lab_evercare': 1540,
+      'lab_medinova': 1100
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1800,
+      'lab_ibnsina': 1650,
+      'lab_birdem': 1425,
+      'lab_bsmmu': 1200,
+      'lab_praava': 1875,
+      'lab_evercare': 2175,
+      'lab_medinova': 1500
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '২৪ ঘন্টা'
+  },
+  {
+    id: '51',
+    name: 'ব্লাড কালচার অ্যান্ড সেনসিটিভিটি (Blood Culture & Sensitivity)',
+    description: 'রক্তে বিপজ্জনক ব্যাকটেরিয়াল সংক্রমণ, সেপসিস (Sepsis) ও দীর্ঘস্থায়ী জ্বরের অ্যান্টিবায়োটিক নির্বাচন।',
+    price: 950,
+    originalPrice: 1300,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1093,
+      'lab_ibnsina': 998,
+      'lab_birdem': 855,
+      'lab_bsmmu': 713,
+      'lab_praava': 1140,
+      'lab_evercare': 1330,
+      'lab_medinova': 950
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1560,
+      'lab_ibnsina': 1430,
+      'lab_birdem': 1235,
+      'lab_bsmmu': 1040,
+      'lab_praava': 1625,
+      'lab_evercare': 1885,
+      'lab_medinova': 1300
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '৭২ ঘন্টা'
+  },
+  {
+    id: '52',
+    name: 'টাইফয়েড আইজিএম ও আইজিজি (Typhoid Typhidot IgM & IgG)',
+    description: 'টাইফয়েড জ্বরের প্রাথমিক অবস্থায় (প্রথম ৩-৫ দিনেই) সঠিক অ্যান্টিবডি সনাক্তকরণ।',
+    price: 600,
+    originalPrice: 800,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 690,
+      'lab_ibnsina': 630,
+      'lab_birdem': 540,
+      'lab_bsmmu': 450,
+      'lab_praava': 720,
+      'lab_evercare': 840,
+      'lab_medinova': 600
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 960,
+      'lab_ibnsina': 880,
+      'lab_birdem': 760,
+      'lab_bsmmu': 640,
+      'lab_praava': 1000,
+      'lab_evercare': 1160,
+      'lab_medinova': 800
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '১২ ঘন্টা'
+  },
+  {
+    id: '53',
+    name: 'ম্যালেরিয়া প্যারাসাইট রক্ত পরীক্ষা (Malaria ICT & MP Blood Film)',
+    description: 'রক্তে ম্যালেরিয়া জীবাণু (Plasmodium vivax / falciparum) সনাক্তকরণ ও ধরণ নির্ণয়।',
+    price: 450,
+    originalPrice: 650,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 518,
+      'lab_ibnsina': 473,
+      'lab_birdem': 405,
+      'lab_bsmmu': 338,
+      'lab_praava': 540,
+      'lab_evercare': 630,
+      'lab_medinova': 450
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 780,
+      'lab_ibnsina': 715,
+      'lab_birdem': 618,
+      'lab_bsmmu': 520,
+      'lab_praava': 813,
+      'lab_evercare': 943,
+      'lab_medinova': 650
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '৬ ঘন্টা'
+  },
+  {
+    id: '54',
+    name: 'চিকুনগুনিয়া আইজিএম অ্যান্টিবডি (Chikungunya IgM Antibody)',
+    description: 'তীব্র জ্বর ও অস্থিসন্ধির প্রচণ্ড ব্যথা সম্পন্ন চিকুনগুনিয়া ভাইরাস সংক্রমণ সনাক্তকরণ।',
+    price: 900,
+    originalPrice: 1200,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1035,
+      'lab_ibnsina': 945,
+      'lab_birdem': 810,
+      'lab_bsmmu': 675,
+      'lab_praava': 1080,
+      'lab_evercare': 1260,
+      'lab_medinova': 900
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1440,
+      'lab_ibnsina': 1320,
+      'lab_birdem': 1140,
+      'lab_bsmmu': 960,
+      'lab_praava': 1500,
+      'lab_evercare': 1740,
+      'lab_medinova': 1200
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '২৪ ঘন্টা'
+  },
+  {
+    id: '55',
+    name: 'হেপাটাইটিস বি সারফেস অ্যান্টিবডি (Anti-HBs Antibody Titre)',
+    description: 'হেপাটাইটিস বি ভ্যাকসিনের কার্যকারিতা ও শরীরে রোগ প্রতিরোধ ক্ষমতার সুরক্ষা মাত্রা পরিমাপ।',
+    price: 700,
+    originalPrice: 950,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 805,
+      'lab_ibnsina': 735,
+      'lab_birdem': 630,
+      'lab_bsmmu': 525,
+      'lab_praava': 840,
+      'lab_evercare': 980,
+      'lab_medinova': 700
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1140,
+      'lab_ibnsina': 1045,
+      'lab_birdem': 903,
+      'lab_bsmmu': 760,
+      'lab_praava': 1188,
+      'lab_evercare': 1378,
+      'lab_medinova': 950
+    },
+    category: 'Liver',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '২৪ ঘন্টা'
+  },
+  {
+    id: '56',
+    name: 'হেপাটাইটিস বি কোর অ্যান্টিবডি (Anti-HBc Total)',
+    description: 'অতীতে বা বর্তমানে হেপাটাইটিস বি ভাইরাসের সংস্পর্শে আসার প্রমাণ নিশ্চিতকরণ।',
+    price: 950,
+    originalPrice: 1300,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1093,
+      'lab_ibnsina': 998,
+      'lab_birdem': 855,
+      'lab_bsmmu': 713,
+      'lab_praava': 1140,
+      'lab_evercare': 1330,
+      'lab_medinova': 950
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1560,
+      'lab_ibnsina': 1430,
+      'lab_birdem': 1235,
+      'lab_bsmmu': 1040,
+      'lab_praava': 1625,
+      'lab_evercare': 1885,
+      'lab_medinova': 1300
+    },
+    category: 'Liver',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '২৪ ঘন্টা'
+  },
+  {
+    id: '57',
+    name: 'হেপাটাইটিস এ ভাইরাস আইজিএম (Anti-HAV IgM for Acute Jaundice)',
+    description: 'দূষিত পানি ও খাবারজনিত হঠাৎ জন্ডিস ও তীব্র লিভার প্রদাহের কারণ সনাক্তকরণ।',
+    price: 900,
+    originalPrice: 1250,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1035,
+      'lab_ibnsina': 945,
+      'lab_birdem': 810,
+      'lab_bsmmu': 675,
+      'lab_praava': 1080,
+      'lab_evercare': 1260,
+      'lab_medinova': 900
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1500,
+      'lab_ibnsina': 1375,
+      'lab_birdem': 1188,
+      'lab_bsmmu': 1000,
+      'lab_praava': 1563,
+      'lab_evercare': 1813,
+      'lab_medinova': 1250
+    },
+    category: 'Liver',
+    image: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '২৪ ঘন্টা'
+  },
+  {
+    id: '58',
+    name: 'হেপাটাইটিস ই ভাইরাস আইজিএম (Anti-HEV IgM)',
+    description: 'জলবাহিত হেপাটাইটিস ই ভাইরাস সংক্রমণ (বিশেষ করে গর্ভবতীদের জন্য অত্যন্ত ঝুঁকিপূর্ণ)।',
+    price: 950,
+    originalPrice: 1300,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1093,
+      'lab_ibnsina': 998,
+      'lab_birdem': 855,
+      'lab_bsmmu': 713,
+      'lab_praava': 1140,
+      'lab_evercare': 1330,
+      'lab_medinova': 950
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1560,
+      'lab_ibnsina': 1430,
+      'lab_birdem': 1235,
+      'lab_bsmmu': 1040,
+      'lab_praava': 1625,
+      'lab_evercare': 1885,
+      'lab_medinova': 1300
+    },
+    category: 'Liver',
+    image: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '২৪ ঘন্টা'
+  },
+  {
+    id: '59',
+    name: 'টিপিএইচএ সিফিলিস নিশ্চিতকরণ টেস্ট (TPHA Syphilis Confirmatory)',
+    description: 'সিফিলিস রোগের সুনির্দিষ্ট ও নিশ্চিত ফলাফল নির্ধারণকারী বিশেষ রক্ত পরীক্ষা।',
+    price: 600,
+    originalPrice: 850,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 690,
+      'lab_ibnsina': 630,
+      'lab_birdem': 540,
+      'lab_bsmmu': 450,
+      'lab_praava': 720,
+      'lab_evercare': 840,
+      'lab_medinova': 600
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1020,
+      'lab_ibnsina': 935,
+      'lab_birdem': 808,
+      'lab_bsmmu': 680,
+      'lab_praava': 1063,
+      'lab_evercare': 1233,
+      'lab_medinova': 850
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '২৪ ঘন্টা'
+  },
+  {
+    id: '60',
+    name: 'টর্চ প্যানেল ১০টি টেস্ট (TORCH Panel 10 Profile)',
+    description: 'গর্ভবতীদের গর্ভপাত প্রতিরোধ ও ভ্রূণের জন্মগত ত্রুটি রোধে ৫টি প্রাণঘাতী সংক্রমণ স্ক্রিনিং।',
+    price: 3600,
+    originalPrice: 4800,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 4140,
+      'lab_ibnsina': 3780,
+      'lab_birdem': 3240,
+      'lab_bsmmu': 2700,
+      'lab_praava': 4320,
+      'lab_evercare': 5040,
+      'lab_medinova': 3600
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 5760,
+      'lab_ibnsina': 5280,
+      'lab_birdem': 4560,
+      'lab_bsmmu': 3840,
+      'lab_praava': 6000,
+      'lab_evercare': 6960,
+      'lab_medinova': 4800
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '৪৮ ঘন্টা'
+  },
+  {
+    id: '61',
+    name: 'প্রোথ্রম্বিন টাইম ও আইএনআর (Prothrombin Time / PT with INR)',
+    description: 'রক্ত জমাট বাঁধার সময়, রক্ত পাতলা করার ওষুধ (Warfarin) মনিটরিং ও লিভারের কার্যকারিতা।',
+    price: 600,
+    originalPrice: 800,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 690,
+      'lab_ibnsina': 630,
+      'lab_birdem': 540,
+      'lab_bsmmu': 450,
+      'lab_praava': 720,
+      'lab_evercare': 840,
+      'lab_medinova': 600
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 960,
+      'lab_ibnsina': 880,
+      'lab_birdem': 760,
+      'lab_bsmmu': 640,
+      'lab_praava': 1000,
+      'lab_evercare': 1160,
+      'lab_medinova': 800
+    },
+    category: 'Heart',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '১২ ঘন্টা'
+  },
+  {
+    id: '62',
+    name: 'এপিটিটি টেস্ট (APTT - Activated Partial Thromboplastin Time)',
+    description: 'রক্তক্ষরণ জনিত রোগ (যেমন: হিমোফিলিয়া) ও হেপারিন ইনজেকশনের প্রতিক্রিয়া মূল্যায়ন।',
+    price: 650,
+    originalPrice: 850,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 747,
+      'lab_ibnsina': 683,
+      'lab_birdem': 585,
+      'lab_bsmmu': 488,
+      'lab_praava': 780,
+      'lab_evercare': 910,
+      'lab_medinova': 650
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1020,
+      'lab_ibnsina': 935,
+      'lab_birdem': 808,
+      'lab_bsmmu': 680,
+      'lab_praava': 1063,
+      'lab_evercare': 1233,
+      'lab_medinova': 850
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '১২ ঘন্টা'
+  },
+  {
+    id: '63',
+    name: 'ডি-ডাইমার টেস্ট (D-Dimer Test for Blood Clots)',
+    description: 'রক্তনালীতে বিপজ্জনক রক্ত জমাট বাঁধা (DVT), ফুসফুসে রক্ত জমাট (PE) ও থ্রম্বোসিস নির্ণয়।',
+    price: 1300,
+    originalPrice: 1700,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1495,
+      'lab_ibnsina': 1365,
+      'lab_birdem': 1170,
+      'lab_bsmmu': 975,
+      'lab_praava': 1560,
+      'lab_evercare': 1820,
+      'lab_medinova': 1300
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 2040,
+      'lab_ibnsina': 1870,
+      'lab_birdem': 1615,
+      'lab_bsmmu': 1360,
+      'lab_praava': 2125,
+      'lab_evercare': 2465,
+      'lab_medinova': 1700
+    },
+    category: 'Heart',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '১২ ঘন্টা'
+  },
+  {
+    id: '64',
+    name: 'হিমোগ্লোবিন ইলেক্ট্রোফোরেসিস (Hemoglobin Electrophoresis - Thalassemia)',
+    description: 'থ্যালাসেমিয়া বাহক, থ্যালাসেমিয়া রোগ ও অস্বাভাবিক হিমোগ্লোবিন (HbE, Sickle Cell) সনাক্তকরণ।',
+    price: 1400,
+    originalPrice: 1900,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1610,
+      'lab_ibnsina': 1470,
+      'lab_birdem': 1260,
+      'lab_bsmmu': 1050,
+      'lab_praava': 1680,
+      'lab_evercare': 1960,
+      'lab_medinova': 1400
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 2280,
+      'lab_ibnsina': 2090,
+      'lab_birdem': 1805,
+      'lab_bsmmu': 1520,
+      'lab_praava': 2375,
+      'lab_evercare': 2755,
+      'lab_medinova': 1900
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '২৪-৪৮ ঘন্টা'
+  },
+  {
+    id: '65',
+    name: 'পেরিফেরাল ব্লাড ফিল্ম (Peripheral Blood Film - PBF)',
+    description: 'রক্তকোষের সূক্ষ্ম গঠন, অস্বাভাবিক আকার, অ্যানিমিয়ার ধরণ ও লিউকেমিয়া/ব্লাড ক্যান্সার স্ক্রিনিং।',
+    price: 400,
+    originalPrice: 550,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 460,
+      'lab_ibnsina': 420,
+      'lab_birdem': 360,
+      'lab_bsmmu': 300,
+      'lab_praava': 480,
+      'lab_evercare': 560,
+      'lab_medinova': 400
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 660,
+      'lab_ibnsina': 605,
+      'lab_birdem': 523,
+      'lab_bsmmu': 440,
+      'lab_praava': 688,
+      'lab_evercare': 798,
+      'lab_medinova': 550
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '১২ ঘন্টা'
+  },
+  {
+    id: '66',
+    name: 'রেটিকিউলোসাইট কাউন্ট (Reticulocyte Count)',
+    description: 'অস্থিমজ্জার (Bone Marrow) নতুন লোহিত রক্তকণিকা তৈরির সক্ষমতা ও অ্যানিমিয়া চিকিৎসা মূল্যায়ন।',
+    price: 350,
+    originalPrice: 500,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 402,
+      'lab_ibnsina': 368,
+      'lab_birdem': 315,
+      'lab_bsmmu': 263,
+      'lab_praava': 420,
+      'lab_evercare': 490,
+      'lab_medinova': 350
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 600,
+      'lab_ibnsina': 550,
+      'lab_birdem': 475,
+      'lab_bsmmu': 400,
+      'lab_praava': 625,
+      'lab_evercare': 725,
+      'lab_medinova': 500
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '১২ ঘন্টা'
+  },
+  {
+    id: '67',
+    name: 'ব্লিডিং টাইম ও ক্লটিং টাইম (Bleeding Time & Clotting Time - BT/CT)',
+    description: 'অপারেশন বা সার্জারির পূর্বে প্রাথমিক রক্তক্ষরণ ও রক্ত জমাট বাঁধার সময় পরীক্ষা।',
+    price: 250,
+    originalPrice: 350,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 288,
+      'lab_ibnsina': 263,
+      'lab_birdem': 225,
+      'lab_bsmmu': 188,
+      'lab_praava': 300,
+      'lab_evercare': 350,
+      'lab_medinova': 250
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 420,
+      'lab_ibnsina': 385,
+      'lab_birdem': 333,
+      'lab_bsmmu': 280,
+      'lab_praava': 438,
+      'lab_evercare': 508,
+      'lab_medinova': 350
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '২ ঘন্টা'
+  },
+  {
+    id: '68',
+    name: 'সেরাম টেস্টোস্টেরন (Total Testosterone Test)',
+    description: 'পুরুষের যৌন হরমোন মাত্রা, ক্লান্তি, পেশী গঠন ও প্রজনন স্বাস্থ্যের নির্ভরযোগ্য পরিমাপ।',
+    price: 950,
+    originalPrice: 1300,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1093,
+      'lab_ibnsina': 998,
+      'lab_birdem': 855,
+      'lab_bsmmu': 713,
+      'lab_praava': 1140,
+      'lab_evercare': 1330,
+      'lab_medinova': 950
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1560,
+      'lab_ibnsina': 1430,
+      'lab_birdem': 1235,
+      'lab_bsmmu': 1040,
+      'lab_praava': 1625,
+      'lab_evercare': 1885,
+      'lab_medinova': 1300
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '২৪ ঘন্টা'
+  },
+  {
+    id: '69',
+    name: 'সেরাম প্রোল্যাক্টিন হরমোন (Serum Prolactin Test)',
+    description: 'অনিয়মিত মাসিক, পিটুইটারি গ্রন্থির টিউমার ও বন্ধ্যাত্ব মূল্যায়নকারী গুরুত্বপূর্ণ হরমোন টেস্ট।',
+    price: 850,
+    originalPrice: 1150,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 977,
+      'lab_ibnsina': 893,
+      'lab_birdem': 765,
+      'lab_bsmmu': 638,
+      'lab_praava': 1020,
+      'lab_evercare': 1190,
+      'lab_medinova': 850
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1380,
+      'lab_ibnsina': 1265,
+      'lab_birdem': 1093,
+      'lab_bsmmu': 920,
+      'lab_praava': 1438,
+      'lab_evercare': 1668,
+      'lab_medinova': 1150
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '২৪ ঘন্টা'
+  },
+  {
+    id: '70',
+    name: 'এফএসএইচ - ফলিকল স্টিমুলেটিং হরমোন (Serum FSH)',
+    description: 'ডিম্বাশয় ও শুক্রাশয়ের কার্যক্ষমতা, মেনোপজ এবং প্রজনন উর্বরতা পরিমাপক হরমোন।',
+    price: 800,
+    originalPrice: 1100,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 920,
+      'lab_ibnsina': 840,
+      'lab_birdem': 720,
+      'lab_bsmmu': 600,
+      'lab_praava': 960,
+      'lab_evercare': 1120,
+      'lab_medinova': 800
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1320,
+      'lab_ibnsina': 1210,
+      'lab_birdem': 1045,
+      'lab_bsmmu': 880,
+      'lab_praava': 1375,
+      'lab_evercare': 1595,
+      'lab_medinova': 1100
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '২৪ ঘন্টা'
+  },
+  {
+    id: '71',
+    name: 'এলএইচ - লিউটিনাইজিং হরমোন (Serum LH)',
+    description: 'ডিম্বস্ফোটন (Ovulation), পলিসিস্টিক ওভারি সিন্ড্রোম (PCOS) ও হরমোন ভারসাম্যহীনতা নির্ণয়।',
+    price: 800,
+    originalPrice: 1100,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 920,
+      'lab_ibnsina': 840,
+      'lab_birdem': 720,
+      'lab_bsmmu': 600,
+      'lab_praava': 960,
+      'lab_evercare': 1120,
+      'lab_medinova': 800
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1320,
+      'lab_ibnsina': 1210,
+      'lab_birdem': 1045,
+      'lab_bsmmu': 880,
+      'lab_praava': 1375,
+      'lab_evercare': 1595,
+      'lab_medinova': 1100
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '২৪ ঘন্টা'
+  },
+  {
+    id: '72',
+    name: 'এএমএইচ - অ্যান্টি মুলারিয়ান হরমোন (Anti-Mullerian Hormone - AMH)',
+    description: 'নারীদের ডিম্বাশয়ে ডিম্বাণুর মজুদ (Egg Reserve), উর্বরতা ও আইভিএফ (IVF) সম্ভাব্যতা মূল্যায়ন।',
+    price: 2500,
+    originalPrice: 3200,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 2875,
+      'lab_ibnsina': 2625,
+      'lab_birdem': 2250,
+      'lab_bsmmu': 1875,
+      'lab_praava': 3000,
+      'lab_evercare': 3500,
+      'lab_medinova': 2500
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 3840,
+      'lab_ibnsina': 3520,
+      'lab_birdem': 3040,
+      'lab_bsmmu': 2560,
+      'lab_praava': 4000,
+      'lab_evercare': 4640,
+      'lab_medinova': 3200
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '২৪-৪৮ ঘন্টা'
+  },
+  {
+    id: '73',
+    name: 'সেরাম কর্টিসল টেস্ট (Serum Cortisol - Morning/Evening)',
+    description: 'অ্যাড্রিনাল গ্রন্থির স্ট্রেস হরমোন, কুশিং সিন্ড্রোম ও অ্যাডিসন রোগ নির্ণায়ক টেস্ট।',
+    price: 900,
+    originalPrice: 1250,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1035,
+      'lab_ibnsina': 945,
+      'lab_birdem': 810,
+      'lab_bsmmu': 675,
+      'lab_praava': 1080,
+      'lab_evercare': 1260,
+      'lab_medinova': 900
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1500,
+      'lab_ibnsina': 1375,
+      'lab_birdem': 1188,
+      'lab_bsmmu': 1000,
+      'lab_praava': 1563,
+      'lab_evercare': 1813,
+      'lab_medinova': 1250
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '২৪ ঘন্টা'
+  },
+  {
+    id: '74',
+    name: 'বিটা এইচসিজি রক্তের টেস্ট (Beta hCG Quantitative Serum)',
+    description: 'রক্তে গর্ভধারণের শতভাগ নির্ভুল নিশ্চয়তা, গর্ভের সঠিক সপ্তাহ ও একটোপিক প্রেগন্যান্সি সনাক্তকরণ।',
+    price: 950,
+    originalPrice: 1300,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1093,
+      'lab_ibnsina': 998,
+      'lab_birdem': 855,
+      'lab_bsmmu': 713,
+      'lab_praava': 1140,
+      'lab_evercare': 1330,
+      'lab_medinova': 950
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1560,
+      'lab_ibnsina': 1430,
+      'lab_birdem': 1235,
+      'lab_bsmmu': 1040,
+      'lab_praava': 1625,
+      'lab_evercare': 1885,
+      'lab_medinova': 1300
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '১২ ঘন্টা'
+  },
+  {
+    id: '75',
+    name: 'সেরাম ইনসুলিন ফাস্টিং (Fasting Serum Insulin)',
+    description: 'ইনসুলিন রেজিস্ট্যান্স, টাইপ-২ ডায়াবেটিস প্রবণতা ও ফ্যাটি লিভারের মূল কারণ নির্ণয়।',
+    price: 1100,
+    originalPrice: 1500,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1265,
+      'lab_ibnsina': 1155,
+      'lab_birdem': 990,
+      'lab_bsmmu': 825,
+      'lab_praava': 1320,
+      'lab_evercare': 1540,
+      'lab_medinova': 1100
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1800,
+      'lab_ibnsina': 1650,
+      'lab_birdem': 1425,
+      'lab_bsmmu': 1200,
+      'lab_praava': 1875,
+      'lab_evercare': 2175,
+      'lab_medinova': 1500
+    },
+    category: 'Diabetes',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '২৪ ঘন্টা'
+  },
+  {
+    id: '76',
+    name: 'হোমা-আইআর টেস্ট (HOMA-IR Insulin Resistance Index)',
+    description: 'রক্তের গ্লুকোজ ও ইনসুলিন সমন্বয়ে শরীরের ইনসুলিন অকার্যকারিতার সঠিক স্কোর।',
+    price: 1300,
+    originalPrice: 1750,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1495,
+      'lab_ibnsina': 1365,
+      'lab_birdem': 1170,
+      'lab_bsmmu': 975,
+      'lab_praava': 1560,
+      'lab_evercare': 1820,
+      'lab_medinova': 1300
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 2100,
+      'lab_ibnsina': 1925,
+      'lab_birdem': 1663,
+      'lab_bsmmu': 1400,
+      'lab_praava': 2188,
+      'lab_evercare': 2538,
+      'lab_medinova': 1750
+    },
+    category: 'Diabetes',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '২৪ ঘন্টা'
+  },
+  {
+    id: '77',
+    name: 'আরএ টেস্ট / রিউমাটয়েড ফ্যাক্টর (RA / RF Quantitative)',
+    description: 'রিউমাটয়েড আর্থ্রাইটিস বা বাতজ্বর, তীব্র গিঁটে ব্যথা ও অটোইমিউন রোগ সনাক্তকরণ।',
+    price: 600,
+    originalPrice: 850,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 690,
+      'lab_ibnsina': 630,
+      'lab_birdem': 540,
+      'lab_bsmmu': 450,
+      'lab_praava': 720,
+      'lab_evercare': 840,
+      'lab_medinova': 600
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1020,
+      'lab_ibnsina': 935,
+      'lab_birdem': 808,
+      'lab_bsmmu': 680,
+      'lab_praava': 1063,
+      'lab_evercare': 1233,
+      'lab_medinova': 850
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '১২ ঘন্টা'
+  },
+  {
+    id: '78',
+    name: 'অ্যান্টি-সিসিপি টেস্ট (Anti-CCP Antibody - Arthritis)',
+    description: 'রিউমাটয়েড আর্থ্রাইটিসের সবচেয়ে নিখুঁত ও নির্ভরযোগ্য আগাম প্রমাণকারী অটোইমিউন টেস্ট।',
+    price: 1800,
+    originalPrice: 2400,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 2070,
+      'lab_ibnsina': 1890,
+      'lab_birdem': 1620,
+      'lab_bsmmu': 1350,
+      'lab_praava': 2160,
+      'lab_evercare': 2520,
+      'lab_medinova': 1800
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 2880,
+      'lab_ibnsina': 2640,
+      'lab_birdem': 2280,
+      'lab_bsmmu': 1920,
+      'lab_praava': 3000,
+      'lab_evercare': 3480,
+      'lab_medinova': 2400
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '২৪ ঘন্টা'
+  },
+  {
+    id: '79',
+    name: 'এএনএ টেস্ট (ANA by IFA - Antinuclear Antibody)',
+    description: 'লুপাস (SLE), ত্বক ও কিডনি আক্রান্তকারী অটোইমিউন রোগ সনাক্তকরণের গোল্ড স্ট্যান্ডার্ড টেস্ট।',
+    price: 1200,
+    originalPrice: 1600,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1380,
+      'lab_ibnsina': 1260,
+      'lab_birdem': 1080,
+      'lab_bsmmu': 900,
+      'lab_praava': 1440,
+      'lab_evercare': 1680,
+      'lab_medinova': 1200
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1920,
+      'lab_ibnsina': 1760,
+      'lab_birdem': 1520,
+      'lab_bsmmu': 1280,
+      'lab_praava': 2000,
+      'lab_evercare': 2320,
+      'lab_medinova': 1600
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '২৪ ঘন্টা'
+  },
+  {
+    id: '80',
+    name: 'অ্যান্টি-ডিএসডিএনএ (Anti-dsDNA Quantitative)',
+    description: 'এসএলই (SLE) লুপাস নিশ্চিতকরণ ও কিডনির প্রদাহ (Lupus Nephritis) সক্রিয়তার মাত্রা নির্ণয়।',
+    price: 1600,
+    originalPrice: 2100,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1840,
+      'lab_ibnsina': 1680,
+      'lab_birdem': 1440,
+      'lab_bsmmu': 1200,
+      'lab_praava': 1920,
+      'lab_evercare': 2240,
+      'lab_medinova': 1600
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 2520,
+      'lab_ibnsina': 2310,
+      'lab_birdem': 1995,
+      'lab_bsmmu': 1680,
+      'lab_praava': 2625,
+      'lab_evercare': 3045,
+      'lab_medinova': 2100
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '২৪-৪৮ ঘন্টা'
+  },
+  {
+    id: '81',
+    name: 'সেরাম আইজিই টেস্ট (Total Serum IgE - Allergy Level)',
+    description: 'অ্যালার্জি, হাঁপানি, অ্যালার্জিক রাইনাইটিস ও রক্তের সংবেদনশীলতার মাত্রা পরিমাপ।',
+    price: 800,
+    originalPrice: 1100,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 920,
+      'lab_ibnsina': 840,
+      'lab_birdem': 720,
+      'lab_bsmmu': 600,
+      'lab_praava': 960,
+      'lab_evercare': 1120,
+      'lab_medinova': 800
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1320,
+      'lab_ibnsina': 1210,
+      'lab_birdem': 1045,
+      'lab_bsmmu': 880,
+      'lab_praava': 1375,
+      'lab_evercare': 1595,
+      'lab_medinova': 1100
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '২৪ ঘন্টা'
+  },
+  {
+    id: '82',
+    name: 'এএসও টাইটার (ASO Titre - Streptococcal Infection)',
+    description: 'গলাব্যথা পরবর্তী বাতজ্বর (Rheumatic Fever) ও কিডনি প্রদাহের জীবাণু সংক্রমণ পরীক্ষা।',
+    price: 550,
+    originalPrice: 750,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 633,
+      'lab_ibnsina': 578,
+      'lab_birdem': 495,
+      'lab_bsmmu': 413,
+      'lab_praava': 660,
+      'lab_evercare': 770,
+      'lab_medinova': 550
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 900,
+      'lab_ibnsina': 825,
+      'lab_birdem': 713,
+      'lab_bsmmu': 600,
+      'lab_praava': 938,
+      'lab_evercare': 1088,
+      'lab_medinova': 750
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '১২ ঘন্টা'
+  },
+  {
+    id: '83',
+    name: 'সিইএ ক্যান্সার মার্কার (Carcinoembryonic Antigen - CEA)',
+    description: 'কোলন, মলদ্বার, পাকস্থলী ও অন্ত্রের ক্যান্সার সনাক্তকরণ ও চিকিৎসা পর্যবেক্ষণ।',
+    price: 1100,
+    originalPrice: 1500,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1265,
+      'lab_ibnsina': 1155,
+      'lab_birdem': 990,
+      'lab_bsmmu': 825,
+      'lab_praava': 1320,
+      'lab_evercare': 1540,
+      'lab_medinova': 1100
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1800,
+      'lab_ibnsina': 1650,
+      'lab_birdem': 1425,
+      'lab_bsmmu': 1200,
+      'lab_praava': 1875,
+      'lab_evercare': 2175,
+      'lab_medinova': 1500
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '২৪ ঘন্টা'
+  },
+  {
+    id: '84',
+    name: 'সিএ ১২৫ ওভারিয়ান ক্যান্সার মার্কার (CA 125 - Ovarian Tumor Marker)',
+    description: 'ডিম্বাশয়ের টিউমার ও ওভারিয়ান ক্যান্সার স্ক্রিনিং এবং এন্ডোমেট্রিওসিস মূল্যায়ন।',
+    price: 1300,
+    originalPrice: 1750,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1495,
+      'lab_ibnsina': 1365,
+      'lab_birdem': 1170,
+      'lab_bsmmu': 975,
+      'lab_praava': 1560,
+      'lab_evercare': 1820,
+      'lab_medinova': 1300
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 2100,
+      'lab_ibnsina': 1925,
+      'lab_birdem': 1663,
+      'lab_bsmmu': 1400,
+      'lab_praava': 2188,
+      'lab_evercare': 2538,
+      'lab_medinova': 1750
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '২৪ ঘন্টা'
+  },
+  {
+    id: '85',
+    name: 'সিএ ১৫-৩ ব্রেস্ট টিউমার মার্কার (CA 15-3 - Breast Cancer Marker)',
+    description: 'স্তনের টিউমার ও ব্রেস্ট ক্যান্সার চিকিৎসাধীন রোগীদের থেরাপি রেসপন্স পর্যবেক্ষণ।',
+    price: 1300,
+    originalPrice: 1750,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1495,
+      'lab_ibnsina': 1365,
+      'lab_birdem': 1170,
+      'lab_bsmmu': 975,
+      'lab_praava': 1560,
+      'lab_evercare': 1820,
+      'lab_medinova': 1300
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 2100,
+      'lab_ibnsina': 1925,
+      'lab_birdem': 1663,
+      'lab_bsmmu': 1400,
+      'lab_praava': 2188,
+      'lab_evercare': 2538,
+      'lab_medinova': 1750
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '২৪ ঘন্টা'
+  },
+  {
+    id: '86',
+    name: 'সিএ ১৯-৯ অগ্ন্যাশয় ও পিত্তথলি মার্কার (CA 19-9 - Pancreatic Marker)',
+    description: 'অগ্ন্যাশয় (Pancreas), পিত্তথলি ও পিত্তনালীর টিউমার ও ক্যান্সার মার্কার টেস্ট।',
+    price: 1300,
+    originalPrice: 1750,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1495,
+      'lab_ibnsina': 1365,
+      'lab_birdem': 1170,
+      'lab_bsmmu': 975,
+      'lab_praava': 1560,
+      'lab_evercare': 1820,
+      'lab_medinova': 1300
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 2100,
+      'lab_ibnsina': 1925,
+      'lab_birdem': 1663,
+      'lab_bsmmu': 1400,
+      'lab_praava': 2188,
+      'lab_evercare': 2538,
+      'lab_medinova': 1750
+    },
+    category: 'Liver',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '২৪ ঘন্টা'
+  },
+  {
+    id: '87',
+    name: 'আলফা-ফেটোপ্রোটিন লিভার মার্কার (AFP - Alpha Fetoprotein)',
+    description: 'লিভারের দীর্ঘস্থায়ী সিরোসিস রোগীদের লিভার ক্যান্সার (HCC) স্ক্রিনিং টেস্ট।',
+    price: 1100,
+    originalPrice: 1500,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1265,
+      'lab_ibnsina': 1155,
+      'lab_birdem': 990,
+      'lab_bsmmu': 825,
+      'lab_praava': 1320,
+      'lab_evercare': 1540,
+      'lab_medinova': 1100
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1800,
+      'lab_ibnsina': 1650,
+      'lab_birdem': 1425,
+      'lab_bsmmu': 1200,
+      'lab_praava': 1875,
+      'lab_evercare': 2175,
+      'lab_medinova': 1500
+    },
+    category: 'Liver',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '২৪ ঘন্টা'
+  },
+  {
+    id: '88',
+    name: 'সিরাম ম্যাগনেসিয়াম টেস্ট (Serum Magnesium)',
+    description: 'হৃৎস্পন্দনের অনিয়ম (Arrhythmia), মাংসপেশির খিঁচুনি ও স্নায়ুবিক দুর্বলতা মূল্যায়ন।',
+    price: 650,
+    originalPrice: 900,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 747,
+      'lab_ibnsina': 683,
+      'lab_birdem': 585,
+      'lab_bsmmu': 488,
+      'lab_praava': 780,
+      'lab_evercare': 910,
+      'lab_medinova': 650
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1080,
+      'lab_ibnsina': 990,
+      'lab_birdem': 855,
+      'lab_bsmmu': 720,
+      'lab_praava': 1125,
+      'lab_evercare': 1305,
+      'lab_medinova': 900
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '১২ ঘন্টা'
+  },
+  {
+    id: '89',
+    name: 'সিরাম অজৈব ফসফেট (Serum Inorganic Phosphate)',
+    description: 'হাড়ের ঘনত্ব, ভিটামিন ডি মেটাবলিজম ও কিডনি রোগের ফসফরাস মাত্রা পরিমাপ।',
+    price: 550,
+    originalPrice: 750,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 633,
+      'lab_ibnsina': 578,
+      'lab_birdem': 495,
+      'lab_bsmmu': 413,
+      'lab_praava': 660,
+      'lab_evercare': 770,
+      'lab_medinova': 550
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 900,
+      'lab_ibnsina': 825,
+      'lab_birdem': 713,
+      'lab_bsmmu': 600,
+      'lab_praava': 938,
+      'lab_evercare': 1088,
+      'lab_medinova': 750
+    },
+    category: 'Kidney',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '১২ ঘন্টা'
+  },
+  {
+    id: '90',
+    name: 'আয়োনাইজড ক্যালসিয়াম (Serum Ionized Free Calcium)',
+    description: 'শরীরে শারীরবৃত্তীয়ভাবে সক্রিয় মুক্ত ক্যালসিয়ামের শতভাগ নির্ভুল মাত্রা।',
+    price: 700,
+    originalPrice: 950,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 805,
+      'lab_ibnsina': 735,
+      'lab_birdem': 630,
+      'lab_bsmmu': 525,
+      'lab_praava': 840,
+      'lab_evercare': 980,
+      'lab_medinova': 700
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1140,
+      'lab_ibnsina': 1045,
+      'lab_birdem': 903,
+      'lab_bsmmu': 760,
+      'lab_praava': 1188,
+      'lab_evercare': 1378,
+      'lab_medinova': 950
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '১২ ঘন্টা'
+  },
+  {
+    id: '91',
+    name: 'গামা-জিটি লিভার টেস্ট (Gamma-GT / GGT)',
+    description: 'পিত্তনালীর বাধা, ফ্যাটি লিভার ও অ্যালকোহলজনিত লিভার ক্ষতির সবচেয়ে সংবেদনশীল এনজাইম।',
+    price: 650,
+    originalPrice: 900,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 747,
+      'lab_ibnsina': 683,
+      'lab_birdem': 585,
+      'lab_bsmmu': 488,
+      'lab_praava': 780,
+      'lab_evercare': 910,
+      'lab_medinova': 650
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1080,
+      'lab_ibnsina': 990,
+      'lab_birdem': 855,
+      'lab_bsmmu': 720,
+      'lab_praava': 1125,
+      'lab_evercare': 1305,
+      'lab_medinova': 900
+    },
+    category: 'Liver',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '১২ ঘন্টা'
+  },
+  {
+    id: '92',
+    name: 'এলডিএইচ এনজাইম টেস্ট (Lactate Dehydrogenase - LDH)',
+    description: 'কোষের ধ্বংস, ফুসফুসের সংক্রমণ, রক্তস্বল্পতা ও টিস্যু আঘাতের সাধারণ মার্কার।',
+    price: 700,
+    originalPrice: 950,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 805,
+      'lab_ibnsina': 735,
+      'lab_birdem': 630,
+      'lab_bsmmu': 525,
+      'lab_praava': 840,
+      'lab_evercare': 980,
+      'lab_medinova': 700
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1140,
+      'lab_ibnsina': 1045,
+      'lab_birdem': 903,
+      'lab_bsmmu': 760,
+      'lab_praava': 1188,
+      'lab_evercare': 1378,
+      'lab_medinova': 950
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '১২ ঘন্টা'
+  },
+  {
+    id: '93',
+    name: 'সিকে-এমবি হার্ট এনজাইম (CK-MB for Heart Attack)',
+    description: 'হার্ট অ্যাটাক পরবর্তী হৃদপেশির ক্ষতি ও বুকে ব্যথার তীব্রতা নির্ণায়ক কার্ডিয়াক এনজাইম।',
+    price: 850,
+    originalPrice: 1150,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 977,
+      'lab_ibnsina': 893,
+      'lab_birdem': 765,
+      'lab_bsmmu': 638,
+      'lab_praava': 1020,
+      'lab_evercare': 1190,
+      'lab_medinova': 850
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1380,
+      'lab_ibnsina': 1265,
+      'lab_birdem': 1093,
+      'lab_bsmmu': 920,
+      'lab_praava': 1438,
+      'lab_evercare': 1668,
+      'lab_medinova': 1150
+    },
+    category: 'Heart',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '৬ ঘন্টা'
+  },
+  {
+    id: '94',
+    name: 'টোটাল সিপিকে / ক্রিয়েটিন কাইনেজ (Total CPK / CK)',
+    description: 'মাংসপেশির ক্ষত, প্রদাহ (Myositis) ও অতিরিক্ত ব্যায়ামজনিত পেশী ক্ষয় মূল্যায়ন।',
+    price: 700,
+    originalPrice: 950,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 805,
+      'lab_ibnsina': 735,
+      'lab_birdem': 630,
+      'lab_bsmmu': 525,
+      'lab_praava': 840,
+      'lab_evercare': 980,
+      'lab_medinova': 700
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1140,
+      'lab_ibnsina': 1045,
+      'lab_birdem': 903,
+      'lab_bsmmu': 760,
+      'lab_praava': 1188,
+      'lab_evercare': 1378,
+      'lab_medinova': 950
+    },
+    category: 'Heart',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '১২ ঘন্টা'
+  },
+  {
+    id: '95',
+    name: 'সেরাম ফলিক অ্যাসিড বা ভিটামিন বি ৯ (Serum Folic Acid / Vitamin B9)',
+    description: 'মেগালোব্লাস্টিক অ্যানিমিয়া, স্নায়বিক গঠন ত্রুটি ও পুষ্টিহীনতা নির্ণায়ক টেস্ট।',
+    price: 1100,
+    originalPrice: 1500,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1265,
+      'lab_ibnsina': 1155,
+      'lab_birdem': 990,
+      'lab_bsmmu': 825,
+      'lab_praava': 1320,
+      'lab_evercare': 1540,
+      'lab_medinova': 1100
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1800,
+      'lab_ibnsina': 1650,
+      'lab_birdem': 1425,
+      'lab_bsmmu': 1200,
+      'lab_praava': 1875,
+      'lab_evercare': 2175,
+      'lab_medinova': 1500
+    },
+    category: 'Vitamin',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '২৪ ঘন্টা'
+  },
+  {
+    id: '96',
+    name: 'সেরাম জিঙ্ক টেস্ট (Serum Zinc Level)',
+    description: 'রোগ প্রতিরোধ ক্ষমতা, চুলের স্বাস্থ্য, ত্বকের ক্ষত নিরাময় ও শিশুদের শারীরিক বৃদ্ধি পরিমাপ।',
+    price: 1200,
+    originalPrice: 1650,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1380,
+      'lab_ibnsina': 1260,
+      'lab_birdem': 1080,
+      'lab_bsmmu': 900,
+      'lab_praava': 1440,
+      'lab_evercare': 1680,
+      'lab_medinova': 1200
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1980,
+      'lab_ibnsina': 1815,
+      'lab_birdem': 1568,
+      'lab_bsmmu': 1320,
+      'lab_praava': 2063,
+      'lab_evercare': 2393,
+      'lab_medinova': 1650
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '৪৮ ঘন্টা'
+  },
+  {
+    id: '97',
+    name: 'সেরাম কপার টেস্ট (Serum Copper Level)',
+    description: 'উইলসন রোগ (Wilson Disease) ও লিভারে তামার অস্বাভাবিক জমাট সনাক্তকরণ।',
+    price: 1400,
+    originalPrice: 1900,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1610,
+      'lab_ibnsina': 1470,
+      'lab_birdem': 1260,
+      'lab_bsmmu': 1050,
+      'lab_praava': 1680,
+      'lab_evercare': 1960,
+      'lab_medinova': 1400
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 2280,
+      'lab_ibnsina': 2090,
+      'lab_birdem': 1805,
+      'lab_bsmmu': 1520,
+      'lab_praava': 2375,
+      'lab_evercare': 2755,
+      'lab_medinova': 1900
+    },
+    category: 'Liver',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '৪৮ ঘন্টা'
+  },
+  {
+    id: '98',
+    name: 'সেরাম সেরুলোপ্লাজমিন (Serum Ceruloplasmin)',
+    description: 'লিভার ও মস্তিষ্কে তামা বিপাকজনিত বংশগত জটিলতা (Wilson Disease) নিশ্চিতকরণ টেস্ট।',
+    price: 1500,
+    originalPrice: 2000,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1725,
+      'lab_ibnsina': 1575,
+      'lab_birdem': 1350,
+      'lab_bsmmu': 1125,
+      'lab_praava': 1800,
+      'lab_evercare': 2100,
+      'lab_medinova': 1500
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 2400,
+      'lab_ibnsina': 2200,
+      'lab_birdem': 1900,
+      'lab_bsmmu': 1600,
+      'lab_praava': 2500,
+      'lab_evercare': 2900,
+      'lab_medinova': 2000
+    },
+    category: 'Liver',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '৪৮ ঘন্টা'
+  },
+  {
+    id: '99',
+    name: 'সেরাম প্রোক্যালসিটোনিন (Procalcitonin - Sepsis Marker)',
+    description: 'মারাত্মক ব্যাকটেরিয়াল সংক্রমণ, নিউমোনিয়া ও সেপসিসের তীব্রতা দ্রুততম সময়ে নির্ণয়।',
+    price: 2400,
+    originalPrice: 3200,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 2760,
+      'lab_ibnsina': 2520,
+      'lab_birdem': 2160,
+      'lab_bsmmu': 1800,
+      'lab_praava': 2880,
+      'lab_evercare': 3360,
+      'lab_medinova': 2400
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 3840,
+      'lab_ibnsina': 3520,
+      'lab_birdem': 3040,
+      'lab_bsmmu': 2560,
+      'lab_praava': 4000,
+      'lab_evercare': 4640,
+      'lab_medinova': 3200
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '১২ ঘন্টা'
+  },
+  {
+    id: '100',
+    name: 'অ্যান্টি-টিপিও অ্যান্টিবডি (Anti-TPO Antibody - Autoimmune Thyroid)',
+    description: 'হাশিমোটো থাইরয়েডাইটিস ও অটোইমিউন থাইরয়েড রোগের শতভাগ সুনির্দিষ্ট অ্যান্টিবডি টেস্ট।',
+    price: 1500,
+    originalPrice: 2000,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1725,
+      'lab_ibnsina': 1575,
+      'lab_birdem': 1350,
+      'lab_bsmmu': 1125,
+      'lab_praava': 1800,
+      'lab_evercare': 2100,
+      'lab_medinova': 1500
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 2400,
+      'lab_ibnsina': 2200,
+      'lab_birdem': 1900,
+      'lab_bsmmu': 1600,
+      'lab_praava': 2500,
+      'lab_evercare': 2900,
+      'lab_medinova': 2000
+    },
+    category: 'Thyroid',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '২৪ ঘন্টা'
   }
 ];
 
@@ -2288,6 +4148,1866 @@ const TESTS_EN: TestPackage[] = [
     category: 'General',
     image: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=400',
     turnaroundTime: '12 Hours'
+  },
+  {
+    id: '39',
+    name: 'Urine Culture & Sensitivity (Urine C/S)',
+    description: 'Identifies bacterial urinary tract infections (UTI) and antibiotic susceptibility.',
+    price: 650,
+    originalPrice: 850,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 747,
+      'lab_ibnsina': 683,
+      'lab_birdem': 585,
+      'lab_bsmmu': 488,
+      'lab_praava': 780,
+      'lab_evercare': 910,
+      'lab_medinova': 650
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1020,
+      'lab_ibnsina': 935,
+      'lab_birdem': 808,
+      'lab_bsmmu': 680,
+      'lab_praava': 1063,
+      'lab_evercare': 1233,
+      'lab_medinova': 850
+    },
+    category: 'Kidney',
+    image: 'https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '48-72 Hours'
+  },
+  {
+    id: '40',
+    name: 'Urine Microalbumin & Creatinine Ratio (ACR)',
+    description: 'Early detection of diabetic nephropathy and kidney microvascular damage.',
+    price: 900,
+    originalPrice: 1200,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1035,
+      'lab_ibnsina': 945,
+      'lab_birdem': 810,
+      'lab_bsmmu': 675,
+      'lab_praava': 1080,
+      'lab_evercare': 1260,
+      'lab_medinova': 900
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1440,
+      'lab_ibnsina': 1320,
+      'lab_birdem': 1140,
+      'lab_bsmmu': 960,
+      'lab_praava': 1500,
+      'lab_evercare': 1740,
+      'lab_medinova': 1200
+    },
+    category: 'Kidney',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '24 Hours'
+  },
+  {
+    id: '41',
+    name: '24-Hour Urine Total Protein',
+    description: 'Quantifies daily protein excretion for nephrotic and glomerulonephritis assessment.',
+    price: 800,
+    originalPrice: 1050,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 920,
+      'lab_ibnsina': 840,
+      'lab_birdem': 720,
+      'lab_bsmmu': 600,
+      'lab_praava': 960,
+      'lab_evercare': 1120,
+      'lab_medinova': 800
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1260,
+      'lab_ibnsina': 1155,
+      'lab_birdem': 998,
+      'lab_bsmmu': 840,
+      'lab_praava': 1313,
+      'lab_evercare': 1523,
+      'lab_medinova': 1050
+    },
+    category: 'Kidney',
+    image: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '24 Hours'
+  },
+  {
+    id: '42',
+    name: 'Urine Pregnancy Test (UPT / hCG)',
+    description: 'Detects human chorionic gonadotropin (hCG) in urine to confirm pregnancy.',
+    price: 200,
+    originalPrice: 300,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 230,
+      'lab_ibnsina': 210,
+      'lab_birdem': 180,
+      'lab_bsmmu': 150,
+      'lab_praava': 240,
+      'lab_evercare': 280,
+      'lab_medinova': 200
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 360,
+      'lab_ibnsina': 330,
+      'lab_birdem': 285,
+      'lab_bsmmu': 240,
+      'lab_praava': 375,
+      'lab_evercare': 435,
+      'lab_medinova': 300
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '2 Hours'
+  },
+  {
+    id: '43',
+    name: 'Urine Ketone Bodies',
+    description: 'Screens for diabetic ketoacidosis (DKA) and starvation ketosis in urine.',
+    price: 250,
+    originalPrice: 350,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 288,
+      'lab_ibnsina': 263,
+      'lab_birdem': 225,
+      'lab_bsmmu': 188,
+      'lab_praava': 300,
+      'lab_evercare': 350,
+      'lab_medinova': 250
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 420,
+      'lab_ibnsina': 385,
+      'lab_birdem': 333,
+      'lab_bsmmu': 280,
+      'lab_praava': 438,
+      'lab_evercare': 508,
+      'lab_medinova': 350
+    },
+    category: 'Diabetes',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '4 Hours'
+  },
+  {
+    id: '44',
+    name: 'Urine Calcium Test',
+    description: 'Assesses kidney stone risk, parathyroid disorders, and calcium excretion.',
+    price: 550,
+    originalPrice: 750,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 633,
+      'lab_ibnsina': 578,
+      'lab_birdem': 495,
+      'lab_bsmmu': 413,
+      'lab_praava': 660,
+      'lab_evercare': 770,
+      'lab_medinova': 550
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 900,
+      'lab_ibnsina': 825,
+      'lab_birdem': 713,
+      'lab_bsmmu': 600,
+      'lab_praava': 938,
+      'lab_evercare': 1088,
+      'lab_medinova': 750
+    },
+    category: 'Kidney',
+    image: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '24 Hours'
+  },
+  {
+    id: '45',
+    name: 'Urine Cytology for Malignant Cells',
+    description: 'Microscopic cellular evaluation for urinary tract and bladder neoplastic cells.',
+    price: 850,
+    originalPrice: 1100,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 977,
+      'lab_ibnsina': 893,
+      'lab_birdem': 765,
+      'lab_bsmmu': 638,
+      'lab_praava': 1020,
+      'lab_evercare': 1190,
+      'lab_medinova': 850
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1320,
+      'lab_ibnsina': 1210,
+      'lab_birdem': 1045,
+      'lab_bsmmu': 880,
+      'lab_praava': 1375,
+      'lab_evercare': 1595,
+      'lab_medinova': 1100
+    },
+    category: 'Kidney',
+    image: 'https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '48 Hours'
+  },
+  {
+    id: '46',
+    name: 'Stool Occult Blood Test (FOBT / OBT)',
+    description: 'Detects microscopic occult blood in stool, screening for GI lesions and colorectal polyps.',
+    price: 350,
+    originalPrice: 500,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 402,
+      'lab_ibnsina': 368,
+      'lab_birdem': 315,
+      'lab_bsmmu': 263,
+      'lab_praava': 420,
+      'lab_evercare': 490,
+      'lab_medinova': 350
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 600,
+      'lab_ibnsina': 550,
+      'lab_birdem': 475,
+      'lab_bsmmu': 400,
+      'lab_praava': 625,
+      'lab_evercare': 725,
+      'lab_medinova': 500
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '12 Hours'
+  },
+  {
+    id: '47',
+    name: 'Stool Culture & Sensitivity (Stool C/S)',
+    description: 'Isolates enteric bacterial pathogens (Salmonella, Shigella) and antimicrobial response.',
+    price: 650,
+    originalPrice: 850,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 747,
+      'lab_ibnsina': 683,
+      'lab_birdem': 585,
+      'lab_bsmmu': 488,
+      'lab_praava': 780,
+      'lab_evercare': 910,
+      'lab_medinova': 650
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1020,
+      'lab_ibnsina': 935,
+      'lab_birdem': 808,
+      'lab_bsmmu': 680,
+      'lab_praava': 1063,
+      'lab_evercare': 1233,
+      'lab_medinova': 850
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '48-72 Hours'
+  },
+  {
+    id: '48',
+    name: 'Stool Calprotectin (IBD / IBS Marker)',
+    description: 'Distinguishes inflammatory bowel disease (IBD) from irritable bowel syndrome (IBS).',
+    price: 2800,
+    originalPrice: 3500,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 3220,
+      'lab_ibnsina': 2940,
+      'lab_birdem': 2520,
+      'lab_bsmmu': 2100,
+      'lab_praava': 3360,
+      'lab_evercare': 3920,
+      'lab_medinova': 2800
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 4200,
+      'lab_ibnsina': 3850,
+      'lab_birdem': 3325,
+      'lab_bsmmu': 2800,
+      'lab_praava': 4375,
+      'lab_evercare': 5075,
+      'lab_medinova': 3500
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '48 Hours'
+  },
+  {
+    id: '49',
+    name: 'Stool Reducing Substance Test',
+    description: 'Screens for carbohydrate malabsorption and infant lactose intolerance.',
+    price: 350,
+    originalPrice: 500,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 402,
+      'lab_ibnsina': 368,
+      'lab_birdem': 315,
+      'lab_bsmmu': 263,
+      'lab_praava': 420,
+      'lab_evercare': 490,
+      'lab_medinova': 350
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 600,
+      'lab_ibnsina': 550,
+      'lab_birdem': 475,
+      'lab_bsmmu': 400,
+      'lab_praava': 625,
+      'lab_evercare': 725,
+      'lab_medinova': 500
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '12 Hours'
+  },
+  {
+    id: '50',
+    name: 'Stool H. Pylori Antigen',
+    description: 'Non-invasive stool antigen test for active gastric Helicobacter pylori infection.',
+    price: 1100,
+    originalPrice: 1500,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1265,
+      'lab_ibnsina': 1155,
+      'lab_birdem': 990,
+      'lab_bsmmu': 825,
+      'lab_praava': 1320,
+      'lab_evercare': 1540,
+      'lab_medinova': 1100
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1800,
+      'lab_ibnsina': 1650,
+      'lab_birdem': 1425,
+      'lab_bsmmu': 1200,
+      'lab_praava': 1875,
+      'lab_evercare': 2175,
+      'lab_medinova': 1500
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '24 Hours'
+  },
+  {
+    id: '51',
+    name: 'Blood Culture & Sensitivity (Blood C/S)',
+    description: 'Detects bloodstream infections and sepsis to determine effective antimicrobial therapy.',
+    price: 950,
+    originalPrice: 1300,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1093,
+      'lab_ibnsina': 998,
+      'lab_birdem': 855,
+      'lab_bsmmu': 713,
+      'lab_praava': 1140,
+      'lab_evercare': 1330,
+      'lab_medinova': 950
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1560,
+      'lab_ibnsina': 1430,
+      'lab_birdem': 1235,
+      'lab_bsmmu': 1040,
+      'lab_praava': 1625,
+      'lab_evercare': 1885,
+      'lab_medinova': 1300
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '72 Hours'
+  },
+  {
+    id: '52',
+    name: 'Typhoid Typhidot IgM & IgG Rapid Test',
+    description: 'Rapid and specific antibody test for early detection of Salmonella typhi infection.',
+    price: 600,
+    originalPrice: 800,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 690,
+      'lab_ibnsina': 630,
+      'lab_birdem': 540,
+      'lab_bsmmu': 450,
+      'lab_praava': 720,
+      'lab_evercare': 840,
+      'lab_medinova': 600
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 960,
+      'lab_ibnsina': 880,
+      'lab_birdem': 760,
+      'lab_bsmmu': 640,
+      'lab_praava': 1000,
+      'lab_evercare': 1160,
+      'lab_medinova': 800
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '12 Hours'
+  },
+  {
+    id: '53',
+    name: 'Malaria Parasite Antigen (MP ICT & Blood Film)',
+    description: 'Detects Plasmodium parasites using rapid antigen ICT card and peripheral blood smear.',
+    price: 450,
+    originalPrice: 650,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 518,
+      'lab_ibnsina': 473,
+      'lab_birdem': 405,
+      'lab_bsmmu': 338,
+      'lab_praava': 540,
+      'lab_evercare': 630,
+      'lab_medinova': 450
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 780,
+      'lab_ibnsina': 715,
+      'lab_birdem': 618,
+      'lab_bsmmu': 520,
+      'lab_praava': 813,
+      'lab_evercare': 943,
+      'lab_medinova': 650
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '6 Hours'
+  },
+  {
+    id: '54',
+    name: 'Chikungunya Virus IgM Antibody',
+    description: 'Serological detection of acute Chikungunya viral infection antibodies in blood.',
+    price: 900,
+    originalPrice: 1200,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1035,
+      'lab_ibnsina': 945,
+      'lab_birdem': 810,
+      'lab_bsmmu': 675,
+      'lab_praava': 1080,
+      'lab_evercare': 1260,
+      'lab_medinova': 900
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1440,
+      'lab_ibnsina': 1320,
+      'lab_birdem': 1140,
+      'lab_bsmmu': 960,
+      'lab_praava': 1500,
+      'lab_evercare': 1740,
+      'lab_medinova': 1200
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '24 Hours'
+  },
+  {
+    id: '55',
+    name: 'Anti-HBs Antibody Titre (Hepatitis B Immunity)',
+    description: 'Measures immunity level and vaccine response against Hepatitis B virus.',
+    price: 700,
+    originalPrice: 950,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 805,
+      'lab_ibnsina': 735,
+      'lab_birdem': 630,
+      'lab_bsmmu': 525,
+      'lab_praava': 840,
+      'lab_evercare': 980,
+      'lab_medinova': 700
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1140,
+      'lab_ibnsina': 1045,
+      'lab_birdem': 903,
+      'lab_bsmmu': 760,
+      'lab_praava': 1188,
+      'lab_evercare': 1378,
+      'lab_medinova': 950
+    },
+    category: 'Liver',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '24 Hours'
+  },
+  {
+    id: '56',
+    name: 'Anti-HBc Total (Hepatitis B Core Antibody)',
+    description: 'Differentiates past resolved from ongoing Hepatitis B viral exposure.',
+    price: 950,
+    originalPrice: 1300,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1093,
+      'lab_ibnsina': 998,
+      'lab_birdem': 855,
+      'lab_bsmmu': 713,
+      'lab_praava': 1140,
+      'lab_evercare': 1330,
+      'lab_medinova': 950
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1560,
+      'lab_ibnsina': 1430,
+      'lab_birdem': 1235,
+      'lab_bsmmu': 1040,
+      'lab_praava': 1625,
+      'lab_evercare': 1885,
+      'lab_medinova': 1300
+    },
+    category: 'Liver',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '24 Hours'
+  },
+  {
+    id: '57',
+    name: 'Anti-HAV IgM (Acute Hepatitis A Viral)',
+    description: 'Detects acute infectious Hepatitis A viral infection in patients with sudden jaundice.',
+    price: 900,
+    originalPrice: 1250,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1035,
+      'lab_ibnsina': 945,
+      'lab_birdem': 810,
+      'lab_bsmmu': 675,
+      'lab_praava': 1080,
+      'lab_evercare': 1260,
+      'lab_medinova': 900
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1500,
+      'lab_ibnsina': 1375,
+      'lab_birdem': 1188,
+      'lab_bsmmu': 1000,
+      'lab_praava': 1563,
+      'lab_evercare': 1813,
+      'lab_medinova': 1250
+    },
+    category: 'Liver',
+    image: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '24 Hours'
+  },
+  {
+    id: '58',
+    name: 'Anti-HEV IgM (Acute Hepatitis E)',
+    description: 'Diagnoses acute waterborne Hepatitis E viral hepatitis in serum.',
+    price: 950,
+    originalPrice: 1300,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1093,
+      'lab_ibnsina': 998,
+      'lab_birdem': 855,
+      'lab_bsmmu': 713,
+      'lab_praava': 1140,
+      'lab_evercare': 1330,
+      'lab_medinova': 950
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1560,
+      'lab_ibnsina': 1430,
+      'lab_birdem': 1235,
+      'lab_bsmmu': 1040,
+      'lab_praava': 1625,
+      'lab_evercare': 1885,
+      'lab_medinova': 1300
+    },
+    category: 'Liver',
+    image: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '24 Hours'
+  },
+  {
+    id: '59',
+    name: 'TPHA (Treponema Pallidum Hemagglutination Assay)',
+    description: 'Specific confirmatory treponemal antibody test for Syphilis.',
+    price: 600,
+    originalPrice: 850,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 690,
+      'lab_ibnsina': 630,
+      'lab_birdem': 540,
+      'lab_bsmmu': 450,
+      'lab_praava': 720,
+      'lab_evercare': 840,
+      'lab_medinova': 600
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1020,
+      'lab_ibnsina': 935,
+      'lab_birdem': 808,
+      'lab_bsmmu': 680,
+      'lab_praava': 1063,
+      'lab_evercare': 1233,
+      'lab_medinova': 850
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '24 Hours'
+  },
+  {
+    id: '60',
+    name: 'TORCH 10 Profile (Toxoplasma, Rubella, CMV, HSV)',
+    description: 'Comprehensive prenatal screen for Toxoplasma, Rubella, Cytomegalovirus, and Herpes.',
+    price: 3600,
+    originalPrice: 4800,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 4140,
+      'lab_ibnsina': 3780,
+      'lab_birdem': 3240,
+      'lab_bsmmu': 2700,
+      'lab_praava': 4320,
+      'lab_evercare': 5040,
+      'lab_medinova': 3600
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 5760,
+      'lab_ibnsina': 5280,
+      'lab_birdem': 4560,
+      'lab_bsmmu': 3840,
+      'lab_praava': 6000,
+      'lab_evercare': 6960,
+      'lab_medinova': 4800
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '48 Hours'
+  },
+  {
+    id: '61',
+    name: 'Prothrombin Time with INR (PT-INR)',
+    description: 'Monitors oral anticoagulant therapy (Warfarin) and liver extrinsic clotting factors.',
+    price: 600,
+    originalPrice: 800,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 690,
+      'lab_ibnsina': 630,
+      'lab_birdem': 540,
+      'lab_bsmmu': 450,
+      'lab_praava': 720,
+      'lab_evercare': 840,
+      'lab_medinova': 600
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 960,
+      'lab_ibnsina': 880,
+      'lab_birdem': 760,
+      'lab_bsmmu': 640,
+      'lab_praava': 1000,
+      'lab_evercare': 1160,
+      'lab_medinova': 800
+    },
+    category: 'Heart',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '12 Hours'
+  },
+  {
+    id: '62',
+    name: 'Activated Partial Thromboplastin Time (APTT)',
+    description: 'Screens intrinsic clotting pathway defects and monitors heparin therapy.',
+    price: 650,
+    originalPrice: 850,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 747,
+      'lab_ibnsina': 683,
+      'lab_birdem': 585,
+      'lab_bsmmu': 488,
+      'lab_praava': 780,
+      'lab_evercare': 910,
+      'lab_medinova': 650
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1020,
+      'lab_ibnsina': 935,
+      'lab_birdem': 808,
+      'lab_bsmmu': 680,
+      'lab_praava': 1063,
+      'lab_evercare': 1233,
+      'lab_medinova': 850
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '12 Hours'
+  },
+  {
+    id: '63',
+    name: 'D-Dimer Quantitative Assay',
+    description: 'Aids in ruling out deep vein thrombosis (DVT) and pulmonary embolism (PE).',
+    price: 1300,
+    originalPrice: 1700,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1495,
+      'lab_ibnsina': 1365,
+      'lab_birdem': 1170,
+      'lab_bsmmu': 975,
+      'lab_praava': 1560,
+      'lab_evercare': 1820,
+      'lab_medinova': 1300
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 2040,
+      'lab_ibnsina': 1870,
+      'lab_birdem': 1615,
+      'lab_bsmmu': 1360,
+      'lab_praava': 2125,
+      'lab_evercare': 2465,
+      'lab_medinova': 1700
+    },
+    category: 'Heart',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '12 Hours'
+  },
+  {
+    id: '64',
+    name: 'Hemoglobin Electrophoresis (HPLC / Thalassemia)',
+    description: 'Gold standard screening for Thalassemia trait and hemoglobin variants (Hb E, Hb S).',
+    price: 1400,
+    originalPrice: 1900,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1610,
+      'lab_ibnsina': 1470,
+      'lab_birdem': 1260,
+      'lab_bsmmu': 1050,
+      'lab_praava': 1680,
+      'lab_evercare': 1960,
+      'lab_medinova': 1400
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 2280,
+      'lab_ibnsina': 2090,
+      'lab_birdem': 1805,
+      'lab_bsmmu': 1520,
+      'lab_praava': 2375,
+      'lab_evercare': 2755,
+      'lab_medinova': 1900
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '24-48 Hours'
+  },
+  {
+    id: '65',
+    name: 'Peripheral Blood Smear (PBF)',
+    description: 'Microscopic morphology of RBCs, WBCs, and platelets to evaluate leukemia and anemia.',
+    price: 400,
+    originalPrice: 550,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 460,
+      'lab_ibnsina': 420,
+      'lab_birdem': 360,
+      'lab_bsmmu': 300,
+      'lab_praava': 480,
+      'lab_evercare': 560,
+      'lab_medinova': 400
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 660,
+      'lab_ibnsina': 605,
+      'lab_birdem': 523,
+      'lab_bsmmu': 440,
+      'lab_praava': 688,
+      'lab_evercare': 798,
+      'lab_medinova': 550
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '12 Hours'
+  },
+  {
+    id: '66',
+    name: 'Reticulocyte Count',
+    description: 'Measures bone marrow erythropoietic production and response to anemia treatment.',
+    price: 350,
+    originalPrice: 500,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 402,
+      'lab_ibnsina': 368,
+      'lab_birdem': 315,
+      'lab_bsmmu': 263,
+      'lab_praava': 420,
+      'lab_evercare': 490,
+      'lab_medinova': 350
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 600,
+      'lab_ibnsina': 550,
+      'lab_birdem': 475,
+      'lab_bsmmu': 400,
+      'lab_praava': 625,
+      'lab_evercare': 725,
+      'lab_medinova': 500
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '12 Hours'
+  },
+  {
+    id: '67',
+    name: 'Bleeding Time & Clotting Time (BT & CT)',
+    description: 'Pre-operative screening of primary platelet plug formation and coagulation time.',
+    price: 250,
+    originalPrice: 350,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 288,
+      'lab_ibnsina': 263,
+      'lab_birdem': 225,
+      'lab_bsmmu': 188,
+      'lab_praava': 300,
+      'lab_evercare': 350,
+      'lab_medinova': 250
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 420,
+      'lab_ibnsina': 385,
+      'lab_birdem': 333,
+      'lab_bsmmu': 280,
+      'lab_praava': 438,
+      'lab_evercare': 508,
+      'lab_medinova': 350
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '2 Hours'
+  },
+  {
+    id: '68',
+    name: 'Serum Total Testosterone Test',
+    description: 'Measures total androgen testosterone level in men and women.',
+    price: 950,
+    originalPrice: 1300,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1093,
+      'lab_ibnsina': 998,
+      'lab_birdem': 855,
+      'lab_bsmmu': 713,
+      'lab_praava': 1140,
+      'lab_evercare': 1330,
+      'lab_medinova': 950
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1560,
+      'lab_ibnsina': 1430,
+      'lab_birdem': 1235,
+      'lab_bsmmu': 1040,
+      'lab_praava': 1625,
+      'lab_evercare': 1885,
+      'lab_medinova': 1300
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '24 Hours'
+  },
+  {
+    id: '69',
+    name: 'Serum Prolactin Hormone Test',
+    description: 'Evaluates hyperprolactinemia, pituitary adenoma, irregular menses, and infertility.',
+    price: 850,
+    originalPrice: 1150,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 977,
+      'lab_ibnsina': 893,
+      'lab_birdem': 765,
+      'lab_bsmmu': 638,
+      'lab_praava': 1020,
+      'lab_evercare': 1190,
+      'lab_medinova': 850
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1380,
+      'lab_ibnsina': 1265,
+      'lab_birdem': 1093,
+      'lab_bsmmu': 920,
+      'lab_praava': 1438,
+      'lab_evercare': 1668,
+      'lab_medinova': 1150
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '24 Hours'
+  },
+  {
+    id: '70',
+    name: 'Follicle Stimulating Hormone (Serum FSH)',
+    description: 'Evaluates ovarian reserve, menopausal status, and testicular function.',
+    price: 800,
+    originalPrice: 1100,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 920,
+      'lab_ibnsina': 840,
+      'lab_birdem': 720,
+      'lab_bsmmu': 600,
+      'lab_praava': 960,
+      'lab_evercare': 1120,
+      'lab_medinova': 800
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1320,
+      'lab_ibnsina': 1210,
+      'lab_birdem': 1045,
+      'lab_bsmmu': 880,
+      'lab_praava': 1375,
+      'lab_evercare': 1595,
+      'lab_medinova': 1100
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '24 Hours'
+  },
+  {
+    id: '71',
+    name: 'Luteinizing Hormone (Serum LH)',
+    description: 'Assesses ovulation triggers and aids in diagnosis of Polycystic Ovary Syndrome (PCOS).',
+    price: 800,
+    originalPrice: 1100,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 920,
+      'lab_ibnsina': 840,
+      'lab_birdem': 720,
+      'lab_bsmmu': 600,
+      'lab_praava': 960,
+      'lab_evercare': 1120,
+      'lab_medinova': 800
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1320,
+      'lab_ibnsina': 1210,
+      'lab_birdem': 1045,
+      'lab_bsmmu': 880,
+      'lab_praava': 1375,
+      'lab_evercare': 1595,
+      'lab_medinova': 1100
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '24 Hours'
+  },
+  {
+    id: '72',
+    name: 'Anti-Mullerian Hormone (AMH - Ovarian Reserve)',
+    description: 'Gold standard blood marker for female ovarian follicular reserve and fertility lifespan.',
+    price: 2500,
+    originalPrice: 3200,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 2875,
+      'lab_ibnsina': 2625,
+      'lab_birdem': 2250,
+      'lab_bsmmu': 1875,
+      'lab_praava': 3000,
+      'lab_evercare': 3500,
+      'lab_medinova': 2500
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 3840,
+      'lab_ibnsina': 3520,
+      'lab_birdem': 3040,
+      'lab_bsmmu': 2560,
+      'lab_praava': 4000,
+      'lab_evercare': 4640,
+      'lab_medinova': 3200
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '24-48 Hours'
+  },
+  {
+    id: '73',
+    name: 'Serum Cortisol Hormone Test',
+    description: 'Measures adrenal gland function and assesses Cushing syndrome and Addison disease.',
+    price: 900,
+    originalPrice: 1250,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1035,
+      'lab_ibnsina': 945,
+      'lab_birdem': 810,
+      'lab_bsmmu': 675,
+      'lab_praava': 1080,
+      'lab_evercare': 1260,
+      'lab_medinova': 900
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1500,
+      'lab_ibnsina': 1375,
+      'lab_birdem': 1188,
+      'lab_bsmmu': 1000,
+      'lab_praava': 1563,
+      'lab_evercare': 1813,
+      'lab_medinova': 1250
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '24 Hours'
+  },
+  {
+    id: '74',
+    name: 'Beta hCG Quantitative Serum Test',
+    description: 'Quantitative blood test confirming early pregnancy and gestational development.',
+    price: 950,
+    originalPrice: 1300,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1093,
+      'lab_ibnsina': 998,
+      'lab_birdem': 855,
+      'lab_bsmmu': 713,
+      'lab_praava': 1140,
+      'lab_evercare': 1330,
+      'lab_medinova': 950
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1560,
+      'lab_ibnsina': 1430,
+      'lab_birdem': 1235,
+      'lab_bsmmu': 1040,
+      'lab_praava': 1625,
+      'lab_evercare': 1885,
+      'lab_medinova': 1300
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '12 Hours'
+  },
+  {
+    id: '75',
+    name: 'Fasting Serum Insulin Test',
+    description: 'Evaluates insulin resistance, metabolic syndrome, and prediabetes pathophysiology.',
+    price: 1100,
+    originalPrice: 1500,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1265,
+      'lab_ibnsina': 1155,
+      'lab_birdem': 990,
+      'lab_bsmmu': 825,
+      'lab_praava': 1320,
+      'lab_evercare': 1540,
+      'lab_medinova': 1100
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1800,
+      'lab_ibnsina': 1650,
+      'lab_birdem': 1425,
+      'lab_bsmmu': 1200,
+      'lab_praava': 1875,
+      'lab_evercare': 2175,
+      'lab_medinova': 1500
+    },
+    category: 'Diabetes',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '24 Hours'
+  },
+  {
+    id: '76',
+    name: 'HOMA-IR Insulin Resistance Index',
+    description: 'Calculates quantitative homeostatic model assessment of insulin resistance.',
+    price: 1300,
+    originalPrice: 1750,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1495,
+      'lab_ibnsina': 1365,
+      'lab_birdem': 1170,
+      'lab_bsmmu': 975,
+      'lab_praava': 1560,
+      'lab_evercare': 1820,
+      'lab_medinova': 1300
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 2100,
+      'lab_ibnsina': 1925,
+      'lab_birdem': 1663,
+      'lab_bsmmu': 1400,
+      'lab_praava': 2188,
+      'lab_evercare': 2538,
+      'lab_medinova': 1750
+    },
+    category: 'Diabetes',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '24 Hours'
+  },
+  {
+    id: '77',
+    name: 'Rheumatoid Factor (RA / RF Quantitative)',
+    description: 'Quantitative test for diagnosis of rheumatoid arthritis and autoimmune joint disease.',
+    price: 600,
+    originalPrice: 850,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 690,
+      'lab_ibnsina': 630,
+      'lab_birdem': 540,
+      'lab_bsmmu': 450,
+      'lab_praava': 720,
+      'lab_evercare': 840,
+      'lab_medinova': 600
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1020,
+      'lab_ibnsina': 935,
+      'lab_birdem': 808,
+      'lab_bsmmu': 680,
+      'lab_praava': 1063,
+      'lab_evercare': 1233,
+      'lab_medinova': 850
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '12 Hours'
+  },
+  {
+    id: '78',
+    name: 'Anti-CCP Antibody (Rheumatoid Marker)',
+    description: 'Highly specific diagnostic marker for early and aggressive rheumatoid arthritis.',
+    price: 1800,
+    originalPrice: 2400,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 2070,
+      'lab_ibnsina': 1890,
+      'lab_birdem': 1620,
+      'lab_bsmmu': 1350,
+      'lab_praava': 2160,
+      'lab_evercare': 2520,
+      'lab_medinova': 1800
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 2880,
+      'lab_ibnsina': 2640,
+      'lab_birdem': 2280,
+      'lab_bsmmu': 1920,
+      'lab_praava': 3000,
+      'lab_evercare': 3480,
+      'lab_medinova': 2400
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '24 Hours'
+  },
+  {
+    id: '79',
+    name: 'Antinuclear Antibody (ANA by IFA)',
+    description: 'Screens for Systemic Lupus Erythematosus (SLE) and connective tissue autoimmune diseases.',
+    price: 1200,
+    originalPrice: 1600,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1380,
+      'lab_ibnsina': 1260,
+      'lab_birdem': 1080,
+      'lab_bsmmu': 900,
+      'lab_praava': 1440,
+      'lab_evercare': 1680,
+      'lab_medinova': 1200
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1920,
+      'lab_ibnsina': 1760,
+      'lab_birdem': 1520,
+      'lab_bsmmu': 1280,
+      'lab_praava': 2000,
+      'lab_evercare': 2320,
+      'lab_medinova': 1600
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '24 Hours'
+  },
+  {
+    id: '80',
+    name: 'Anti-dsDNA Antibody (Quantitative)',
+    description: 'Confirms diagnosis and monitors disease activity in Systemic Lupus Erythematosus (SLE).',
+    price: 1600,
+    originalPrice: 2100,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1840,
+      'lab_ibnsina': 1680,
+      'lab_birdem': 1440,
+      'lab_bsmmu': 1200,
+      'lab_praava': 1920,
+      'lab_evercare': 2240,
+      'lab_medinova': 1600
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 2520,
+      'lab_ibnsina': 2310,
+      'lab_birdem': 1995,
+      'lab_bsmmu': 1680,
+      'lab_praava': 2625,
+      'lab_evercare': 3045,
+      'lab_medinova': 2100
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '24-48 Hours'
+  },
+  {
+    id: '81',
+    name: 'Serum Total IgE (Allergy & Asthma Level)',
+    description: 'Measures circulating immunoglobulin E to diagnose allergic conditions and atopy.',
+    price: 800,
+    originalPrice: 1100,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 920,
+      'lab_ibnsina': 840,
+      'lab_birdem': 720,
+      'lab_bsmmu': 600,
+      'lab_praava': 960,
+      'lab_evercare': 1120,
+      'lab_medinova': 800
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1320,
+      'lab_ibnsina': 1210,
+      'lab_birdem': 1045,
+      'lab_bsmmu': 880,
+      'lab_praava': 1375,
+      'lab_evercare': 1595,
+      'lab_medinova': 1100
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '24 Hours'
+  },
+  {
+    id: '82',
+    name: 'Antistreptolysin O (ASO Titre)',
+    description: 'Measures antibodies against Group A Streptococcus to detect post-streptococcal complications.',
+    price: 550,
+    originalPrice: 750,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 633,
+      'lab_ibnsina': 578,
+      'lab_birdem': 495,
+      'lab_bsmmu': 413,
+      'lab_praava': 660,
+      'lab_evercare': 770,
+      'lab_medinova': 550
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 900,
+      'lab_ibnsina': 825,
+      'lab_birdem': 713,
+      'lab_bsmmu': 600,
+      'lab_praava': 938,
+      'lab_evercare': 1088,
+      'lab_medinova': 750
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '12 Hours'
+  },
+  {
+    id: '83',
+    name: 'Carcinoembryonic Antigen (CEA Tumor Marker)',
+    description: 'Tumor marker primarily used to monitor colorectal and gastrointestinal malignancies.',
+    price: 1100,
+    originalPrice: 1500,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1265,
+      'lab_ibnsina': 1155,
+      'lab_birdem': 990,
+      'lab_bsmmu': 825,
+      'lab_praava': 1320,
+      'lab_evercare': 1540,
+      'lab_medinova': 1100
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1800,
+      'lab_ibnsina': 1650,
+      'lab_birdem': 1425,
+      'lab_bsmmu': 1200,
+      'lab_praava': 1875,
+      'lab_evercare': 2175,
+      'lab_medinova': 1500
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '24 Hours'
+  },
+  {
+    id: '84',
+    name: 'Cancer Antigen 125 (CA 125 - Ovarian Marker)',
+    description: 'Serum biomarker for ovarian tumor screening and monitoring therapeutic response.',
+    price: 1300,
+    originalPrice: 1750,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1495,
+      'lab_ibnsina': 1365,
+      'lab_birdem': 1170,
+      'lab_bsmmu': 975,
+      'lab_praava': 1560,
+      'lab_evercare': 1820,
+      'lab_medinova': 1300
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 2100,
+      'lab_ibnsina': 1925,
+      'lab_birdem': 1663,
+      'lab_bsmmu': 1400,
+      'lab_praava': 2188,
+      'lab_evercare': 2538,
+      'lab_medinova': 1750
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '24 Hours'
+  },
+  {
+    id: '85',
+    name: 'Cancer Antigen 15-3 (CA 15-3 - Breast Marker)',
+    description: 'Monitors clinical course and recurrence of metastatic breast malignancy.',
+    price: 1300,
+    originalPrice: 1750,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1495,
+      'lab_ibnsina': 1365,
+      'lab_birdem': 1170,
+      'lab_bsmmu': 975,
+      'lab_praava': 1560,
+      'lab_evercare': 1820,
+      'lab_medinova': 1300
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 2100,
+      'lab_ibnsina': 1925,
+      'lab_birdem': 1663,
+      'lab_bsmmu': 1400,
+      'lab_praava': 2188,
+      'lab_evercare': 2538,
+      'lab_medinova': 1750
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '24 Hours'
+  },
+  {
+    id: '86',
+    name: 'Cancer Antigen 19-9 (CA 19-9 - Pancreatic/Biliary)',
+    description: 'Tumor marker for pancreatic adenocarcinoma and hepatobiliary carcinoma evaluation.',
+    price: 1300,
+    originalPrice: 1750,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1495,
+      'lab_ibnsina': 1365,
+      'lab_birdem': 1170,
+      'lab_bsmmu': 975,
+      'lab_praava': 1560,
+      'lab_evercare': 1820,
+      'lab_medinova': 1300
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 2100,
+      'lab_ibnsina': 1925,
+      'lab_birdem': 1663,
+      'lab_bsmmu': 1400,
+      'lab_praava': 2188,
+      'lab_evercare': 2538,
+      'lab_medinova': 1750
+    },
+    category: 'Liver',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '24 Hours'
+  },
+  {
+    id: '87',
+    name: 'Alpha-Fetoprotein (AFP Liver Tumor Marker)',
+    description: 'Biomarker for hepatocellular carcinoma and germ cell testicular tumors.',
+    price: 1100,
+    originalPrice: 1500,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1265,
+      'lab_ibnsina': 1155,
+      'lab_birdem': 990,
+      'lab_bsmmu': 825,
+      'lab_praava': 1320,
+      'lab_evercare': 1540,
+      'lab_medinova': 1100
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1800,
+      'lab_ibnsina': 1650,
+      'lab_birdem': 1425,
+      'lab_bsmmu': 1200,
+      'lab_praava': 1875,
+      'lab_evercare': 2175,
+      'lab_medinova': 1500
+    },
+    category: 'Liver',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '24 Hours'
+  },
+  {
+    id: '88',
+    name: 'Serum Magnesium Test',
+    description: 'Evaluates neuromuscular excitability, cardiac arrhythmias, and electrolyte balance.',
+    price: 650,
+    originalPrice: 900,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 747,
+      'lab_ibnsina': 683,
+      'lab_birdem': 585,
+      'lab_bsmmu': 488,
+      'lab_praava': 780,
+      'lab_evercare': 910,
+      'lab_medinova': 650
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1080,
+      'lab_ibnsina': 990,
+      'lab_birdem': 855,
+      'lab_bsmmu': 720,
+      'lab_praava': 1125,
+      'lab_evercare': 1305,
+      'lab_medinova': 900
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '12 Hours'
+  },
+  {
+    id: '89',
+    name: 'Serum Inorganic Phosphate / Phosphorus',
+    description: 'Evaluates bone mineral metabolism, renal clearance, and hyperparathyroidism.',
+    price: 550,
+    originalPrice: 750,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 633,
+      'lab_ibnsina': 578,
+      'lab_birdem': 495,
+      'lab_bsmmu': 413,
+      'lab_praava': 660,
+      'lab_evercare': 770,
+      'lab_medinova': 550
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 900,
+      'lab_ibnsina': 825,
+      'lab_birdem': 713,
+      'lab_bsmmu': 600,
+      'lab_praava': 938,
+      'lab_evercare': 1088,
+      'lab_medinova': 750
+    },
+    category: 'Kidney',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '12 Hours'
+  },
+  {
+    id: '90',
+    name: 'Serum Ionized Calcium (Free Calcium)',
+    description: 'Measures physiologically active unbound free calcium in circulation.',
+    price: 700,
+    originalPrice: 950,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 805,
+      'lab_ibnsina': 735,
+      'lab_birdem': 630,
+      'lab_bsmmu': 525,
+      'lab_praava': 840,
+      'lab_evercare': 980,
+      'lab_medinova': 700
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1140,
+      'lab_ibnsina': 1045,
+      'lab_birdem': 903,
+      'lab_bsmmu': 760,
+      'lab_praava': 1188,
+      'lab_evercare': 1378,
+      'lab_medinova': 950
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '12 Hours'
+  },
+  {
+    id: '91',
+    name: 'Gamma Glutamyl Transferase (Gamma-GT / GGT)',
+    description: 'Sensitive hepatic enzyme marker for biliary obstruction and liver injury.',
+    price: 650,
+    originalPrice: 900,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 747,
+      'lab_ibnsina': 683,
+      'lab_birdem': 585,
+      'lab_bsmmu': 488,
+      'lab_praava': 780,
+      'lab_evercare': 910,
+      'lab_medinova': 650
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1080,
+      'lab_ibnsina': 990,
+      'lab_birdem': 855,
+      'lab_bsmmu': 720,
+      'lab_praava': 1125,
+      'lab_evercare': 1305,
+      'lab_medinova': 900
+    },
+    category: 'Liver',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '12 Hours'
+  },
+  {
+    id: '92',
+    name: 'Lactate Dehydrogenase (Serum LDH)',
+    description: 'Non-specific marker for tissue necrosis, hemolysis, and severe infections.',
+    price: 700,
+    originalPrice: 950,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 805,
+      'lab_ibnsina': 735,
+      'lab_birdem': 630,
+      'lab_bsmmu': 525,
+      'lab_praava': 840,
+      'lab_evercare': 980,
+      'lab_medinova': 700
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1140,
+      'lab_ibnsina': 1045,
+      'lab_birdem': 903,
+      'lab_bsmmu': 760,
+      'lab_praava': 1188,
+      'lab_evercare': 1378,
+      'lab_medinova': 950
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '12 Hours'
+  },
+  {
+    id: '93',
+    name: 'Creatine Kinase-MB (CK-MB Cardiac Marker)',
+    description: 'Myocardial specific enzyme for acute coronary syndrome and cardiac damage evaluation.',
+    price: 850,
+    originalPrice: 1150,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 977,
+      'lab_ibnsina': 893,
+      'lab_birdem': 765,
+      'lab_bsmmu': 638,
+      'lab_praava': 1020,
+      'lab_evercare': 1190,
+      'lab_medinova': 850
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1380,
+      'lab_ibnsina': 1265,
+      'lab_birdem': 1093,
+      'lab_bsmmu': 920,
+      'lab_praava': 1438,
+      'lab_evercare': 1668,
+      'lab_medinova': 1150
+    },
+    category: 'Heart',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '6 Hours'
+  },
+  {
+    id: '94',
+    name: 'Total Creatine Phosphokinase (Total CPK)',
+    description: 'Measures skeletal and cardiac muscle breakdown (myopathy evaluation).',
+    price: 700,
+    originalPrice: 950,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 805,
+      'lab_ibnsina': 735,
+      'lab_birdem': 630,
+      'lab_bsmmu': 525,
+      'lab_praava': 840,
+      'lab_evercare': 980,
+      'lab_medinova': 700
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1140,
+      'lab_ibnsina': 1045,
+      'lab_birdem': 903,
+      'lab_bsmmu': 760,
+      'lab_praava': 1188,
+      'lab_evercare': 1378,
+      'lab_medinova': 950
+    },
+    category: 'Heart',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '12 Hours'
+  },
+  {
+    id: '95',
+    name: 'Serum Folic Acid (Vitamin B9)',
+    description: 'Evaluates megaloblastic anemia, neural tube defects prevention, and malnutrition.',
+    price: 1100,
+    originalPrice: 1500,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1265,
+      'lab_ibnsina': 1155,
+      'lab_birdem': 990,
+      'lab_bsmmu': 825,
+      'lab_praava': 1320,
+      'lab_evercare': 1540,
+      'lab_medinova': 1100
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1800,
+      'lab_ibnsina': 1650,
+      'lab_birdem': 1425,
+      'lab_bsmmu': 1200,
+      'lab_praava': 1875,
+      'lab_evercare': 2175,
+      'lab_medinova': 1500
+    },
+    category: 'Vitamin',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '24 Hours'
+  },
+  {
+    id: '96',
+    name: 'Serum Zinc Level Test',
+    description: 'Essential trace mineral for wound healing, immune function, and pediatric growth.',
+    price: 1200,
+    originalPrice: 1650,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1380,
+      'lab_ibnsina': 1260,
+      'lab_birdem': 1080,
+      'lab_bsmmu': 900,
+      'lab_praava': 1440,
+      'lab_evercare': 1680,
+      'lab_medinova': 1200
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1980,
+      'lab_ibnsina': 1815,
+      'lab_birdem': 1568,
+      'lab_bsmmu': 1320,
+      'lab_praava': 2063,
+      'lab_evercare': 2393,
+      'lab_medinova': 1650
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '48 Hours'
+  },
+  {
+    id: '97',
+    name: 'Serum Copper Level Test',
+    description: 'Trace element evaluation for hepatic copper overload and Wilson disease.',
+    price: 1400,
+    originalPrice: 1900,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1610,
+      'lab_ibnsina': 1470,
+      'lab_birdem': 1260,
+      'lab_bsmmu': 1050,
+      'lab_praava': 1680,
+      'lab_evercare': 1960,
+      'lab_medinova': 1400
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 2280,
+      'lab_ibnsina': 2090,
+      'lab_birdem': 1805,
+      'lab_bsmmu': 1520,
+      'lab_praava': 2375,
+      'lab_evercare': 2755,
+      'lab_medinova': 1900
+    },
+    category: 'Liver',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '48 Hours'
+  },
+  {
+    id: '98',
+    name: 'Serum Ceruloplasmin Protein',
+    description: 'Diagnostic protein assay for inborn copper metabolism defects (Wilson disease).',
+    price: 1500,
+    originalPrice: 2000,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1725,
+      'lab_ibnsina': 1575,
+      'lab_birdem': 1350,
+      'lab_bsmmu': 1125,
+      'lab_praava': 1800,
+      'lab_evercare': 2100,
+      'lab_medinova': 1500
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 2400,
+      'lab_ibnsina': 2200,
+      'lab_birdem': 1900,
+      'lab_bsmmu': 1600,
+      'lab_praava': 2500,
+      'lab_evercare': 2900,
+      'lab_medinova': 2000
+    },
+    category: 'Liver',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '48 Hours'
+  },
+  {
+    id: '99',
+    name: 'Serum Procalcitonin (PCT - Sepsis Marker)',
+    description: 'Specific inflammatory marker distinguishing severe bacterial sepsis from viral infection.',
+    price: 2400,
+    originalPrice: 3200,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 2760,
+      'lab_ibnsina': 2520,
+      'lab_birdem': 2160,
+      'lab_bsmmu': 1800,
+      'lab_praava': 2880,
+      'lab_evercare': 3360,
+      'lab_medinova': 2400
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 3840,
+      'lab_ibnsina': 3520,
+      'lab_birdem': 3040,
+      'lab_bsmmu': 2560,
+      'lab_praava': 4000,
+      'lab_evercare': 4640,
+      'lab_medinova': 3200
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '12 Hours'
+  },
+  {
+    id: '100',
+    name: 'Anti-Thyroid Peroxidase (Anti-TPO Antibody)',
+    description: 'Identifies autoimmune etiology in Hashimoto thyroiditis and primary hypothyroidism.',
+    price: 1500,
+    originalPrice: 2000,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1725,
+      'lab_ibnsina': 1575,
+      'lab_birdem': 1350,
+      'lab_bsmmu': 1125,
+      'lab_praava': 1800,
+      'lab_evercare': 2100,
+      'lab_medinova': 1500
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 2400,
+      'lab_ibnsina': 2200,
+      'lab_birdem': 1900,
+      'lab_bsmmu': 1600,
+      'lab_praava': 2500,
+      'lab_evercare': 2900,
+      'lab_medinova': 2000
+    },
+    category: 'Thyroid',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '24 Hours'
   }
 ];
 

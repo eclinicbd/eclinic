@@ -151,14 +151,14 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {onResetDefaultTests && tests.length < 38 && (
+          {onResetDefaultTests && tests.length < 100 && (
             <button
               onClick={onResetDefaultTests}
               className="px-3.5 py-2 bg-sky-50 hover:bg-sky-600 text-sky-700 hover:text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all border border-sky-300 shadow-sm cursor-pointer"
-              title="Reset all 38 default diagnostic tests"
+              title="Reset all 100 default diagnostic tests"
             >
               <RotateCcw size={14} className="text-sky-600 group-hover:text-white" />
-              <span>{isBn ? '৩৮টি টেস্ট রিলোড' : 'Restore 38 Tests'}</span>
+              <span>{isBn ? '১০০টি টেস্ট রিলোড' : 'Restore 100 Tests'}</span>
             </button>
           )}
           <Button onClick={onOpenAddOrder} className="!py-2 !px-3.5 text-xs font-semibold flex items-center gap-1.5 shadow-sm bg-emerald-600 hover:bg-emerald-700 text-white">

@@ -113,10 +113,10 @@ export const AdminTests: React.FC<AdminTestsProps> = ({
               type="button"
               onClick={onResetDefaultTests}
               className="px-4 py-2.5 text-xs font-bold text-sky-700 hover:text-white bg-sky-50 hover:bg-sky-600 rounded-xl border border-sky-300 hover:border-sky-600 transition-all flex items-center gap-2 cursor-pointer shadow-sm hover:shadow-md shrink-0 active:scale-95"
-              title="Reset all 38 default diagnostic tests"
+              title="Reset all 100 default diagnostic tests"
             >
               <RotateCcw size={15} className="text-sky-600 group-hover:text-white shrink-0 animate-spin-hover" />
-              <span>{lang === 'bn' ? '🔄 ৩৮টি ডিফল্ট টেস্ট রিলোড' : '🔄 Restore 38 Defaults'}</span>
+              <span>{lang === 'bn' ? '🔄 ১০০টি ডিফল্ট টেস্ট রিলোড' : '🔄 Restore 100 Defaults'}</span>
             </button>
           )}
 
@@ -182,8 +182,8 @@ export const AdminTests: React.FC<AdminTestsProps> = ({
         </div>
       </div>
 
-      {/* Notice & Quick Restore Banner if tests count is less than 38 */}
-      {tests.length < 38 && onResetDefaultTests && (
+      {/* Notice & Quick Restore Banner if tests count is less than 100 */}
+      {tests.length < 100 && onResetDefaultTests && (
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-amber-950">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-amber-100 text-amber-800 rounded-xl">
@@ -191,12 +191,12 @@ export const AdminTests: React.FC<AdminTestsProps> = ({
             </div>
             <div>
               <p className="text-xs sm:text-sm font-bold text-slate-900">
-                {lang === 'bn' ? `বর্তমানে ${tests.length}টি টেস্ট রয়েছে (ডিফল্ট ক্যাটালগে মোট ৩৮টি টেস্ট)` : `Currently showing ${tests.length} tests (38 tests in default catalog)`}
+                {lang === 'bn' ? `বর্তমানে ${tests.length}টি টেস্ট রয়েছে (ডিফল্ট ক্যাটালগে মোট ১০০টি টেস্ট)` : `Currently showing ${tests.length} tests (100 tests in default catalog)`}
               </p>
               <p className="text-[11px] text-slate-600">
                 {lang === 'bn' 
-                  ? 'বাকি টেস্টগুলো ক্যাটালগে এক ক্লিকেই ফেরত আনতে নিচের বাটনে চাপ দিন:' 
-                  : 'Click below to restore all 38 default diagnostic tests into your catalog:'}
+                  ? 'রক্ত, ইউরিন ও স্টুলের সব নতুন টেস্ট ক্যাটালগে এক ক্লিকেই রিলোড করতে নিচের বাটনে চাপ দিন:' 
+                  : 'Click below to restore all 100 comprehensive blood, urine and stool tests into your catalog:'}
               </p>
             </div>
           </div>
@@ -206,7 +206,7 @@ export const AdminTests: React.FC<AdminTestsProps> = ({
             className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all shrink-0 cursor-pointer"
           >
             <RotateCcw size={14} />
-            <span>{lang === 'bn' ? '৩৮টি টেস্ট রিলোড করুন' : 'Restore All 38 Tests'}</span>
+            <span>{lang === 'bn' ? '১০০টি টেস্ট রিলোড করুন' : 'Restore All 100 Tests'}</span>
           </button>
         </div>
       )}
