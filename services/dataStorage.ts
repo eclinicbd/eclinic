@@ -15,8 +15,8 @@ import {
 } from './firebase';
 
 const STORAGE_KEYS = {
-  TESTS_BN: 'labhome_tests_bn_v4',
-  TESTS_EN: 'labhome_tests_en_v4',
+  TESTS_BN: 'labhome_tests_bn_v3',
+  TESTS_EN: 'labhome_tests_en_v3',
   PACKAGES_BN: 'labhome_packages_bn_v1',
   PACKAGES_EN: 'labhome_packages_en_v1',
   LABS_BN: 'labhome_labs_bn_v3',
@@ -608,52 +608,34 @@ export const getStoredTests = (lang: Language): TestPackage[] => {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed) && parsed.length > 0) {
         let changed = false;
-        const parsedMap = new Map(parsed.map((p: TestPackage) => [p.id, p]));
-        
-        // Ensure every default test is present, updated, and active for lab_popular at 250 taka
-        const updatedList: TestPackage[] = defaultList.map(def => {
-          const existing = parsedMap.get(def.id);
-          if (!existing) {
-            changed = true;
-            return {
-              ...def,
-              priceByLab: {
-                ...(def.priceByLab || {}),
-                'lab_popular': 250
-              },
-              hiddenLabs: (def.hiddenLabs || []).filter(h => h !== 'lab_popular')
-            };
-          }
+        const existingIds = new Set(parsed.map((p: TestPackage) => p.id));
+        const missingDefaults = defaultList.filter(d => !existingIds.has(d.id));
+        let updatedList: TestPackage[] = parsed;
+        if (missingDefaults.length > 0) {
+          updatedList = [...parsed, ...missingDefaults];
+          changed = true;
+        }
 
-          const curPrice = existing.priceByLab?.['lab_popular'];
-          const isHiddenPopular = (existing.hiddenLabs || []).includes('lab_popular');
-          
-          if (curPrice !== 250 || isHiddenPopular || existing.name !== def.name) {
-            changed = true;
-            return {
-              ...existing,
-              name: def.name,
-              description: def.description,
-              categories: def.categories || (def.category ? [def.category] : []),
-              priceByLab: {
-                ...(existing.priceByLab || {}),
-                'lab_popular': 250
-              },
-              hiddenLabs: (existing.hiddenLabs || []).filter(h => h !== 'lab_popular')
-            };
+        // Always ensure Popular Diagnostic Centre Ltd (lab_popular) price is 250 for default tests
+        updatedList = updatedList.map(test => {
+          const isDefault = defaultList.some(d => d.id === test.id);
+          if (isDefault) {
+            const currentPopularPrice = test.priceByLab?.['lab_popular'];
+            if (currentPopularPrice !== 250) {
+              changed = true;
+              return {
+                ...test,
+                priceByLab: {
+                  ...(test.priceByLab || {}),
+                  'lab_popular': 250
+                }
+              };
+            }
           }
-
-          return existing;
+          return test;
         });
 
-        // Retain custom admin-added tests
-        parsed.forEach((p: TestPackage) => {
-          if (!defaultList.some(d => d.id === p.id)) {
-            updatedList.push(p);
-          }
-        });
-
-        if (changed || updatedList.length !== parsed.length) {
+        if (changed) {
           localStorage.setItem(key, JSON.stringify(updatedList));
         }
         return updatedList;
@@ -662,13 +644,7 @@ export const getStoredTests = (lang: Language): TestPackage[] => {
   } catch (e) {
     console.error("Failed to parse stored tests:", e);
   }
-  
-  const defaults = getDefaultTests(lang);
-  try {
-    const key = lang === 'en' ? STORAGE_KEYS.TESTS_EN : STORAGE_KEYS.TESTS_BN;
-    localStorage.setItem(key, JSON.stringify(defaults));
-  } catch (e) {}
-  return defaults;
+  return getDefaultTests(lang);
 };
 
 export const saveStoredTests = (lang: Language, tests: TestPackage[]): void => {
@@ -680,17 +656,7 @@ export const saveStoredTests = (lang: Language, tests: TestPackage[]): void => {
     const otherLang = lang === 'en' ? 'bn' : 'en';
     const otherKey = otherLang === 'en' ? STORAGE_KEYS.TESTS_EN : STORAGE_KEYS.TESTS_BN;
     const otherStored = localStorage.getItem(otherKey);
-    let otherTests: TestPackage[] = [];
-    if (otherStored) {
-      try {
-        const parsedOther = JSON.parse(otherStored);
-        otherTests = Array.isArray(parsedOther) ? parsedOther : getDefaultTests(otherLang);
-      } catch {
-        otherTests = getDefaultTests(otherLang);
-      }
-    } else {
-      otherTests = getDefaultTests(otherLang);
-    }
+    let otherTests: TestPackage[] = otherStored ? JSON.parse(otherStored) : getDefaultTests(otherLang);
     
     // Update existing or append new
     const updatedOtherTests = [...otherTests];
@@ -705,9 +671,7 @@ export const saveStoredTests = (lang: Language, tests: TestPackage[]): void => {
           priceByLab: test.priceByLab,
           originalPriceByLab: test.originalPriceByLab,
           isHidden: test.isHidden,
-          hiddenLabs: test.hiddenLabs || [],
           category: test.category,
-          categories: test.categories || (test.category ? [test.category] : []),
           turnaroundTime: test.turnaroundTime,
           image: test.image,
           orderCount: test.orderCount
@@ -716,9 +680,10 @@ export const saveStoredTests = (lang: Language, tests: TestPackage[]): void => {
         updatedOtherTests.unshift({ ...test });
       }
     });
-    // Remove deleted tests from other language too
+    // Remove deleted custom tests from other language, but preserve default catalog tests
+    const defaultIds = new Set(getDefaultTests(lang).map(d => d.id));
     const currentIds = new Set(tests.map(t => t.id));
-    const filteredOther = updatedOtherTests.filter(ot => currentIds.has(ot.id));
+    const filteredOther = updatedOtherTests.filter(ot => currentIds.has(ot.id) || defaultIds.has(ot.id));
     localStorage.setItem(otherKey, JSON.stringify(filteredOther));
   } catch (e) {
     console.error("Failed to save tests to storage:", e);
@@ -1057,8 +1022,8 @@ export const registerPatient = (
     const patients = getStoredPatients();
     const cleanPhone = patientData.phone.replace(/[^0-9]/g, '');
 
-    if (cleanPhone.length < 11) {
-      return { success: false, message: '১১ ডিজিটের কম মোবাইল নম্বর দিয়ে রেজিস্ট্রেশন করা যাবে না।' };
+    if (cleanPhone.length !== 11) {
+      return { success: false, message: 'মোবাইল নম্বরটি অবশ্যই সঠিক ১১ ডিজিট হতে হবে (কম বা বেশি নয়, যেমন: 01712345678)।' };
     }
     
     // Check if phone already registered

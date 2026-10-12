@@ -1950,7 +1950,12 @@ export const OrderFormModal: React.FC<OrderModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customerPhone.trim() || selectedTestIds.length === 0) return;
+    const cleanPhone = customerPhone.replace(/[^0-9]/g, '');
+    if (!customerPhone.trim() || cleanPhone.length !== 11) {
+      alert(lang === 'bn' ? 'রোগী / কাস্টমারের মোবাইল নম্বরটি অবশ্যই সঠিক ১১ ডিজিট হতে হবে (কম বা বেশি নয়, যেমন: 01712345678)।' : 'Customer mobile number must be exactly 11 digits (e.g. 01712345678).');
+      return;
+    }
+    if (selectedTestIds.length === 0) return;
 
     const selectedTestsList = tests.filter(t => selectedTestIds.includes(t.id));
     const bookingItems = selectedTestsList.map(t => {
@@ -2027,10 +2032,11 @@ export const OrderFormModal: React.FC<OrderModalProps> = ({
               <input 
                 type="tel" 
                 required 
+                maxLength={11}
                 value={customerPhone} 
                 onChange={(e) => setCustomerPhone(e.target.value)}
                 placeholder="017XXXXXXXX" 
-                className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none font-semibold"
+                className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none font-semibold font-mono"
               />
             </div>
           </div>

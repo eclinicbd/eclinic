@@ -965,6 +965,186 @@ const TESTS_BN: TestPackage[] = [
     category: 'Vitamin',
     image: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=400',
     turnaroundTime: '৪৮ ঘন্টা'
+  },
+  {
+    id: '33',
+    name: 'সিরাম অ্যালবুমিন / টোটাল প্রোটিন (Serum Albumin / Total Protein)',
+    description: 'লিভারের কার্যক্ষমতা, পুষ্টির মাত্রা এবং কিডনি রোগের চিকিৎসায় প্রোটিনের মাত্রা পরিমাপ।',
+    price: 450,
+    originalPrice: 600,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 500,
+      'lab_ibnsina': 450,
+      'lab_birdem': 400,
+      'lab_bsmmu': 300,
+      'lab_praava': 550,
+      'lab_evercare': 700,
+      'lab_medinova': 450
+    },
+    originalPriceByLab: {
+      'lab_popular': 350,
+      'lab_labaid': 600,
+      'lab_ibnsina': 550,
+      'lab_birdem': 450,
+      'lab_bsmmu': 350,
+      'lab_praava': 700,
+      'lab_evercare': 850,
+      'lab_medinova': 550
+    },
+    category: 'Liver',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '১২ ঘন্টা'
+  },
+  {
+    id: '34',
+    name: 'আয়রন ও টিআইবিসি প্রোফাইল (Serum Iron & TIBC)',
+    description: 'রক্তে আয়রনের পরিমাণ, রক্তস্বল্পতা (Anemia) ও আয়রন ঘাটতি নিখুঁতভাবে নিরূপণ।',
+    price: 900,
+    originalPrice: 1200,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1100,
+      'lab_ibnsina': 950,
+      'lab_birdem': 800,
+      'lab_bsmmu': 650,
+      'lab_praava': 1200,
+      'lab_evercare': 1400,
+      'lab_medinova': 900
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1300,
+      'lab_ibnsina': 1150,
+      'lab_birdem': 950,
+      'lab_bsmmu': 800,
+      'lab_praava': 1400,
+      'lab_evercare': 1650,
+      'lab_medinova': 1100
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1582718134360-15949d0dd4ca?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '২৪ ঘন্টা'
+  },
+  {
+    id: '35',
+    name: 'সিরাম ফেরিটিন (Serum Ferritin - Iron Store)',
+    description: 'শরীরের কোষে সংরক্ষিত আয়রনের প্রকৃত পরিমাণ এবং দীর্ঘমেয়াদী আয়রন ঘাটতি মূল্যায়ন।',
+    price: 1100,
+    originalPrice: 1400,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1300,
+      'lab_ibnsina': 1100,
+      'lab_birdem': 900,
+      'lab_bsmmu': 750,
+      'lab_praava': 1350,
+      'lab_evercare': 1600,
+      'lab_medinova': 1100
+    },
+    originalPriceByLab: {
+      'lab_popular': 450,
+      'lab_labaid': 1550,
+      'lab_ibnsina': 1300,
+      'lab_birdem': 1100,
+      'lab_bsmmu': 900,
+      'lab_praava': 1600,
+      'lab_evercare': 1900,
+      'lab_medinova': 1300
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '২৪ ঘন্টা'
+  },
+  {
+    id: '36',
+    name: 'পিএসএ - প্রোস্টেট স্পেসিফিক অ্যান্টিজেন (Total PSA)',
+    description: 'পুরুষদের প্রোস্টেট গ্ল্যান্ডের স্বাস্থ্য পরীক্ষা ও প্রোস্টেট ক্যান্সার বা ইনফেকশন স্ক্রিনিং।',
+    price: 1200,
+    originalPrice: 1500,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1400,
+      'lab_ibnsina': 1200,
+      'lab_birdem': 1000,
+      'lab_bsmmu': 800,
+      'lab_praava': 1450,
+      'lab_evercare': 1700,
+      'lab_medinova': 1200
+    },
+    originalPriceByLab: {
+      'lab_popular': 450,
+      'lab_labaid': 1650,
+      'lab_ibnsina': 1400,
+      'lab_birdem': 1200,
+      'lab_bsmmu': 1000,
+      'lab_praava': 1700,
+      'lab_evercare': 2000,
+      'lab_medinova': 1400
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '২৪ ঘন্টা'
+  },
+  {
+    id: '37',
+    name: 'কার্ডিয়াক ট্রোপোনিন আই (Troponin I - Cardiac Marker)',
+    description: 'হঠাৎ বুকব্যথা বা হার্ট অ্যাটাকের ঝুঁকি শনাক্তে অত্যন্ত সংবেদনশীল কার্ডিয়াক মার্কার।',
+    price: 1400,
+    originalPrice: 1800,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1600,
+      'lab_ibnsina': 1400,
+      'lab_birdem': 1200,
+      'lab_bsmmu': 900,
+      'lab_praava': 1700,
+      'lab_evercare': 1950,
+      'lab_medinova': 1400
+    },
+    originalPriceByLab: {
+      'lab_popular': 500,
+      'lab_labaid': 1900,
+      'lab_ibnsina': 1650,
+      'lab_birdem': 1400,
+      'lab_bsmmu': 1100,
+      'lab_praava': 2000,
+      'lab_evercare': 2300,
+      'lab_medinova': 1650
+    },
+    category: 'Heart',
+    image: 'https://images.unsplash.com/photo-1582718134360-15949d0dd4ca?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '৪-৬ ঘন্টা'
+  },
+  {
+    id: '38',
+    name: 'সিরাম অ্যামাইলেজ ও লাইপেজ (Serum Amylase & Lipase)',
+    description: 'তীব্র পেটব্যথা, অগ্ন্যাশয় প্রদাহ (Pancreatitis) ও পাচনতন্ত্রের স্বাস্থ্য মূল্যায়ন।',
+    price: 900,
+    originalPrice: 1200,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1100,
+      'lab_ibnsina': 950,
+      'lab_birdem': 800,
+      'lab_bsmmu': 600,
+      'lab_praava': 1150,
+      'lab_evercare': 1350,
+      'lab_medinova': 900
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1300,
+      'lab_ibnsina': 1150,
+      'lab_birdem': 950,
+      'lab_bsmmu': 750,
+      'lab_praava': 1350,
+      'lab_evercare': 1600,
+      'lab_medinova': 1100
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '১২ ঘন্টা'
   }
 ];
 
@@ -1928,6 +2108,186 @@ const TESTS_EN: TestPackage[] = [
     category: 'Vitamin',
     image: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=400',
     turnaroundTime: '48 Hours'
+  },
+  {
+    id: '33',
+    name: 'Serum Albumin / Total Protein',
+    description: 'Measures albumin and total protein levels to evaluate liver function, nutritional status, and kidney health.',
+    price: 450,
+    originalPrice: 600,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 500,
+      'lab_ibnsina': 450,
+      'lab_birdem': 400,
+      'lab_bsmmu': 300,
+      'lab_praava': 550,
+      'lab_evercare': 700,
+      'lab_medinova': 450
+    },
+    originalPriceByLab: {
+      'lab_popular': 350,
+      'lab_labaid': 600,
+      'lab_ibnsina': 550,
+      'lab_birdem': 450,
+      'lab_bsmmu': 350,
+      'lab_praava': 700,
+      'lab_evercare': 850,
+      'lab_medinova': 550
+    },
+    category: 'Liver',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '12 Hours'
+  },
+  {
+    id: '34',
+    name: 'Serum Iron & TIBC Profile',
+    description: 'Evaluates total iron levels, iron binding capacity, and helps diagnose iron-deficiency anemia.',
+    price: 900,
+    originalPrice: 1200,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1100,
+      'lab_ibnsina': 950,
+      'lab_birdem': 800,
+      'lab_bsmmu': 650,
+      'lab_praava': 1200,
+      'lab_evercare': 1400,
+      'lab_medinova': 900
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1300,
+      'lab_ibnsina': 1150,
+      'lab_birdem': 950,
+      'lab_bsmmu': 800,
+      'lab_praava': 1400,
+      'lab_evercare': 1650,
+      'lab_medinova': 1100
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1582718134360-15949d0dd4ca?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '24 Hours'
+  },
+  {
+    id: '35',
+    name: 'Serum Ferritin (Iron Storage Evaluation)',
+    description: 'Measures ferritin protein levels in blood to evaluate body iron reserves and chronic deficiency.',
+    price: 1100,
+    originalPrice: 1400,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1300,
+      'lab_ibnsina': 1100,
+      'lab_birdem': 900,
+      'lab_bsmmu': 750,
+      'lab_praava': 1350,
+      'lab_evercare': 1600,
+      'lab_medinova': 1100
+    },
+    originalPriceByLab: {
+      'lab_popular': 450,
+      'lab_labaid': 1550,
+      'lab_ibnsina': 1300,
+      'lab_birdem': 1100,
+      'lab_bsmmu': 900,
+      'lab_praava': 1600,
+      'lab_evercare': 1900,
+      'lab_medinova': 1300
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '24 Hours'
+  },
+  {
+    id: '36',
+    name: 'Prostate Specific Antigen (Total PSA)',
+    description: 'Screens and monitors prostate gland disorders, benign prostatic hyperplasia, and prostate health in men.',
+    price: 1200,
+    originalPrice: 1500,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1400,
+      'lab_ibnsina': 1200,
+      'lab_birdem': 1000,
+      'lab_bsmmu': 800,
+      'lab_praava': 1450,
+      'lab_evercare': 1700,
+      'lab_medinova': 1200
+    },
+    originalPriceByLab: {
+      'lab_popular': 450,
+      'lab_labaid': 1650,
+      'lab_ibnsina': 1400,
+      'lab_birdem': 1200,
+      'lab_bsmmu': 1000,
+      'lab_praava': 1700,
+      'lab_evercare': 2000,
+      'lab_medinova': 1400
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '24 Hours'
+  },
+  {
+    id: '37',
+    name: 'Troponin I (High-Sensitivity Cardiac Marker)',
+    description: 'Crucial cardiac biomarker for rapid assessment of myocardial damage and acute coronary syndrome.',
+    price: 1400,
+    originalPrice: 1800,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1600,
+      'lab_ibnsina': 1400,
+      'lab_birdem': 1200,
+      'lab_bsmmu': 900,
+      'lab_praava': 1700,
+      'lab_evercare': 1950,
+      'lab_medinova': 1400
+    },
+    originalPriceByLab: {
+      'lab_popular': 500,
+      'lab_labaid': 1900,
+      'lab_ibnsina': 1650,
+      'lab_birdem': 1400,
+      'lab_bsmmu': 1100,
+      'lab_praava': 2000,
+      'lab_evercare': 2300,
+      'lab_medinova': 1650
+    },
+    category: 'Heart',
+    image: 'https://images.unsplash.com/photo-1582718134360-15949d0dd4ca?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '4-6 Hours'
+  },
+  {
+    id: '38',
+    name: 'Serum Amylase & Lipase (Pancreatic Enzymes)',
+    description: 'Evaluates pancreatic function, acute or chronic pancreatitis, and digestive enzyme levels.',
+    price: 900,
+    originalPrice: 1200,
+    priceByLab: {
+      'lab_popular': 250,
+      'lab_labaid': 1100,
+      'lab_ibnsina': 950,
+      'lab_birdem': 800,
+      'lab_bsmmu': 600,
+      'lab_praava': 1150,
+      'lab_evercare': 1350,
+      'lab_medinova': 900
+    },
+    originalPriceByLab: {
+      'lab_popular': 400,
+      'lab_labaid': 1300,
+      'lab_ibnsina': 1150,
+      'lab_birdem': 950,
+      'lab_bsmmu': 750,
+      'lab_praava': 1350,
+      'lab_evercare': 1600,
+      'lab_medinova': 1100
+    },
+    category: 'General',
+    image: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=400',
+    turnaroundTime: '12 Hours'
   }
 ];
 

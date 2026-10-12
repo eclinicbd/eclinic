@@ -124,6 +124,12 @@ export const NursingCareSection: React.FC<NursingCareSectionProps> = ({
       return;
     }
 
+    const cleanPhone = patientPhone.replace(/[^0-9]/g, '');
+    if (cleanPhone.length !== 11) {
+      alert(lang === 'bn' ? 'মোবাইল নম্বরটি অবশ্যই সঠিক ১১ ডিজিট হতে হবে (কম বা বেশি নয়, যেমন: 01712345678)।' : 'Phone number must be exactly 11 digits (e.g. 01712345678).');
+      return;
+    }
+
     setBookingSubmitting(true);
     setTimeout(() => {
       setBookingSubmitting(false);
@@ -460,10 +466,11 @@ export const NursingCareSection: React.FC<NursingCareSectionProps> = ({
                     <input 
                       type="tel" 
                       required
-                      placeholder={lang === 'bn' ? '০১৭XXXXXXXX' : '017XXXXXXXX'}
+                      maxLength={11}
+                      placeholder={lang === 'bn' ? '০১৭XXXXXXXX (১১ ডিজিট)' : '017XXXXXXXX (11 digits)'}
                       value={patientPhone}
                       onChange={(e) => setPatientPhone(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm focus:border-rose-500 focus:ring-2 focus:ring-rose-100 outline-none transition-all"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm focus:border-rose-500 focus:ring-2 focus:ring-rose-100 outline-none transition-all font-mono"
                     />
                   </div>
 

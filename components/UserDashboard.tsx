@@ -234,6 +234,20 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
       return;
     }
 
+    const cleanPrimaryPhone = profilePhone.replace(/[^0-9]/g, '');
+    if (cleanPrimaryPhone.length !== 11) {
+      setSaveError(lang === 'bn' ? 'মোবাইল নম্বরটি অবশ্যই সঠিক ১১ ডিজিট হতে হবে (কম বা বেশি নয়, যেমন: 01712345678)।' : 'Primary phone number must be exactly 11 digits (e.g. 01712345678).');
+      return;
+    }
+
+    if (profileEmergencyContact.trim()) {
+      const cleanEmergPhone = profileEmergencyContact.replace(/[^0-9]/g, '');
+      if (cleanEmergPhone.length !== 11) {
+        setSaveError(lang === 'bn' ? 'জরুরি ফোন নম্বরটিও সঠিক ১১ ডিজিটের হতে হবে (যেমন: 01812345678)।' : 'Emergency contact number must be exactly 11 digits.');
+        return;
+      }
+    }
+
     onUpdateProfile({
       name: profileName.trim(),
       phone: profilePhone.trim(),
@@ -1241,10 +1255,11 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                           type="tel" 
                           inputMode="tel"
                           required
+                          maxLength={11}
                           value={profilePhone} 
                           onChange={(e) => setProfilePhone(e.target.value)}
                           placeholder="01712345678"
-                          className="w-full pl-10 pr-4 py-2.5 bg-slate-50/60 focus:bg-white border border-slate-200 rounded-xl text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all font-medium" 
+                          className="w-full pl-10 pr-4 py-2.5 bg-slate-50/60 focus:bg-white border border-slate-200 rounded-xl text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all font-mono font-medium" 
                         />
                       </div>
                     </div>
@@ -1277,10 +1292,11 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                           <input 
                             type="tel" 
                             inputMode="tel"
+                            maxLength={11}
                             value={profileEmergencyContact} 
                             onChange={(e) => setProfileEmergencyContact(e.target.value)}
                             placeholder="01800000000"
-                            className="w-full pl-10 pr-4 py-2.5 bg-slate-50/60 focus:bg-white border border-slate-200 rounded-xl text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" 
+                            className="w-full pl-10 pr-4 py-2.5 bg-slate-50/60 focus:bg-white border border-slate-200 rounded-xl text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all font-mono" 
                           />
                         </div>
                       </div>

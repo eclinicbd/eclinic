@@ -22,6 +22,7 @@ import {
   CheckCircle2, 
   XCircle,
   AlertTriangle,
+  RotateCcw,
   Sliders,
   BadgePercent,
   MapPin
@@ -112,6 +113,14 @@ export const AdminStaffUsers: React.FC<AdminStaffUsersProps> = ({
       return;
     }
 
+    if (phone.trim()) {
+      const cleanPhone = phone.replace(/[^0-9]/g, '');
+      if (cleanPhone.length !== 11) {
+        showToast(isBn ? 'স্টাফের মোবাইল নম্বরটি অবশ্যই সঠিক ১১ ডিজিট হতে হবে (কম বা বেশি নয়)!' : 'Staff phone number must be exactly 11 digits!');
+        return;
+      }
+    }
+
     if (editingStaff) {
       const updatedList = staffUsers.map(s => 
         s.id === editingStaff.id 
@@ -183,7 +192,12 @@ export const AdminStaffUsers: React.FC<AdminStaffUsersProps> = ({
     }
   };
 
-
+  const handleResetDefaultStaff = () => {
+    if (window.confirm(isBn ? 'সকল স্টাফ তালিকা ডিফল্ট ডেমোতে রিসেট করতে চান?' : 'Reset staff users to default demo accounts?')) {
+      onUpdateStaffUsers(DEFAULT_STAFF_USERS);
+      showToast(isBn ? 'ডিফল্ট স্টাফ তালিকা সফলভাবে পুনঃস্থাপন করা হয়েছে!' : 'Default staff accounts restored!');
+    }
+  };
 
   const getRoleIconAndBadge = (r: StaffRole) => {
     switch (r) {
@@ -253,7 +267,14 @@ export const AdminStaffUsers: React.FC<AdminStaffUsersProps> = ({
         </div>
 
         <div className="flex items-center gap-2.5">
-
+          <button
+            onClick={handleResetDefaultStaff}
+            className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-all cursor-pointer"
+            title="Restore default demo staff"
+          >
+            <RotateCcw size={14} />
+            <span>{isBn ? 'ডিফল্ট রিসেট' : 'Reset Staff'}</span>
+          </button>
           <button
             onClick={handleOpenAddModal}
             className="flex items-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer"
@@ -564,11 +585,12 @@ export const AdminStaffUsers: React.FC<AdminStaffUsersProps> = ({
                     {isBn ? 'মোবাইল নাম্বার' : 'Phone Number'}
                   </label>
                   <input
-                    type="text"
+                    type="tel"
+                    maxLength={11}
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="01700000000"
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900 outline-none"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-slate-900 outline-none font-mono"
                   />
                 </div>
 

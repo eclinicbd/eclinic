@@ -1,9 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
-// Register PWA Service Worker for PWABuilder & offline support
-if ('serviceWorker' in navigator && typeof window !== 'undefined') {
+// Register PWA Service Worker in production only so dev iframe preview never gets intercepted/cached
+if (import.meta.env.PROD && 'serviceWorker' in navigator && typeof window !== 'undefined') {
   window.addEventListener('load', () => {
     navigator.serviceWorker
       .register('/sw.js')
@@ -13,6 +14,13 @@ if ('serviceWorker' in navigator && typeof window !== 'undefined') {
       .catch((err) => {
         console.warn('PWA service worker registration notice:', err);
       });
+  });
+} else if ('serviceWorker' in navigator && typeof window !== 'undefined') {
+  // If a previous service worker was active during dev in iframe, safely unregister it
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    for (const registration of registrations) {
+      registration.unregister();
+    }
   });
 }
 
@@ -24,6 +32,8 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </React.StrictMode>
 );

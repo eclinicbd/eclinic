@@ -92,12 +92,22 @@ export const PatientAuthModal: React.FC<PatientAuthModalProps> = ({
       return;
     }
 
+    const trimmedIdentifier = loginIdentifier.trim();
+    const isEmail = trimmedIdentifier.includes('@');
+    if (!isEmail) {
+      const cleanPhone = trimmedIdentifier.replace(/[^0-9]/g, '');
+      if (cleanPhone.length !== 11) {
+        setErrorMsg(lang === 'bn' ? 'লগইন করতে সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন (কম বা বেশি নয়, যেমন: 01712345678)।' : 'Mobile number must be exactly 11 digits (e.g. 01712345678).');
+        return;
+      }
+    }
+
     setIsLoading(true);
 
     // Check if input is email
-    if (loginIdentifier.includes('@') && loginPassword) {
+    if (isEmail && loginPassword) {
       try {
-        const fbRes = await loginWithEmail(loginIdentifier.trim(), loginPassword);
+        const fbRes = await loginWithEmail(trimmedIdentifier, loginPassword);
         if (fbRes.success && fbRes.user) {
           setIsLoading(false);
           setSuccessMsg(t.authLoginSuccess);
@@ -114,7 +124,7 @@ export const PatientAuthModal: React.FC<PatientAuthModalProps> = ({
 
     // Local / Phone fallback
     setTimeout(() => {
-      const result = loginPatient(loginIdentifier, loginPassword);
+      const result = loginPatient(trimmedIdentifier, loginPassword);
       setIsLoading(false);
 
       if (result.success && result.patient) {
@@ -139,8 +149,8 @@ export const PatientAuthModal: React.FC<PatientAuthModalProps> = ({
     }
 
     const cleanPhone = signupPhone.replace(/[^0-9]/g, '');
-    if (cleanPhone.length < 11) {
-      setErrorMsg(lang === 'bn' ? '১১ ডিজিটের কম মোবাইল নম্বর দিয়ে রেজিস্ট্রেশন হবে না (সঠিক ১১ ডিজিটের নম্বর দিন: যেমন 01712345678)।' : 'Mobile number must be at least 11 digits (e.g. 01712345678)');
+    if (cleanPhone.length !== 11) {
+      setErrorMsg(lang === 'bn' ? 'মোবাইল নম্বরটি অবশ্যই সঠিক ১১ ডিজিট হতে হবে (কম বা বেশি নয়, যেমন: 01712345678)।' : 'Mobile number must be exactly 11 digits (e.g. 01712345678).');
       return;
     }
 
@@ -390,7 +400,7 @@ export const PatientAuthModal: React.FC<PatientAuthModalProps> = ({
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1 flex items-center justify-between">
                     <span>{t.phoneLabel} <span className="text-red-500">*</span></span>
-                    <span className={`text-[10px] font-mono ${signupPhone.replace(/[^0-9]/g, '').length >= 11 ? 'text-emerald-600 font-bold' : 'text-slate-400'}`}>
+                    <span className={`text-[10px] font-mono ${signupPhone.replace(/[^0-9]/g, '').length === 11 ? 'text-emerald-600 font-bold' : 'text-slate-400'}`}>
                       {signupPhone.replace(/[^0-9]/g, '').length}/11 {lang === 'bn' ? 'ডিজিট' : 'digits'}
                     </span>
                   </label>
@@ -401,8 +411,7 @@ export const PatientAuthModal: React.FC<PatientAuthModalProps> = ({
                     <input
                       type="tel"
                       required
-                      minLength={11}
-                      maxLength={14}
+                      maxLength={11}
                       value={signupPhone}
                       onChange={(e) => setSignupPhone(e.target.value)}
                       placeholder="017XXXXXXXX"

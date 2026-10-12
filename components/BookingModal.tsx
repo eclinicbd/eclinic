@@ -400,9 +400,20 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   // When prescription is uploaded without tests in cart (or booking is made based on doctor's prescription)
   const isPrescriptionBooking = Boolean(formData.prescriptionUrl && cartItems.length === 0);
 
-  // Suggestions search logic
+  // Suggestions search logic - Strictly filtered by selected Diagnostic Lab
   const cleanSearch = searchTerm.trim().toLowerCase();
-  const availableToAddTests = allTests.filter(test => !cartItems.some(item => item.id === test.id));
+  const currentSelectedLabId = formData.labId;
+  const availableToAddTests = allTests.filter(test => {
+    // 1. Must not already be in the cart
+    if (cartItems.some(item => item.id === test.id)) return false;
+    // 2. Must not be hidden globally
+    if (test.isHidden) return false;
+    // 3. Must be available in the currently selected lab (not in hiddenLabs for this lab)
+    if (currentSelectedLabId && test.hiddenLabs && test.hiddenLabs.includes(currentSelectedLabId)) {
+      return false;
+    }
+    return true;
+  });
 
   const suggestedTests = cleanSearch 
     ? availableToAddTests.filter(test => {
@@ -411,8 +422,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         const catMatch = testCats.some(c => c.toLowerCase().includes(cleanSearch));
         const descMatch = (test.description || '').toLowerCase().includes(cleanSearch);
         return nameMatch || catMatch || descMatch;
-      }).slice(0, 8)
-    : availableToAddTests.slice(0, 6);
+      }).slice(0, 10)
+    : availableToAddTests.slice(0, 8);
 
   // Step 1 -> Step 2 validation (Either tests in cart or prescription uploaded)
   const handleProceedToStep2 = () => {
@@ -430,8 +441,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       setValidationError(isBn ? 'অনুগ্রহ করে রোগীর পূর্ণ নাম লিখুন।' : 'Please enter patient full name.');
       return;
     }
-    if (!formData.phoneNumber.trim() || formData.phoneNumber.replace(/[^0-9]/g, '').length < 10) {
-      setValidationError(isBn ? 'অনুগ্রহ করে সঠিক মোবাইল নম্বর প্রদান করুন (১১ ডিজিট)।' : 'Please provide a valid 11-digit mobile number.');
+    const cleanPhone = formData.phoneNumber.replace(/[^0-9]/g, '');
+    if (!formData.phoneNumber.trim() || cleanPhone.length !== 11) {
+      setValidationError(isBn ? 'মোবাইল নম্বরটি অবশ্যই সঠিক ১১ ডিজিট হতে হবে (কম বা বেশি নয়, যেমন: 01712345678)।' : 'Mobile number must be exactly 11 digits (e.g. 01712345678).');
       return;
     }
     if (!formData.address.trim()) {
@@ -473,8 +485,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         setValidationError(isBn ? `অনুগ্রহ করে আপনার ${methodName} প্রেরক মোবাইল নম্বর (Sender Phone) প্রদান করুন।` : `Please provide your ${methodName} sender phone number.`);
         return;
       }
-      if (cleanSender.length < 11) {
-        setValidationError(isBn ? `অনুগ্রহ করে সঠিক ১১ ডিজিটের ${methodName} প্রেরক মোবাইল নম্বর লিখুন (e.g. 017XXXXXXXX)।` : `Please enter a valid 11-digit ${methodName} sender phone number.`);
+      if (cleanSender.length !== 11) {
+        setValidationError(isBn ? `অনুগ্রহ করে সঠিক ১১ ডিজিটের ${methodName} প্রেরক মোবাইল নম্বর লিখুন (কম বা বেশি নয়, যেমন: 017XXXXXXXX)।` : `Please enter an exact 11-digit ${methodName} sender phone number.`);
         return;
       }
 
@@ -824,6 +836,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     <span className="flex items-center gap-1.5">
                       <Search size={14} className="text-primary" />
                       <span>{isBn ? 'আরও টেস্ট যোগ করতে খুঁজুন:' : 'Search & Add More Tests:'}</span>
+                      {selectedLab && (
+                        <span className="text-[10px] bg-sky-50 text-sky-700 border border-sky-200 px-1.5 py-0.5 rounded-md font-bold">
+                          {selectedLab.name.split(' ')[0]}
+                        </span>
+                      )}
                     </span>
                     <span className="text-[10px] text-slate-400">
                       {isBn ? 'যেমন: CBC, Thyroid, Sugar, Lipid' : 'e.g. CBC, Sugar, Lipid'}
@@ -835,7 +852,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     <input 
                       type="text" 
                       className="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all focus:bg-white"
-                      placeholder={isBn ? 'টেস্টের নাম লিখুন (CBC, Lipid, TSH, Sugar...)' : 'Type test name (e.g. CBC, TSH, Glucose)...'}
+                      placeholder={isBn ? `${selectedLab?.name ? selectedLab.name.split(' ')[0] + '-এর ' : ''}টেস্টের নাম লিখুন (CBC, Lipid, TSH)...` : `Search tests in ${selectedLab?.name || 'selected lab'}...`}
                       value={searchTerm}
                       onFocus={() => setIsSearchFocused(true)}
                       onChange={(e) => {
@@ -860,8 +877,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                         <span className="flex items-center gap-1">
                           <Sparkles size={12} className="text-primary" />
                           {searchTerm 
-                            ? (isBn ? `পাওয়া গেছে (${suggestedTests.length} টি)` : `Matching Tests (${suggestedTests.length})`)
-                            : (isBn ? 'জনপ্রিয় টেস্টসমূহ' : 'Popular Tests')}
+                            ? (isBn ? `${selectedLab?.name?.split(' ')[0] || ''} এ পাওয়া গেছে (${suggestedTests.length} টি)` : `Matching in ${selectedLab?.name?.split(' ')[0] || 'Lab'} (${suggestedTests.length})`)
+                            : (isBn ? `${selectedLab?.name?.split(' ')[0] || ''}-এর জনপ্রিয় টেস্টসমূহ` : `Popular in ${selectedLab?.name?.split(' ')[0] || 'Lab'}`)}
                         </span>
                       </div>
 
@@ -905,7 +922,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                         </div>
                       ) : (
                         <div className="p-4 text-center text-xs text-slate-400">
-                          {isBn ? 'কোনো টেস্ট পাওয়া যায়নি।' : 'No matching tests found.'}
+                          {isBn 
+                            ? `এই ল্যাবে (${selectedLab?.name?.split(' ')[0] || ''}) কোনো টেস্ট পাওয়া যায়নি বা কোনো ফলাফল মেলেনি।` 
+                            : `No matching tests available for ${selectedLab?.name || 'this lab'}.`}
                         </div>
                       )}
                     </div>
@@ -1248,7 +1267,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     <input 
                       type="tel" 
                       required
-                      placeholder={isBn ? 'মোবাইল নম্বর * (০১৭XXXXXXXX)' : 'Mobile Phone Number *'}
+                      maxLength={11}
+                      placeholder={isBn ? 'মোবাইল নম্বর * (১১ ডিজিট, যেমন: ০১৭XXXXXXXX)' : 'Mobile Phone Number * (11 digits)'}
                       value={formData.phoneNumber}
                       onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
                       className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all font-mono"
@@ -1630,8 +1650,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                                         <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* বাধ্যতামূলক' : '* Required'}</span>
                                       </label>
                                       <input 
-                                        type="tel"
+                                        type="tel" 
                                         required
+                                        maxLength={11}
                                         placeholder="017XXXXXXXX"
                                         value={formData.senderPhone || ''}
                                         onChange={(e) => {
@@ -1647,7 +1668,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                                         <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* বাধ্যতামূলক' : '* Required'}</span>
                                       </label>
                                       <input 
-                                        type="text"
+                                        type="text" 
                                         required
                                         placeholder="e.g. 9J87AKL9"
                                         value={formData.transactionId || ''}
@@ -1703,8 +1724,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                                         <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* বাধ্যতামূলক' : '* Required'}</span>
                                       </label>
                                       <input 
-                                        type="tel"
+                                        type="tel" 
                                         required
+                                        maxLength={11}
                                         placeholder="018XXXXXXXX"
                                         value={formData.senderPhone || ''}
                                         onChange={(e) => {
@@ -1720,7 +1742,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                                         <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* বাধ্যতামূলক' : '* Required'}</span>
                                       </label>
                                       <input 
-                                        type="text"
+                                        type="text" 
                                         required
                                         placeholder="e.g. 7K99NGD1"
                                         value={formData.transactionId || ''}
@@ -1776,8 +1798,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                                         <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">{isBn ? '* বাধ্যতামূলক' : '* Required'}</span>
                                       </label>
                                       <input 
-                                        type="tel"
+                                        type="tel" 
                                         required
+                                        maxLength={11}
                                         placeholder="019XXXXXXXX"
                                         value={formData.senderPhone || ''}
                                         onChange={(e) => {

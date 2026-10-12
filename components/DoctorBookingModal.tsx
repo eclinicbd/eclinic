@@ -282,8 +282,9 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
       setValidationError(isBn ? 'অনুগ্রহ করে রোগীর নাম লিখুন।' : 'Please enter patient name.');
       return;
     }
-    if (!patientPhone.trim() || patientPhone.replace(/[^0-9]/g, '').length < 11) {
-      setValidationError(isBn ? 'অনুগ্রহ করে সঠিক ১১ ডিজিটের মোবাইল নম্বর লিখুন (e.g. 017XXXXXXXX)।' : 'Please enter a valid 11-digit mobile number.');
+    const cleanPatientPhone = patientPhone.replace(/[^0-9]/g, '');
+    if (!patientPhone.trim() || cleanPatientPhone.length !== 11) {
+      setValidationError(isBn ? 'রোগীর মোবাইল নম্বরটি অবশ্যই সঠিক ১১ ডিজিট হতে হবে (কম বা বেশি নয়, যেমন: 017XXXXXXXX)।' : 'Please enter an exact 11-digit mobile number.');
       return;
     }
     if (!patientAge || parseInt(patientAge) <= 0) {
@@ -310,8 +311,8 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
         setValidationError(isBn ? `অনুগ্রহ করে আপনার ${methodName} প্রেরক নম্বর (Sender Phone) প্রদান করুন।` : `Please provide your ${methodName} sender phone number.`);
         return;
       }
-      if (rawSender.length < 11) {
-        setValidationError(isBn ? `সঠিক ১১ ডিজিট ${methodName} নম্বর লিখুন।` : `Enter valid 11-digit ${methodName} number.`);
+      if (rawSender.length !== 11) {
+        setValidationError(isBn ? `সঠিক ১১ ডিজিট ${methodName} নম্বর লিখুন (কম বা বেশি নয়)।` : `Enter exact 11-digit ${methodName} number.`);
         return;
       }
 
@@ -909,6 +910,7 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
                                     <input 
                                       type="tel"
                                       required
+                                      maxLength={11}
                                       placeholder="017XXXXXXXX"
                                       value={senderPhone}
                                       onChange={(e) => {
@@ -980,6 +982,7 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
                                     <input 
                                       type="tel"
                                       required
+                                      maxLength={11}
                                       placeholder="018XXXXXXXX"
                                       value={senderPhone}
                                       onChange={(e) => {
@@ -1051,6 +1054,7 @@ export const DoctorBookingModal: React.FC<DoctorBookingModalProps> = ({
                                     <input 
                                       type="tel"
                                       required
+                                      maxLength={11}
                                       placeholder="019XXXXXXXX"
                                       value={senderPhone}
                                       onChange={(e) => {

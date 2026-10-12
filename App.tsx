@@ -114,7 +114,7 @@ import {
   LogOut
 } from 'lucide-react';
 
-import { DEFAULT_HERO_IMAGES, DEFAULT_NURSING_SERVICES_BN, DEFAULT_NURSING_SERVICES_EN, DEFAULT_HOME_SECTIONS_ORDER } from './constants';
+import { getTests, DEFAULT_HERO_IMAGES, DEFAULT_NURSING_SERVICES_BN, DEFAULT_NURSING_SERVICES_EN, DEFAULT_HOME_SECTIONS_ORDER } from './constants';
 
 const CATEGORIES = ['All', 'General', 'Diabetes', 'Heart', 'Thyroid', 'Vitamin'];
 
@@ -480,9 +480,39 @@ export default function App() {
   // Real-time subscription to Tests
   useEffect(() => {
     const unsubscribe = subscribeToTests(language, (liveTests) => {
+      const defaultList = getTests(language);
       if (liveTests && liveTests.length > 0) {
-        setTests(liveTests);
-        saveStoredTests(language, liveTests);
+        // Guarantee all 38 default tests exist even if Firestore contains an old list (e.g. 18 items)
+        const liveMap = new Map(liveTests.map(t => [t.id, t]));
+        const missingDefaults = defaultList.filter(d => !liveMap.has(d.id));
+        let combined = missingDefaults.length > 0 ? [...liveTests, ...missingDefaults] : liveTests;
+
+        // Ensure Popular Diagnostic Centre Ltd (lab_popular) price is 250 for default tests
+        combined = combined.map(test => {
+          const isDefault = defaultList.some(d => d.id === test.id);
+          if (isDefault && test.priceByLab?.['lab_popular'] !== 250) {
+            return {
+              ...test,
+              priceByLab: {
+                ...(test.priceByLab || {}),
+                'lab_popular': 250
+              }
+            };
+          }
+          return test;
+        });
+
+        setTests(combined);
+        saveStoredTests(language, combined);
+
+        // If Firestore had fewer tests (e.g. 18 instead of 38), automatically update Firestore
+        if (missingDefaults.length > 0) {
+          saveTestsToFirestore(language, combined);
+        }
+      } else {
+        const defaults = getStoredTests(language);
+        setTests(defaults);
+        saveTestsToFirestore(language, defaults);
       }
     });
     return () => unsubscribe();

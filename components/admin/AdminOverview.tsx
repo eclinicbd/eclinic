@@ -40,6 +40,7 @@ interface AdminOverviewProps {
   onOpenAddLab: () => void;
   onOpenAddOrder: () => void;
   onSelectOrder: (order: BookingHistoryItem) => void;
+  onResetDefaultTests?: () => void;
 }
 
 export const AdminOverview: React.FC<AdminOverviewProps> = ({
@@ -53,7 +54,8 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
   onOpenAddTest,
   onOpenAddLab,
   onOpenAddOrder,
-  onSelectOrder
+  onSelectOrder,
+  onResetDefaultTests
 }) => {
   const t = TRANSLATIONS[lang];
   const isBn = lang === 'bn';
@@ -149,6 +151,16 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {onResetDefaultTests && tests.length < 38 && (
+            <button
+              onClick={onResetDefaultTests}
+              className="px-3.5 py-2 bg-sky-50 hover:bg-sky-600 text-sky-700 hover:text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all border border-sky-300 shadow-sm cursor-pointer"
+              title="Reset all 38 default diagnostic tests"
+            >
+              <RotateCcw size={14} className="text-sky-600 group-hover:text-white" />
+              <span>{isBn ? '৩৮টি টেস্ট রিলোড' : 'Restore 38 Tests'}</span>
+            </button>
+          )}
           <Button onClick={onOpenAddOrder} className="!py-2 !px-3.5 text-xs font-semibold flex items-center gap-1.5 shadow-sm bg-emerald-600 hover:bg-emerald-700 text-white">
             <Plus size={15} /> {t.adminAddNewOrder}
           </Button>
@@ -311,7 +323,7 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
             <span className="text-[11px] font-bold text-sky-700 bg-sky-100 px-2 py-0.5 rounded-md">{visibleLabs} Active Labs</span>
           </div>
           <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider">
-            {canViewRevenue ? 'Active Catalog Tests' : (isBn ? 'চলমান প্রসেসিং অর্ডার' : 'In Processing Queue')}
+            {canViewRevenue ? (isBn ? 'সক্রিয় ক্যাটালগ টেস্ট' : 'Active Catalog Tests') : (isBn ? 'চলমান প্রসেসিং অর্ডার' : 'In Processing Queue')}
           </p>
           <h3 className="text-2xl font-bold text-slate-900 mt-1">
             {canViewRevenue ? `${visibleTests} / ${tests.length}` : `${inProgressOrders}`}
