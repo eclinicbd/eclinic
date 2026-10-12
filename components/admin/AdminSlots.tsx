@@ -7,6 +7,7 @@ import {
   Trash2, 
   Check, 
   AlertCircle, 
+  RotateCcw, 
   CalendarOff, 
   ShieldCheck, 
   Sun, 
@@ -260,7 +261,12 @@ export const AdminSlots: React.FC<AdminSlotsProps> = ({
     showToast(isBn ? `একই দিনের লিড টাইম ${hours} ঘণ্টায় সেট করা হয়েছে!` : `Same-day cutoff lead time set to ${hours} hours!`);
   };
 
-
+  const handleResetDefaults = () => {
+    if (window.confirm(isBn ? 'আপনি কি সমস্ত স্লট ও তারিখ সেটিংস ডিফল্টে রিসেট করতে চান?' : 'Are you sure you want to reset all date & slot settings to defaults?')) {
+      onUpdateConfig(DEFAULT_DATE_SLOT_CONFIG);
+      showToast(isBn ? 'তারিখ ও স্লট সেটিংস ডিফল্টে রিসেট করা হয়েছে!' : 'Date & slot settings reset to defaults!');
+    }
+  };
 
   const filteredSlots = filterPeriod === 'all' 
     ? config.slots 
@@ -304,7 +310,14 @@ export const AdminSlots: React.FC<AdminSlotsProps> = ({
         </div>
 
         <div className="flex items-center gap-2.5">
-
+          <button
+            onClick={handleResetDefaults}
+            className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-all cursor-pointer"
+            title="Reset to default settings"
+          >
+            <RotateCcw size={14} />
+            <span>{isBn ? 'ডিফল্ট রিসেট' : 'Reset Defaults'}</span>
+          </button>
           <button
             onClick={() => { setIsAddingSlot(true); setActiveTab('slots'); }}
             className="flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer"

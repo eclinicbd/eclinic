@@ -20,6 +20,7 @@ import {
   ArrowUpDown,
   MoveUp,
   MoveDown,
+  RotateCcw,
   Check
 } from 'lucide-react';
 import { Button } from '../Button';
@@ -46,6 +47,7 @@ export const AdminLabs: React.FC<AdminLabsProps> = ({
   onToggleHideLab,
   onOpenDeleteLab,
   onReorderLab,
+  onResetDefaultLabs,
   onManageLabTests
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -88,7 +90,16 @@ export const AdminLabs: React.FC<AdminLabsProps> = ({
         </div>
 
         <div className="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end">
-
+          {onResetDefaultLabs && (
+            <button
+              onClick={onResetDefaultLabs}
+              className="px-3 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl border border-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer"
+              title={lang === 'bn' ? 'ডিফল্ট সেন্টারের তালিকায় রিসেট করুন' : 'Reset to default centers list'}
+            >
+              <RotateCcw size={14} />
+              <span className="hidden md:inline">{lang === 'bn' ? 'ডিফল্ট ক্রম' : 'Reset Order'}</span>
+            </button>
+          )}
 
           <Button onClick={onOpenAddLab} className="!py-2 !px-4 text-xs font-semibold flex items-center gap-1.5 shadow-sm">
             <Plus size={16} /> {t.adminAddNewLab}
