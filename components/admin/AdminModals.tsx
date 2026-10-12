@@ -67,6 +67,7 @@ interface TestModalProps {
   editingTest: TestPackage | null;
   labs: LabPartner[];
   categories?: CategoryItem[];
+  existingTests?: TestPackage[];
   onAddNewCategory?: (category: CategoryItem) => void;
 }
 
@@ -78,8 +79,10 @@ export const TestFormModal: React.FC<TestModalProps> = ({
   editingTest,
   labs,
   categories = [],
+  existingTests = [],
   onAddNewCategory
 }) => {
+  const [nameError, setNameError] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<TestPackage>>({
     name: '',
     description: '',
@@ -267,7 +270,24 @@ export const TestFormModal: React.FC<TestModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name?.trim()) return;
+    setNameError(null);
+    const trimmedName = formData.name?.trim();
+    if (!trimmedName) return;
+
+    // Strict duplicate test name check (case-insensitive and trimmed)
+    const isDuplicate = existingTests.some(t => {
+      if (editingTest && t.id === editingTest.id) return false;
+      return t.name.trim().toLowerCase() === trimmedName.toLowerCase();
+    });
+
+    if (isDuplicate) {
+      setNameError(
+        lang === 'bn' 
+          ? `"${trimmedName}" নামে একটি টেস্ট ইতিমধ্যেই বিদ্যমান! একই টেস্ট একই নামে ২বার যোগ করা যাবে না।`
+          : `A test named "${trimmedName}" already exists! Duplicate test names are not allowed.`
+      );
+      return;
+    }
 
     const baseOriginal = Number(formData.originalPrice) || Number(formData.price) || 0;
     const baseSelling = Number(formData.price) || 0;
@@ -339,10 +359,23 @@ export const TestFormModal: React.FC<TestModalProps> = ({
                 type="text" 
                 required 
                 value={formData.name || ''} 
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, name: e.target.value });
+                  if (nameError) setNameError(null);
+                }}
                 placeholder="e.g. Complete Blood Count (CBC)" 
-                className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none text-xs"
+                className={`w-full px-3 py-2 border rounded-xl focus:ring-2 outline-none text-xs transition-colors ${
+                  nameError 
+                    ? 'border-rose-400 bg-rose-50/30 focus:ring-rose-200' 
+                    : 'border-slate-200 focus:ring-slate-900'
+                }`}
               />
+              {nameError && (
+                <p className="mt-1.5 text-[11px] font-bold text-rose-600 flex items-center gap-1 animate-in fade-in">
+                  <AlertCircle size={13} className="shrink-0" />
+                  <span>{nameError}</span>
+                </p>
+              )}
             </div>
             <div>
               <div className="flex items-center justify-between mb-1">

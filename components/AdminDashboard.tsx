@@ -326,6 +326,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   const handleSaveTest = (testToSave: TestPackage) => {
+    const trimmedName = testToSave.name.trim().toLowerCase();
+    const isDuplicate = tests.some(t => {
+      if (editingTest && t.id === editingTest.id) return false;
+      return t.name.trim().toLowerCase() === trimmedName;
+    });
+
+    if (isDuplicate) {
+      showToast(lang === 'bn' ? `ত্রুটি: "${testToSave.name}" নামে একটি টেস্ট ইতিমধ্যেই বিদ্যমান!` : `Error: A test named "${testToSave.name}" already exists!`);
+      return;
+    }
+
     if (editingTest) {
       const updated = tests.map(t => t.id === testToSave.id ? testToSave : t);
       onUpdateTests(updated);
@@ -348,14 +359,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   const handleDuplicateTest = (test: TestPackage) => {
+    // Generate a unique name for duplicated test
+    let copyIndex = 1;
+    let newName = `${test.name} (Copy)`;
+    while (tests.some(t => t.name.trim().toLowerCase() === newName.toLowerCase())) {
+      copyIndex++;
+      newName = `${test.name} (Copy ${copyIndex})`;
+    }
+
     const clone: TestPackage = {
       ...test,
       id: `test_${Date.now()}`,
-      name: `${test.name} (Copy)`,
+      name: newName,
       isHidden: false
     };
     onUpdateTests([clone, ...tests]);
-    showToast("Test duplicated successfully!");
+    showToast(lang === 'bn' ? `টেস্টটির কপি তৈরি হয়েছে: "${newName}"` : `Test duplicated as "${newName}"`);
   };
 
   const handleQuickUpdateTestOrderCount = (testId: string, delta: number) => {
@@ -373,8 +392,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const handleResetDefaultTests = () => {
     const defaultCatalogTests = getTests(lang);
-    onUpdateTests(defaultCatalogTests);
-    showToast(lang === 'bn' ? '৩৮টি ডিফল্ট টেস্ট সফলভাবে রিস্টোর ও সিঙ্ক করা হয়েছে!' : 'All 38 default tests restored and synchronized!');
+    // Guarantee strict uniqueness by name
+    const seenNames = new Set<string>();
+    const deduplicatedDefaults: TestPackage[] = [];
+    defaultCatalogTests.forEach(t => {
+      const n = t.name.trim().toLowerCase();
+      if (!seenNames.has(n)) {
+        seenNames.add(n);
+        deduplicatedDefaults.push(t);
+      }
+    });
+    onUpdateTests(deduplicatedDefaults);
+    showToast(lang === 'bn' ? '৩৮টি ইউনিক ডিফল্ট টেস্ট সফলভাবে রিস্টোর ও সিঙ্ক করা হয়েছে!' : 'All 38 unique default tests restored!');
   };
 
   // ==========================================
@@ -1128,6 +1157,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         editingTest={editingTest}
         labs={labs}
         categories={categories}
+        existingTests={tests}
         onAddNewCategory={handleQuickAddCategory}
       />
 

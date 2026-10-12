@@ -635,6 +635,20 @@ export const getStoredTests = (lang: Language): TestPackage[] => {
           return test;
         });
 
+        // Strictly deduplicate by test name so no test exists twice with the same name
+        const seenNames = new Set<string>();
+        const deduplicatedByName: TestPackage[] = [];
+        for (const t of updatedList) {
+          const normName = (t.name || '').trim().toLowerCase();
+          if (normName && !seenNames.has(normName)) {
+            seenNames.add(normName);
+            deduplicatedByName.push(t);
+          } else if (normName && seenNames.has(normName)) {
+            changed = true; // Duplicate test pruned
+          }
+        }
+        updatedList = deduplicatedByName;
+
         if (changed) {
           localStorage.setItem(key, JSON.stringify(updatedList));
         }

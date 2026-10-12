@@ -351,9 +351,19 @@ export default function App() {
   };
 
   const handleUpdateTests = (updated: TestPackage[]) => {
-    setTests(updated);
-    saveStoredTests(language, updated);
-    saveTestsToFirestore(language, updated);
+    // Strictly ensure unique test names (case-insensitive and trimmed)
+    const seen = new Set<string>();
+    const uniqueList: TestPackage[] = [];
+    for (const item of updated) {
+      const norm = (item.name || '').trim().toLowerCase();
+      if (norm && !seen.has(norm)) {
+        seen.add(norm);
+        uniqueList.push(item);
+      }
+    }
+    setTests(uniqueList);
+    saveStoredTests(language, uniqueList);
+    saveTestsToFirestore(language, uniqueList);
   };
 
   const handleUpdateLabs = (updated: LabPartner[]) => {
@@ -501,6 +511,18 @@ export default function App() {
           }
           return test;
         });
+
+        // Ensure strict uniqueness by test name (case-insensitive and trimmed)
+        const seenNames = new Set<string>();
+        const uniqueCombined: TestPackage[] = [];
+        for (const test of combined) {
+          const norm = (test.name || '').trim().toLowerCase();
+          if (norm && !seenNames.has(norm)) {
+            seenNames.add(norm);
+            uniqueCombined.push(test);
+          }
+        }
+        combined = uniqueCombined;
 
         setTests(combined);
         saveStoredTests(language, combined);
