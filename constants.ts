@@ -9,7 +9,7 @@ const TESTS_BN: TestPackage[] = [
     price: 450,
     originalPrice: 600,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 480,
       'lab_labaid': 600,
       'lab_ibnsina': 480,
       'lab_birdem': 400,
@@ -19,7 +19,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 450
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 600,
       'lab_labaid': 750,
       'lab_ibnsina': 600,
       'lab_birdem': 500,
@@ -40,7 +40,7 @@ const TESTS_BN: TestPackage[] = [
     price: 850,
     originalPrice: 1100,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 900,
       'lab_labaid': 1000,
       'lab_ibnsina': 900,
       'lab_birdem': 700,
@@ -50,7 +50,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 850
     },
     originalPriceByLab: {
-      'lab_popular': 500,
+      'lab_popular': 1150,
       'lab_labaid': 1300,
       'lab_ibnsina': 1150,
       'lab_birdem': 900,
@@ -71,7 +71,7 @@ const TESTS_BN: TestPackage[] = [
     price: 1200,
     originalPrice: 1600,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1300,
       'lab_labaid': 1500,
       'lab_ibnsina': 1300,
       'lab_birdem': 1000,
@@ -81,7 +81,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 1200
     },
     originalPriceByLab: {
-      'lab_popular': 500,
+      'lab_popular': 1650,
       'lab_labaid': 1900,
       'lab_ibnsina': 1650,
       'lab_birdem': 1300,
@@ -102,7 +102,7 @@ const TESTS_BN: TestPackage[] = [
     price: 1500,
     originalPrice: 2000,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1600,
       'lab_labaid': 2000,
       'lab_ibnsina': 1600,
       'lab_birdem': 1200,
@@ -112,7 +112,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 1500
     },
     originalPriceByLab: {
-      'lab_popular': 500,
+      'lab_popular': 2050,
       'lab_labaid': 2500,
       'lab_ibnsina': 2050,
       'lab_birdem': 1600,
@@ -133,7 +133,7 @@ const TESTS_BN: TestPackage[] = [
     price: 2500,
     originalPrice: 3200,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 2700,
       'lab_labaid': 3200,
       'lab_ibnsina': 2700,
       'lab_birdem': 2200,
@@ -143,7 +143,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 2500
     },
     originalPriceByLab: {
-      'lab_popular': 500,
+      'lab_popular': 3400,
       'lab_labaid': 4000,
       'lab_ibnsina': 3400,
       'lab_birdem': 2800,
@@ -163,7 +163,7 @@ const TESTS_BN: TestPackage[] = [
     price: 450,
     originalPrice: 650,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 500,
       'lab_labaid': 600,
       'lab_ibnsina': 500,
       'lab_birdem': 400,
@@ -173,7 +173,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 450
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 650,
       'lab_labaid': 800,
       'lab_ibnsina': 650,
       'lab_birdem': 550,
@@ -193,7 +193,7 @@ const TESTS_BN: TestPackage[] = [
     price: 500,
     originalPrice: 700,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 550,
       'lab_labaid': 650,
       'lab_ibnsina': 550,
       'lab_birdem': 450,
@@ -203,7 +203,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 500
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 700,
       'lab_labaid': 850,
       'lab_ibnsina': 700,
       'lab_birdem': 600,
@@ -223,7 +223,7 @@ const TESTS_BN: TestPackage[] = [
     price: 180,
     originalPrice: 250,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 200,
       'lab_labaid': 250,
       'lab_ibnsina': 200,
       'lab_birdem': 150,
@@ -233,7 +233,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 180
     },
     originalPriceByLab: {
-      'lab_popular': 350,
+      'lab_popular': 260,
       'lab_labaid': 350,
       'lab_ibnsina': 260,
       'lab_birdem': 200,
@@ -253,7 +253,7 @@ const TESTS_BN: TestPackage[] = [
     price: 300,
     originalPrice: 400,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 340,
       'lab_labaid': 400,
       'lab_ibnsina': 340,
       'lab_birdem': 280,
@@ -263,7 +263,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 300
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 450,
       'lab_labaid': 550,
       'lab_ibnsina': 450,
       'lab_birdem': 380,
@@ -283,7 +283,7 @@ const TESTS_BN: TestPackage[] = [
     price: 450,
     originalPrice: 650,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 500,
       'lab_labaid': 600,
       'lab_ibnsina': 500,
       'lab_birdem': 400,
@@ -293,7 +293,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 450
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 650,
       'lab_labaid': 800,
       'lab_ibnsina': 650,
       'lab_birdem': 550,
@@ -313,7 +313,7 @@ const TESTS_BN: TestPackage[] = [
     price: 900,
     originalPrice: 1250,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 950,
       'lab_labaid': 1100,
       'lab_ibnsina': 950,
       'lab_birdem': 800,
@@ -323,7 +323,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 900
     },
     originalPriceByLab: {
-      'lab_popular': 500,
+      'lab_popular': 1250,
       'lab_labaid': 1400,
       'lab_ibnsina': 1250,
       'lab_birdem': 1050,
@@ -343,7 +343,7 @@ const TESTS_BN: TestPackage[] = [
     price: 950,
     originalPrice: 1300,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1050,
       'lab_labaid': 1200,
       'lab_ibnsina': 1050,
       'lab_birdem': 850,
@@ -353,7 +353,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 950
     },
     originalPriceByLab: {
-      'lab_popular': 500,
+      'lab_popular': 1350,
       'lab_labaid': 1550,
       'lab_ibnsina': 1350,
       'lab_birdem': 1150,
@@ -373,7 +373,7 @@ const TESTS_BN: TestPackage[] = [
     price: 400,
     originalPrice: 500,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 400,
       'lab_labaid': 450,
       'lab_ibnsina': 400,
       'lab_birdem': 350,
@@ -383,7 +383,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 400
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 500,
       'lab_labaid': 600,
       'lab_ibnsina': 500,
       'lab_birdem': 450,
@@ -403,7 +403,7 @@ const TESTS_BN: TestPackage[] = [
     price: 500,
     originalPrice: 650,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 500,
       'lab_labaid': 550,
       'lab_ibnsina': 500,
       'lab_birdem': 400,
@@ -413,7 +413,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 500
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 650,
       'lab_labaid': 700,
       'lab_ibnsina': 650,
       'lab_birdem': 500,
@@ -433,7 +433,7 @@ const TESTS_BN: TestPackage[] = [
     price: 500,
     originalPrice: 650,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 500,
       'lab_labaid': 550,
       'lab_ibnsina': 500,
       'lab_birdem': 400,
@@ -443,7 +443,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 500
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 650,
       'lab_labaid': 700,
       'lab_ibnsina': 650,
       'lab_birdem': 500,
@@ -463,7 +463,7 @@ const TESTS_BN: TestPackage[] = [
     price: 400,
     originalPrice: 550,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 400,
       'lab_labaid': 450,
       'lab_ibnsina': 400,
       'lab_birdem': 350,
@@ -473,7 +473,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 400
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 500,
       'lab_labaid': 600,
       'lab_ibnsina': 500,
       'lab_birdem': 450,
@@ -493,7 +493,7 @@ const TESTS_BN: TestPackage[] = [
     price: 450,
     originalPrice: 600,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 450,
       'lab_labaid': 500,
       'lab_ibnsina': 450,
       'lab_birdem': 350,
@@ -503,7 +503,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 450
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 550,
       'lab_labaid': 650,
       'lab_ibnsina': 550,
       'lab_birdem': 450,
@@ -523,7 +523,7 @@ const TESTS_BN: TestPackage[] = [
     price: 600,
     originalPrice: 800,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 600,
       'lab_labaid': 700,
       'lab_ibnsina': 600,
       'lab_birdem': 500,
@@ -533,7 +533,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 600
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 750,
       'lab_labaid': 900,
       'lab_ibnsina': 750,
       'lab_birdem': 650,
@@ -553,7 +553,7 @@ const TESTS_BN: TestPackage[] = [
     price: 700,
     originalPrice: 900,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 650,
       'lab_labaid': 750,
       'lab_ibnsina': 650,
       'lab_birdem': 550,
@@ -563,7 +563,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 700
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 800,
       'lab_labaid': 950,
       'lab_ibnsina': 800,
       'lab_birdem': 700,
@@ -583,7 +583,7 @@ const TESTS_BN: TestPackage[] = [
     price: 700,
     originalPrice: 900,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 650,
       'lab_labaid': 750,
       'lab_ibnsina': 650,
       'lab_birdem': 550,
@@ -593,7 +593,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 700
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 800,
       'lab_labaid': 950,
       'lab_ibnsina': 800,
       'lab_birdem': 700,
@@ -613,7 +613,7 @@ const TESTS_BN: TestPackage[] = [
     price: 200,
     originalPrice: 300,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 200,
       'lab_labaid': 250,
       'lab_ibnsina': 200,
       'lab_birdem': 150,
@@ -623,7 +623,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 200
     },
     originalPriceByLab: {
-      'lab_popular': 350,
+      'lab_popular': 260,
       'lab_labaid': 350,
       'lab_ibnsina': 260,
       'lab_birdem': 200,
@@ -643,7 +643,7 @@ const TESTS_BN: TestPackage[] = [
     price: 180,
     originalPrice: 250,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 200,
       'lab_labaid': 250,
       'lab_ibnsina': 200,
       'lab_birdem': 150,
@@ -653,7 +653,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 180
     },
     originalPriceByLab: {
-      'lab_popular': 350,
+      'lab_popular': 260,
       'lab_labaid': 350,
       'lab_ibnsina': 260,
       'lab_birdem': 200,
@@ -673,7 +673,7 @@ const TESTS_BN: TestPackage[] = [
     price: 300,
     originalPrice: 400,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 300,
       'lab_labaid': 350,
       'lab_ibnsina': 300,
       'lab_birdem': 250,
@@ -733,7 +733,7 @@ const TESTS_BN: TestPackage[] = [
     price: 600,
     originalPrice: 800,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 600,
       'lab_labaid': 700,
       'lab_ibnsina': 600,
       'lab_birdem': 500,
@@ -743,7 +743,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 600
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 750,
       'lab_labaid': 900,
       'lab_ibnsina': 750,
       'lab_birdem': 650,
@@ -763,7 +763,7 @@ const TESTS_BN: TestPackage[] = [
     price: 450,
     originalPrice: 600,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 450,
       'lab_labaid': 500,
       'lab_ibnsina': 450,
       'lab_birdem': 350,
@@ -773,7 +773,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 450
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 550,
       'lab_labaid': 650,
       'lab_ibnsina': 550,
       'lab_birdem': 450,
@@ -793,7 +793,7 @@ const TESTS_BN: TestPackage[] = [
     price: 600,
     originalPrice: 800,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 600,
       'lab_labaid': 700,
       'lab_ibnsina': 600,
       'lab_birdem': 500,
@@ -803,7 +803,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 600
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 750,
       'lab_labaid': 900,
       'lab_ibnsina': 750,
       'lab_birdem': 650,
@@ -823,7 +823,7 @@ const TESTS_BN: TestPackage[] = [
     price: 600,
     originalPrice: 800,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 600,
       'lab_labaid': 700,
       'lab_ibnsina': 600,
       'lab_birdem': 500,
@@ -833,7 +833,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 600
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 750,
       'lab_labaid': 900,
       'lab_ibnsina': 750,
       'lab_birdem': 650,
@@ -853,7 +853,7 @@ const TESTS_BN: TestPackage[] = [
     price: 400,
     originalPrice: 550,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 400,
       'lab_labaid': 450,
       'lab_ibnsina': 400,
       'lab_birdem': 300,
@@ -863,7 +863,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 400
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 500,
       'lab_labaid': 600,
       'lab_ibnsina': 500,
       'lab_birdem': 450,
@@ -883,7 +883,7 @@ const TESTS_BN: TestPackage[] = [
     price: 400,
     originalPrice: 550,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 400,
       'lab_labaid': 450,
       'lab_ibnsina': 400,
       'lab_birdem': 300,
@@ -893,7 +893,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 400
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 500,
       'lab_labaid': 600,
       'lab_ibnsina': 500,
       'lab_birdem': 450,
@@ -913,7 +913,7 @@ const TESTS_BN: TestPackage[] = [
     price: 500,
     originalPrice: 700,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 500,
       'lab_labaid': 600,
       'lab_ibnsina': 500,
       'lab_birdem': 400,
@@ -923,7 +923,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 500
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 650,
       'lab_labaid': 750,
       'lab_ibnsina': 650,
       'lab_birdem': 500,
@@ -943,7 +943,7 @@ const TESTS_BN: TestPackage[] = [
     price: 1500,
     originalPrice: 2000,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1500,
       'lab_labaid': 1800,
       'lab_ibnsina': 1500,
       'lab_birdem': 1200,
@@ -953,7 +953,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 1500
     },
     originalPriceByLab: {
-      'lab_popular': 500,
+      'lab_popular': 1850,
       'lab_labaid': 2200,
       'lab_ibnsina': 1850,
       'lab_birdem': 1500,
@@ -973,7 +973,7 @@ const TESTS_BN: TestPackage[] = [
     price: 450,
     originalPrice: 600,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 450,
       'lab_labaid': 500,
       'lab_ibnsina': 450,
       'lab_birdem': 400,
@@ -983,7 +983,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 450
     },
     originalPriceByLab: {
-      'lab_popular': 350,
+      'lab_popular': 550,
       'lab_labaid': 600,
       'lab_ibnsina': 550,
       'lab_birdem': 450,
@@ -1003,7 +1003,7 @@ const TESTS_BN: TestPackage[] = [
     price: 900,
     originalPrice: 1200,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 950,
       'lab_labaid': 1100,
       'lab_ibnsina': 950,
       'lab_birdem': 800,
@@ -1013,7 +1013,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 900
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1150,
       'lab_labaid': 1300,
       'lab_ibnsina': 1150,
       'lab_birdem': 950,
@@ -1033,7 +1033,7 @@ const TESTS_BN: TestPackage[] = [
     price: 1100,
     originalPrice: 1400,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1100,
       'lab_labaid': 1300,
       'lab_ibnsina': 1100,
       'lab_birdem': 900,
@@ -1043,7 +1043,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 1100
     },
     originalPriceByLab: {
-      'lab_popular': 450,
+      'lab_popular': 1300,
       'lab_labaid': 1550,
       'lab_ibnsina': 1300,
       'lab_birdem': 1100,
@@ -1063,7 +1063,7 @@ const TESTS_BN: TestPackage[] = [
     price: 1200,
     originalPrice: 1500,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1200,
       'lab_labaid': 1400,
       'lab_ibnsina': 1200,
       'lab_birdem': 1000,
@@ -1073,7 +1073,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 1200
     },
     originalPriceByLab: {
-      'lab_popular': 450,
+      'lab_popular': 1400,
       'lab_labaid': 1650,
       'lab_ibnsina': 1400,
       'lab_birdem': 1200,
@@ -1093,7 +1093,7 @@ const TESTS_BN: TestPackage[] = [
     price: 1400,
     originalPrice: 1800,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1400,
       'lab_labaid': 1600,
       'lab_ibnsina': 1400,
       'lab_birdem': 1200,
@@ -1103,7 +1103,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 1400
     },
     originalPriceByLab: {
-      'lab_popular': 500,
+      'lab_popular': 1650,
       'lab_labaid': 1900,
       'lab_ibnsina': 1650,
       'lab_birdem': 1400,
@@ -1123,7 +1123,7 @@ const TESTS_BN: TestPackage[] = [
     price: 900,
     originalPrice: 1200,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 950,
       'lab_labaid': 1100,
       'lab_ibnsina': 950,
       'lab_birdem': 800,
@@ -1133,7 +1133,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 900
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1150,
       'lab_labaid': 1300,
       'lab_ibnsina': 1150,
       'lab_birdem': 950,
@@ -1153,7 +1153,7 @@ const TESTS_BN: TestPackage[] = [
     price: 650,
     originalPrice: 850,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 683,
       'lab_labaid': 747,
       'lab_ibnsina': 683,
       'lab_birdem': 585,
@@ -1163,7 +1163,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 650
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 935,
       'lab_labaid': 1020,
       'lab_ibnsina': 935,
       'lab_birdem': 808,
@@ -1183,7 +1183,7 @@ const TESTS_BN: TestPackage[] = [
     price: 900,
     originalPrice: 1200,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 945,
       'lab_labaid': 1035,
       'lab_ibnsina': 945,
       'lab_birdem': 810,
@@ -1193,7 +1193,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 900
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1320,
       'lab_labaid': 1440,
       'lab_ibnsina': 1320,
       'lab_birdem': 1140,
@@ -1213,7 +1213,7 @@ const TESTS_BN: TestPackage[] = [
     price: 800,
     originalPrice: 1050,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 840,
       'lab_labaid': 920,
       'lab_ibnsina': 840,
       'lab_birdem': 720,
@@ -1223,7 +1223,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 800
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1155,
       'lab_labaid': 1260,
       'lab_ibnsina': 1155,
       'lab_birdem': 998,
@@ -1243,7 +1243,7 @@ const TESTS_BN: TestPackage[] = [
     price: 200,
     originalPrice: 300,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 210,
       'lab_labaid': 230,
       'lab_ibnsina': 210,
       'lab_birdem': 180,
@@ -1253,7 +1253,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 200
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 330,
       'lab_labaid': 360,
       'lab_ibnsina': 330,
       'lab_birdem': 285,
@@ -1273,7 +1273,7 @@ const TESTS_BN: TestPackage[] = [
     price: 250,
     originalPrice: 350,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 263,
       'lab_labaid': 288,
       'lab_ibnsina': 263,
       'lab_birdem': 225,
@@ -1283,7 +1283,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 250
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 385,
       'lab_labaid': 420,
       'lab_ibnsina': 385,
       'lab_birdem': 333,
@@ -1303,7 +1303,7 @@ const TESTS_BN: TestPackage[] = [
     price: 550,
     originalPrice: 750,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 578,
       'lab_labaid': 633,
       'lab_ibnsina': 578,
       'lab_birdem': 495,
@@ -1313,7 +1313,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 550
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 825,
       'lab_labaid': 900,
       'lab_ibnsina': 825,
       'lab_birdem': 713,
@@ -1333,7 +1333,7 @@ const TESTS_BN: TestPackage[] = [
     price: 850,
     originalPrice: 1100,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 893,
       'lab_labaid': 977,
       'lab_ibnsina': 893,
       'lab_birdem': 765,
@@ -1343,7 +1343,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 850
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1210,
       'lab_labaid': 1320,
       'lab_ibnsina': 1210,
       'lab_birdem': 1045,
@@ -1363,7 +1363,7 @@ const TESTS_BN: TestPackage[] = [
     price: 350,
     originalPrice: 500,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 368,
       'lab_labaid': 402,
       'lab_ibnsina': 368,
       'lab_birdem': 315,
@@ -1373,7 +1373,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 350
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 550,
       'lab_labaid': 600,
       'lab_ibnsina': 550,
       'lab_birdem': 475,
@@ -1393,7 +1393,7 @@ const TESTS_BN: TestPackage[] = [
     price: 650,
     originalPrice: 850,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 683,
       'lab_labaid': 747,
       'lab_ibnsina': 683,
       'lab_birdem': 585,
@@ -1403,7 +1403,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 650
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 935,
       'lab_labaid': 1020,
       'lab_ibnsina': 935,
       'lab_birdem': 808,
@@ -1423,7 +1423,7 @@ const TESTS_BN: TestPackage[] = [
     price: 2800,
     originalPrice: 3500,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 2940,
       'lab_labaid': 3220,
       'lab_ibnsina': 2940,
       'lab_birdem': 2520,
@@ -1433,7 +1433,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 2800
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 3850,
       'lab_labaid': 4200,
       'lab_ibnsina': 3850,
       'lab_birdem': 3325,
@@ -1453,7 +1453,7 @@ const TESTS_BN: TestPackage[] = [
     price: 350,
     originalPrice: 500,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 368,
       'lab_labaid': 402,
       'lab_ibnsina': 368,
       'lab_birdem': 315,
@@ -1463,7 +1463,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 350
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 550,
       'lab_labaid': 600,
       'lab_ibnsina': 550,
       'lab_birdem': 475,
@@ -1483,7 +1483,7 @@ const TESTS_BN: TestPackage[] = [
     price: 1100,
     originalPrice: 1500,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1155,
       'lab_labaid': 1265,
       'lab_ibnsina': 1155,
       'lab_birdem': 990,
@@ -1493,7 +1493,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 1100
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1650,
       'lab_labaid': 1800,
       'lab_ibnsina': 1650,
       'lab_birdem': 1425,
@@ -1513,7 +1513,7 @@ const TESTS_BN: TestPackage[] = [
     price: 950,
     originalPrice: 1300,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 998,
       'lab_labaid': 1093,
       'lab_ibnsina': 998,
       'lab_birdem': 855,
@@ -1523,7 +1523,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 950
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1430,
       'lab_labaid': 1560,
       'lab_ibnsina': 1430,
       'lab_birdem': 1235,
@@ -1543,7 +1543,7 @@ const TESTS_BN: TestPackage[] = [
     price: 600,
     originalPrice: 800,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 630,
       'lab_labaid': 690,
       'lab_ibnsina': 630,
       'lab_birdem': 540,
@@ -1553,7 +1553,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 600
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 880,
       'lab_labaid': 960,
       'lab_ibnsina': 880,
       'lab_birdem': 760,
@@ -1573,7 +1573,7 @@ const TESTS_BN: TestPackage[] = [
     price: 450,
     originalPrice: 650,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 473,
       'lab_labaid': 518,
       'lab_ibnsina': 473,
       'lab_birdem': 405,
@@ -1583,7 +1583,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 450
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 715,
       'lab_labaid': 780,
       'lab_ibnsina': 715,
       'lab_birdem': 618,
@@ -1603,7 +1603,7 @@ const TESTS_BN: TestPackage[] = [
     price: 900,
     originalPrice: 1200,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 945,
       'lab_labaid': 1035,
       'lab_ibnsina': 945,
       'lab_birdem': 810,
@@ -1613,7 +1613,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 900
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1320,
       'lab_labaid': 1440,
       'lab_ibnsina': 1320,
       'lab_birdem': 1140,
@@ -1633,7 +1633,7 @@ const TESTS_BN: TestPackage[] = [
     price: 700,
     originalPrice: 950,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 735,
       'lab_labaid': 805,
       'lab_ibnsina': 735,
       'lab_birdem': 630,
@@ -1643,7 +1643,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 700
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1045,
       'lab_labaid': 1140,
       'lab_ibnsina': 1045,
       'lab_birdem': 903,
@@ -1663,7 +1663,7 @@ const TESTS_BN: TestPackage[] = [
     price: 950,
     originalPrice: 1300,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 998,
       'lab_labaid': 1093,
       'lab_ibnsina': 998,
       'lab_birdem': 855,
@@ -1673,7 +1673,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 950
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1430,
       'lab_labaid': 1560,
       'lab_ibnsina': 1430,
       'lab_birdem': 1235,
@@ -1693,7 +1693,7 @@ const TESTS_BN: TestPackage[] = [
     price: 900,
     originalPrice: 1250,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 945,
       'lab_labaid': 1035,
       'lab_ibnsina': 945,
       'lab_birdem': 810,
@@ -1703,7 +1703,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 900
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1375,
       'lab_labaid': 1500,
       'lab_ibnsina': 1375,
       'lab_birdem': 1188,
@@ -1723,7 +1723,7 @@ const TESTS_BN: TestPackage[] = [
     price: 950,
     originalPrice: 1300,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 998,
       'lab_labaid': 1093,
       'lab_ibnsina': 998,
       'lab_birdem': 855,
@@ -1733,7 +1733,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 950
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1430,
       'lab_labaid': 1560,
       'lab_ibnsina': 1430,
       'lab_birdem': 1235,
@@ -1753,7 +1753,7 @@ const TESTS_BN: TestPackage[] = [
     price: 600,
     originalPrice: 850,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 630,
       'lab_labaid': 690,
       'lab_ibnsina': 630,
       'lab_birdem': 540,
@@ -1763,7 +1763,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 600
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 935,
       'lab_labaid': 1020,
       'lab_ibnsina': 935,
       'lab_birdem': 808,
@@ -1783,7 +1783,7 @@ const TESTS_BN: TestPackage[] = [
     price: 3600,
     originalPrice: 4800,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 3780,
       'lab_labaid': 4140,
       'lab_ibnsina': 3780,
       'lab_birdem': 3240,
@@ -1793,7 +1793,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 3600
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 5280,
       'lab_labaid': 5760,
       'lab_ibnsina': 5280,
       'lab_birdem': 4560,
@@ -1813,7 +1813,7 @@ const TESTS_BN: TestPackage[] = [
     price: 600,
     originalPrice: 800,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 630,
       'lab_labaid': 690,
       'lab_ibnsina': 630,
       'lab_birdem': 540,
@@ -1823,7 +1823,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 600
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 880,
       'lab_labaid': 960,
       'lab_ibnsina': 880,
       'lab_birdem': 760,
@@ -1843,7 +1843,7 @@ const TESTS_BN: TestPackage[] = [
     price: 650,
     originalPrice: 850,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 683,
       'lab_labaid': 747,
       'lab_ibnsina': 683,
       'lab_birdem': 585,
@@ -1853,7 +1853,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 650
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 935,
       'lab_labaid': 1020,
       'lab_ibnsina': 935,
       'lab_birdem': 808,
@@ -1873,7 +1873,7 @@ const TESTS_BN: TestPackage[] = [
     price: 1300,
     originalPrice: 1700,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1365,
       'lab_labaid': 1495,
       'lab_ibnsina': 1365,
       'lab_birdem': 1170,
@@ -1883,7 +1883,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 1300
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1870,
       'lab_labaid': 2040,
       'lab_ibnsina': 1870,
       'lab_birdem': 1615,
@@ -1903,7 +1903,7 @@ const TESTS_BN: TestPackage[] = [
     price: 1400,
     originalPrice: 1900,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1470,
       'lab_labaid': 1610,
       'lab_ibnsina': 1470,
       'lab_birdem': 1260,
@@ -1913,7 +1913,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 1400
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 2090,
       'lab_labaid': 2280,
       'lab_ibnsina': 2090,
       'lab_birdem': 1805,
@@ -1933,7 +1933,7 @@ const TESTS_BN: TestPackage[] = [
     price: 400,
     originalPrice: 550,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 420,
       'lab_labaid': 460,
       'lab_ibnsina': 420,
       'lab_birdem': 360,
@@ -1943,7 +1943,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 400
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 605,
       'lab_labaid': 660,
       'lab_ibnsina': 605,
       'lab_birdem': 523,
@@ -1963,7 +1963,7 @@ const TESTS_BN: TestPackage[] = [
     price: 350,
     originalPrice: 500,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 368,
       'lab_labaid': 402,
       'lab_ibnsina': 368,
       'lab_birdem': 315,
@@ -1973,7 +1973,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 350
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 550,
       'lab_labaid': 600,
       'lab_ibnsina': 550,
       'lab_birdem': 475,
@@ -1993,7 +1993,7 @@ const TESTS_BN: TestPackage[] = [
     price: 250,
     originalPrice: 350,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 263,
       'lab_labaid': 288,
       'lab_ibnsina': 263,
       'lab_birdem': 225,
@@ -2003,7 +2003,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 250
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 385,
       'lab_labaid': 420,
       'lab_ibnsina': 385,
       'lab_birdem': 333,
@@ -2023,7 +2023,7 @@ const TESTS_BN: TestPackage[] = [
     price: 950,
     originalPrice: 1300,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 998,
       'lab_labaid': 1093,
       'lab_ibnsina': 998,
       'lab_birdem': 855,
@@ -2033,7 +2033,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 950
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1430,
       'lab_labaid': 1560,
       'lab_ibnsina': 1430,
       'lab_birdem': 1235,
@@ -2053,7 +2053,7 @@ const TESTS_BN: TestPackage[] = [
     price: 850,
     originalPrice: 1150,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 893,
       'lab_labaid': 977,
       'lab_ibnsina': 893,
       'lab_birdem': 765,
@@ -2063,7 +2063,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 850
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1265,
       'lab_labaid': 1380,
       'lab_ibnsina': 1265,
       'lab_birdem': 1093,
@@ -2083,7 +2083,7 @@ const TESTS_BN: TestPackage[] = [
     price: 800,
     originalPrice: 1100,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 840,
       'lab_labaid': 920,
       'lab_ibnsina': 840,
       'lab_birdem': 720,
@@ -2093,7 +2093,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 800
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1210,
       'lab_labaid': 1320,
       'lab_ibnsina': 1210,
       'lab_birdem': 1045,
@@ -2113,7 +2113,7 @@ const TESTS_BN: TestPackage[] = [
     price: 800,
     originalPrice: 1100,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 840,
       'lab_labaid': 920,
       'lab_ibnsina': 840,
       'lab_birdem': 720,
@@ -2123,7 +2123,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 800
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1210,
       'lab_labaid': 1320,
       'lab_ibnsina': 1210,
       'lab_birdem': 1045,
@@ -2143,7 +2143,7 @@ const TESTS_BN: TestPackage[] = [
     price: 2500,
     originalPrice: 3200,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 2625,
       'lab_labaid': 2875,
       'lab_ibnsina': 2625,
       'lab_birdem': 2250,
@@ -2153,7 +2153,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 2500
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 3520,
       'lab_labaid': 3840,
       'lab_ibnsina': 3520,
       'lab_birdem': 3040,
@@ -2173,7 +2173,7 @@ const TESTS_BN: TestPackage[] = [
     price: 900,
     originalPrice: 1250,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 945,
       'lab_labaid': 1035,
       'lab_ibnsina': 945,
       'lab_birdem': 810,
@@ -2183,7 +2183,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 900
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1375,
       'lab_labaid': 1500,
       'lab_ibnsina': 1375,
       'lab_birdem': 1188,
@@ -2203,7 +2203,7 @@ const TESTS_BN: TestPackage[] = [
     price: 950,
     originalPrice: 1300,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 998,
       'lab_labaid': 1093,
       'lab_ibnsina': 998,
       'lab_birdem': 855,
@@ -2213,7 +2213,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 950
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1430,
       'lab_labaid': 1560,
       'lab_ibnsina': 1430,
       'lab_birdem': 1235,
@@ -2233,7 +2233,7 @@ const TESTS_BN: TestPackage[] = [
     price: 1100,
     originalPrice: 1500,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1155,
       'lab_labaid': 1265,
       'lab_ibnsina': 1155,
       'lab_birdem': 990,
@@ -2243,7 +2243,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 1100
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1650,
       'lab_labaid': 1800,
       'lab_ibnsina': 1650,
       'lab_birdem': 1425,
@@ -2263,7 +2263,7 @@ const TESTS_BN: TestPackage[] = [
     price: 1300,
     originalPrice: 1750,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1365,
       'lab_labaid': 1495,
       'lab_ibnsina': 1365,
       'lab_birdem': 1170,
@@ -2273,7 +2273,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 1300
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1925,
       'lab_labaid': 2100,
       'lab_ibnsina': 1925,
       'lab_birdem': 1663,
@@ -2293,7 +2293,7 @@ const TESTS_BN: TestPackage[] = [
     price: 600,
     originalPrice: 850,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 630,
       'lab_labaid': 690,
       'lab_ibnsina': 630,
       'lab_birdem': 540,
@@ -2303,7 +2303,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 600
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 935,
       'lab_labaid': 1020,
       'lab_ibnsina': 935,
       'lab_birdem': 808,
@@ -2323,7 +2323,7 @@ const TESTS_BN: TestPackage[] = [
     price: 1800,
     originalPrice: 2400,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1890,
       'lab_labaid': 2070,
       'lab_ibnsina': 1890,
       'lab_birdem': 1620,
@@ -2333,7 +2333,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 1800
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 2640,
       'lab_labaid': 2880,
       'lab_ibnsina': 2640,
       'lab_birdem': 2280,
@@ -2353,7 +2353,7 @@ const TESTS_BN: TestPackage[] = [
     price: 1200,
     originalPrice: 1600,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1260,
       'lab_labaid': 1380,
       'lab_ibnsina': 1260,
       'lab_birdem': 1080,
@@ -2363,7 +2363,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 1200
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1760,
       'lab_labaid': 1920,
       'lab_ibnsina': 1760,
       'lab_birdem': 1520,
@@ -2383,7 +2383,7 @@ const TESTS_BN: TestPackage[] = [
     price: 1600,
     originalPrice: 2100,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1680,
       'lab_labaid': 1840,
       'lab_ibnsina': 1680,
       'lab_birdem': 1440,
@@ -2393,7 +2393,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 1600
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 2310,
       'lab_labaid': 2520,
       'lab_ibnsina': 2310,
       'lab_birdem': 1995,
@@ -2413,7 +2413,7 @@ const TESTS_BN: TestPackage[] = [
     price: 800,
     originalPrice: 1100,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 840,
       'lab_labaid': 920,
       'lab_ibnsina': 840,
       'lab_birdem': 720,
@@ -2423,7 +2423,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 800
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1210,
       'lab_labaid': 1320,
       'lab_ibnsina': 1210,
       'lab_birdem': 1045,
@@ -2443,7 +2443,7 @@ const TESTS_BN: TestPackage[] = [
     price: 550,
     originalPrice: 750,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 578,
       'lab_labaid': 633,
       'lab_ibnsina': 578,
       'lab_birdem': 495,
@@ -2453,7 +2453,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 550
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 825,
       'lab_labaid': 900,
       'lab_ibnsina': 825,
       'lab_birdem': 713,
@@ -2473,7 +2473,7 @@ const TESTS_BN: TestPackage[] = [
     price: 1100,
     originalPrice: 1500,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1155,
       'lab_labaid': 1265,
       'lab_ibnsina': 1155,
       'lab_birdem': 990,
@@ -2483,7 +2483,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 1100
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1650,
       'lab_labaid': 1800,
       'lab_ibnsina': 1650,
       'lab_birdem': 1425,
@@ -2503,7 +2503,7 @@ const TESTS_BN: TestPackage[] = [
     price: 1300,
     originalPrice: 1750,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1365,
       'lab_labaid': 1495,
       'lab_ibnsina': 1365,
       'lab_birdem': 1170,
@@ -2513,7 +2513,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 1300
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1925,
       'lab_labaid': 2100,
       'lab_ibnsina': 1925,
       'lab_birdem': 1663,
@@ -2533,7 +2533,7 @@ const TESTS_BN: TestPackage[] = [
     price: 1300,
     originalPrice: 1750,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1365,
       'lab_labaid': 1495,
       'lab_ibnsina': 1365,
       'lab_birdem': 1170,
@@ -2543,7 +2543,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 1300
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1925,
       'lab_labaid': 2100,
       'lab_ibnsina': 1925,
       'lab_birdem': 1663,
@@ -2563,7 +2563,7 @@ const TESTS_BN: TestPackage[] = [
     price: 1300,
     originalPrice: 1750,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1365,
       'lab_labaid': 1495,
       'lab_ibnsina': 1365,
       'lab_birdem': 1170,
@@ -2573,7 +2573,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 1300
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1925,
       'lab_labaid': 2100,
       'lab_ibnsina': 1925,
       'lab_birdem': 1663,
@@ -2593,7 +2593,7 @@ const TESTS_BN: TestPackage[] = [
     price: 1100,
     originalPrice: 1500,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1155,
       'lab_labaid': 1265,
       'lab_ibnsina': 1155,
       'lab_birdem': 990,
@@ -2603,7 +2603,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 1100
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1650,
       'lab_labaid': 1800,
       'lab_ibnsina': 1650,
       'lab_birdem': 1425,
@@ -2623,7 +2623,7 @@ const TESTS_BN: TestPackage[] = [
     price: 650,
     originalPrice: 900,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 683,
       'lab_labaid': 747,
       'lab_ibnsina': 683,
       'lab_birdem': 585,
@@ -2633,7 +2633,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 650
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 990,
       'lab_labaid': 1080,
       'lab_ibnsina': 990,
       'lab_birdem': 855,
@@ -2653,7 +2653,7 @@ const TESTS_BN: TestPackage[] = [
     price: 550,
     originalPrice: 750,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 578,
       'lab_labaid': 633,
       'lab_ibnsina': 578,
       'lab_birdem': 495,
@@ -2663,7 +2663,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 550
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 825,
       'lab_labaid': 900,
       'lab_ibnsina': 825,
       'lab_birdem': 713,
@@ -2683,7 +2683,7 @@ const TESTS_BN: TestPackage[] = [
     price: 700,
     originalPrice: 950,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 735,
       'lab_labaid': 805,
       'lab_ibnsina': 735,
       'lab_birdem': 630,
@@ -2693,7 +2693,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 700
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1045,
       'lab_labaid': 1140,
       'lab_ibnsina': 1045,
       'lab_birdem': 903,
@@ -2713,7 +2713,7 @@ const TESTS_BN: TestPackage[] = [
     price: 650,
     originalPrice: 900,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 683,
       'lab_labaid': 747,
       'lab_ibnsina': 683,
       'lab_birdem': 585,
@@ -2723,7 +2723,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 650
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 990,
       'lab_labaid': 1080,
       'lab_ibnsina': 990,
       'lab_birdem': 855,
@@ -2743,7 +2743,7 @@ const TESTS_BN: TestPackage[] = [
     price: 700,
     originalPrice: 950,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 735,
       'lab_labaid': 805,
       'lab_ibnsina': 735,
       'lab_birdem': 630,
@@ -2753,7 +2753,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 700
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1045,
       'lab_labaid': 1140,
       'lab_ibnsina': 1045,
       'lab_birdem': 903,
@@ -2773,7 +2773,7 @@ const TESTS_BN: TestPackage[] = [
     price: 850,
     originalPrice: 1150,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 893,
       'lab_labaid': 977,
       'lab_ibnsina': 893,
       'lab_birdem': 765,
@@ -2783,7 +2783,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 850
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1265,
       'lab_labaid': 1380,
       'lab_ibnsina': 1265,
       'lab_birdem': 1093,
@@ -2803,7 +2803,7 @@ const TESTS_BN: TestPackage[] = [
     price: 700,
     originalPrice: 950,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 735,
       'lab_labaid': 805,
       'lab_ibnsina': 735,
       'lab_birdem': 630,
@@ -2813,7 +2813,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 700
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1045,
       'lab_labaid': 1140,
       'lab_ibnsina': 1045,
       'lab_birdem': 903,
@@ -2833,7 +2833,7 @@ const TESTS_BN: TestPackage[] = [
     price: 1100,
     originalPrice: 1500,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1155,
       'lab_labaid': 1265,
       'lab_ibnsina': 1155,
       'lab_birdem': 990,
@@ -2843,7 +2843,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 1100
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1650,
       'lab_labaid': 1800,
       'lab_ibnsina': 1650,
       'lab_birdem': 1425,
@@ -2863,7 +2863,7 @@ const TESTS_BN: TestPackage[] = [
     price: 1200,
     originalPrice: 1650,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1260,
       'lab_labaid': 1380,
       'lab_ibnsina': 1260,
       'lab_birdem': 1080,
@@ -2873,7 +2873,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 1200
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1815,
       'lab_labaid': 1980,
       'lab_ibnsina': 1815,
       'lab_birdem': 1568,
@@ -2893,7 +2893,7 @@ const TESTS_BN: TestPackage[] = [
     price: 1400,
     originalPrice: 1900,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1470,
       'lab_labaid': 1610,
       'lab_ibnsina': 1470,
       'lab_birdem': 1260,
@@ -2903,7 +2903,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 1400
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 2090,
       'lab_labaid': 2280,
       'lab_ibnsina': 2090,
       'lab_birdem': 1805,
@@ -2923,7 +2923,7 @@ const TESTS_BN: TestPackage[] = [
     price: 1500,
     originalPrice: 2000,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1575,
       'lab_labaid': 1725,
       'lab_ibnsina': 1575,
       'lab_birdem': 1350,
@@ -2933,7 +2933,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 1500
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 2200,
       'lab_labaid': 2400,
       'lab_ibnsina': 2200,
       'lab_birdem': 1900,
@@ -2953,7 +2953,7 @@ const TESTS_BN: TestPackage[] = [
     price: 2400,
     originalPrice: 3200,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 2520,
       'lab_labaid': 2760,
       'lab_ibnsina': 2520,
       'lab_birdem': 2160,
@@ -2963,7 +2963,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 2400
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 3520,
       'lab_labaid': 3840,
       'lab_ibnsina': 3520,
       'lab_birdem': 3040,
@@ -2983,7 +2983,7 @@ const TESTS_BN: TestPackage[] = [
     price: 1500,
     originalPrice: 2000,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1575,
       'lab_labaid': 1725,
       'lab_ibnsina': 1575,
       'lab_birdem': 1350,
@@ -2993,7 +2993,7 @@ const TESTS_BN: TestPackage[] = [
       'lab_medinova': 1500
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 2200,
       'lab_labaid': 2400,
       'lab_ibnsina': 2200,
       'lab_birdem': 1900,
@@ -3016,7 +3016,7 @@ const TESTS_EN: TestPackage[] = [
     price: 450,
     originalPrice: 600,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 480,
       'lab_labaid': 600,
       'lab_ibnsina': 480,
       'lab_birdem': 400,
@@ -3026,7 +3026,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 450
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 600,
       'lab_labaid': 750,
       'lab_ibnsina': 600,
       'lab_birdem': 500,
@@ -3046,7 +3046,7 @@ const TESTS_EN: TestPackage[] = [
     price: 850,
     originalPrice: 1100,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 900,
       'lab_labaid': 1000,
       'lab_ibnsina': 900,
       'lab_birdem': 700,
@@ -3056,7 +3056,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 850
     },
     originalPriceByLab: {
-      'lab_popular': 500,
+      'lab_popular': 1150,
       'lab_labaid': 1300,
       'lab_ibnsina': 1150,
       'lab_birdem': 900,
@@ -3076,7 +3076,7 @@ const TESTS_EN: TestPackage[] = [
     price: 1200,
     originalPrice: 1600,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1300,
       'lab_labaid': 1500,
       'lab_ibnsina': 1300,
       'lab_birdem': 1000,
@@ -3086,7 +3086,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 1200
     },
     originalPriceByLab: {
-      'lab_popular': 500,
+      'lab_popular': 1650,
       'lab_labaid': 1900,
       'lab_ibnsina': 1650,
       'lab_birdem': 1300,
@@ -3106,7 +3106,7 @@ const TESTS_EN: TestPackage[] = [
     price: 1500,
     originalPrice: 2000,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1600,
       'lab_labaid': 2000,
       'lab_ibnsina': 1600,
       'lab_birdem': 1200,
@@ -3116,7 +3116,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 1500
     },
     originalPriceByLab: {
-      'lab_popular': 500,
+      'lab_popular': 2050,
       'lab_labaid': 2500,
       'lab_ibnsina': 2050,
       'lab_birdem': 1600,
@@ -3136,7 +3136,7 @@ const TESTS_EN: TestPackage[] = [
     price: 2500,
     originalPrice: 3200,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 2700,
       'lab_labaid': 3200,
       'lab_ibnsina': 2700,
       'lab_birdem': 2200,
@@ -3146,7 +3146,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 2500
     },
     originalPriceByLab: {
-      'lab_popular': 500,
+      'lab_popular': 3400,
       'lab_labaid': 4000,
       'lab_ibnsina': 3400,
       'lab_birdem': 2800,
@@ -3166,7 +3166,7 @@ const TESTS_EN: TestPackage[] = [
     price: 450,
     originalPrice: 650,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 500,
       'lab_labaid': 600,
       'lab_ibnsina': 500,
       'lab_birdem': 400,
@@ -3176,7 +3176,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 450
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 650,
       'lab_labaid': 800,
       'lab_ibnsina': 650,
       'lab_birdem': 550,
@@ -3196,7 +3196,7 @@ const TESTS_EN: TestPackage[] = [
     price: 500,
     originalPrice: 700,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 550,
       'lab_labaid': 650,
       'lab_ibnsina': 550,
       'lab_birdem': 450,
@@ -3206,7 +3206,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 500
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 700,
       'lab_labaid': 850,
       'lab_ibnsina': 700,
       'lab_birdem': 600,
@@ -3226,7 +3226,7 @@ const TESTS_EN: TestPackage[] = [
     price: 180,
     originalPrice: 250,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 200,
       'lab_labaid': 250,
       'lab_ibnsina': 200,
       'lab_birdem': 150,
@@ -3236,7 +3236,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 180
     },
     originalPriceByLab: {
-      'lab_popular': 350,
+      'lab_popular': 260,
       'lab_labaid': 350,
       'lab_ibnsina': 260,
       'lab_birdem': 200,
@@ -3256,7 +3256,7 @@ const TESTS_EN: TestPackage[] = [
     price: 300,
     originalPrice: 400,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 340,
       'lab_labaid': 400,
       'lab_ibnsina': 340,
       'lab_birdem': 280,
@@ -3266,7 +3266,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 300
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 450,
       'lab_labaid': 550,
       'lab_ibnsina': 450,
       'lab_birdem': 380,
@@ -3286,7 +3286,7 @@ const TESTS_EN: TestPackage[] = [
     price: 450,
     originalPrice: 650,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 500,
       'lab_labaid': 600,
       'lab_ibnsina': 500,
       'lab_birdem': 400,
@@ -3296,7 +3296,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 450
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 650,
       'lab_labaid': 800,
       'lab_ibnsina': 650,
       'lab_birdem': 550,
@@ -3316,7 +3316,7 @@ const TESTS_EN: TestPackage[] = [
     price: 900,
     originalPrice: 1250,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 950,
       'lab_labaid': 1100,
       'lab_ibnsina': 950,
       'lab_birdem': 800,
@@ -3326,7 +3326,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 900
     },
     originalPriceByLab: {
-      'lab_popular': 500,
+      'lab_popular': 1250,
       'lab_labaid': 1400,
       'lab_ibnsina': 1250,
       'lab_birdem': 1050,
@@ -3346,7 +3346,7 @@ const TESTS_EN: TestPackage[] = [
     price: 950,
     originalPrice: 1300,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1050,
       'lab_labaid': 1200,
       'lab_ibnsina': 1050,
       'lab_birdem': 850,
@@ -3356,7 +3356,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 950
     },
     originalPriceByLab: {
-      'lab_popular': 500,
+      'lab_popular': 1350,
       'lab_labaid': 1550,
       'lab_ibnsina': 1350,
       'lab_birdem': 1150,
@@ -3376,7 +3376,7 @@ const TESTS_EN: TestPackage[] = [
     price: 400,
     originalPrice: 500,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 400,
       'lab_labaid': 450,
       'lab_ibnsina': 400,
       'lab_birdem': 350,
@@ -3386,7 +3386,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 400
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 500,
       'lab_labaid': 600,
       'lab_ibnsina': 500,
       'lab_birdem': 450,
@@ -3406,7 +3406,7 @@ const TESTS_EN: TestPackage[] = [
     price: 500,
     originalPrice: 650,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 500,
       'lab_labaid': 550,
       'lab_ibnsina': 500,
       'lab_birdem': 400,
@@ -3416,7 +3416,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 500
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 650,
       'lab_labaid': 700,
       'lab_ibnsina': 650,
       'lab_birdem': 500,
@@ -3436,7 +3436,7 @@ const TESTS_EN: TestPackage[] = [
     price: 500,
     originalPrice: 650,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 500,
       'lab_labaid': 550,
       'lab_ibnsina': 500,
       'lab_birdem': 400,
@@ -3446,7 +3446,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 500
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 650,
       'lab_labaid': 700,
       'lab_ibnsina': 650,
       'lab_birdem': 500,
@@ -3466,7 +3466,7 @@ const TESTS_EN: TestPackage[] = [
     price: 400,
     originalPrice: 550,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 400,
       'lab_labaid': 450,
       'lab_ibnsina': 400,
       'lab_birdem': 350,
@@ -3476,7 +3476,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 400
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 500,
       'lab_labaid': 600,
       'lab_ibnsina': 500,
       'lab_birdem': 450,
@@ -3496,7 +3496,7 @@ const TESTS_EN: TestPackage[] = [
     price: 450,
     originalPrice: 600,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 450,
       'lab_labaid': 500,
       'lab_ibnsina': 450,
       'lab_birdem': 350,
@@ -3506,7 +3506,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 450
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 550,
       'lab_labaid': 650,
       'lab_ibnsina': 550,
       'lab_birdem': 450,
@@ -3526,7 +3526,7 @@ const TESTS_EN: TestPackage[] = [
     price: 600,
     originalPrice: 800,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 600,
       'lab_labaid': 700,
       'lab_ibnsina': 600,
       'lab_birdem': 500,
@@ -3536,7 +3536,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 600
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 750,
       'lab_labaid': 900,
       'lab_ibnsina': 750,
       'lab_birdem': 650,
@@ -3556,7 +3556,7 @@ const TESTS_EN: TestPackage[] = [
     price: 700,
     originalPrice: 900,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 650,
       'lab_labaid': 750,
       'lab_ibnsina': 650,
       'lab_birdem': 550,
@@ -3566,7 +3566,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 700
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 800,
       'lab_labaid': 950,
       'lab_ibnsina': 800,
       'lab_birdem': 700,
@@ -3586,7 +3586,7 @@ const TESTS_EN: TestPackage[] = [
     price: 700,
     originalPrice: 900,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 650,
       'lab_labaid': 750,
       'lab_ibnsina': 650,
       'lab_birdem': 550,
@@ -3596,7 +3596,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 700
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 800,
       'lab_labaid': 950,
       'lab_ibnsina': 800,
       'lab_birdem': 700,
@@ -3616,7 +3616,7 @@ const TESTS_EN: TestPackage[] = [
     price: 200,
     originalPrice: 300,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 200,
       'lab_labaid': 250,
       'lab_ibnsina': 200,
       'lab_birdem': 150,
@@ -3626,7 +3626,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 200
     },
     originalPriceByLab: {
-      'lab_popular': 350,
+      'lab_popular': 260,
       'lab_labaid': 350,
       'lab_ibnsina': 260,
       'lab_birdem': 200,
@@ -3646,7 +3646,7 @@ const TESTS_EN: TestPackage[] = [
     price: 180,
     originalPrice: 250,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 200,
       'lab_labaid': 250,
       'lab_ibnsina': 200,
       'lab_birdem': 150,
@@ -3656,7 +3656,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 180
     },
     originalPriceByLab: {
-      'lab_popular': 350,
+      'lab_popular': 260,
       'lab_labaid': 350,
       'lab_ibnsina': 260,
       'lab_birdem': 200,
@@ -3676,7 +3676,7 @@ const TESTS_EN: TestPackage[] = [
     price: 300,
     originalPrice: 400,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 300,
       'lab_labaid': 350,
       'lab_ibnsina': 300,
       'lab_birdem': 250,
@@ -3736,7 +3736,7 @@ const TESTS_EN: TestPackage[] = [
     price: 600,
     originalPrice: 800,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 600,
       'lab_labaid': 700,
       'lab_ibnsina': 600,
       'lab_birdem': 500,
@@ -3746,7 +3746,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 600
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 750,
       'lab_labaid': 900,
       'lab_ibnsina': 750,
       'lab_birdem': 650,
@@ -3766,7 +3766,7 @@ const TESTS_EN: TestPackage[] = [
     price: 450,
     originalPrice: 600,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 450,
       'lab_labaid': 500,
       'lab_ibnsina': 450,
       'lab_birdem': 350,
@@ -3776,7 +3776,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 450
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 550,
       'lab_labaid': 650,
       'lab_ibnsina': 550,
       'lab_birdem': 450,
@@ -3796,7 +3796,7 @@ const TESTS_EN: TestPackage[] = [
     price: 600,
     originalPrice: 800,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 600,
       'lab_labaid': 700,
       'lab_ibnsina': 600,
       'lab_birdem': 500,
@@ -3806,7 +3806,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 600
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 750,
       'lab_labaid': 900,
       'lab_ibnsina': 750,
       'lab_birdem': 650,
@@ -3826,7 +3826,7 @@ const TESTS_EN: TestPackage[] = [
     price: 600,
     originalPrice: 800,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 600,
       'lab_labaid': 700,
       'lab_ibnsina': 600,
       'lab_birdem': 500,
@@ -3836,7 +3836,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 600
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 750,
       'lab_labaid': 900,
       'lab_ibnsina': 750,
       'lab_birdem': 650,
@@ -3856,7 +3856,7 @@ const TESTS_EN: TestPackage[] = [
     price: 400,
     originalPrice: 550,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 400,
       'lab_labaid': 450,
       'lab_ibnsina': 400,
       'lab_birdem': 300,
@@ -3866,7 +3866,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 400
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 500,
       'lab_labaid': 600,
       'lab_ibnsina': 500,
       'lab_birdem': 450,
@@ -3886,7 +3886,7 @@ const TESTS_EN: TestPackage[] = [
     price: 400,
     originalPrice: 550,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 400,
       'lab_labaid': 450,
       'lab_ibnsina': 400,
       'lab_birdem': 300,
@@ -3896,7 +3896,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 400
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 500,
       'lab_labaid': 600,
       'lab_ibnsina': 500,
       'lab_birdem': 450,
@@ -3916,7 +3916,7 @@ const TESTS_EN: TestPackage[] = [
     price: 500,
     originalPrice: 700,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 500,
       'lab_labaid': 600,
       'lab_ibnsina': 500,
       'lab_birdem': 400,
@@ -3926,7 +3926,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 500
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 650,
       'lab_labaid': 750,
       'lab_ibnsina': 650,
       'lab_birdem': 500,
@@ -3946,7 +3946,7 @@ const TESTS_EN: TestPackage[] = [
     price: 1500,
     originalPrice: 2000,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1500,
       'lab_labaid': 1800,
       'lab_ibnsina': 1500,
       'lab_birdem': 1200,
@@ -3956,7 +3956,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 1500
     },
     originalPriceByLab: {
-      'lab_popular': 500,
+      'lab_popular': 1850,
       'lab_labaid': 2200,
       'lab_ibnsina': 1850,
       'lab_birdem': 1500,
@@ -3976,7 +3976,7 @@ const TESTS_EN: TestPackage[] = [
     price: 450,
     originalPrice: 600,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 450,
       'lab_labaid': 500,
       'lab_ibnsina': 450,
       'lab_birdem': 400,
@@ -3986,7 +3986,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 450
     },
     originalPriceByLab: {
-      'lab_popular': 350,
+      'lab_popular': 550,
       'lab_labaid': 600,
       'lab_ibnsina': 550,
       'lab_birdem': 450,
@@ -4006,7 +4006,7 @@ const TESTS_EN: TestPackage[] = [
     price: 900,
     originalPrice: 1200,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 950,
       'lab_labaid': 1100,
       'lab_ibnsina': 950,
       'lab_birdem': 800,
@@ -4016,7 +4016,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 900
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1150,
       'lab_labaid': 1300,
       'lab_ibnsina': 1150,
       'lab_birdem': 950,
@@ -4036,7 +4036,7 @@ const TESTS_EN: TestPackage[] = [
     price: 1100,
     originalPrice: 1400,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1100,
       'lab_labaid': 1300,
       'lab_ibnsina': 1100,
       'lab_birdem': 900,
@@ -4046,7 +4046,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 1100
     },
     originalPriceByLab: {
-      'lab_popular': 450,
+      'lab_popular': 1300,
       'lab_labaid': 1550,
       'lab_ibnsina': 1300,
       'lab_birdem': 1100,
@@ -4066,7 +4066,7 @@ const TESTS_EN: TestPackage[] = [
     price: 1200,
     originalPrice: 1500,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1200,
       'lab_labaid': 1400,
       'lab_ibnsina': 1200,
       'lab_birdem': 1000,
@@ -4076,7 +4076,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 1200
     },
     originalPriceByLab: {
-      'lab_popular': 450,
+      'lab_popular': 1400,
       'lab_labaid': 1650,
       'lab_ibnsina': 1400,
       'lab_birdem': 1200,
@@ -4096,7 +4096,7 @@ const TESTS_EN: TestPackage[] = [
     price: 1400,
     originalPrice: 1800,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1400,
       'lab_labaid': 1600,
       'lab_ibnsina': 1400,
       'lab_birdem': 1200,
@@ -4106,7 +4106,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 1400
     },
     originalPriceByLab: {
-      'lab_popular': 500,
+      'lab_popular': 1650,
       'lab_labaid': 1900,
       'lab_ibnsina': 1650,
       'lab_birdem': 1400,
@@ -4126,7 +4126,7 @@ const TESTS_EN: TestPackage[] = [
     price: 900,
     originalPrice: 1200,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 950,
       'lab_labaid': 1100,
       'lab_ibnsina': 950,
       'lab_birdem': 800,
@@ -4136,7 +4136,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 900
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1150,
       'lab_labaid': 1300,
       'lab_ibnsina': 1150,
       'lab_birdem': 950,
@@ -4156,7 +4156,7 @@ const TESTS_EN: TestPackage[] = [
     price: 650,
     originalPrice: 850,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 683,
       'lab_labaid': 747,
       'lab_ibnsina': 683,
       'lab_birdem': 585,
@@ -4166,7 +4166,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 650
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 935,
       'lab_labaid': 1020,
       'lab_ibnsina': 935,
       'lab_birdem': 808,
@@ -4186,7 +4186,7 @@ const TESTS_EN: TestPackage[] = [
     price: 900,
     originalPrice: 1200,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 945,
       'lab_labaid': 1035,
       'lab_ibnsina': 945,
       'lab_birdem': 810,
@@ -4196,7 +4196,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 900
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1320,
       'lab_labaid': 1440,
       'lab_ibnsina': 1320,
       'lab_birdem': 1140,
@@ -4216,7 +4216,7 @@ const TESTS_EN: TestPackage[] = [
     price: 800,
     originalPrice: 1050,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 840,
       'lab_labaid': 920,
       'lab_ibnsina': 840,
       'lab_birdem': 720,
@@ -4226,7 +4226,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 800
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1155,
       'lab_labaid': 1260,
       'lab_ibnsina': 1155,
       'lab_birdem': 998,
@@ -4246,7 +4246,7 @@ const TESTS_EN: TestPackage[] = [
     price: 200,
     originalPrice: 300,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 210,
       'lab_labaid': 230,
       'lab_ibnsina': 210,
       'lab_birdem': 180,
@@ -4256,7 +4256,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 200
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 330,
       'lab_labaid': 360,
       'lab_ibnsina': 330,
       'lab_birdem': 285,
@@ -4276,7 +4276,7 @@ const TESTS_EN: TestPackage[] = [
     price: 250,
     originalPrice: 350,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 263,
       'lab_labaid': 288,
       'lab_ibnsina': 263,
       'lab_birdem': 225,
@@ -4286,7 +4286,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 250
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 385,
       'lab_labaid': 420,
       'lab_ibnsina': 385,
       'lab_birdem': 333,
@@ -4306,7 +4306,7 @@ const TESTS_EN: TestPackage[] = [
     price: 550,
     originalPrice: 750,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 578,
       'lab_labaid': 633,
       'lab_ibnsina': 578,
       'lab_birdem': 495,
@@ -4316,7 +4316,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 550
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 825,
       'lab_labaid': 900,
       'lab_ibnsina': 825,
       'lab_birdem': 713,
@@ -4336,7 +4336,7 @@ const TESTS_EN: TestPackage[] = [
     price: 850,
     originalPrice: 1100,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 893,
       'lab_labaid': 977,
       'lab_ibnsina': 893,
       'lab_birdem': 765,
@@ -4346,7 +4346,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 850
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1210,
       'lab_labaid': 1320,
       'lab_ibnsina': 1210,
       'lab_birdem': 1045,
@@ -4366,7 +4366,7 @@ const TESTS_EN: TestPackage[] = [
     price: 350,
     originalPrice: 500,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 368,
       'lab_labaid': 402,
       'lab_ibnsina': 368,
       'lab_birdem': 315,
@@ -4376,7 +4376,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 350
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 550,
       'lab_labaid': 600,
       'lab_ibnsina': 550,
       'lab_birdem': 475,
@@ -4396,7 +4396,7 @@ const TESTS_EN: TestPackage[] = [
     price: 650,
     originalPrice: 850,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 683,
       'lab_labaid': 747,
       'lab_ibnsina': 683,
       'lab_birdem': 585,
@@ -4406,7 +4406,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 650
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 935,
       'lab_labaid': 1020,
       'lab_ibnsina': 935,
       'lab_birdem': 808,
@@ -4426,7 +4426,7 @@ const TESTS_EN: TestPackage[] = [
     price: 2800,
     originalPrice: 3500,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 2940,
       'lab_labaid': 3220,
       'lab_ibnsina': 2940,
       'lab_birdem': 2520,
@@ -4436,7 +4436,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 2800
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 3850,
       'lab_labaid': 4200,
       'lab_ibnsina': 3850,
       'lab_birdem': 3325,
@@ -4456,7 +4456,7 @@ const TESTS_EN: TestPackage[] = [
     price: 350,
     originalPrice: 500,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 368,
       'lab_labaid': 402,
       'lab_ibnsina': 368,
       'lab_birdem': 315,
@@ -4466,7 +4466,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 350
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 550,
       'lab_labaid': 600,
       'lab_ibnsina': 550,
       'lab_birdem': 475,
@@ -4486,7 +4486,7 @@ const TESTS_EN: TestPackage[] = [
     price: 1100,
     originalPrice: 1500,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1155,
       'lab_labaid': 1265,
       'lab_ibnsina': 1155,
       'lab_birdem': 990,
@@ -4496,7 +4496,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 1100
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1650,
       'lab_labaid': 1800,
       'lab_ibnsina': 1650,
       'lab_birdem': 1425,
@@ -4516,7 +4516,7 @@ const TESTS_EN: TestPackage[] = [
     price: 950,
     originalPrice: 1300,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 998,
       'lab_labaid': 1093,
       'lab_ibnsina': 998,
       'lab_birdem': 855,
@@ -4526,7 +4526,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 950
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1430,
       'lab_labaid': 1560,
       'lab_ibnsina': 1430,
       'lab_birdem': 1235,
@@ -4546,7 +4546,7 @@ const TESTS_EN: TestPackage[] = [
     price: 600,
     originalPrice: 800,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 630,
       'lab_labaid': 690,
       'lab_ibnsina': 630,
       'lab_birdem': 540,
@@ -4556,7 +4556,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 600
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 880,
       'lab_labaid': 960,
       'lab_ibnsina': 880,
       'lab_birdem': 760,
@@ -4576,7 +4576,7 @@ const TESTS_EN: TestPackage[] = [
     price: 450,
     originalPrice: 650,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 473,
       'lab_labaid': 518,
       'lab_ibnsina': 473,
       'lab_birdem': 405,
@@ -4586,7 +4586,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 450
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 715,
       'lab_labaid': 780,
       'lab_ibnsina': 715,
       'lab_birdem': 618,
@@ -4606,7 +4606,7 @@ const TESTS_EN: TestPackage[] = [
     price: 900,
     originalPrice: 1200,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 945,
       'lab_labaid': 1035,
       'lab_ibnsina': 945,
       'lab_birdem': 810,
@@ -4616,7 +4616,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 900
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1320,
       'lab_labaid': 1440,
       'lab_ibnsina': 1320,
       'lab_birdem': 1140,
@@ -4636,7 +4636,7 @@ const TESTS_EN: TestPackage[] = [
     price: 700,
     originalPrice: 950,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 735,
       'lab_labaid': 805,
       'lab_ibnsina': 735,
       'lab_birdem': 630,
@@ -4646,7 +4646,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 700
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1045,
       'lab_labaid': 1140,
       'lab_ibnsina': 1045,
       'lab_birdem': 903,
@@ -4666,7 +4666,7 @@ const TESTS_EN: TestPackage[] = [
     price: 950,
     originalPrice: 1300,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 998,
       'lab_labaid': 1093,
       'lab_ibnsina': 998,
       'lab_birdem': 855,
@@ -4676,7 +4676,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 950
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1430,
       'lab_labaid': 1560,
       'lab_ibnsina': 1430,
       'lab_birdem': 1235,
@@ -4696,7 +4696,7 @@ const TESTS_EN: TestPackage[] = [
     price: 900,
     originalPrice: 1250,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 945,
       'lab_labaid': 1035,
       'lab_ibnsina': 945,
       'lab_birdem': 810,
@@ -4706,7 +4706,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 900
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1375,
       'lab_labaid': 1500,
       'lab_ibnsina': 1375,
       'lab_birdem': 1188,
@@ -4726,7 +4726,7 @@ const TESTS_EN: TestPackage[] = [
     price: 950,
     originalPrice: 1300,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 998,
       'lab_labaid': 1093,
       'lab_ibnsina': 998,
       'lab_birdem': 855,
@@ -4736,7 +4736,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 950
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1430,
       'lab_labaid': 1560,
       'lab_ibnsina': 1430,
       'lab_birdem': 1235,
@@ -4756,7 +4756,7 @@ const TESTS_EN: TestPackage[] = [
     price: 600,
     originalPrice: 850,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 630,
       'lab_labaid': 690,
       'lab_ibnsina': 630,
       'lab_birdem': 540,
@@ -4766,7 +4766,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 600
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 935,
       'lab_labaid': 1020,
       'lab_ibnsina': 935,
       'lab_birdem': 808,
@@ -4786,7 +4786,7 @@ const TESTS_EN: TestPackage[] = [
     price: 3600,
     originalPrice: 4800,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 3780,
       'lab_labaid': 4140,
       'lab_ibnsina': 3780,
       'lab_birdem': 3240,
@@ -4796,7 +4796,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 3600
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 5280,
       'lab_labaid': 5760,
       'lab_ibnsina': 5280,
       'lab_birdem': 4560,
@@ -4816,7 +4816,7 @@ const TESTS_EN: TestPackage[] = [
     price: 600,
     originalPrice: 800,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 630,
       'lab_labaid': 690,
       'lab_ibnsina': 630,
       'lab_birdem': 540,
@@ -4826,7 +4826,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 600
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 880,
       'lab_labaid': 960,
       'lab_ibnsina': 880,
       'lab_birdem': 760,
@@ -4846,7 +4846,7 @@ const TESTS_EN: TestPackage[] = [
     price: 650,
     originalPrice: 850,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 683,
       'lab_labaid': 747,
       'lab_ibnsina': 683,
       'lab_birdem': 585,
@@ -4856,7 +4856,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 650
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 935,
       'lab_labaid': 1020,
       'lab_ibnsina': 935,
       'lab_birdem': 808,
@@ -4876,7 +4876,7 @@ const TESTS_EN: TestPackage[] = [
     price: 1300,
     originalPrice: 1700,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1365,
       'lab_labaid': 1495,
       'lab_ibnsina': 1365,
       'lab_birdem': 1170,
@@ -4886,7 +4886,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 1300
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1870,
       'lab_labaid': 2040,
       'lab_ibnsina': 1870,
       'lab_birdem': 1615,
@@ -4906,7 +4906,7 @@ const TESTS_EN: TestPackage[] = [
     price: 1400,
     originalPrice: 1900,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1470,
       'lab_labaid': 1610,
       'lab_ibnsina': 1470,
       'lab_birdem': 1260,
@@ -4916,7 +4916,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 1400
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 2090,
       'lab_labaid': 2280,
       'lab_ibnsina': 2090,
       'lab_birdem': 1805,
@@ -4936,7 +4936,7 @@ const TESTS_EN: TestPackage[] = [
     price: 400,
     originalPrice: 550,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 420,
       'lab_labaid': 460,
       'lab_ibnsina': 420,
       'lab_birdem': 360,
@@ -4946,7 +4946,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 400
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 605,
       'lab_labaid': 660,
       'lab_ibnsina': 605,
       'lab_birdem': 523,
@@ -4966,7 +4966,7 @@ const TESTS_EN: TestPackage[] = [
     price: 350,
     originalPrice: 500,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 368,
       'lab_labaid': 402,
       'lab_ibnsina': 368,
       'lab_birdem': 315,
@@ -4976,7 +4976,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 350
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 550,
       'lab_labaid': 600,
       'lab_ibnsina': 550,
       'lab_birdem': 475,
@@ -4996,7 +4996,7 @@ const TESTS_EN: TestPackage[] = [
     price: 250,
     originalPrice: 350,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 263,
       'lab_labaid': 288,
       'lab_ibnsina': 263,
       'lab_birdem': 225,
@@ -5006,7 +5006,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 250
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 385,
       'lab_labaid': 420,
       'lab_ibnsina': 385,
       'lab_birdem': 333,
@@ -5026,7 +5026,7 @@ const TESTS_EN: TestPackage[] = [
     price: 950,
     originalPrice: 1300,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 998,
       'lab_labaid': 1093,
       'lab_ibnsina': 998,
       'lab_birdem': 855,
@@ -5036,7 +5036,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 950
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1430,
       'lab_labaid': 1560,
       'lab_ibnsina': 1430,
       'lab_birdem': 1235,
@@ -5056,7 +5056,7 @@ const TESTS_EN: TestPackage[] = [
     price: 850,
     originalPrice: 1150,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 893,
       'lab_labaid': 977,
       'lab_ibnsina': 893,
       'lab_birdem': 765,
@@ -5066,7 +5066,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 850
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1265,
       'lab_labaid': 1380,
       'lab_ibnsina': 1265,
       'lab_birdem': 1093,
@@ -5086,7 +5086,7 @@ const TESTS_EN: TestPackage[] = [
     price: 800,
     originalPrice: 1100,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 840,
       'lab_labaid': 920,
       'lab_ibnsina': 840,
       'lab_birdem': 720,
@@ -5096,7 +5096,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 800
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1210,
       'lab_labaid': 1320,
       'lab_ibnsina': 1210,
       'lab_birdem': 1045,
@@ -5116,7 +5116,7 @@ const TESTS_EN: TestPackage[] = [
     price: 800,
     originalPrice: 1100,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 840,
       'lab_labaid': 920,
       'lab_ibnsina': 840,
       'lab_birdem': 720,
@@ -5126,7 +5126,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 800
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1210,
       'lab_labaid': 1320,
       'lab_ibnsina': 1210,
       'lab_birdem': 1045,
@@ -5146,7 +5146,7 @@ const TESTS_EN: TestPackage[] = [
     price: 2500,
     originalPrice: 3200,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 2625,
       'lab_labaid': 2875,
       'lab_ibnsina': 2625,
       'lab_birdem': 2250,
@@ -5156,7 +5156,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 2500
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 3520,
       'lab_labaid': 3840,
       'lab_ibnsina': 3520,
       'lab_birdem': 3040,
@@ -5176,7 +5176,7 @@ const TESTS_EN: TestPackage[] = [
     price: 900,
     originalPrice: 1250,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 945,
       'lab_labaid': 1035,
       'lab_ibnsina': 945,
       'lab_birdem': 810,
@@ -5186,7 +5186,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 900
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1375,
       'lab_labaid': 1500,
       'lab_ibnsina': 1375,
       'lab_birdem': 1188,
@@ -5206,7 +5206,7 @@ const TESTS_EN: TestPackage[] = [
     price: 950,
     originalPrice: 1300,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 998,
       'lab_labaid': 1093,
       'lab_ibnsina': 998,
       'lab_birdem': 855,
@@ -5216,7 +5216,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 950
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1430,
       'lab_labaid': 1560,
       'lab_ibnsina': 1430,
       'lab_birdem': 1235,
@@ -5236,7 +5236,7 @@ const TESTS_EN: TestPackage[] = [
     price: 1100,
     originalPrice: 1500,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1155,
       'lab_labaid': 1265,
       'lab_ibnsina': 1155,
       'lab_birdem': 990,
@@ -5246,7 +5246,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 1100
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1650,
       'lab_labaid': 1800,
       'lab_ibnsina': 1650,
       'lab_birdem': 1425,
@@ -5266,7 +5266,7 @@ const TESTS_EN: TestPackage[] = [
     price: 1300,
     originalPrice: 1750,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1365,
       'lab_labaid': 1495,
       'lab_ibnsina': 1365,
       'lab_birdem': 1170,
@@ -5276,7 +5276,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 1300
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1925,
       'lab_labaid': 2100,
       'lab_ibnsina': 1925,
       'lab_birdem': 1663,
@@ -5296,7 +5296,7 @@ const TESTS_EN: TestPackage[] = [
     price: 600,
     originalPrice: 850,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 630,
       'lab_labaid': 690,
       'lab_ibnsina': 630,
       'lab_birdem': 540,
@@ -5306,7 +5306,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 600
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 935,
       'lab_labaid': 1020,
       'lab_ibnsina': 935,
       'lab_birdem': 808,
@@ -5326,7 +5326,7 @@ const TESTS_EN: TestPackage[] = [
     price: 1800,
     originalPrice: 2400,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1890,
       'lab_labaid': 2070,
       'lab_ibnsina': 1890,
       'lab_birdem': 1620,
@@ -5336,7 +5336,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 1800
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 2640,
       'lab_labaid': 2880,
       'lab_ibnsina': 2640,
       'lab_birdem': 2280,
@@ -5356,7 +5356,7 @@ const TESTS_EN: TestPackage[] = [
     price: 1200,
     originalPrice: 1600,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1260,
       'lab_labaid': 1380,
       'lab_ibnsina': 1260,
       'lab_birdem': 1080,
@@ -5366,7 +5366,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 1200
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1760,
       'lab_labaid': 1920,
       'lab_ibnsina': 1760,
       'lab_birdem': 1520,
@@ -5386,7 +5386,7 @@ const TESTS_EN: TestPackage[] = [
     price: 1600,
     originalPrice: 2100,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1680,
       'lab_labaid': 1840,
       'lab_ibnsina': 1680,
       'lab_birdem': 1440,
@@ -5396,7 +5396,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 1600
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 2310,
       'lab_labaid': 2520,
       'lab_ibnsina': 2310,
       'lab_birdem': 1995,
@@ -5416,7 +5416,7 @@ const TESTS_EN: TestPackage[] = [
     price: 800,
     originalPrice: 1100,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 840,
       'lab_labaid': 920,
       'lab_ibnsina': 840,
       'lab_birdem': 720,
@@ -5426,7 +5426,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 800
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1210,
       'lab_labaid': 1320,
       'lab_ibnsina': 1210,
       'lab_birdem': 1045,
@@ -5446,7 +5446,7 @@ const TESTS_EN: TestPackage[] = [
     price: 550,
     originalPrice: 750,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 578,
       'lab_labaid': 633,
       'lab_ibnsina': 578,
       'lab_birdem': 495,
@@ -5456,7 +5456,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 550
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 825,
       'lab_labaid': 900,
       'lab_ibnsina': 825,
       'lab_birdem': 713,
@@ -5476,7 +5476,7 @@ const TESTS_EN: TestPackage[] = [
     price: 1100,
     originalPrice: 1500,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1155,
       'lab_labaid': 1265,
       'lab_ibnsina': 1155,
       'lab_birdem': 990,
@@ -5486,7 +5486,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 1100
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1650,
       'lab_labaid': 1800,
       'lab_ibnsina': 1650,
       'lab_birdem': 1425,
@@ -5506,7 +5506,7 @@ const TESTS_EN: TestPackage[] = [
     price: 1300,
     originalPrice: 1750,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1365,
       'lab_labaid': 1495,
       'lab_ibnsina': 1365,
       'lab_birdem': 1170,
@@ -5516,7 +5516,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 1300
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1925,
       'lab_labaid': 2100,
       'lab_ibnsina': 1925,
       'lab_birdem': 1663,
@@ -5536,7 +5536,7 @@ const TESTS_EN: TestPackage[] = [
     price: 1300,
     originalPrice: 1750,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1365,
       'lab_labaid': 1495,
       'lab_ibnsina': 1365,
       'lab_birdem': 1170,
@@ -5546,7 +5546,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 1300
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1925,
       'lab_labaid': 2100,
       'lab_ibnsina': 1925,
       'lab_birdem': 1663,
@@ -5566,7 +5566,7 @@ const TESTS_EN: TestPackage[] = [
     price: 1300,
     originalPrice: 1750,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1365,
       'lab_labaid': 1495,
       'lab_ibnsina': 1365,
       'lab_birdem': 1170,
@@ -5576,7 +5576,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 1300
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1925,
       'lab_labaid': 2100,
       'lab_ibnsina': 1925,
       'lab_birdem': 1663,
@@ -5596,7 +5596,7 @@ const TESTS_EN: TestPackage[] = [
     price: 1100,
     originalPrice: 1500,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1155,
       'lab_labaid': 1265,
       'lab_ibnsina': 1155,
       'lab_birdem': 990,
@@ -5606,7 +5606,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 1100
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1650,
       'lab_labaid': 1800,
       'lab_ibnsina': 1650,
       'lab_birdem': 1425,
@@ -5626,7 +5626,7 @@ const TESTS_EN: TestPackage[] = [
     price: 650,
     originalPrice: 900,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 683,
       'lab_labaid': 747,
       'lab_ibnsina': 683,
       'lab_birdem': 585,
@@ -5636,7 +5636,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 650
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 990,
       'lab_labaid': 1080,
       'lab_ibnsina': 990,
       'lab_birdem': 855,
@@ -5656,7 +5656,7 @@ const TESTS_EN: TestPackage[] = [
     price: 550,
     originalPrice: 750,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 578,
       'lab_labaid': 633,
       'lab_ibnsina': 578,
       'lab_birdem': 495,
@@ -5666,7 +5666,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 550
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 825,
       'lab_labaid': 900,
       'lab_ibnsina': 825,
       'lab_birdem': 713,
@@ -5686,7 +5686,7 @@ const TESTS_EN: TestPackage[] = [
     price: 700,
     originalPrice: 950,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 735,
       'lab_labaid': 805,
       'lab_ibnsina': 735,
       'lab_birdem': 630,
@@ -5696,7 +5696,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 700
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1045,
       'lab_labaid': 1140,
       'lab_ibnsina': 1045,
       'lab_birdem': 903,
@@ -5716,7 +5716,7 @@ const TESTS_EN: TestPackage[] = [
     price: 650,
     originalPrice: 900,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 683,
       'lab_labaid': 747,
       'lab_ibnsina': 683,
       'lab_birdem': 585,
@@ -5726,7 +5726,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 650
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 990,
       'lab_labaid': 1080,
       'lab_ibnsina': 990,
       'lab_birdem': 855,
@@ -5746,7 +5746,7 @@ const TESTS_EN: TestPackage[] = [
     price: 700,
     originalPrice: 950,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 735,
       'lab_labaid': 805,
       'lab_ibnsina': 735,
       'lab_birdem': 630,
@@ -5756,7 +5756,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 700
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1045,
       'lab_labaid': 1140,
       'lab_ibnsina': 1045,
       'lab_birdem': 903,
@@ -5776,7 +5776,7 @@ const TESTS_EN: TestPackage[] = [
     price: 850,
     originalPrice: 1150,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 893,
       'lab_labaid': 977,
       'lab_ibnsina': 893,
       'lab_birdem': 765,
@@ -5786,7 +5786,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 850
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1265,
       'lab_labaid': 1380,
       'lab_ibnsina': 1265,
       'lab_birdem': 1093,
@@ -5806,7 +5806,7 @@ const TESTS_EN: TestPackage[] = [
     price: 700,
     originalPrice: 950,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 735,
       'lab_labaid': 805,
       'lab_ibnsina': 735,
       'lab_birdem': 630,
@@ -5816,7 +5816,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 700
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1045,
       'lab_labaid': 1140,
       'lab_ibnsina': 1045,
       'lab_birdem': 903,
@@ -5836,7 +5836,7 @@ const TESTS_EN: TestPackage[] = [
     price: 1100,
     originalPrice: 1500,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1155,
       'lab_labaid': 1265,
       'lab_ibnsina': 1155,
       'lab_birdem': 990,
@@ -5846,7 +5846,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 1100
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1650,
       'lab_labaid': 1800,
       'lab_ibnsina': 1650,
       'lab_birdem': 1425,
@@ -5866,7 +5866,7 @@ const TESTS_EN: TestPackage[] = [
     price: 1200,
     originalPrice: 1650,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1260,
       'lab_labaid': 1380,
       'lab_ibnsina': 1260,
       'lab_birdem': 1080,
@@ -5876,7 +5876,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 1200
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 1815,
       'lab_labaid': 1980,
       'lab_ibnsina': 1815,
       'lab_birdem': 1568,
@@ -5896,7 +5896,7 @@ const TESTS_EN: TestPackage[] = [
     price: 1400,
     originalPrice: 1900,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1470,
       'lab_labaid': 1610,
       'lab_ibnsina': 1470,
       'lab_birdem': 1260,
@@ -5906,7 +5906,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 1400
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 2090,
       'lab_labaid': 2280,
       'lab_ibnsina': 2090,
       'lab_birdem': 1805,
@@ -5926,7 +5926,7 @@ const TESTS_EN: TestPackage[] = [
     price: 1500,
     originalPrice: 2000,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1575,
       'lab_labaid': 1725,
       'lab_ibnsina': 1575,
       'lab_birdem': 1350,
@@ -5936,7 +5936,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 1500
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 2200,
       'lab_labaid': 2400,
       'lab_ibnsina': 2200,
       'lab_birdem': 1900,
@@ -5956,7 +5956,7 @@ const TESTS_EN: TestPackage[] = [
     price: 2400,
     originalPrice: 3200,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 2520,
       'lab_labaid': 2760,
       'lab_ibnsina': 2520,
       'lab_birdem': 2160,
@@ -5966,7 +5966,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 2400
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 3520,
       'lab_labaid': 3840,
       'lab_ibnsina': 3520,
       'lab_birdem': 3040,
@@ -5986,7 +5986,7 @@ const TESTS_EN: TestPackage[] = [
     price: 1500,
     originalPrice: 2000,
     priceByLab: {
-      'lab_popular': 250,
+      'lab_popular': 1575,
       'lab_labaid': 1725,
       'lab_ibnsina': 1575,
       'lab_birdem': 1350,
@@ -5996,7 +5996,7 @@ const TESTS_EN: TestPackage[] = [
       'lab_medinova': 1500
     },
     originalPriceByLab: {
-      'lab_popular': 400,
+      'lab_popular': 2200,
       'lab_labaid': 2400,
       'lab_ibnsina': 2200,
       'lab_birdem': 1900,

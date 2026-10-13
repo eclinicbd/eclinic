@@ -616,24 +616,31 @@ export const getStoredTests = (lang: Language): TestPackage[] => {
           changed = true;
         }
 
-        // Always ensure Popular Diagnostic Centre Ltd (lab_popular) price is 250 for default tests
-        updatedList = updatedList.map(test => {
-          const isDefault = defaultList.some(d => d.id === test.id);
-          if (isDefault) {
-            const currentPopularPrice = test.priceByLab?.['lab_popular'];
-            if (currentPopularPrice !== 250) {
+        // One-time auto-heal for tests where Popular Diagnostic price was previously glitched to 250
+        const popularMigrationKey = `eclinic_popular_rate_fix_v2_${lang}`;
+        if (!localStorage.getItem(popularMigrationKey)) {
+          updatedList = updatedList.map(test => {
+            const def = defaultList.find(d => d.id === test.id);
+            if (def && test.priceByLab?.['lab_popular'] === 250 && def.price > 300 && def.priceByLab?.['lab_popular'] !== 250) {
               changed = true;
               return {
                 ...test,
                 priceByLab: {
                   ...(test.priceByLab || {}),
-                  'lab_popular': 250
+                  'lab_popular': def.priceByLab?.['lab_popular'] || def.price
+                },
+                originalPriceByLab: {
+                  ...(test.originalPriceByLab || {}),
+                  'lab_popular': def.originalPriceByLab?.['lab_popular'] || def.originalPrice || def.price
                 }
               };
             }
-          }
-          return test;
-        });
+            return test;
+          });
+          try {
+            localStorage.setItem(popularMigrationKey, 'true');
+          } catch (_e) {}
+        }
 
         // Strictly deduplicate by test name so no test exists twice with the same name
         const seenNames = new Set<string>();

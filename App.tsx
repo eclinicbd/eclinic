@@ -497,20 +497,35 @@ export default function App() {
         const missingDefaults = defaultList.filter(d => !liveMap.has(d.id));
         let combined = missingDefaults.length > 0 ? [...liveTests, ...missingDefaults] : liveTests;
 
-        // Ensure Popular Diagnostic Centre Ltd (lab_popular) price is 250 for default tests
-        combined = combined.map(test => {
-          const isDefault = defaultList.some(d => d.id === test.id);
-          if (isDefault && test.priceByLab?.['lab_popular'] !== 250) {
-            return {
-              ...test,
-              priceByLab: {
-                ...(test.priceByLab || {}),
-                'lab_popular': 250
-              }
-            };
+        // One-time auto-heal for tests where Popular Diagnostic price was previously glitched to 250
+        const healFlagKey = `eclinic_popular_healed_fs_${language}`;
+        const alreadyHealed = localStorage.getItem(healFlagKey);
+        let popularRatesHealed = false;
+        if (!alreadyHealed) {
+          combined = combined.map(test => {
+            const def = defaultList.find(d => d.id === test.id);
+            if (def && test.priceByLab?.['lab_popular'] === 250 && def.price > 300 && def.priceByLab?.['lab_popular'] !== 250) {
+              popularRatesHealed = true;
+              return {
+                ...test,
+                priceByLab: {
+                  ...(test.priceByLab || {}),
+                  'lab_popular': def.priceByLab?.['lab_popular'] || def.price
+                },
+                originalPriceByLab: {
+                  ...(test.originalPriceByLab || {}),
+                  'lab_popular': def.originalPriceByLab?.['lab_popular'] || def.originalPrice || def.price
+                }
+              };
+            }
+            return test;
+          });
+          if (popularRatesHealed) {
+            try {
+              localStorage.setItem(healFlagKey, 'true');
+            } catch (_e) {}
           }
-          return test;
-        });
+        }
 
         // Ensure strict uniqueness by test name (case-insensitive and trimmed)
         const seenNames = new Set<string>();
@@ -527,8 +542,8 @@ export default function App() {
         setTests(combined);
         saveStoredTests(language, combined);
 
-        // If Firestore had fewer tests (e.g. 18 instead of 38), automatically update Firestore
-        if (missingDefaults.length > 0) {
+        // If Firestore had fewer tests or needed healing, automatically update Firestore
+        if (missingDefaults.length > 0 || popularRatesHealed) {
           saveTestsToFirestore(language, combined);
         }
       } else {
