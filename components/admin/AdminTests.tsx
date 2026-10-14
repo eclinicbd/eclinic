@@ -30,6 +30,8 @@ interface AdminTestsProps {
   onOpenDeleteTest: (test: TestPackage) => void;
   onQuickUpdateOrderCount?: (testId: string, delta: number) => void;
   onResetDefaultTests?: () => void;
+  onFixPopularRates?: () => void;
+  onQuickUpdateLabPrice?: (testId: string, labId: string, delta: number) => void;
 }
 
 export const AdminTests: React.FC<AdminTestsProps> = ({
@@ -43,7 +45,9 @@ export const AdminTests: React.FC<AdminTestsProps> = ({
   onDuplicateTest,
   onOpenDeleteTest,
   onQuickUpdateOrderCount,
-  onResetDefaultTests
+  onResetDefaultTests,
+  onFixPopularRates,
+  onQuickUpdateLabPrice
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
@@ -108,6 +112,18 @@ export const AdminTests: React.FC<AdminTestsProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
+          {onFixPopularRates && (
+            <button
+              type="button"
+              onClick={onFixPopularRates}
+              className="px-3.5 py-2.5 text-xs font-bold text-emerald-800 hover:text-white bg-emerald-50 hover:bg-emerald-600 rounded-xl border border-emerald-300 hover:border-emerald-600 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm hover:shadow-md shrink-0 active:scale-95"
+              title="Fix glitched Popular Diagnostic Centre rates back to catalog standards"
+            >
+              <span>🏥</span>
+              <span>{lang === 'bn' ? 'পপুলার সেন্টারের রেট ফিক্স' : 'Fix Popular Lab Rates'}</span>
+            </button>
+          )}
+
           {onResetDefaultTests && (
             <button
               type="button"
@@ -311,21 +327,46 @@ export const AdminTests: React.FC<AdminTestsProps> = ({
                   <p className="text-xs text-slate-500 line-clamp-2 mb-3">{test.description}</p>
                   
                   {/* Diagnostic Center Rates Matrix */}
-                  <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 mb-3 space-y-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Center Pricing Matrix:</span>
-                    <div className="grid grid-cols-2 gap-1 text-[11px]">
+                  <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 mb-3 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Center Pricing Matrix:</span>
+                      {onQuickUpdateLabPrice && (
+                        <span className="text-[9px] text-sky-600 font-semibold">{lang === 'bn' ? '+/- দিয়ে রেট পরিবর্তন করুন' : 'Click +/- to adjust'}</span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-1.5 text-[11px]">
                       {labs.slice(0, 4).map(lab => {
                         const labSelling = test.priceByLab?.[lab.id] || test.price;
                         const labOrig = test.originalPriceByLab?.[lab.id] || test.originalPrice || labSelling;
                         const hasLabDisc = labOrig > labSelling;
                         return (
-                          <div key={lab.id} className="flex justify-between items-center text-slate-600 truncate pr-1">
-                            <span className="truncate">{lab.name.split(' ')[0]}:</span>
-                            <div className="flex items-center gap-1">
+                          <div key={lab.id} className="flex justify-between items-center text-slate-700 bg-white px-2 py-1 rounded-lg border border-slate-200/80 shadow-2xs">
+                            <span className="truncate font-semibold text-slate-700 text-[10px]">{lab.name.split(' ')[0]}:</span>
+                            <div className="flex items-center gap-1 shrink-0">
                               {hasLabDisc && (
-                                <span className="line-through text-slate-400 text-[10px]">৳{labOrig}</span>
+                                <span className="line-through text-slate-400 text-[9px]">৳{labOrig}</span>
                               )}
-                              <span className="font-bold text-slate-800">৳{labSelling}</span>
+                              <span className="font-bold text-slate-900 text-[11px]">৳{labSelling}</span>
+                              {onQuickUpdateLabPrice && (
+                                <div className="flex items-center gap-0.5 ml-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => onQuickUpdateLabPrice(test.id, lab.id, -50)}
+                                    className="w-4 h-4 rounded bg-slate-100 hover:bg-rose-100 hover:text-rose-700 text-slate-600 flex items-center justify-center text-[11px] font-black cursor-pointer transition-colors"
+                                    title={lang === 'bn' ? `${lab.name}-এ ৫০ টাকা কমান` : `Decrease 50 for ${lab.name}`}
+                                  >
+                                    -
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => onQuickUpdateLabPrice(test.id, lab.id, 50)}
+                                    className="w-4 h-4 rounded bg-slate-100 hover:bg-emerald-100 hover:text-emerald-700 text-slate-600 flex items-center justify-center text-[11px] font-black cursor-pointer transition-colors"
+                                    title={lang === 'bn' ? `${lab.name}-এ ৫০ টাকা বাড়ান` : `Increase 50 for ${lab.name}`}
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           </div>
                         );

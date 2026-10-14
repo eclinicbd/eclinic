@@ -40,9 +40,11 @@ import {
   Flame,
   Download,
   Upload,
-  ImageIcon
+  ImageIcon,
+  RotateCcw
 } from 'lucide-react';
 import { printOrDownloadInvoice, resolveOrderCollectionFee } from '../../services/invoiceService';
+import { getTests } from '../../constants';
 import { Button } from '../Button';
 import { CATEGORY_ICON_MAP, CATEGORY_COLOR_MAP } from './AdminCategories';
 
@@ -792,16 +794,36 @@ export const TestFormModal: React.FC<TestModalProps> = ({
                       </div>
                       <div>
                         <span className="text-[9px] text-emerald-700 font-bold block">{lang === 'bn' ? 'বিক্রয় মূল্য (৳)' : 'Selling (৳)'}</span>
-                        <input 
-                          type="number" 
-                          min="0"
-                          disabled={isLabHidden}
-                          value={labSelling}
-                          onChange={(e) => handleLabSellingPriceChange(lab.id, Number(e.target.value))}
-                          className={`w-full px-1.5 py-1 border rounded text-right text-xs font-bold outline-none ${
-                            isLabHidden ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed' : 'bg-white text-slate-900 border-slate-200 focus:border-primary'
-                          }`}
-                        />
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            disabled={isLabHidden}
+                            onClick={() => handleLabSellingPriceChange(lab.id, Math.max(0, labSelling - 50))}
+                            className="w-5 h-6 rounded bg-slate-100 hover:bg-rose-100 hover:text-rose-700 disabled:opacity-40 text-slate-700 text-xs font-black flex items-center justify-center cursor-pointer transition-colors"
+                            title={lang === 'bn' ? '৫০ টাকা কমান' : 'Decrease 50'}
+                          >
+                            -
+                          </button>
+                          <input 
+                            type="number" 
+                            min="0"
+                            disabled={isLabHidden}
+                            value={labSelling}
+                            onChange={(e) => handleLabSellingPriceChange(lab.id, Number(e.target.value))}
+                            className={`w-full px-1.5 py-1 border rounded text-right text-xs font-bold outline-none ${
+                              isLabHidden ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed' : 'bg-white text-slate-900 border-slate-200 focus:border-primary'
+                            }`}
+                          />
+                          <button
+                            type="button"
+                            disabled={isLabHidden}
+                            onClick={() => handleLabSellingPriceChange(lab.id, labSelling + 50)}
+                            className="w-5 h-6 rounded bg-slate-100 hover:bg-emerald-100 hover:text-emerald-700 disabled:opacity-40 text-slate-700 text-xs font-black flex items-center justify-center cursor-pointer transition-colors"
+                            title={lang === 'bn' ? '৫০ টাকা বাড়ান' : 'Increase 50'}
+                          >
+                            +
+                          </button>
+                        </div>
                       </div>
                     </div>
 
@@ -1414,7 +1436,7 @@ export const LabTestsManagerModal: React.FC<LabTestsManagerModalProps> = ({
       setSelectedCategory('All');
       setFilterActiveState('all');
     }
-  }, [isOpen, tests]);
+  }, [isOpen]);
 
   if (!isOpen || !lab) return null;
 
@@ -1498,6 +1520,27 @@ export const LabTestsManagerModal: React.FC<LabTestsManagerModalProps> = ({
         priceByLab: {
           ...(t.priceByLab || {}),
           [lab.id]: reg
+        }
+      };
+    }));
+  };
+
+  const handleRestoreLabDefaults = () => {
+    const defaultList = getTests(lang);
+    setLocalTests(prev => prev.map(t => {
+      const def = defaultList.find(d => d.id === t.id);
+      if (!def) return t;
+      const defSelling = def.priceByLab?.[lab.id] || def.price;
+      const defOrig = def.originalPriceByLab?.[lab.id] || def.originalPrice || def.price;
+      return {
+        ...t,
+        priceByLab: {
+          ...(t.priceByLab || {}),
+          [lab.id]: defSelling
+        },
+        originalPriceByLab: {
+          ...(t.originalPriceByLab || {}),
+          [lab.id]: defOrig
         }
       };
     }));
@@ -1628,6 +1671,15 @@ export const LabTestsManagerModal: React.FC<LabTestsManagerModalProps> = ({
               title={lang === 'bn' ? 'সকল টেস্ট থেকে ছাড় প্রত্যাহার করুন' : 'Remove discount from all tests'}
             >
               <span>❌ {lang === 'bn' ? 'সব ছাড় বাতিল' : 'No Discount'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleRestoreLabDefaults}
+              className="px-2.5 py-1.5 bg-sky-50 text-sky-700 hover:bg-sky-100 rounded-xl font-bold border border-sky-200 transition-colors flex items-center gap-1 cursor-pointer"
+              title={lang === 'bn' ? 'অফিসিয়াল ক্যাটালগের মূল রেট রিস্টোর করুন' : 'Restore official catalog rates'}
+            >
+              <RotateCcw size={13} className="text-sky-600" />
+              <span>{lang === 'bn' ? 'ক্যাটালগ রেট রিস্টোর' : 'Restore Catalog Rates'}</span>
             </button>
             <div className="w-px h-4 bg-slate-200 mx-0.5" />
             <button
@@ -1810,13 +1862,29 @@ export const LabTestsManagerModal: React.FC<LabTestsManagerModalProps> = ({
 
                       <div className="flex items-center gap-1 bg-emerald-50/70 px-2 py-1 rounded-lg border border-emerald-200">
                         <span className="text-[10px] text-emerald-800 font-bold">{lang === 'bn' ? 'বিক্রয়:' : 'Sale:'}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleLabPriceChange(test.id, Math.max(0, labSelling - 50))}
+                          className="w-4 h-4 rounded bg-emerald-100 hover:bg-rose-100 hover:text-rose-700 text-slate-700 text-[10px] font-black flex items-center justify-center cursor-pointer transition-colors"
+                          title={lang === 'bn' ? '৫০ টাকা কমান' : 'Decrease 50'}
+                        >
+                          -
+                        </button>
                         <input 
                           type="number"
                           min="0"
                           value={labSelling}
                           onChange={(e) => handleLabPriceChange(test.id, Number(e.target.value) || 0)}
-                          className="w-14 bg-transparent font-bold text-slate-900 text-xs outline-none text-right"
+                          className="w-12 bg-transparent font-bold text-slate-900 text-xs outline-none text-right"
                         />
+                        <button
+                          type="button"
+                          onClick={() => handleLabPriceChange(test.id, labSelling + 50)}
+                          className="w-4 h-4 rounded bg-emerald-100 hover:bg-emerald-200 hover:text-emerald-800 text-slate-700 text-[10px] font-black flex items-center justify-center cursor-pointer transition-colors"
+                          title={lang === 'bn' ? '৫০ টাকা বাড়ান' : 'Increase 50'}
+                        >
+                          +
+                        </button>
                       </div>
                     </div>
 

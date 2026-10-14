@@ -41,7 +41,8 @@ import {
   AdminCredentials,
   StaffUser,
   DateSlotConfig,
-  Doctor
+  Doctor,
+  DoctorAtHomeBooking
 } from '../types';
 import { sendPatientRegistrationNotificationEmail } from './emailNotificationService';
 
@@ -952,5 +953,41 @@ export const subscribeToDateSlotConfig = (callback: (config: DateSlotConfig) => 
     return () => {};
   }
 };
+
+/**
+ * Doctor at Home (হোমে ডাক্তার বুকিং) Cloud Firestore Sync
+ */
+export const saveDoctorAtHomeBookingsToFirestore = async (bookings: DoctorAtHomeBooking[]): Promise<boolean> => {
+  try {
+    const dahDoc = doc(db, 'bookings', 'doctor_at_home_list');
+    await setDoc(dahDoc, cleanFirestoreData({
+      items: bookings,
+      updatedAt: new Date().toISOString()
+    }), { merge: true });
+    return true;
+  } catch (error) {
+    console.error("Error saving Doctor at Home bookings to Firestore:", error);
+    return false;
+  }
+};
+
+export const subscribeToDoctorAtHomeBookings = (callback: (bookings: DoctorAtHomeBooking[]) => void) => {
+  try {
+    const dahDoc = doc(db, 'bookings', 'doctor_at_home_list');
+    return onSnapshot(dahDoc, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        if (data && Array.isArray(data.items)) {
+          callback(data.items as DoctorAtHomeBooking[]);
+        }
+      }
+    }, (_error) => {
+      // Handled quietly
+    });
+  } catch (_error) {
+    return () => {};
+  }
+};
+
 
 

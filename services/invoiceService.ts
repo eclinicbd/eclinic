@@ -1,4 +1,4 @@
-import { BookingHistoryItem, Language, SiteSettings } from '../types';
+import { BookingHistoryItem, DoctorAtHomeBooking, Language, SiteSettings } from '../types';
 import { getStoredSiteSettings, getStoredTests, getStoredPackages, getStoredLabs } from './dataStorage';
 
 export const resolveOrderCollectionFee = (
@@ -790,3 +790,441 @@ export const printOrDownloadInvoice = (
     }
   }
 };
+
+/**
+ * Generate Printable HTML for Doctor at Home Visit Receipt / Slip
+ */
+export const generateDoctorAtHomeSlipHtml = (
+  booking: DoctorAtHomeBooking,
+  lang: Language = 'bn',
+  customSettings?: SiteSettings
+): string => {
+  const isBn = lang === 'bn';
+  const settings = customSettings || getStoredSiteSettings(lang);
+
+  const issueDate = booking.createdAt
+    ? new Date(booking.createdAt).toLocaleString(isBn ? 'bn-BD' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' })
+    : `${booking.date} ${booking.timeSlot}`;
+
+  const orgName = settings.siteName || (isBn ? 'ল্যাবহোম বিডি হেলথকেয়ার' : 'LabHome BD Healthcare');
+  const orgTagline = settings.siteTagline || (isBn ? 'স্মার্ট হোম হেলথকেয়ার ও স্পেশালিস্ট ডক্টর সার্ভিস' : 'Smart Home Healthcare & Specialist Doctor Visit');
+  const orgHotline = settings.contactHotline || settings.contactPhone || '01700-000000';
+  const orgEmail = settings.contactEmail || 'care@labhomebd.com';
+  const orgAddress = settings.contactAddress || 'House 24, Road 11, Dhanmondi, Dhaka-1209';
+
+  let paymentMethodLabel = isBn ? 'ভিজিটের সময় নগদ (ক্যাশ)' : 'Cash on Visit';
+  if (booking.paymentMethod === 'bkash') {
+    paymentMethodLabel = `bKash ${booking.transactionId ? `(TrxID: ${booking.transactionId})` : ''}`;
+  } else if (booking.paymentMethod === 'nagad') {
+    paymentMethodLabel = `Nagad ${booking.transactionId ? `(TrxID: ${booking.transactionId})` : ''}`;
+  } else if (booking.paymentMethod === 'rocket') {
+    paymentMethodLabel = `Rocket ${booking.transactionId ? `(TrxID: ${booking.transactionId})` : ''}`;
+  } else if (booking.paymentMethod === 'card') {
+    paymentMethodLabel = isBn ? 'অনলাইন কার্ড পেমেন্ট (পরিশোধিত)' : 'Online Card Payment (Paid)';
+  }
+
+  const paymentStatusBadge = booking.paymentStatus === 'paid'
+    ? `<span style="background: #ecfdf5; color: #047857; padding: 3px 8px; border-radius: 6px; font-weight: 700; border: 1px solid #a7f3d0;">✓ ${isBn ? 'পরিশোধিত (PAID)' : 'PAID'}</span>`
+    : booking.paymentStatus === 'pending_verification'
+    ? `<span style="background: #fffbeb; color: #b45309; padding: 3px 8px; border-radius: 6px; font-weight: 700; border: 1px solid #fde68a;">⏳ ${isBn ? 'যাচাইাধীন (PENDING VERIFICATION)' : 'PENDING VERIFICATION'}</span>`
+    : `<span style="background: #f1f5f9; color: #475569; padding: 3px 8px; border-radius: 6px; font-weight: 700; border: 1px solid #cbd5e1;">💵 ${isBn ? 'ভিজিটের পর প্রদেয় (DUE ON VISIT)' : 'DUE ON VISIT'}</span>`;
+
+  return `<!DOCTYPE html>
+<html lang="${lang}">
+<head>
+  <meta charset="UTF-8">
+  <title>${isBn ? 'হোম ডক্টর ভিজিট স্লিপ' : 'Doctor at Home Visit Slip'} - ${booking.id}</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 15mm 15mm 15mm 15mm;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "Hind Siliguri", "Kalpurush", sans-serif;
+      color: #0f172a;
+      background: #ffffff;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .slip-container {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 24px;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      background: #ffffff;
+      position: relative;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 2px solid #059669;
+      padding-bottom: 16px;
+      margin-bottom: 20px;
+    }
+    .brand-title {
+      font-size: 22px;
+      font-weight: 900;
+      color: #065f46;
+      letter-spacing: -0.5px;
+    }
+    .brand-tagline {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+    .slip-badge {
+      text-align: right;
+    }
+    .badge-pill {
+      display: inline-block;
+      background: #059669;
+      color: #ffffff;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .tracking-id {
+      font-family: monospace;
+      font-size: 14px;
+      font-weight: 900;
+      color: #0f172a;
+      margin-top: 6px;
+    }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .info-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 14px;
+    }
+    .info-card h4 {
+      font-size: 11px;
+      font-weight: 800;
+      color: #047857;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 4px;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+      font-size: 11.5px;
+    }
+    .info-label {
+      color: #64748b;
+      font-weight: 600;
+    }
+    .info-val {
+      color: #0f172a;
+      font-weight: 700;
+      text-align: right;
+      max-width: 65%;
+      word-break: break-word;
+    }
+    .highlight-box {
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 20px;
+    }
+    .highlight-box h4 {
+      font-size: 12px;
+      font-weight: 800;
+      color: #065f46;
+      margin-bottom: 6px;
+    }
+    .table-container {
+      margin-bottom: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    th {
+      background: #f1f5f9;
+      color: #334155;
+      font-weight: 800;
+      font-size: 11px;
+      text-align: left;
+      padding: 10px 12px;
+      border: 1px solid #e2e8f0;
+    }
+    td {
+      padding: 10px 12px;
+      border: 1px solid #e2e8f0;
+      font-size: 12px;
+      color: #1e293b;
+    }
+    .total-row {
+      background: #f8fafc;
+      font-weight: 800;
+    }
+    .total-amount {
+      color: #047857;
+      font-size: 16px;
+      font-weight: 900;
+    }
+    .instructions {
+      background: #fffbeb;
+      border: 1px solid #fef3c7;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 20px;
+      font-size: 11px;
+      color: #92400e;
+    }
+    .instructions ul {
+      margin-left: 18px;
+      margin-top: 4px;
+    }
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 16px;
+      font-size: 10.5px;
+      color: #64748b;
+    }
+    .seal-box {
+      border: 2px dashed #059669;
+      padding: 8px 16px;
+      border-radius: 8px;
+      text-align: center;
+      color: #047857;
+      font-weight: 800;
+      font-size: 10px;
+    }
+    @media print {
+      body {
+        background: #ffffff;
+      }
+      .slip-container {
+        border: none;
+        padding: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="slip-container">
+    <!-- Header -->
+    <div class="header">
+      <div>
+        <h1 class="brand-title">${orgName}</h1>
+        <p class="brand-tagline">${orgTagline}</p>
+        <p style="font-size: 10.5px; color: #64748b; margin-top: 4px;">📍 ${orgAddress}</p>
+      </div>
+      <div class="slip-badge">
+        <span class="badge-pill">${isBn ? 'হোম ডক্টর বুকিং স্লিপ' : 'Doctor at Home Slip'}</span>
+        <div class="tracking-id">${booking.id}</div>
+        <div style="font-size: 10px; color: #64748b; margin-top: 2px;">${issueDate}</div>
+      </div>
+    </div>
+
+    <!-- Patient & Appointment Meta Grid -->
+    <div class="meta-grid">
+      <!-- Patient Details -->
+      <div class="info-card">
+        <h4>${isBn ? 'রোগীর বিবরণ (Patient Details)' : 'Patient Details'}</h4>
+        <div class="info-row">
+          <span class="info-label">${isBn ? 'রোগীর নাম:' : 'Name:'}</span>
+          <span class="info-val">${booking.patientName}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">${isBn ? 'বয়স ও লিঙ্গ:' : 'Age & Gender:'}</span>
+          <span class="info-val">${booking.patientAge ? `${booking.patientAge} ${isBn ? 'বছর' : 'Yrs'}` : 'N/A'} | ${booking.patientGender === 'female' ? (isBn ? 'মহিলা' : 'Female') : (isBn ? 'পুরুষ' : 'Male')}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">${isBn ? 'মোবাইল নম্বর:' : 'Phone:'}</span>
+          <span class="info-val font-mono">${booking.patientPhone}</span>
+        </div>
+        ${booking.altPhone ? `
+        <div class="info-row">
+          <span class="info-label">${isBn ? 'বিকল্প নম্বর:' : 'Alt Phone:'}</span>
+          <span class="info-val font-mono">${booking.altPhone}</span>
+        </div>
+        ` : ''}
+        <div class="info-row">
+          <span class="info-label">${isBn ? 'এলাকা:' : 'Area:'}</span>
+          <span class="info-val">${booking.area || 'ঢাকা (Dhaka)'}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">${isBn ? 'পূর্ণ ঠিকানা:' : 'Address:'}</span>
+          <span class="info-val">${booking.address}</span>
+        </div>
+      </div>
+
+      <!-- Appointment & Doctor Details -->
+      <div class="info-card">
+        <h4>${isBn ? 'ভিজিটের বিবরণ (Visit Schedule)' : 'Visit Schedule'}</h4>
+        <div class="info-row">
+          <span class="info-label">${isBn ? 'ডাক্তারের ক্যাটাগরি:' : 'Doctor Specialty:'}</span>
+          <span class="info-val" style="color: #047857; font-weight: 800;">${booking.doctorTypeLabel || booking.doctorType}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">${isBn ? 'নির্ধারিত তারিখ:' : 'Visit Date:'}</span>
+          <span class="info-val">${booking.date}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">${isBn ? 'সময় স্লট:' : 'Time Slot:'}</span>
+          <span class="info-val">${booking.timeSlot}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">${isBn ? 'বুকিং স্ট্যাটাস:' : 'Booking Status:'}</span>
+          <span class="info-val" style="text-transform: uppercase;">${booking.status}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">${isBn ? 'পেমেন্ট স্ট্যাটাস:' : 'Payment:'}</span>
+          <span class="info-val">${paymentStatusBadge}</span>
+        </div>
+        ${booking.assignedDoctorName ? `
+        <div class="info-row">
+          <span class="info-label">${isBn ? 'অ্যাসাইনড ডাক্তার:' : 'Assigned Doctor:'}</span>
+          <span class="info-val">${booking.assignedDoctorName}</span>
+        </div>
+        ` : ''}
+      </div>
+    </div>
+
+    <!-- Symptoms & Clinical Instructions -->
+    <div class="highlight-box">
+      <h4>${isBn ? 'রোগীর প্রধান শারীরিক সমস্যা / উপসর্গ (Reported Symptoms):' : 'Reported Symptoms:'}</h4>
+      <p style="font-size: 11.5px; color: #1e293b; line-height: 1.6;">${booking.symptoms || (isBn ? 'সাধারণ শারীরিক চেকআপ ও পরামর্শ' : 'General clinical checkup and consultation')}</p>
+      ${booking.emergencyInstructions ? `
+      <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed #a7f3d0; font-size: 11px; color: #065f46;">
+        <strong>${isBn ? 'বিশেষ নির্দেশনা:' : 'Special Instructions:'}</strong> ${booking.emergencyInstructions}
+      </div>
+      ` : ''}
+    </div>
+
+    <!-- Bill / Fee Table -->
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>${isBn ? 'সেবার বিবরণ (Service Description)' : 'Service Description'}</th>
+            <th style="width: 140px; text-align: center;">${isBn ? 'পেমেন্ট মেথড' : 'Payment Method'}</th>
+            <th style="width: 120px; text-align: right;">${isBn ? 'মোট ফি (Amount)' : 'Amount'}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <strong>${booking.doctorTypeLabel || 'Doctor at Home Visit'}</strong><br/>
+              <span style="font-size: 10px; color: #64748b;">${isBn ? 'বাসায় সরাসরি বিশেষজ্ঞ চিকিৎসকের ক্লিনিক্যাল পরীক্ষা, ভাইটালস মনিটরিং ও প্রেসক্রিপশন' : 'In-person specialist home checkup, vitals examination & authorized prescription'}</span>
+            </td>
+            <td style="text-align: center; font-size: 11px; font-weight: 600;">
+              ${paymentMethodLabel}
+            </td>
+            <td style="text-align: right; font-weight: 700;">
+              ৳ ${booking.consultationFee || 1500}
+            </td>
+          </tr>
+          <tr class="total-row">
+            <td colspan="2" style="text-align: right; font-weight: 800;">
+              ${isBn ? 'সর্বমোট ফি (Total Amount):' : 'Total Amount:'}
+            </td>
+            <td style="text-align: right;" class="total-amount">
+              ৳ ${booking.consultationFee || 1500}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Patient Guidelines -->
+    <div class="instructions">
+      <strong>${isBn ? 'জরুরি নির্দেশনা ও সেবা শর্তাবলী:' : 'Important Guidelines:'}</strong>
+      <ul>
+        <li>${isBn ? 'ডাক্তার ভিজিটের পূর্বে আমাদের মেডিকেল কো-অর্ডিনেটর রোগীর সাথে যোগাযোগ করে নিশ্চিত করবেন।' : 'Our medical coordinator will call to confirm visit timing before doctor dispatch.'}</li>
+        <li>${isBn ? 'রোগীর পূর্ববর্তী সকল প্রেসক্রিপশন ও মেডিকেল টেস্টের রিপোর্ট হাতের কাছে রাখুন।' : 'Keep patient previous medical reports and prescriptions handy.'}</li>
+        <li>${isBn ? `যেকোনো জিজ্ঞাসা বা জরুরি প্রয়োজনে আমাদের ২৪/৭ হেল্পলাইনে কল করুন: ${orgHotline}` : `For any queries or emergencies, call our 24/7 hotline: ${orgHotline}`}</li>
+      </ul>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <div>
+        <strong>${orgName}</strong><br/>
+        📞 Hotline: ${orgHotline} | ✉️ ${orgEmail}<br/>
+        <span>Computer Generated Doctor Visit Slip • Authorized Digital Copy</span>
+      </div>
+      <div class="seal-box">
+        ✓ VERIFIED<br/>
+        HEALTHCARE SERVICE
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+};
+
+/**
+ * Print or Download Doctor at Home Slip with popup and hidden iframe fallback
+ */
+export const printOrDownloadDoctorAtHomeSlip = (
+  booking: DoctorAtHomeBooking,
+  lang: Language = 'bn',
+  customSettings?: SiteSettings
+): void => {
+  const htmlContent = generateDoctorAtHomeSlipHtml(booking, lang, customSettings);
+  const printWindow = window.open('', '_blank', 'width=850,height=900');
+
+  if (printWindow) {
+    printWindow.document.open();
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+
+    setTimeout(() => {
+      printWindow.focus();
+      printWindow.print();
+    }, 450);
+  } else {
+    // Hidden iframe fallback if popup blocked
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow?.document;
+    if (doc) {
+      doc.open();
+      doc.write(htmlContent);
+      doc.close();
+      setTimeout(() => {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+        }, 3000);
+      }, 450);
+    }
+  }
+};
+

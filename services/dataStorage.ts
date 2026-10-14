@@ -1,4 +1,4 @@
-import { TestPackage, LabPartner, Language, BookingHistoryItem, SiteSettings, PatientUser, HealthPackage, CategoryItem, DateSlotConfig, TimeSlotConfigItem, StaffUser, StaffRole, StaffPermissions, PaymentGatewaysConfig, AdminCredentials, Doctor, DoctorAppointment, EPrescription } from '../types';
+import { TestPackage, LabPartner, Language, BookingHistoryItem, SiteSettings, PatientUser, HealthPackage, CategoryItem, DateSlotConfig, TimeSlotConfigItem, StaffUser, StaffRole, StaffPermissions, PaymentGatewaysConfig, AdminCredentials, Doctor, DoctorAppointment, EPrescription, DoctorAtHomeBooking } from '../types';
 import { 
   getTests as getDefaultTests, 
   getLabs as getDefaultLabs, 
@@ -22,6 +22,7 @@ const STORAGE_KEYS = {
   LABS_BN: 'labhome_labs_bn_v3',
   LABS_EN: 'labhome_labs_en_v3',
   BOOKINGS: 'labhome_bookings_v2',
+  DOCTOR_AT_HOME_BOOKINGS: 'labhome_doctor_at_home_bookings_v1',
   CATEGORIES: 'labhome_categories_v2',
   SITE_SETTINGS_BN: 'labhome_site_settings_bn_v2',
   SITE_SETTINGS_EN: 'labhome_site_settings_en_v2',
@@ -616,31 +617,25 @@ export const getStoredTests = (lang: Language): TestPackage[] => {
           changed = true;
         }
 
-        // One-time auto-heal for tests where Popular Diagnostic price was previously glitched to 250
-        const popularMigrationKey = `eclinic_popular_rate_fix_v2_${lang}`;
-        if (!localStorage.getItem(popularMigrationKey)) {
-          updatedList = updatedList.map(test => {
-            const def = defaultList.find(d => d.id === test.id);
-            if (def && test.priceByLab?.['lab_popular'] === 250 && def.price > 300 && def.priceByLab?.['lab_popular'] !== 250) {
-              changed = true;
-              return {
-                ...test,
-                priceByLab: {
-                  ...(test.priceByLab || {}),
-                  'lab_popular': def.priceByLab?.['lab_popular'] || def.price
-                },
-                originalPriceByLab: {
-                  ...(test.originalPriceByLab || {}),
-                  'lab_popular': def.originalPriceByLab?.['lab_popular'] || def.originalPrice || def.price
-                }
-              };
-            }
-            return test;
-          });
-          try {
-            localStorage.setItem(popularMigrationKey, 'true');
-          } catch (_e) {}
-        }
+        // Auto-heal for tests where Popular Diagnostic price was previously glitched to 250
+        updatedList = updatedList.map(test => {
+          const def = defaultList.find(d => d.id === test.id);
+          if (def && test.priceByLab?.['lab_popular'] === 250 && def.priceByLab?.['lab_popular'] && def.priceByLab['lab_popular'] !== 250) {
+            changed = true;
+            return {
+              ...test,
+              priceByLab: {
+                ...(test.priceByLab || {}),
+                'lab_popular': def.priceByLab['lab_popular']
+              },
+              originalPriceByLab: {
+                ...(test.originalPriceByLab || {}),
+                'lab_popular': def.originalPriceByLab?.['lab_popular'] || def.originalPrice || def.price
+              }
+            };
+          }
+          return test;
+        });
 
         // Strictly deduplicate by test name so no test exists twice with the same name
         const seenNames = new Set<string>();
@@ -1563,6 +1558,113 @@ export const saveEPrescription = (prescription: EPrescription): void => {
     }
   } catch (e) {
     console.error("Error saving e-prescription:", e);
+  }
+};
+
+/**
+ * Doctor at Home (হোমে ডাক্তার সেবা) Management
+ */
+export const DEFAULT_DOCTOR_AT_HOME_SPECIALTIES = [
+  { id: 'general_physician', nameBn: 'জেনারেল ফিজিশিয়ান (সাধারণ ও মেডিসিন চিকিৎসক)', nameEn: 'General Physician / Medicine Doctor', icon: 'Stethoscope', fee: 1200 },
+  { id: 'diabetes', nameBn: 'ডায়াবেটিস ও হরমোন বিশেষজ্ঞ', nameEn: 'Diabetes & Endocrinology Specialist', icon: 'Activity', fee: 1500 },
+  { id: 'pediatrician', nameBn: 'শিশু রোগ বিশেষজ্ঞ (Pediatrician)', nameEn: 'Pediatrician / Child Specialist', icon: 'HeartPulse', fee: 1500 },
+  { id: 'cardiology', nameBn: 'হৃদরোগ বিশেষজ্ঞ (Cardiologist)', nameEn: 'Cardiologist / Heart Specialist', icon: 'HeartPulse', fee: 1800 },
+  { id: 'gynecology', nameBn: 'স্ত্রী ও প্রসূতি রোগ বিশেষজ্ঞ (Gynecologist)', nameEn: 'Gynecologist & Obstetrician', icon: 'User', fee: 1600 },
+  { id: 'orthopedics', nameBn: 'হাড় ও বাত ব্যথা বিশেষজ্ঞ (Orthopedics)', nameEn: 'Orthopedics & Joint Specialist', icon: 'ShieldCheck', fee: 1600 },
+  { id: 'geriatric', nameBn: 'বয়োবৃদ্ধ ও প্রবীণ কেয়ার (Geriatric Care)', nameEn: 'Elderly & Geriatric Care', icon: 'Clock', fee: 1400 },
+  { id: 'neurology', nameBn: 'স্নায়ু ও ব্রেইন বিশেষজ্ঞ (Neurologist)', nameEn: 'Neurology Specialist', icon: 'Zap', fee: 1800 },
+  { id: 'other', nameBn: 'অন্যান্য বিশেষায়িত পরামর্শ (Other Specialty)', nameEn: 'Other Specialist Consultation', icon: 'Stethoscope', fee: 1500 },
+];
+
+export const DEFAULT_DOCTOR_AT_HOME_BOOKINGS: DoctorAtHomeBooking[] = [
+  {
+    id: 'DAH-2401',
+    patientName: 'মোঃ রফিকুল ইসলাম',
+    patientPhone: '01712-345678',
+    altPhone: '01819-876543',
+    patientAge: 62,
+    patientGender: 'male',
+    address: 'বাড়ি # ৪২, রোড # ৭/এ, ধানমন্ডি, ঢাকা',
+    area: 'ধানমন্ডি',
+    date: new Date().toISOString().split('T')[0],
+    timeSlot: 'সকাল ১০:০০ - ০১:০০ (Morning)',
+    doctorType: 'diabetes',
+    doctorTypeLabel: 'ডায়াবেটিস ও হরমোন বিশেষজ্ঞ',
+    symptoms: 'রক্তে সুগার ১৮+ উঠেছে, শরীর অতিরিক্ত দুর্বল, পায়ের পাতায় জ্বালাপোড়া ও মাথা ঘোরা। জরুরি চেকআপ প্রয়োজন।',
+    consultationFee: 1500,
+    paymentMethod: 'cod',
+    paymentStatus: 'unpaid',
+    status: 'pending',
+    emergencyInstructions: 'রোগী হাঁটতে পারেন না, বেডসাইড চেকআপ প্রয়োজন।',
+    createdAt: new Date(Date.now() - 3600000 * 3).toISOString()
+  },
+  {
+    id: 'DAH-2398',
+    patientName: 'ফারজানা আক্তার (বাচ্চা: আরিয়ান)',
+    patientPhone: '01855-998877',
+    patientAge: 4,
+    patientGender: 'male',
+    address: 'ফ্ল্যাট ৪/বি, বাড়ি ১২, সেক্টর ১১, উত্তরা, ঢাকা',
+    area: 'উত্তরা',
+    date: new Date().toISOString().split('T')[0],
+    timeSlot: 'বিকাল ০৪:০০ - ০৭:০০ (Evening)',
+    doctorType: 'pediatrician',
+    doctorTypeLabel: 'শিশু রোগ বিশেষজ্ঞ (Pediatrician)',
+    symptoms: '৩ দিন ধরে বাচ্চার ১০৩ ডিগ্রি জ্বর, বমি বমি ভাব ও সর্দি। খাবার খেতে চাচ্ছে না।',
+    consultationFee: 1500,
+    paymentMethod: 'bkash',
+    paymentStatus: 'paid',
+    transactionId: 'BK9X245MN8',
+    status: 'confirmed',
+    assignedDoctorName: 'ডাঃ তানভীর হাসান (শিশু বিশেষজ্ঞ)',
+    assignedDoctorPhone: '01711-223344',
+    adminNotes: 'ডাক্তার রওনা হয়েছেন, বিকেল ৫টায় পৌঁছাবেন।',
+    createdAt: new Date(Date.now() - 3600000 * 8).toISOString()
+  },
+  {
+    id: 'DAH-2390',
+    patientName: 'বেগম রাজিয়া সুলতানা',
+    patientPhone: '01912-778899',
+    patientAge: 70,
+    patientGender: 'female',
+    address: 'বাড়ি ১৫, ব্লক সি, বনানী, ঢাকা',
+    area: 'বনানী',
+    date: new Date(Date.now() - 86400000).toISOString().split('T')[0],
+    timeSlot: 'সকাল ১১:০০ - ০২:০০',
+    doctorType: 'general_physician',
+    doctorTypeLabel: 'জেনারেল ফিজিশিয়ান (সাধারণ ও মেডিসিন চিকিৎসক)',
+    symptoms: 'বুকের ওপর সামান্য চাপ, উচ্চ রক্তচাপ (১৬০/১০০) এবং শারীরিক অস্বস্তি। রুটিন হোম ভিজিট ও প্রেসক্রিপশন।',
+    consultationFee: 1200,
+    paymentMethod: 'cod',
+    paymentStatus: 'paid',
+    status: 'completed',
+    assignedDoctorName: 'ডাঃ নাজমুল হুদা (মেডিসিন বিশেষজ্ঞ)',
+    assignedDoctorPhone: '01715-667788',
+    adminNotes: 'রোগী প্রেসক্রিপশন পেয়েছেন। ৩ দিন পর ফলোআপ।',
+    createdAt: new Date(Date.now() - 86400000 * 2).toISOString()
+  }
+];
+
+export const getStoredDoctorAtHomeBookings = (): DoctorAtHomeBooking[] => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.DOCTOR_AT_HOME_BOOKINGS);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.error("Error reading stored doctor at home bookings:", e);
+  }
+  return DEFAULT_DOCTOR_AT_HOME_BOOKINGS;
+};
+
+export const saveStoredDoctorAtHomeBookings = (bookings: DoctorAtHomeBooking[]): void => {
+  try {
+    localStorage.setItem(STORAGE_KEYS.DOCTOR_AT_HOME_BOOKINGS, JSON.stringify(bookings));
+  } catch (e) {
+    console.error("Error saving doctor at home bookings:", e);
   }
 };
 

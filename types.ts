@@ -385,6 +385,35 @@ export interface DoctorAppointment {
   ePrescriptionId?: string;
   prescription?: EPrescription;
   videoRoomId?: string;
+// Doctor at Home (হোমে ডাক্তার সার্ভিস) Interface
+export type DoctorAtHomeStatus = 'pending' | 'confirmed' | 'assigned' | 'completed' | 'cancelled';
+
+export interface DoctorAtHomeBooking {
+  id: string; // e.g. "DAH-83921"
+  patientName: string;
+  patientPhone: string;
+  altPhone?: string;
+  patientAge?: number | string;
+  patientGender?: 'male' | 'female' | 'other';
+  address: string; // Full house/road address
+  area?: string; // Area in Dhaka (e.g. Dhanmondi, Gulshan, Mirpur, Uttara, etc.)
+  date: string; // YYYY-MM-DD
+  timeSlot: string; // e.g. "সকাল ৯:০০ - ১২:০০"
+  doctorType: string; // "general_physician" | "diabetes" | "pediatrician" | "cardiology" | "gynecology" | "orthopedics" | "geriatric" | "other"
+  doctorTypeLabel: string; // e.g. "General Physician / সাধারণ চিকিৎসক"
+  symptoms: string; // Patient symptoms & complaints
+  consultationFee: number; // Visiting fee
+  paymentMethod: PaymentMethod;
+  paymentStatus: 'unpaid' | 'paid' | 'pending';
+  transactionId?: string;
+  senderPhone?: string;
+  status: DoctorAtHomeStatus;
+  assignedDoctorName?: string;
+  assignedDoctorPhone?: string;
+  adminNotes?: string;
+  emergencyInstructions?: string;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 // Global Site Settings and CMS configuration
@@ -434,6 +463,14 @@ export interface SiteSettings {
   doctorsDesc?: string;
   doctorsBtnText?: string;
   doctorsEmergencyHotline?: string;
+
+  // Doctor at Home (বাসায় ডাক্তার সেবা) Section
+  showDoctorAtHomeSection?: boolean;
+  doctorAtHomeBadge?: string;
+  doctorAtHomeTitle?: string;
+  doctorAtHomeDesc?: string;
+  doctorAtHomeFee?: number;
+  doctorAtHomeHotline?: string;
 
   // Nursing & Care Section
   showNursingSection?: boolean; // Below Packages visibility toggle

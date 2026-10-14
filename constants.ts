@@ -7016,6 +7016,7 @@ export const DEFAULT_HOME_SECTIONS_ORDER: string[] = [
   'partner',
   'popularTests',
   'packages',
+  'doctorAtHome',
   'doctors',
   'nursing',
   'services',

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Language, BookingHistoryItem, TestPackage, HealthPackage, LabPartner, BookingStatus, SiteSettings, ServiceItem, CategoryItem, PatientUser, StaffUser, StaffRole, StaffPermissions, Doctor, DoctorAppointment, EPrescription } from '../types';
+import { Language, BookingHistoryItem, TestPackage, HealthPackage, LabPartner, BookingStatus, SiteSettings, ServiceItem, CategoryItem, PatientUser, StaffUser, StaffRole, StaffPermissions, Doctor, DoctorAppointment, EPrescription, DoctorAtHomeBooking } from '../types';
 import { TRANSLATIONS } from '../translations';
 import { 
   LayoutDashboard, 
@@ -24,7 +24,8 @@ import {
   UserCheck,
   Lock,
   CreditCard,
-  Stethoscope
+  Stethoscope,
+  Home
 } from 'lucide-react';
 import { Button } from './Button';
 import { 
@@ -37,7 +38,9 @@ import {
   setStoredCurrentStaff,
   filterOrdersForStaff,
   getStoredDoctors,
-  setStoredDoctors
+  setStoredDoctors,
+  getStoredDoctorAtHomeBookings,
+  saveStoredDoctorAtHomeBookings
 } from '../services/dataStorage';
 import { getLabs, getTests } from '../constants';
 
@@ -51,6 +54,7 @@ import { AdminCategories } from './admin/AdminCategories';
 import { AdminLabs } from './admin/AdminLabs';
 import { AdminSlots } from './admin/AdminSlots';
 import { AdminDoctors } from './admin/AdminDoctors';
+import { AdminDoctorAtHome } from './admin/AdminDoctorAtHome';
 import { AdminStaffUsers } from './admin/AdminStaffUsers';
 import { AdminCustomers } from './admin/AdminCustomers';
 import { AdminSettings } from './admin/AdminSettings';
@@ -85,6 +89,8 @@ interface AdminDashboardProps {
   onUpdatePatients?: (patients: PatientUser[]) => void;
   doctors?: Doctor[];
   onUpdateDoctors?: (doctors: Doctor[]) => void;
+  doctorAtHomeBookings?: DoctorAtHomeBooking[];
+  onUpdateDoctorAtHomeBookings?: (bookings: DoctorAtHomeBooking[]) => void;
   onOpenPrescriptionViewer?: (prescription: EPrescription) => void;
   onJoinVideoAsDoctor?: (appointment: DoctorAppointment) => void;
   siteSettings: SiteSettings;
@@ -110,6 +116,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onUpdatePatients,
   doctors: propDoctors,
   onUpdateDoctors: propOnUpdateDoctors,
+  doctorAtHomeBookings: propDoctorAtHomeBookings,
+  onUpdateDoctorAtHomeBookings: propOnUpdateDoctorAtHomeBookings,
   onOpenPrescriptionViewer,
   onJoinVideoAsDoctor,
   siteSettings,
@@ -117,7 +125,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onResetAllData,
   onLogout
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'reports' | 'tests' | 'packages' | 'categories' | 'labs' | 'doctors' | 'slots' | 'staff' | 'payments' | 'customers' | 'cms' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'reports' | 'tests' | 'packages' | 'categories' | 'labs' | 'doctor_at_home' | 'doctors' | 'slots' | 'staff' | 'payments' | 'customers' | 'cms' | 'settings'>('overview');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Doctors State
@@ -136,6 +144,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       propOnUpdateDoctors(newDocs);
     } else {
       setStoredDoctors(newDocs, lang);
+    }
+  };
+
+  // Doctor at Home State
+  const [internalDoctorAtHomeBookings, setInternalDoctorAtHomeBookings] = useState<DoctorAtHomeBooking[]>(
+    () => propDoctorAtHomeBookings || getStoredDoctorAtHomeBookings()
+  );
+
+  useEffect(() => {
+    if (propDoctorAtHomeBookings) {
+      setInternalDoctorAtHomeBookings(propDoctorAtHomeBookings);
+    }
+  }, [propDoctorAtHomeBookings]);
+
+  const activeDoctorAtHomeBookings = propDoctorAtHomeBookings || internalDoctorAtHomeBookings;
+  const handleUpdateDoctorAtHomeList = (newBookings: DoctorAtHomeBooking[]) => {
+    setInternalDoctorAtHomeBookings(newBookings);
+    if (propOnUpdateDoctorAtHomeBookings) {
+      propOnUpdateDoctorAtHomeBookings(newBookings);
+    } else {
+      saveStoredDoctorAtHomeBookings(newBookings);
     }
   };
 
@@ -404,6 +433,57 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     });
     onUpdateTests(deduplicatedDefaults);
     showToast(lang === 'bn' ? '১০০টি ইউনিক ডিফল্ট টেস্ট সফলভাবে রিস্টোর ও সিঙ্ক করা হয়েছে!' : 'All 100 unique default tests restored!');
+  };
+
+  const handleFixPopularRates = () => {
+    const defaultCatalogTests = getTests(lang);
+    const updated = tests.map(test => {
+      const def = defaultCatalogTests.find(d => d.id === test.id || d.name.trim().toLowerCase() === test.name.trim().toLowerCase());
+      if (def && def.priceByLab?.['lab_popular']) {
+        return {
+          ...test,
+          priceByLab: {
+            ...(test.priceByLab || {}),
+            'lab_popular': def.priceByLab['lab_popular']
+          },
+          originalPriceByLab: {
+            ...(test.originalPriceByLab || {}),
+            'lab_popular': def.originalPriceByLab?.['lab_popular'] || def.originalPrice || def.price
+          }
+        };
+      }
+      return test;
+    });
+    onUpdateTests(updated);
+    showToast(lang === 'bn' 
+      ? 'পপুলার ডায়াগনস্টিক সেন্টারের সকল টেস্টের রেট সফলভাবে সঠিক ক্যাটালগ মূল্যে ফিক্স ও সিঙ্ক করা হয়েছে!' 
+      : 'Popular Diagnostic Center test rates successfully fixed and restored!'
+    );
+  };
+
+  const handleQuickUpdateLabPrice = (testId: string, labId: string, delta: number) => {
+    const updated = tests.map(t => {
+      if (t.id === testId) {
+        const currentSelling = t.priceByLab?.[labId] ?? t.price;
+        const newSelling = Math.max(0, currentSelling + delta);
+        const currentOrig = t.originalPriceByLab?.[labId] ?? t.originalPrice ?? currentSelling;
+        const newOrig = Math.max(newSelling, currentOrig);
+        return {
+          ...t,
+          priceByLab: {
+            ...(t.priceByLab || {}),
+            [labId]: newSelling
+          },
+          originalPriceByLab: {
+            ...(t.originalPriceByLab || {}),
+            [labId]: newOrig
+          }
+        };
+      }
+      return t;
+    });
+    onUpdateTests(updated);
+    showToast(lang === 'bn' ? 'টেস্টের রেট সফলভাবে আপডেট করা হয়েছে!' : 'Test center rate updated!');
   };
 
   // ==========================================
@@ -903,6 +983,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             )}
 
             <NavButton 
+              id="doctor_at_home" 
+              icon={Home} 
+              label={lang === 'bn' ? 'হোম ডক্টর বুকিং' : 'Doctor at Home'} 
+              badge={activeDoctorAtHomeBookings.filter(b => b.status === 'pending').length} 
+            />
+
+            <NavButton 
               id="doctors" 
               icon={Stethoscope} 
               label={lang === 'bn' ? 'ডাক্তার কন্সালটেন্সি' : 'Doctors & Tele-care'} 
@@ -1022,6 +1109,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               onOpenDeleteTest={(test) => setDeleteTarget({ type: 'test', id: test.id, name: test.name })}
               onQuickUpdateOrderCount={handleQuickUpdateTestOrderCount}
               onResetDefaultTests={handleResetDefaultTests}
+              onFixPopularRates={handleFixPopularRates}
+              onQuickUpdateLabPrice={handleQuickUpdateLabPrice}
             />
           )}
 
@@ -1066,6 +1155,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               onReorderLab={handleReorderLab}
               onResetDefaultLabs={handleResetDefaultLabs}
               onManageLabTests={(lab) => setManagingLabTests(lab)}
+            />
+          )}
+
+          {activeTab === 'doctor_at_home' && (
+            <AdminDoctorAtHome
+              lang={lang}
+              bookings={activeDoctorAtHomeBookings}
+              onUpdateBookings={handleUpdateDoctorAtHomeList}
+              showToast={showToast}
             />
           )}
 

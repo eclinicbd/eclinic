@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { TestPackage, HealthPackage, LabPartner, Language, BookingHistoryItem, SiteSettings, PatientUser, CategoryItem, Doctor, DoctorAppointment, EPrescription } from './types';
+import { TestPackage, HealthPackage, LabPartner, Language, BookingHistoryItem, SiteSettings, PatientUser, CategoryItem, Doctor, DoctorAppointment, EPrescription, DoctorAtHomeBooking } from './types';
 import { TRANSLATIONS } from './translations';
 import { 
   getStoredTests, 
@@ -17,6 +17,8 @@ import {
   saveStoredSiteSettings,
   getStoredDoctors,
   setStoredDoctors,
+  getStoredDoctorAtHomeBookings,
+  saveStoredDoctorAtHomeBookings,
   resetAllDataToDefaults,
   getStoredCurrentPatient,
   saveStoredCurrentPatient,
@@ -45,6 +47,8 @@ import {
   subscribeToPackages,
   saveDoctorsToFirestore,
   subscribeToDoctors,
+  saveDoctorAtHomeBookingsToFirestore,
+  subscribeToDoctorAtHomeBookings,
   subscribeToUsers,
   subscribeToPaymentConfig,
   subscribeToAdminCredentials,
@@ -72,6 +76,8 @@ import { HomePopularTestsSection } from './components/HomePopularTestsSection';
 import { NursingCareSection } from './components/NursingCareSection';
 import { HomeAppDownloadSection } from './components/HomeAppDownloadSection';
 import { HomeDoctorConsultationSection } from './components/HomeDoctorConsultationSection';
+import { HomeDoctorAtHomeSection } from './components/HomeDoctorAtHomeSection';
+import { DoctorAtHomeBookingModal } from './components/DoctorAtHomeBookingModal';
 import { DoctorBookingModal } from './components/DoctorBookingModal';
 import { DoctorVideoConsultationModal } from './components/DoctorVideoConsultationModal';
 import { EPrescriptionModal } from './components/EPrescriptionModal';
@@ -189,6 +195,38 @@ export default function App() {
   const [selectedDoctorForBooking, setSelectedDoctorForBooking] = useState<Doctor | null>(null);
   const [selectedAppointmentForVideo, setSelectedAppointmentForVideo] = useState<DoctorAppointment | null>(null);
   const [selectedPrescriptionForView, setSelectedPrescriptionForView] = useState<EPrescription | null>(null);
+
+  // Doctor at Home (বাসায় ডাক্তার সেবা) State
+  const [isDoctorAtHomeModalOpen, setIsDoctorAtHomeModalOpen] = useState(false);
+  const [doctorAtHomePreSelectedSpecialty, setDoctorAtHomePreSelectedSpecialty] = useState<string | undefined>(undefined);
+  const [doctorAtHomeBookings, setDoctorAtHomeBookings] = useState<DoctorAtHomeBooking[]>(() => getStoredDoctorAtHomeBookings());
+
+  const handleOpenDoctorAtHomeModal = (specialtyId?: string) => {
+    setDoctorAtHomePreSelectedSpecialty(specialtyId);
+    setIsDoctorAtHomeModalOpen(true);
+  };
+
+  const handleUpdateDoctorAtHomeBookings = (updated: DoctorAtHomeBooking[]) => {
+    setDoctorAtHomeBookings(updated);
+    saveStoredDoctorAtHomeBookings(updated);
+    saveDoctorAtHomeBookingsToFirestore(updated);
+  };
+
+  const handleNewDoctorAtHomeBooking = (newBooking: DoctorAtHomeBooking) => {
+    const updated = [newBooking, ...doctorAtHomeBookings];
+    handleUpdateDoctorAtHomeBookings(updated);
+  };
+
+  // Real-time subscription to Doctor at Home Bookings
+  useEffect(() => {
+    const unsubscribe = subscribeToDoctorAtHomeBookings((liveBookings) => {
+      if (liveBookings && liveBookings.length > 0) {
+        setDoctorAtHomeBookings(liveBookings);
+        saveStoredDoctorAtHomeBookings(liveBookings);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   // Secure Admin Authentication State (session based, prevents public domain auto-login)
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => getIsAdminSessionActive());
@@ -497,34 +535,31 @@ export default function App() {
         const missingDefaults = defaultList.filter(d => !liveMap.has(d.id));
         let combined = missingDefaults.length > 0 ? [...liveTests, ...missingDefaults] : liveTests;
 
-        // One-time auto-heal for tests where Popular Diagnostic price was previously glitched to 250
-        const healFlagKey = `eclinic_popular_healed_fs_${language}`;
-        const alreadyHealed = localStorage.getItem(healFlagKey);
+        // Auto-heal for tests where Popular Diagnostic price was previously glitched to 250
         let popularRatesHealed = false;
-        if (!alreadyHealed) {
-          combined = combined.map(test => {
-            const def = defaultList.find(d => d.id === test.id);
-            if (def && test.priceByLab?.['lab_popular'] === 250 && def.price > 300 && def.priceByLab?.['lab_popular'] !== 250) {
-              popularRatesHealed = true;
-              return {
-                ...test,
-                priceByLab: {
-                  ...(test.priceByLab || {}),
-                  'lab_popular': def.priceByLab?.['lab_popular'] || def.price
-                },
-                originalPriceByLab: {
-                  ...(test.originalPriceByLab || {}),
-                  'lab_popular': def.originalPriceByLab?.['lab_popular'] || def.originalPrice || def.price
-                }
-              };
-            }
-            return test;
-          });
-          if (popularRatesHealed) {
-            try {
-              localStorage.setItem(healFlagKey, 'true');
-            } catch (_e) {}
+        combined = combined.map(test => {
+          const def = defaultList.find(d => d.id === test.id);
+          if (def && test.priceByLab?.['lab_popular'] === 250 && def.priceByLab?.['lab_popular'] && def.priceByLab['lab_popular'] !== 250) {
+            popularRatesHealed = true;
+            return {
+              ...test,
+              priceByLab: {
+                ...(test.priceByLab || {}),
+                'lab_popular': def.priceByLab['lab_popular']
+              },
+              originalPriceByLab: {
+                ...(test.originalPriceByLab || {}),
+                'lab_popular': def.originalPriceByLab?.['lab_popular'] || def.originalPrice || def.price
+              }
+            };
           }
+          return test;
+        });
+        if (popularRatesHealed) {
+          try {
+            saveStoredTests(language, combined);
+            saveTestsToFirestore(language, combined);
+          } catch (_e) {}
         }
 
         // Ensure strict uniqueness by test name (case-insensitive and trimmed)
@@ -1092,6 +1127,17 @@ export default function App() {
                   </button>
                 )}
 
+                {/* Doctor at Home (Home Visit Service) */}
+                <button 
+                  onClick={() => handleOpenDoctorAtHomeModal()} 
+                  className="px-3.5 py-1.5 rounded-full transition-all flex items-center gap-1.5 text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 font-bold shadow-2xs cursor-pointer"
+                  title={language === 'bn' ? 'বাসায় ডাক্তার বুক করুন' : 'Book Doctor at Home'}
+                >
+                  <Home size={14} className="text-emerald-700" />
+                  <span>{language === 'bn' ? 'বাসায় ডাক্তার' : 'Doctor at Home'}</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                </button>
+
                 {/* 5. Nursing & Home Care (Only active/visible if Nursing Section is active) */}
                 {siteSettings.showNursingSection !== false && (
                   <button 
@@ -1152,7 +1198,17 @@ export default function App() {
                 </button>
               </div>
 
-              <div className="md:hidden flex items-center">
+              <div className="md:hidden flex items-center gap-2">
+                {/* Mobile: Doctor at Home quick pill */}
+                <button 
+                  onClick={() => handleOpenDoctorAtHomeModal()} 
+                  className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-300 font-extrabold text-[11px] flex items-center gap-1 shadow-2xs cursor-pointer"
+                  title="Doctor at Home"
+                >
+                  <Home size={12} className="text-emerald-700" />
+                  <span>{language === 'bn' ? 'বাসায় ডাক্তার' : 'Doctor at Home'}</span>
+                </button>
+
                 {/* Mobile: Only Login / Profile Option */}
                 {currentPatient ? (
                   <button 
@@ -1202,6 +1258,8 @@ export default function App() {
             onUpdatePatients={handleUpdatePatients}
             doctors={doctors}
             onUpdateDoctors={handleUpdateDoctors}
+            doctorAtHomeBookings={doctorAtHomeBookings}
+            onUpdateDoctorAtHomeBookings={handleUpdateDoctorAtHomeBookings}
             onOpenPrescriptionViewer={(presc) => setSelectedPrescriptionForView(presc)}
             onJoinVideoAsDoctor={(apt) => setSelectedAppointmentForVideo(apt)}
             siteSettings={siteSettings}
@@ -1562,6 +1620,20 @@ export default function App() {
                     />
                   );
 
+                case 'doctorAtHome':
+                  if (siteSettings.showDoctorAtHomeSection === false) return null;
+                  return (
+                    <HomeDoctorAtHomeSection
+                      key="doctorAtHome"
+                      lang={language}
+                      onOpenBookingModal={handleOpenDoctorAtHomeModal}
+                      badge={siteSettings.doctorAtHomeBadge}
+                      title={siteSettings.doctorAtHomeTitle}
+                      description={siteSettings.doctorAtHomeDesc}
+                      hotline={siteSettings.doctorAtHomeHotline || siteSettings.contactHotline || siteSettings.contactPhone}
+                    />
+                  );
+
                 case 'nursing':
                   if (siteSettings.showNursingSection === false) return null;
                   return (
@@ -1919,6 +1991,17 @@ export default function App() {
         labs={labs}
       />
 
+      {/* Doctor at Home Booking Modal */}
+      <DoctorAtHomeBookingModal
+        isOpen={isDoctorAtHomeModalOpen}
+        onClose={() => setIsDoctorAtHomeModalOpen(false)}
+        lang={language}
+        currentPatient={currentPatient}
+        defaultSpecialty={doctorAtHomePreSelectedSpecialty}
+        onBookingConfirmed={handleNewDoctorAtHomeBooking}
+        onOpenAuthModal={() => handleOpenAuth('login')}
+      />
+
       <PatientAuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
@@ -2131,6 +2214,15 @@ export default function App() {
                 <li>
                   <button onClick={() => scrollToSection('tests')} className="hover:text-white transition-colors cursor-pointer">
                     {t.footerLinks.labTest}
+                  </button>
+                </li>
+                <li>
+                  <button 
+                    onClick={() => handleOpenDoctorAtHomeModal()} 
+                    className="hover:text-emerald-400 text-emerald-300 font-bold transition-colors cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Home size={14} className="text-emerald-400" />
+                    <span>{language === 'bn' ? 'Doctor at Home (বাসায় ডাক্তার সেবা)' : 'Doctor at Home Service'}</span>
                   </button>
                 </li>
                 {isDoctorModuleActive && (
