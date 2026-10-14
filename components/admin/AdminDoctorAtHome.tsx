@@ -22,11 +22,12 @@ import {
   HeartPulse, 
   CreditCard, 
   Tag, 
-  Save 
+  Save,
+  Download 
 } from 'lucide-react';
 import { DoctorAtHomeBooking, DoctorAtHomeStatus, Language, PaymentMethod } from '../../types';
 import { DEFAULT_DOCTOR_AT_HOME_SPECIALTIES } from '../../services/dataStorage';
-import { printOrDownloadDoctorAtHomeSlip } from '../../services/invoiceService';
+import { printOrDownloadDoctorAtHomeSlip, downloadDoctorAtHomeSlipHtml } from '../../services/invoiceService';
 
 interface AdminDoctorAtHomeProps {
   lang: Language;
@@ -994,7 +995,7 @@ export const AdminDoctorAtHome: React.FC<AdminDoctorAtHomeProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 pt-2">
+            <div className="flex items-center gap-2 pt-2">
               <button
                 type="button"
                 onClick={() => {
@@ -1002,17 +1003,32 @@ export const AdminDoctorAtHome: React.FC<AdminDoctorAtHomeProps> = ({
                     printOrDownloadDoctorAtHomeSlip(viewingSlipBooking, lang);
                   }
                 }}
-                className="py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+                className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm transition-colors cursor-pointer"
               >
                 <Printer size={15} />
-                <span>{lang === 'bn' ? 'স্লিপ প্রিন্ট / ডাউনলোড' : 'Print / Download Slip'}</span>
+                <span>{lang === 'bn' ? 'স্লিপ প্রিন্ট' : 'Print Slip'}</span>
               </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (viewingSlipBooking) {
+                    downloadDoctorAtHomeSlipHtml(viewingSlipBooking, lang);
+                  }
+                }}
+                className="py-2.5 px-3 bg-white border border-emerald-300 hover:bg-emerald-50 text-emerald-800 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                title="Download HTML file"
+              >
+                <Download size={14} />
+                <span>{lang === 'bn' ? 'ডাউনলোড' : 'Download'}</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => setViewingSlipBooking(null)}
-                className="py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors cursor-pointer"
+                className="py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors cursor-pointer"
               >
-                Close
+                {lang === 'bn' ? 'বন্ধ করুন' : 'Close'}
               </button>
             </div>
           </div>

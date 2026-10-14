@@ -7071,6 +7071,15 @@ export const DEFAULT_SITE_SETTINGS_BN: SiteSettings = {
   doctorsBtnText: 'সকল বিশেষজ্ঞ ডাক্তার',
   doctorsEmergencyHotline: '09612-000000',
 
+  // Doctor at Home (বাসায় ডাক্তার সেবা) Section
+  showDoctorAtHomeSection: true,
+  isDoctorAtHomeActive: true,
+  doctorAtHomeBadge: '🚑 Doctor at Home সেবা',
+  doctorAtHomeTitle: 'হাসপাতালে লাইন না ধরে ঘরে বসেই বিশেষজ্ঞ ডাক্তার দেখান',
+  doctorAtHomeDesc: 'প্রবীণ সদস্য, অসুস্থ শিশু কিংবা তীব্র শারীরিক জটিলতায় বিএমডিসি রেজিস্টার্ড অভিজ্ঞ চিকিৎসকরা সরাসরি আপনার বাড়ি বা অফিসে গিয়ে সম্পূর্ণ শারীরিক পরীক্ষা ও চিকিৎসা প্রদান করেন।',
+  doctorAtHomeFee: 1200,
+  doctorAtHomeHotline: '09612-000000',
+
   // Nursing & Care Section
   showNursingSection: true,
   nursingBadge: 'হোম নার্সিং ও পেশেন্ট কেয়ার',
@@ -7211,6 +7220,15 @@ export const DEFAULT_SITE_SETTINGS_EN: SiteSettings = {
   doctorsDesc: 'Book 30-minute virtual appointments, join HD live video chats, pay consultation fees online, and receive digital e-prescriptions with test advice from leading hospital specialists.',
   doctorsBtnText: 'View All Doctors',
   doctorsEmergencyHotline: '09612-000000',
+
+  // Doctor at Home (Home Doctor Visit) Section
+  showDoctorAtHomeSection: true,
+  isDoctorAtHomeActive: true,
+  doctorAtHomeBadge: '🚑 Doctor at Home Service',
+  doctorAtHomeTitle: 'Consult Specialist Doctors Directly at Your Home',
+  doctorAtHomeDesc: 'Certified BMDC registered doctors visit your residence for comprehensive physical checkups, vitals monitoring, and authorized medical prescriptions.',
+  doctorAtHomeFee: 1200,
+  doctorAtHomeHotline: '09612-000000',
 
   // Nursing & Care Section
   showNursingSection: true,

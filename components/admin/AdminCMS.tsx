@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Language, SiteSettings, ServiceItem, AboutStat, HowItWorksStep, NursingCareService } from '../../types';
+import { Language, SiteSettings, ServiceItem, AboutStat, HowItWorksStep, NursingCareService, DoctorAtHomeSpecialty, DoctorAtHomeScheduleConfig, DoctorAtHomeTimeSlot } from '../../types';
 import { TRANSLATIONS } from '../../translations';
 import { 
   Building2, 
@@ -45,7 +45,11 @@ import {
   Smartphone,
   Download,
   Star,
-  QrCode
+  QrCode,
+  Calendar,
+  Zap,
+  X,
+  AlertCircle
 } from 'lucide-react';
 import { Button } from '../Button';
 import { 
@@ -57,6 +61,14 @@ import {
   DEFAULT_NURSING_SERVICES_EN,
   DEFAULT_HOME_SECTIONS_ORDER
 } from '../../constants';
+import { 
+  getStoredDoctorAtHomeSpecialties, 
+  saveStoredDoctorAtHomeSpecialties, 
+  getStoredDoctorAtHomeSchedule, 
+  saveStoredDoctorAtHomeSchedule, 
+  DEFAULT_DOCTOR_AT_HOME_SPECIALTIES, 
+  DEFAULT_DOCTOR_AT_HOME_SCHEDULE 
+} from '../../services/dataStorage';
 import { printOrDownloadInvoice } from '../../services/invoiceService';
 
 interface AdminCMSProps {
@@ -88,7 +100,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
   onToggleServiceActive,
   showToast
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'hero' | 'sections' | 'branding' | 'about' | 'contact' | 'services' | 'nursing' | 'invoice' | 'app'>('hero');
+  const [activeSubTab, setActiveSubTab] = useState<'hero' | 'sections' | 'branding' | 'about' | 'contact' | 'services' | 'nursing' | 'doctorAtHome' | 'invoice' | 'app'>('hero');
   const [formData, setFormData] = useState<SiteSettings>({ ...siteSettings });
   const [newHeroImageUrl, setNewHeroImageUrl] = useState('');
   const [previewHeroIndex, setPreviewHeroIndex] = useState(0);
@@ -162,6 +174,28 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
     isActive: true
   });
   const [nursingFeatureInput, setNursingFeatureInput] = useState('');
+
+  // Doctor at Home Specialties & Schedule state
+  const [isSpecialtyModalOpen, setIsSpecialtyModalOpen] = useState(false);
+  const [editingSpecialty, setEditingSpecialty] = useState<DoctorAtHomeSpecialty | null>(null);
+  const [specialtyFormData, setSpecialtyFormData] = useState<Partial<DoctorAtHomeSpecialty>>({
+    nameBn: '',
+    nameEn: '',
+    icon: 'Stethoscope',
+    fee: 1500,
+    descriptionBn: '',
+    descriptionEn: '',
+    badge: 'স্পেশালিস্ট',
+    duration: '৩০-৪৫ মিনিট',
+    isActive: true
+  });
+  const [newHolidayDateInput, setNewHolidayDateInput] = useState('');
+  const [isAddSlotModalOpen, setIsAddSlotModalOpen] = useState(false);
+  const [slotFormData, setSlotFormData] = useState({
+    timeBn: '',
+    timeEn: '',
+    label: ''
+  });
 
   const t = TRANSLATIONS[lang];
 
@@ -495,6 +529,240 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
   };
 
   // ==========================================
+  // DOCTOR AT HOME SPECIALTIES & SCHEDULE HANDLERS
+  // ==========================================
+  const doctorSpecialtiesList: DoctorAtHomeSpecialty[] = 
+    (formData.doctorAtHomeSpecialties && formData.doctorAtHomeSpecialties.length > 0)
+      ? formData.doctorAtHomeSpecialties
+      : getStoredDoctorAtHomeSpecialties();
+
+  const doctorScheduleConfig: DoctorAtHomeScheduleConfig = 
+    formData.doctorAtHomeSchedule || getStoredDoctorAtHomeSchedule();
+
+  const handleOpenAddSpecialty = () => {
+    setEditingSpecialty(null);
+    setSpecialtyFormData({
+      id: `spec_${Date.now()}`,
+      nameBn: '',
+      nameEn: '',
+      icon: 'Stethoscope',
+      fee: 1500,
+      descriptionBn: '',
+      descriptionEn: '',
+      badge: lang === 'bn' ? 'স্পেশালিস্ট' : 'Specialist',
+      duration: '৩০-৪৫ মিনিট',
+      isActive: true
+    });
+    setIsSpecialtyModalOpen(true);
+  };
+
+  const handleOpenEditSpecialty = (spec: DoctorAtHomeSpecialty) => {
+    setEditingSpecialty(spec);
+    setSpecialtyFormData({ ...spec });
+    setIsSpecialtyModalOpen(true);
+  };
+
+  const handleSaveSpecialty = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!specialtyFormData.nameBn?.trim()) {
+      showToast(lang === 'bn' ? 'স্পেশালিটির বাংলা নাম আবশ্যক' : 'Specialty Bengali name is required');
+      return;
+    }
+
+    let updatedList: DoctorAtHomeSpecialty[];
+    if (editingSpecialty) {
+      updatedList = doctorSpecialtiesList.map(s =>
+        s.id === editingSpecialty.id
+          ? ({ ...s, ...specialtyFormData, id: s.id } as DoctorAtHomeSpecialty)
+          : s
+      );
+    } else {
+      const newSpec: DoctorAtHomeSpecialty = {
+        id: specialtyFormData.id || `spec_${Date.now()}`,
+        nameBn: specialtyFormData.nameBn.trim(),
+        nameEn: specialtyFormData.nameEn?.trim() || specialtyFormData.nameBn.trim(),
+        icon: specialtyFormData.icon || 'Stethoscope',
+        fee: Number(specialtyFormData.fee) || 1500,
+        descriptionBn: specialtyFormData.descriptionBn?.trim() || '',
+        descriptionEn: specialtyFormData.descriptionEn?.trim() || '',
+        badge: specialtyFormData.badge?.trim() || '',
+        duration: specialtyFormData.duration?.trim() || '৩০-৪৫ মিনিট',
+        isActive: specialtyFormData.isActive !== false
+      };
+      updatedList = [...doctorSpecialtiesList, newSpec];
+    }
+
+    const newSettings = { ...formData, doctorAtHomeSpecialties: updatedList };
+    setFormData(newSettings);
+    onUpdateSiteSettings(newSettings);
+    saveStoredDoctorAtHomeSpecialties(updatedList);
+    setIsSpecialtyModalOpen(false);
+    showToast(editingSpecialty
+      ? (lang === 'bn' ? 'স্পেশালিটি সফলভাবে আপডেট করা হয়েছে' : 'Specialty updated successfully')
+      : (lang === 'bn' ? 'নতুন স্পেশালিটি যুক্ত করা হয়েছে' : 'New specialty added successfully')
+    );
+  };
+
+  const handleDeleteSpecialty = (id: string) => {
+    if (window.confirm(lang === 'bn' ? 'আপনি কি নিশ্চিত যে এই স্পেশালিটিটি মুছে ফেলতে চান?' : 'Are you sure you want to delete this specialty?')) {
+      const updatedList = doctorSpecialtiesList.filter(s => s.id !== id);
+      const newSettings = { ...formData, doctorAtHomeSpecialties: updatedList };
+      setFormData(newSettings);
+      onUpdateSiteSettings(newSettings);
+      saveStoredDoctorAtHomeSpecialties(updatedList);
+      showToast(lang === 'bn' ? 'স্পেশালিটি মুছে ফেলা হয়েছে' : 'Specialty removed successfully');
+    }
+  };
+
+  const handleToggleSpecialtyActive = (id: string) => {
+    const updatedList = doctorSpecialtiesList.map(s => {
+      if (s.id === id) {
+        return { ...s, isActive: !s.isActive };
+      }
+      return s;
+    });
+    const newSettings = { ...formData, doctorAtHomeSpecialties: updatedList };
+    setFormData(newSettings);
+    onUpdateSiteSettings(newSettings);
+    saveStoredDoctorAtHomeSpecialties(updatedList);
+    const target = updatedList.find(s => s.id === id);
+    showToast(
+      target?.isActive
+        ? (lang === 'bn' ? 'স্পেশালিটি সক্রিয় (Active) করা হয়েছে' : 'Specialty enabled')
+        : (lang === 'bn' ? 'স্পেশালিটি নিষ্ক্রিয় (Inactive) করা হয়েছে' : 'Specialty disabled')
+    );
+  };
+
+  const handleMoveSpecialty = (index: number, direction: 'up' | 'down') => {
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= doctorSpecialtiesList.length) return;
+    const updated = [...doctorSpecialtiesList];
+    const temp = updated[index];
+    updated[index] = updated[targetIndex];
+    updated[targetIndex] = temp;
+
+    const newSettings = { ...formData, doctorAtHomeSpecialties: updated };
+    setFormData(newSettings);
+    onUpdateSiteSettings(newSettings);
+    saveStoredDoctorAtHomeSpecialties(updated);
+    showToast(lang === 'bn' ? 'স্পেশালিটির ক্রম পরিবর্তন হয়েছে' : 'Specialty order updated');
+  };
+
+  const handleResetSpecialtiesDefaults = () => {
+    if (window.confirm(lang === 'bn' ? 'ডিফল্ট স্পেশালিটি তালিকা রিস্টোর করতে চান?' : 'Reset to default specialties list?')) {
+      const newSettings = { ...formData, doctorAtHomeSpecialties: [...DEFAULT_DOCTOR_AT_HOME_SPECIALTIES] };
+      setFormData(newSettings);
+      onUpdateSiteSettings(newSettings);
+      saveStoredDoctorAtHomeSpecialties([...DEFAULT_DOCTOR_AT_HOME_SPECIALTIES]);
+      showToast(lang === 'bn' ? 'ডিফল্ট স্পেশালিটি তালিকা রিস্টোর করা হয়েছে' : 'Default specialties restored');
+    }
+  };
+
+  // Schedule & Holidays Handlers
+  const handleToggleWeeklyHoliday = (dayIndex: number) => {
+    const current = doctorScheduleConfig.weeklyHolidays || [];
+    const exists = current.includes(dayIndex);
+    const updated = exists ? current.filter(d => d !== dayIndex) : [...current, dayIndex];
+    const newSchedule: DoctorAtHomeScheduleConfig = {
+      ...doctorScheduleConfig,
+      weeklyHolidays: updated
+    };
+    const newSettings = { ...formData, doctorAtHomeSchedule: newSchedule };
+    setFormData(newSettings);
+    onUpdateSiteSettings(newSettings);
+    saveStoredDoctorAtHomeSchedule(newSchedule);
+    showToast(lang === 'bn' ? 'সাপ্তাহিক ছুটির দিন আপডেট করা হয়েছে' : 'Weekly off-days updated');
+  };
+
+  const handleAddHolidayDate = (dateStr: string) => {
+    if (!dateStr) return;
+    const current = doctorScheduleConfig.holidayDates || [];
+    if (current.includes(dateStr)) {
+      showToast(lang === 'bn' ? 'এই তারিখটি আগেই ছুটির তালিকায় রয়েছে' : 'Date already in holiday list');
+      return;
+    }
+    const updated = [...current, dateStr].sort();
+    const newSchedule: DoctorAtHomeScheduleConfig = {
+      ...doctorScheduleConfig,
+      holidayDates: updated
+    };
+    const newSettings = { ...formData, doctorAtHomeSchedule: newSchedule };
+    setFormData(newSettings);
+    onUpdateSiteSettings(newSettings);
+    saveStoredDoctorAtHomeSchedule(newSchedule);
+    setNewHolidayDateInput('');
+    showToast(lang === 'bn' ? 'বিশেষ বন্ধের তারিখ যুক্ত হয়েছে' : 'Special holiday date added');
+  };
+
+  const handleRemoveHolidayDate = (dateStr: string) => {
+    const current = doctorScheduleConfig.holidayDates || [];
+    const updated = current.filter(d => d !== dateStr);
+    const newSchedule: DoctorAtHomeScheduleConfig = {
+      ...doctorScheduleConfig,
+      holidayDates: updated
+    };
+    const newSettings = { ...formData, doctorAtHomeSchedule: newSchedule };
+    setFormData(newSettings);
+    onUpdateSiteSettings(newSettings);
+    saveStoredDoctorAtHomeSchedule(newSchedule);
+    showToast(lang === 'bn' ? 'ছুটির তারিখ মুছে ফেলা হয়েছে' : 'Holiday date removed');
+  };
+
+  const handleToggleSlotActive = (slotId: string) => {
+    const slots = doctorScheduleConfig.timeSlots || [];
+    const updated = slots.map(s => s.id === slotId ? { ...s, isActive: !(s.isActive !== false) } : s);
+    const newSchedule: DoctorAtHomeScheduleConfig = {
+      ...doctorScheduleConfig,
+      timeSlots: updated
+    };
+    const newSettings = { ...formData, doctorAtHomeSchedule: newSchedule };
+    setFormData(newSettings);
+    onUpdateSiteSettings(newSettings);
+    saveStoredDoctorAtHomeSchedule(newSchedule);
+    showToast(lang === 'bn' ? 'স্লটের অবস্থা পরিবর্তন হয়েছে' : 'Slot status toggled');
+  };
+
+  const handleSaveSlot = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!slotFormData.timeBn.trim()) {
+      showToast(lang === 'bn' ? 'স্লটের সময় প্রদান করুন' : 'Slot time is required');
+      return;
+    }
+    const newSlot: DoctorAtHomeTimeSlot = {
+      id: `slot_${Date.now()}`,
+      timeBn: slotFormData.timeBn.trim(),
+      timeEn: slotFormData.timeEn.trim() || slotFormData.timeBn.trim(),
+      label: slotFormData.label.trim() || 'Custom Slot',
+      isActive: true
+    };
+    const updated = [...(doctorScheduleConfig.timeSlots || []), newSlot];
+    const newSchedule: DoctorAtHomeScheduleConfig = {
+      ...doctorScheduleConfig,
+      timeSlots: updated
+    };
+    const newSettings = { ...formData, doctorAtHomeSchedule: newSchedule };
+    setFormData(newSettings);
+    onUpdateSiteSettings(newSettings);
+    saveStoredDoctorAtHomeSchedule(newSchedule);
+    setIsAddSlotModalOpen(false);
+    setSlotFormData({ timeBn: '', timeEn: '', label: '' });
+    showToast(lang === 'bn' ? 'নতুন টাইম স্লট যুক্ত করা হয়েছে' : 'New time slot added');
+  };
+
+  const handleDeleteSlot = (slotId: string) => {
+    const updated = (doctorScheduleConfig.timeSlots || []).filter(s => s.id !== slotId);
+    const newSchedule: DoctorAtHomeScheduleConfig = {
+      ...doctorScheduleConfig,
+      timeSlots: updated
+    };
+    const newSettings = { ...formData, doctorAtHomeSchedule: newSchedule };
+    setFormData(newSettings);
+    onUpdateSiteSettings(newSettings);
+    saveStoredDoctorAtHomeSchedule(newSchedule);
+    showToast(lang === 'bn' ? 'টাইম স্লট মুছে ফেলা হয়েছে' : 'Time slot removed');
+  };
+
+  // ==========================================
   // INVOICE GUIDELINES HANDLERS
   // ==========================================
   const invoiceGuidelinesList = formData.invoiceGuidelines && formData.invoiceGuidelines.length > 0
@@ -698,6 +966,19 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
         >
           <HeartPulse size={15} className={activeSubTab === 'nursing' ? 'text-rose-600' : ''} />
           <span>{lang === 'bn' ? 'নার্সিং ও কেয়ার' : 'Nursing & Care'} ({nursingServicesList.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveSubTab('doctorAtHome')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
+            activeSubTab === 'doctorAtHome'
+              ? 'bg-white text-emerald-700 shadow-sm border border-emerald-300'
+              : 'text-slate-600 hover:text-emerald-700'
+          }`}
+        >
+          <Home size={15} className={activeSubTab === 'doctorAtHome' ? 'text-emerald-600' : ''} />
+          <span>{lang === 'bn' ? 'হোম ডক্টর ও সিডিউল' : 'Doctor at Home & Schedule'}</span>
+          <span className={`w-2 h-2 rounded-full ${formData.showDoctorAtHomeSection !== false ? 'bg-emerald-500' : 'bg-slate-300'}`} />
         </button>
 
         <button
@@ -1185,6 +1466,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
           formData.showPartnerSection !== false,
           formData.showPopularTestsSection !== false,
           formData.showPackagesSection !== false,
+          formData.showDoctorAtHomeSection !== false,
           formData.showDoctorsSection !== false,
           formData.showNursingSection !== false,
           formData.showAppDownloadSection !== false,
@@ -1196,6 +1478,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
           partner: { bn: 'অনুমোদিত ডায়াগনস্টিক পার্টনার্স', en: 'Diagnostic Lab Partners', shortBn: 'পার্টনার ল্যাবস', shortEn: 'Lab Partners' },
           popularTests: { bn: 'জনপ্রিয় ডায়াগনস্টিক টেস্টসমূহ', en: 'Popular Diagnostic Tests', shortBn: 'জনপ্রিয় টেস্ট', shortEn: 'Popular Tests' },
           packages: { bn: 'হেলথ প্যাকেজ স্লাইডার', en: 'Essential Health Packages', shortBn: 'হেলথ প্যাকেজ', shortEn: 'Health Packages' },
+          doctorAtHome: { bn: 'হোমে ডাক্তার সেবা (Doctor at Home)', en: 'Doctor at Home Visit', shortBn: 'হোম ডক্টর', shortEn: 'Doctor at Home' },
           doctors: { bn: 'বিশেষজ্ঞ ডাক্তার কন্সালটেন্সি ও ভিডিও চ্যাট', en: 'Doctor Consultation & Video Chat', shortBn: 'ডাক্তার কন্সালটেন্সি', shortEn: 'Doctors' },
           nursing: { bn: 'হোম নার্সিং ও পেশেন্ট কেয়ার', en: 'Home Nursing & Care', shortBn: 'নার্সিং কেয়ার', shortEn: 'Nursing Care' },
           appDownload: { bn: 'মোবাইল অ্যাপ ডাউনলোড (Play Store & App Store)', en: 'Mobile App Download (Play Store & iOS)', shortBn: 'মোবাইল অ্যাপ', shortEn: 'Mobile App' },
@@ -1241,6 +1524,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                     secKey === 'partner' ? formData.showPartnerSection !== false :
                     secKey === 'popularTests' ? formData.showPopularTestsSection !== false :
                     secKey === 'packages' ? formData.showPackagesSection !== false :
+                    secKey === 'doctorAtHome' ? formData.showDoctorAtHomeSection !== false :
                     secKey === 'doctors' ? formData.showDoctorsSection !== false :
                     secKey === 'nursing' ? formData.showNursingSection !== false :
                     secKey === 'appDownload' ? formData.showAppDownloadSection !== false :
@@ -1722,6 +2006,181 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                             placeholder="e.g. সকল প্যাকেজ দেখুন"
                             className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none bg-white"
                           />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (sectionKey === 'doctorAtHome') {
+                  const isActive = formData.showDoctorAtHomeSection !== false;
+                  return (
+                    <div 
+                      key="doctorAtHome"
+                      className={`bg-white p-6 rounded-2xl border shadow-sm space-y-4 transition-all ${
+                        isActive ? 'border-emerald-200 shadow-emerald-500/5' : 'border-slate-200/60 bg-slate-50/50 opacity-90'
+                      }`}
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-emerald-50 pb-3">
+                        <div className="flex items-center gap-2.5">
+                          <span className="px-2.5 py-1 bg-slate-900 text-white text-xs font-black rounded-lg shadow-2xs">
+                            #{idx + 1}
+                          </span>
+                          <div className={`p-2 rounded-xl ${isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-500'}`}>
+                            <Home size={18} />
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                              <span>{lang === 'bn' ? 'Doctor at Home (বাসায় ডাক্তার সেবা) সেকশন' : 'Doctor at Home Service Section'}</span>
+                            </h3>
+                            <span className="text-[11px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-md">
+                              Pos #{idx + 1} &bull; {doctorSpecialtiesList.length} Specialties
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Controls: Up / Down Reorder & Active Toggle */}
+                        <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
+                          {/* Up Button */}
+                          <button
+                            type="button"
+                            disabled={isFirst}
+                            onClick={() => handleMoveSection('doctorAtHome', 'up')}
+                            className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                              isFirst 
+                                ? 'opacity-30 cursor-not-allowed bg-slate-100 text-slate-400 border-slate-200' 
+                                : 'bg-white text-slate-700 border-slate-200 hover:bg-sky-50 hover:text-primary hover:border-sky-300 shadow-2xs cursor-pointer'
+                            }`}
+                            title={lang === 'bn' ? 'সেকশনটি ১ ধাপ উপরে নিন' : 'Move section up'}
+                          >
+                            <ArrowUp size={14} className={isFirst ? '' : 'text-primary'} />
+                            <span className="hidden sm:inline">{lang === 'bn' ? 'উপরে' : 'Up'}</span>
+                          </button>
+
+                          {/* Down Button */}
+                          <button
+                            type="button"
+                            disabled={isLast}
+                            onClick={() => handleMoveSection('doctorAtHome', 'down')}
+                            className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                              isLast 
+                                ? 'opacity-30 cursor-not-allowed bg-slate-100 text-slate-400 border-slate-200' 
+                                : 'bg-white text-slate-700 border-slate-200 hover:bg-sky-50 hover:text-primary hover:border-sky-300 shadow-2xs cursor-pointer'
+                            }`}
+                            title={lang === 'bn' ? 'সেকশনটি ১ ধাপ নিচে নিন' : 'Move section down'}
+                          >
+                            <ArrowDown size={14} className={isLast ? '' : 'text-primary'} />
+                            <span className="hidden sm:inline">{lang === 'bn' ? 'নিচে' : 'Down'}</span>
+                          </button>
+
+                          {/* Active / Inactive Toggle Switch */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const nextState = formData.showDoctorAtHomeSection === false ? true : false;
+                              const updated = { 
+                                ...formData, 
+                                showDoctorAtHomeSection: nextState,
+                                isDoctorAtHomeActive: nextState 
+                              };
+                              setFormData(updated);
+                              onUpdateSiteSettings(updated);
+                              showToast(nextState 
+                                ? (lang === 'bn' ? 'Doctor at Home সেকশন সক্রিয় (Active) করা হয়েছে' : 'Doctor at home section activated!')
+                                : (lang === 'bn' ? 'Doctor at Home সেকশন নিষ্ক্রিয় (Inactive) করা হয়েছে' : 'Doctor at home section deactivated!'));
+                            }}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all border cursor-pointer ${
+                              isActive
+                                ? 'bg-emerald-50 text-emerald-800 border-emerald-300 shadow-2xs'
+                                : 'bg-slate-100 text-slate-500 border-slate-200'
+                            }`}
+                          >
+                            {isActive ? (
+                              <>
+                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                <Eye size={13} className="text-emerald-600" />
+                                <span>{lang === 'bn' ? 'Active (সক্রিয়)' : 'Active (Visible)'}</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="w-2 h-2 rounded-full bg-slate-400" />
+                                <EyeOff size={13} className="text-slate-400" />
+                                <span>{lang === 'bn' ? 'Inactive (নিষ্ক্রিয়)' : 'Inactive (Hidden)'}</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {!isActive && (
+                        <div className="px-3.5 py-2 bg-amber-50 border border-amber-200/80 rounded-xl text-[11px] text-amber-800 flex items-center gap-2">
+                          <EyeOff size={14} className="text-amber-600 shrink-0" />
+                          <span>{lang === 'bn' ? '⚠️ এই সেকশনটি বর্তমানে হোমপেজে লুকানো রয়েছে (Inactive)। আপনি চাইলে টেক্সট এডিট করে রাখতে পারেন।' : '⚠️ This section is currently hidden from homepage (Inactive).'}</span>
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">
+                            {lang === 'bn' ? 'ব্যাজ টেক্সট (Badge)' : 'Badge Text'}
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.doctorAtHomeBadge || ''}
+                            onChange={e => setFormData({ ...formData, doctorAtHomeBadge: e.target.value })}
+                            placeholder="e.g. 🚑 Doctor at Home সেবা"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 outline-none bg-white"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">
+                            {lang === 'bn' ? 'সেকশন শিরোনাম (Title)' : 'Section Heading'}
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.doctorAtHomeTitle || ''}
+                            onChange={e => setFormData({ ...formData, doctorAtHomeTitle: e.target.value })}
+                            placeholder="e.g. হাসপাতালে লাইন না ধরে ঘরে বসেই বিশেষজ্ঞ ডাক্তার দেখান"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-emerald-500 outline-none bg-white"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">
+                            {lang === 'bn' ? 'সেকশন বিবরণ (Description)' : 'Subtitle / Description'}
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.doctorAtHomeDesc || ''}
+                            onChange={e => setFormData({ ...formData, doctorAtHomeDesc: e.target.value })}
+                            placeholder="e.g. প্রবীণ সদস্য বা অসুস্থ শিশুর জন্য বিশেষজ্ঞ ডাক্তারের ফিজিক্যাল ভিজিট..."
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 outline-none bg-white"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">
+                            {lang === 'bn' ? 'ডাক্তার ভিজিট হেল্পলাইন' : 'Helpline Number'}
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.doctorAtHomeHotline || ''}
+                            onChange={e => setFormData({ ...formData, doctorAtHomeHotline: e.target.value })}
+                            placeholder="e.g. 09612-000000"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 outline-none bg-white font-mono"
+                          />
+                        </div>
+
+                        <div className="flex items-end md:col-span-2">
+                          <Button 
+                            onClick={() => setActiveSubTab('doctorAtHome')}
+                            variant="outline" 
+                            className="w-full text-xs font-bold text-emerald-700 border-emerald-300 hover:bg-emerald-50"
+                          >
+                            <Stethoscope size={14} className="mr-1.5 inline text-emerald-600" />
+                            <span>{lang === 'bn' ? 'স্পেশালিটিস কার্ড ও সিডিউল ম্যানেজ করুন' : 'Manage Doctor Specialties & Schedules'} &rarr;</span>
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -3549,7 +4008,574 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* 8. INVOICE, MONEY RECEIPT & SAMPLE GUIDELINES MANAGEMENT                  */}
+      {/* 8. DOCTOR AT HOME & SCHEDULE CMS MANAGEMENT                               */}
+      {/* ========================================================================= */}
+      {activeSubTab === 'doctorAtHome' && (
+        <div className="space-y-6">
+          {/* Header & Quick Action Bar */}
+          <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-700 text-white p-6 rounded-2xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-white text-xs font-bold uppercase tracking-wider mb-2">
+                <Home size={14} />
+                <span>{lang === 'bn' ? 'Doctor at Home & সিডিউল CMS' : 'Doctor at Home & Schedule CMS'}</span>
+              </div>
+              <h2 className="font-extrabold text-xl sm:text-2xl text-white">
+                {lang === 'bn' ? 'হোম ডক্টর সেবা, স্পেশালিটি ও সিডিউল ম্যানেজমেন্ট' : 'Doctor at Home, Specialties & Schedule'}
+              </h2>
+              <p className="text-emerald-100 text-xs sm:text-sm mt-1 max-w-2xl">
+                {lang === 'bn'
+                  ? 'ডাক্তার সেবা চালু/বন্ধ (Active/Inactive), স্পেশালিটিস কার্ড ইনেবল/ডিজেবল, নতুন স্পেশালিটি যোগ ও এডিট, সাপ্তাহিক ছুটি ও ৭ দিনের অগ্রীম বুকিং সিডিউল নিয়ন্ত্রণ করুন।'
+                  : 'Manage Doctor at Home activation, specialty cards, add/edit specialties, weekly holidays and 7-day advance booking schedule.'}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5">
+              <button
+                type="button"
+                onClick={handleResetSpecialtiesDefaults}
+                className="px-3.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-semibold transition-all flex items-center gap-1.5 border border-white/20"
+                title="Reset to default doctor specialties"
+              >
+                <RotateCcw size={13} /> {lang === 'bn' ? 'ডিফল্ট স্পেশালিটি' : 'Default Specialties'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsAddSlotModalOpen(true)}
+                className="px-3.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-semibold transition-all flex items-center gap-1.5 border border-white/20"
+              >
+                <Clock size={13} /> {lang === 'bn' ? '+ নতুন টাইম স্লট' : '+ Add Time Slot'}
+              </button>
+
+              <Button
+                type="button"
+                onClick={handleOpenAddSpecialty}
+                className="px-4 py-2 text-xs font-bold bg-white text-emerald-800 hover:bg-emerald-50 shadow-md flex items-center gap-1.5"
+              >
+                <Plus size={15} /> {lang === 'bn' ? 'নতুন স্পেশালিটি যোগ করুন' : 'Add New Specialty'}
+              </Button>
+            </div>
+          </div>
+
+          {/* 1. Master Service Active / Inactive Toggle & Section Text */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-3">
+                <div className={`p-3 rounded-2xl ${formData.showDoctorAtHomeSection !== false ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-500'}`}>
+                  <Home size={22} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
+                    <span>{lang === 'bn' ? 'Doctor at Home সার্ভিসের মূল স্ট্যাটাস' : 'Doctor at Home Service Master Status'}</span>
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-extrabold ${formData.showDoctorAtHomeSection !== false ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'}`}>
+                      {formData.showDoctorAtHomeSection !== false ? (lang === 'bn' ? '✓ সক্রিয় (ACTIVE)' : '✓ ACTIVE') : (lang === 'bn' ? '✕ নিষ্ক্রিয় (INACTIVE)' : '✕ INACTIVE')}
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {lang === 'bn' 
+                      ? 'নিষ্ক্রিয় (Inactive) করলে পুরো ওয়েবসাইটে হোমে ডাক্তার সেকশন ও বুকিং বাটন লুকানো থাকবে।' 
+                      : 'When set to Inactive, Doctor at Home is completely hidden from the website.'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Master Toggle Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  const nextState = formData.showDoctorAtHomeSection === false ? true : false;
+                  const updated = { 
+                    ...formData, 
+                    showDoctorAtHomeSection: nextState,
+                    isDoctorAtHomeActive: nextState 
+                  };
+                  setFormData(updated);
+                  onUpdateSiteSettings(updated);
+                  showToast(nextState 
+                    ? (lang === 'bn' ? 'Doctor at Home সার্ভিস সফলভাবে সক্রিয় (Active) করা হয়েছে!' : 'Doctor at home service activated!')
+                    : (lang === 'bn' ? 'Doctor at Home সার্ভিস সফলভাবে নিষ্ক্রিয় (Inactive) করা হয়েছে!' : 'Doctor at home service deactivated!'));
+                }}
+                className={`px-5 py-2.5 rounded-2xl text-xs font-black flex items-center gap-2 transition-all cursor-pointer shadow-xs ${
+                  formData.showDoctorAtHomeSection !== false
+                    ? 'bg-emerald-600 text-white hover:bg-emerald-700 ring-2 ring-emerald-500/20'
+                    : 'bg-slate-800 text-white hover:bg-slate-900'
+                }`}
+              >
+                {formData.showDoctorAtHomeSection !== false ? (
+                  <>
+                    <Eye size={16} />
+                    <span>{lang === 'bn' ? 'সক্রিয় রয়েছে (ক্লিক করে বন্ধ করুন)' : 'Active (Click to Deactivate)'}</span>
+                  </>
+                ) : (
+                  <>
+                    <EyeOff size={16} />
+                    <span>{lang === 'bn' ? 'নিষ্ক্রিয় রয়েছে (ক্লিক করে চালু করুন)' : 'Inactive (Click to Activate)'}</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Quick Header Texts */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  {lang === 'bn' ? 'সেকশন ব্যাজ (Badge)' : 'Section Badge'}
+                </label>
+                <input
+                  type="text"
+                  value={formData.doctorAtHomeBadge || ''}
+                  onChange={e => setFormData({ ...formData, doctorAtHomeBadge: e.target.value })}
+                  placeholder="e.g. 🚑 Doctor at Home সেবা"
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  {lang === 'bn' ? 'সেকশন মূল শিরোনাম (Title)' : 'Section Title'}
+                </label>
+                <input
+                  type="text"
+                  value={formData.doctorAtHomeTitle || ''}
+                  onChange={e => setFormData({ ...formData, doctorAtHomeTitle: e.target.value })}
+                  placeholder="e.g. হাসপাতালে লাইন না ধরে ঘরে বসেই বিশেষজ্ঞ ডাক্তার দেখান"
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-emerald-500 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  {lang === 'bn' ? 'ডাক্তার ভিজিট হেল্পলাইন' : 'Direct Helpline'}
+                </label>
+                <input
+                  type="text"
+                  value={formData.doctorAtHomeHotline || ''}
+                  onChange={e => setFormData({ ...formData, doctorAtHomeHotline: e.target.value })}
+                  placeholder="e.g. 09612-000000"
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 outline-none font-mono"
+                />
+              </div>
+
+              <div className="md:col-span-3">
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  {lang === 'bn' ? 'সেকশন সাবটাইটেল / বিবরণ (Description)' : 'Subtitle / Description'}
+                </label>
+                <textarea
+                  rows={2}
+                  value={formData.doctorAtHomeDesc || ''}
+                  onChange={e => setFormData({ ...formData, doctorAtHomeDesc: e.target.value })}
+                  placeholder="e.g. প্রবীণ সদস্য, অসুস্থ শিশু কিংবা তীব্র শারীরিক জটিলতায় বিএমডিসি রেজিস্টার্ড অভিজ্ঞ চিকিৎসকরা..."
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 outline-none resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <Button onClick={() => handleSaveAll()} className="px-5 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white">
+                <Save size={14} className="mr-1.5 inline" /> {lang === 'bn' ? 'হেডার টেক্সট সংরক্ষণ করুন' : 'Save Header Text'}
+              </Button>
+            </div>
+          </div>
+
+          {/* 2. Doctor Specialties Management (ইনেবল/ডিজেবল, নতুন Specialties এড, এডিট, ডিলিট) */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
+                  <Stethoscope size={18} className="text-emerald-600" />
+                  <span>{lang === 'bn' ? 'Doctor Specialties কার্ড ম্যানেজমেন্ট' : 'Doctor Specialties Cards Management'}</span>
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {lang === 'bn' 
+                    ? `মোট ${doctorSpecialtiesList.length}টি স্পেশালিটি (${doctorSpecialtiesList.filter(s => s.isActive !== false).length}টি সক্রিয়)। কার্ডের সুইচ দিয়ে সহজেই ইনেবল/ডিজেবল ও এডিট করুন।` 
+                    : `Total ${doctorSpecialtiesList.length} specialties (${doctorSpecialtiesList.filter(s => s.isActive !== false).length} active). Click enable/disable or edit.`}
+                </p>
+              </div>
+
+              <Button
+                type="button"
+                onClick={handleOpenAddSpecialty}
+                className="px-4 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
+              >
+                <Plus size={15} /> {lang === 'bn' ? 'নতুন Specialties এড করুন' : 'Add New Specialty'}
+              </Button>
+            </div>
+
+            {/* Specialties Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {doctorSpecialtiesList.map((spec, index) => {
+                const isFirst = index === 0;
+                const isLast = index === doctorSpecialtiesList.length - 1;
+                const isEnabled = spec.isActive !== false;
+
+                return (
+                  <div
+                    key={spec.id}
+                    className={`p-4 rounded-2xl border transition-all flex flex-col justify-between ${
+                      isEnabled
+                        ? 'bg-white border-slate-200 hover:border-emerald-400 hover:shadow-md'
+                        : 'bg-slate-50 border-slate-200/70 opacity-75'
+                    }`}
+                  >
+                    <div>
+                      {/* Top Bar on Card: Badge, Fee & Status */}
+                      <div className="flex items-center justify-between gap-2 mb-2.5">
+                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-[10px] font-black border border-emerald-200/80">
+                          {spec.badge || (lang === 'bn' ? 'স্পেশালিস্ট' : 'Specialist')}
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-sm font-black text-slate-900 font-mono">৳{spec.fee}</span>
+                        </div>
+                      </div>
+
+                      {/* Title & Icons */}
+                      <div className="flex items-start gap-2.5 mb-2">
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                          isEnabled ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-400'
+                        }`}>
+                          {spec.icon === 'Activity' && <Activity size={18} />}
+                          {spec.icon === 'HeartPulse' && <HeartPulse size={18} />}
+                          {spec.icon === 'User' && <UserCheck size={18} />}
+                          {spec.icon === 'ShieldCheck' && <ShieldCheck size={18} />}
+                          {spec.icon === 'Clock' && <Clock size={18} />}
+                          {spec.icon === 'Zap' && <Zap size={18} />}
+                          {(!spec.icon || spec.icon === 'Stethoscope') && <Stethoscope size={18} />}
+                        </div>
+                        <div className="min-w-0">
+                          <h4 className="font-bold text-slate-900 text-xs sm:text-sm leading-tight truncate">
+                            {spec.nameBn}
+                          </h4>
+                          <span className="text-[11px] text-slate-400 block truncate">
+                            {spec.nameEn}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Description */}
+                      <p className="text-xs text-slate-500 line-clamp-2 mb-3 leading-relaxed">
+                        {spec.descriptionBn || (lang === 'bn' ? 'অভিজ্ঞ চিকিৎসকের ফিজিক্যাল হোম ভিজিট ও প্রেসক্রিপশন।' : 'Physical home visit & digital prescription.')}
+                      </p>
+                    </div>
+
+                    {/* Bottom Action Controls */}
+                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-1 text-xs">
+                      {/* Enable / Disable Button */}
+                      <button
+                        type="button"
+                        onClick={() => handleToggleSpecialtyActive(spec.id)}
+                        className={`px-2.5 py-1 rounded-lg font-bold text-[11px] flex items-center gap-1 transition-all cursor-pointer ${
+                          isEnabled
+                            ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
+                            : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
+                        }`}
+                        title={isEnabled ? 'Click to Disable' : 'Click to Enable'}
+                      >
+                        {isEnabled ? (
+                          <>
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                            <span>{lang === 'bn' ? 'ইনেবল (সক্রিয়)' : 'Enabled'}</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                            <span>{lang === 'bn' ? 'ডিজেবল (বন্ধ)' : 'Disabled'}</span>
+                          </>
+                        )}
+                      </button>
+
+                      {/* Edit, Move & Delete Controls */}
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          disabled={isFirst}
+                          onClick={() => handleMoveSpecialty(index, 'up')}
+                          className={`p-1.5 rounded-lg border text-slate-600 hover:bg-slate-100 cursor-pointer ${isFirst ? 'opacity-30 cursor-not-allowed' : ''}`}
+                          title="Move up"
+                        >
+                          <ArrowUp size={12} />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isLast}
+                          onClick={() => handleMoveSpecialty(index, 'down')}
+                          className={`p-1.5 rounded-lg border text-slate-600 hover:bg-slate-100 cursor-pointer ${isLast ? 'opacity-30 cursor-not-allowed' : ''}`}
+                          title="Move down"
+                        >
+                          <ArrowDown size={12} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditSpecialty(spec)}
+                          className="px-2 py-1 rounded-lg bg-sky-50 text-sky-700 hover:bg-sky-100 font-bold border border-sky-200 flex items-center gap-1 cursor-pointer"
+                          title="Edit specialty"
+                        >
+                          <Edit size={12} />
+                          <span>{lang === 'bn' ? 'এডিট' : 'Edit'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteSpecialty(spec.id)}
+                          className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 hover:text-rose-700 border border-transparent hover:border-rose-200 cursor-pointer"
+                          title="Delete specialty"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 3. Holidays & Schedule Management (ছুটি, সিডিউল পরিবর্তন, সংশোধন অপশন) */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+            <div className="border-b border-slate-100 pb-3">
+              <h3 className="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
+                <Calendar size={18} className="text-emerald-600" />
+                <span>{lang === 'bn' ? 'ছুটি ও সিডিউল সেটিংস (Holidays & Schedule Management)' : 'Holidays & Schedule Management'}</span>
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {lang === 'bn' 
+                  ? 'বুকিং ফর্মটিতে সর্বোচ্চ ৭ দিনের অগ্রীম বুকিং সীমা, সাপ্তাহিক বন্ধের দিন (Friday/Saturday) এবং বিশেষ ছুটির তারিখ নির্ধারণ করুন।' 
+                  : 'Manage maximum 7-day advance booking window, weekly holidays, special off-days, and visiting time slots.'}
+              </p>
+            </div>
+
+            {/* Advance Booking Limit & Weekly Holidays Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Advance Booking Window Card */}
+              <div className="p-5 bg-gradient-to-br from-emerald-50 via-teal-50/40 to-sky-50 rounded-2xl border border-emerald-200 space-y-3">
+                <div className="flex items-center gap-2 text-emerald-950 font-bold text-sm">
+                  <ShieldCheck size={18} className="text-emerald-700" />
+                  <span>{lang === 'bn' ? 'সর্বোচ্চ অগ্রীম বুকিং সীমা (Advance Booking Window)' : 'Maximum Advance Booking Window'}</span>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  {lang === 'bn'
+                    ? 'ইউজারের স্পষ্ট চাহিদা অনুযায়ী "Doctor at Home" বুকিং ফর্মটিতে সর্বোচ্চ ৭ দিনের বেশি অগ্রীম বুকিং করা যাবে না। এটি সিস্টেমে কার্যকর করা হয়েছে।'
+                    : 'As per user requirements, Doctor at Home booking form restricts appointments to a maximum of 7 days in advance.'}
+                </p>
+                <div className="p-3 bg-white rounded-xl border border-emerald-200/80 flex items-center justify-between text-xs">
+                  <span className="font-bold text-slate-700">{lang === 'bn' ? 'নির্ধারিত সীমা:' : 'Configured Limit:'}</span>
+                  <span className="px-3 py-1 bg-emerald-600 text-white font-black rounded-lg shadow-2xs">
+                    {lang === 'bn' ? 'সর্বোচ্চ ৭ দিন (Max 7 Days)' : 'Max 7 Days'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Weekly Holidays (সাপ্তাহিক ছুটি) Card */}
+              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-900 text-sm flex items-center gap-1.5">
+                    <Calendar size={16} className="text-rose-500" />
+                    <span>{lang === 'bn' ? 'সাপ্তাহিক ছুটির দিন (Weekly Off-Days)' : 'Weekly Off-Days'}</span>
+                  </span>
+                  <span className="text-[10px] text-slate-400">
+                    {lang === 'bn' ? 'ক্লিক করে চালু/বন্ধ করুন' : 'Click day to toggle'}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500">
+                  {lang === 'bn' 
+                    ? 'যেসব বারে সাধারণ রুটিন হোম ভিজিট বন্ধ থাকবে (যেমন: শুক্রবার)।' 
+                    : 'Select weekly days where routine visits are off.'}
+                </p>
+
+                {/* Day Buttons */}
+                <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 pt-1">
+                  {[
+                    { day: 0, bn: 'রবি', en: 'Sun' },
+                    { day: 1, bn: 'সোম', en: 'Mon' },
+                    { day: 2, bn: 'মঙ্গল', en: 'Tue' },
+                    { day: 3, bn: 'বুধ', en: 'Wed' },
+                    { day: 4, bn: 'বৃহস্পতি', en: 'Thu' },
+                    { day: 5, bn: 'শুক্র', en: 'Fri' },
+                    { day: 6, bn: 'শনি', en: 'Sat' }
+                  ].map(d => {
+                    const isOff = (doctorScheduleConfig.weeklyHolidays || []).includes(d.day);
+                    return (
+                      <button
+                        key={d.day}
+                        type="button"
+                        onClick={() => handleToggleWeeklyHoliday(d.day)}
+                        className={`py-2 px-1 rounded-xl text-xs font-bold text-center border transition-all cursor-pointer ${
+                          isOff
+                            ? 'bg-rose-500 text-white border-rose-600 shadow-xs'
+                            : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+                        }`}
+                      >
+                        <span className="block">{lang === 'bn' ? d.bn : d.en}</span>
+                        <span className="text-[9px] block font-normal opacity-90">
+                          {isOff ? (lang === 'bn' ? 'ছুটি' : 'Off') : (lang === 'bn' ? 'খোলা' : 'Open')}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Special Holiday Dates Section */}
+            <div className="p-5 bg-white rounded-2xl border border-slate-200 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h4 className="font-bold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5">
+                    <AlertCircle size={15} className="text-amber-500" />
+                    <span>{lang === 'bn' ? 'বিশেষ ছুটির তারিখসমূহ (Special Holiday Dates)' : 'Special Holiday Dates'}</span>
+                  </h4>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {lang === 'bn' ? 'সরকারি ছুটি বা বিশেষ কোনো দিনে ডাক্তার সেবা বন্ধ থাকলে ক্যালেন্ডার তারিখ যোগ করুন।' : 'Add specific dates where service is closed.'}
+                  </p>
+                </div>
+
+                {/* Add Date Input */}
+                <div className="flex items-center gap-2">
+                  <input
+                    type="date"
+                    value={newHolidayDateInput}
+                    onChange={e => setNewHolidayDateInput(e.target.value)}
+                    className="px-3 py-1.5 rounded-xl border border-slate-200 text-xs outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => handleAddHolidayDate(newHolidayDateInput)}
+                    className="!py-1.5 !px-3.5 !text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white cursor-pointer"
+                  >
+                    + {lang === 'bn' ? 'ছুটি যোগ করুন' : 'Add Holiday'}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Holiday Dates Badges */}
+              <div className="flex flex-wrap gap-2 pt-1">
+                {(doctorScheduleConfig.holidayDates || []).length === 0 ? (
+                  <span className="text-xs text-slate-400 italic">
+                    {lang === 'bn' ? 'কোনো বিশেষ ছুটির তারিখ যোগ করা হয়নি।' : 'No special holiday dates added yet.'}
+                  </span>
+                ) : (
+                  (doctorScheduleConfig.holidayDates || []).map(dateStr => (
+                    <span
+                      key={dateStr}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 text-rose-800 border border-rose-200 text-xs font-bold"
+                    >
+                      <Calendar size={13} className="text-rose-500" />
+                      <span>{dateStr}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveHolidayDate(dateStr)}
+                        className="text-rose-400 hover:text-rose-700 font-bold ml-1 cursor-pointer"
+                        title="Remove holiday date"
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Visiting Time Slots (সিডিউল ও স্লট পরিবর্তন ও সংশোধন) */}
+            <div className="p-5 bg-white rounded-2xl border border-slate-200 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-bold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5">
+                    <Clock size={15} className="text-primary" />
+                    <span>{lang === 'bn' ? 'ভিজিট টাইম স্লটসমূহ (Visiting Time Slots)' : 'Visiting Time Slots'}</span>
+                  </h4>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {lang === 'bn' ? 'রোগী বুকিং ফর্মে প্রদর্শিত সময় স্লটসমূহ সক্রিয়/নিষ্ক্রিয় ও পরিবর্তন করুন।' : 'Enable/disable or add time slots shown on booking modal.'}
+                  </p>
+                </div>
+
+                <Button
+                  type="button"
+                  onClick={() => setIsAddSlotModalOpen(true)}
+                  className="!py-1.5 !px-3.5 !text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white cursor-pointer"
+                >
+                  <Plus size={13} /> {lang === 'bn' ? 'স্লট যোগ করুন' : 'Add Slot'}
+                </Button>
+              </div>
+
+              {/* Slot Cards Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                {(doctorScheduleConfig.timeSlots || []).map(slot => {
+                  const isSlotActive = slot.isActive !== false;
+                  return (
+                    <div
+                      key={slot.id}
+                      className={`p-3.5 rounded-xl border flex flex-col justify-between transition-all ${
+                        isSlotActive ? 'bg-white border-slate-200 shadow-2xs' : 'bg-slate-100/80 border-slate-200 opacity-60'
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{slot.label}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleSlotActive(slot.id)}
+                            className={`w-2 h-2 rounded-full cursor-pointer ${isSlotActive ? 'bg-emerald-500 ring-2 ring-emerald-200' : 'bg-slate-300'}`}
+                            title="Toggle active"
+                          />
+                        </div>
+                        <strong className="text-xs font-bold text-slate-900 block leading-tight">
+                          {slot.timeBn}
+                        </strong>
+                        <span className="text-[11px] text-slate-500 block truncate mt-0.5">
+                          {slot.timeEn}
+                        </span>
+                      </div>
+
+                      <div className="pt-2.5 mt-2 border-t border-slate-100 flex items-center justify-between">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleSlotActive(slot.id)}
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded cursor-pointer ${
+                            isSlotActive ? 'bg-emerald-50 text-emerald-800' : 'bg-slate-200 text-slate-600'
+                          }`}
+                        >
+                          {isSlotActive ? (lang === 'bn' ? 'সক্রিয়' : 'Active') : (lang === 'bn' ? 'বন্ধ' : 'Inactive')}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteSlot(slot.id)}
+                          className="text-slate-400 hover:text-rose-600 p-1 cursor-pointer"
+                          title="Delete slot"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Holiday & Schedule Special Notice */}
+            <div className="p-4 bg-amber-50/60 rounded-xl border border-amber-200 space-y-2">
+              <label className="block text-xs font-bold text-amber-950">
+                {lang === 'bn' ? 'ছুটির দিন ও অন-কল ভিজিটের নির্দেশিকা নোটিশ' : 'Holiday & Emergency On-Call Notice'}
+              </label>
+              <input
+                type="text"
+                value={doctorScheduleConfig.holidayNoticeBn || ''}
+                onChange={e => {
+                  const updated: DoctorAtHomeScheduleConfig = {
+                    ...doctorScheduleConfig,
+                    holidayNoticeBn: e.target.value
+                  };
+                  setFormData({ ...formData, doctorAtHomeSchedule: updated });
+                  saveStoredDoctorAtHomeSchedule(updated);
+                }}
+                placeholder="e.g. শুক্রবার ও সরকারি ছুটির দিনে শুধুমাত্র জরুরি ডাক্তার ভিজিট অন-কল ভিত্তিতে প্রদান করা হয়।"
+                className="w-full px-3.5 py-2 rounded-xl border border-amber-200 text-xs bg-white outline-none focus:ring-2 focus:ring-amber-400"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 9. INVOICE, MONEY RECEIPT & SAMPLE GUIDELINES MANAGEMENT                  */}
       {/* ========================================================================= */}
       {activeSubTab === 'invoice' && (
         <div className="space-y-6">

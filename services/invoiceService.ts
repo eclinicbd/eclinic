@@ -1182,7 +1182,33 @@ export const generateDoctorAtHomeSlipHtml = (
 };
 
 /**
- * Print or Download Doctor at Home Slip with popup and hidden iframe fallback
+ * Download Doctor at Home Slip as standalone HTML file
+ */
+export const downloadDoctorAtHomeSlipHtml = (
+  booking: DoctorAtHomeBooking,
+  lang: Language = 'bn',
+  customSettings?: SiteSettings
+): void => {
+  try {
+    const htmlContent = generateDoctorAtHomeSlipHtml(booking, lang, customSettings);
+    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `DoctorAtHome_Slip_${booking.id}.html`;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 1000);
+  } catch (err) {
+    console.error('Failed to download slip:', err);
+  }
+};
+
+/**
+ * Print or Download Doctor at Home Slip with popup, high-fidelity iframe fallback, and auto-download backup
  */
 export const printOrDownloadDoctorAtHomeSlip = (
   booking: DoctorAtHomeBooking,
@@ -1190,40 +1216,65 @@ export const printOrDownloadDoctorAtHomeSlip = (
   customSettings?: SiteSettings
 ): void => {
   const htmlContent = generateDoctorAtHomeSlipHtml(booking, lang, customSettings);
-  const printWindow = window.open('', '_blank', 'width=850,height=900');
+  let opened = false;
 
-  if (printWindow) {
-    printWindow.document.open();
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
+  try {
+    const printWindow = window.open('', '_blank', 'width=850,height=900');
+    if (printWindow && !printWindow.closed) {
+      opened = true;
+      printWindow.document.open();
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
 
-    setTimeout(() => {
-      printWindow.focus();
-      printWindow.print();
-    }, 450);
-  } else {
-    // Hidden iframe fallback if popup blocked
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'fixed';
-    iframe.style.right = '0';
-    iframe.style.bottom = '0';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
-    iframe.style.border = '0';
-    document.body.appendChild(iframe);
-
-    const doc = iframe.contentWindow?.document;
-    if (doc) {
-      doc.open();
-      doc.write(htmlContent);
-      doc.close();
       setTimeout(() => {
-        iframe.contentWindow?.focus();
-        iframe.contentWindow?.print();
-        setTimeout(() => {
-          document.body.removeChild(iframe);
-        }, 3000);
+        try {
+          printWindow.focus();
+          printWindow.print();
+        } catch (e) {
+          console.warn('Print window print error:', e);
+        }
       }, 450);
+    }
+  } catch (e) {
+    opened = false;
+  }
+
+  if (!opened) {
+    // Robust iframe fallback with valid dimensions outside viewport
+    try {
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.left = '-9999px';
+      iframe.style.top = '0';
+      iframe.style.width = '850px';
+      iframe.style.height = '1100px';
+      iframe.style.border = 'none';
+      iframe.style.zIndex = '-9999';
+      document.body.appendChild(iframe);
+
+      const doc = iframe.contentWindow?.document || iframe.contentDocument;
+      if (doc) {
+        doc.open();
+        doc.write(htmlContent);
+        doc.close();
+        setTimeout(() => {
+          try {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+          } catch (err) {
+            console.warn('Iframe print failed, falling back to download:', err);
+            downloadDoctorAtHomeSlipHtml(booking, lang, customSettings);
+          }
+          setTimeout(() => {
+            if (document.body.contains(iframe)) {
+              document.body.removeChild(iframe);
+            }
+          }, 5000);
+        }, 450);
+      }
+    } catch (err) {
+      console.warn('Fallback to file download:', err);
+      downloadDoctorAtHomeSlipHtml(booking, lang, customSettings);
     }
   }
 };

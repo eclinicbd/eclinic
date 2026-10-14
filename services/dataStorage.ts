@@ -1,4 +1,4 @@
-import { TestPackage, LabPartner, Language, BookingHistoryItem, SiteSettings, PatientUser, HealthPackage, CategoryItem, DateSlotConfig, TimeSlotConfigItem, StaffUser, StaffRole, StaffPermissions, PaymentGatewaysConfig, AdminCredentials, Doctor, DoctorAppointment, EPrescription, DoctorAtHomeBooking } from '../types';
+import { TestPackage, LabPartner, Language, BookingHistoryItem, SiteSettings, PatientUser, HealthPackage, CategoryItem, DateSlotConfig, TimeSlotConfigItem, StaffUser, StaffRole, StaffPermissions, PaymentGatewaysConfig, AdminCredentials, Doctor, DoctorAppointment, EPrescription, DoctorAtHomeBooking, DoctorAtHomeSpecialty, DoctorAtHomeScheduleConfig } from '../types';
 import { 
   getTests as getDefaultTests, 
   getLabs as getDefaultLabs, 
@@ -23,6 +23,8 @@ const STORAGE_KEYS = {
   LABS_EN: 'labhome_labs_en_v3',
   BOOKINGS: 'labhome_bookings_v2',
   DOCTOR_AT_HOME_BOOKINGS: 'labhome_doctor_at_home_bookings_v1',
+  DOCTOR_AT_HOME_SPECIALTIES: 'labhome_doctor_at_home_specialties_v2',
+  DOCTOR_AT_HOME_SCHEDULE: 'labhome_doctor_at_home_schedule_v1',
   CATEGORIES: 'labhome_categories_v2',
   SITE_SETTINGS_BN: 'labhome_site_settings_bn_v2',
   SITE_SETTINGS_EN: 'labhome_site_settings_en_v2',
@@ -1564,17 +1566,184 @@ export const saveEPrescription = (prescription: EPrescription): void => {
 /**
  * Doctor at Home (হোমে ডাক্তার সেবা) Management
  */
-export const DEFAULT_DOCTOR_AT_HOME_SPECIALTIES = [
-  { id: 'general_physician', nameBn: 'জেনারেল ফিজিশিয়ান (সাধারণ ও মেডিসিন চিকিৎসক)', nameEn: 'General Physician / Medicine Doctor', icon: 'Stethoscope', fee: 1200 },
-  { id: 'diabetes', nameBn: 'ডায়াবেটিস ও হরমোন বিশেষজ্ঞ', nameEn: 'Diabetes & Endocrinology Specialist', icon: 'Activity', fee: 1500 },
-  { id: 'pediatrician', nameBn: 'শিশু রোগ বিশেষজ্ঞ (Pediatrician)', nameEn: 'Pediatrician / Child Specialist', icon: 'HeartPulse', fee: 1500 },
-  { id: 'cardiology', nameBn: 'হৃদরোগ বিশেষজ্ঞ (Cardiologist)', nameEn: 'Cardiologist / Heart Specialist', icon: 'HeartPulse', fee: 1800 },
-  { id: 'gynecology', nameBn: 'স্ত্রী ও প্রসূতি রোগ বিশেষজ্ঞ (Gynecologist)', nameEn: 'Gynecologist & Obstetrician', icon: 'User', fee: 1600 },
-  { id: 'orthopedics', nameBn: 'হাড় ও বাত ব্যথা বিশেষজ্ঞ (Orthopedics)', nameEn: 'Orthopedics & Joint Specialist', icon: 'ShieldCheck', fee: 1600 },
-  { id: 'geriatric', nameBn: 'বয়োবৃদ্ধ ও প্রবীণ কেয়ার (Geriatric Care)', nameEn: 'Elderly & Geriatric Care', icon: 'Clock', fee: 1400 },
-  { id: 'neurology', nameBn: 'স্নায়ু ও ব্রেইন বিশেষজ্ঞ (Neurologist)', nameEn: 'Neurology Specialist', icon: 'Zap', fee: 1800 },
-  { id: 'other', nameBn: 'অন্যান্য বিশেষায়িত পরামর্শ (Other Specialty)', nameEn: 'Other Specialist Consultation', icon: 'Stethoscope', fee: 1500 },
+export const DEFAULT_DOCTOR_AT_HOME_SPECIALTIES: DoctorAtHomeSpecialty[] = [
+  { 
+    id: 'general_physician', 
+    nameBn: 'জেনারেল ফিজিশিয়ান (সাধারণ ও মেডিসিন চিকিৎসক)', 
+    nameEn: 'General Physician / Medicine Doctor', 
+    icon: 'Stethoscope', 
+    fee: 1200, 
+    descriptionBn: 'জ্বর, সর্দি-কাশি, পেটের সমস্যা, শারীরিক দুর্বলতা ও সাধারণ রোগের চিকিৎসা ও প্রেসক্রিপশন।',
+    descriptionEn: 'Fever, cold, general ailments, weakness, routine health evaluation and prescriptions.',
+    badge: 'সর্বাধিক জনপ্রিয়',
+    duration: '৩০-৪৫ মিনিট',
+    isActive: true 
+  },
+  { 
+    id: 'diabetes', 
+    nameBn: 'ডায়াবেটিস ও হরমোন বিশেষজ্ঞ', 
+    nameEn: 'Diabetes & Endocrinology Specialist', 
+    icon: 'Activity', 
+    fee: 1500, 
+    descriptionBn: 'ডায়াবেটিস নিয়ন্ত্রণ, সুগার পরীক্ষা, ইনসুলিন সমন্বয় ও হরমোনজনিত জটিলতার চিকিৎসাপত্র।',
+    descriptionEn: 'Diabetes management, blood glucose monitoring, insulin titration and hormone therapy.',
+    badge: 'স্পেশালিস্ট',
+    duration: '৩০-৪৫ মিনিট',
+    isActive: true 
+  },
+  { 
+    id: 'pediatrician', 
+    nameBn: 'শিশু রোগ বিশেষজ্ঞ (Pediatrician)', 
+    nameEn: 'Pediatrician / Child Specialist', 
+    icon: 'HeartPulse', 
+    fee: 1500, 
+    descriptionBn: 'নবজাতক ও শিশুদের জ্বর, নিউমোনিয়া, সর্দি, পেটখারাপ ও রুটিন বিকাশ পরীক্ষা।',
+    descriptionEn: 'Infant & child health, pediatric fever, asthma, gastro issues and developmental checkup.',
+    badge: 'শিশু স্পেশালিস্ট',
+    duration: '৩০-৪৫ মিনিট',
+    isActive: true 
+  },
+  { 
+    id: 'cardiology', 
+    nameBn: 'হৃদরোগ বিশেষজ্ঞ (Cardiologist)', 
+    nameEn: 'Cardiologist / Heart Specialist', 
+    icon: 'HeartPulse', 
+    fee: 1800, 
+    descriptionBn: 'উচ্চ রক্তচাপ, হার্ট প্যালপিটেশন, ইসিজি পর্যালোচনা ও কার্ডিয়াক ওষুধ পর্যালোচনা।',
+    descriptionEn: 'Hypertension, heart palpitations, ECG review and cardiac medication management.',
+    badge: 'সিনিয়র কনসালটেন্ট',
+    duration: '৪৫ মিনিট',
+    isActive: true 
+  },
+  { 
+    id: 'gynecology', 
+    nameBn: 'স্ত্রী ও প্রসূতি রোগ বিশেষজ্ঞ (Gynecologist)', 
+    nameEn: 'Gynecologist & Obstetrician', 
+    icon: 'User', 
+    fee: 1600, 
+    descriptionBn: 'গর্ভকালীন পরামর্শ, মহিলাদের স্বাস্থ্য পরীক্ষা, হরমোন সমস্যা ও বেডসাইড কেয়ার।',
+    descriptionEn: 'Antenatal guidance, pregnancy care, women health consultation and prescriptions.',
+    badge: 'লেডি কনসালটেন্ট',
+    duration: '৪৫ মিনিট',
+    isActive: true 
+  },
+  { 
+    id: 'orthopedics', 
+    nameBn: 'হাড় ও বাত ব্যথা বিশেষজ্ঞ (Orthopedics)', 
+    nameEn: 'Orthopedics & Joint Specialist', 
+    icon: 'ShieldCheck', 
+    fee: 1600, 
+    descriptionBn: 'হাড়ের ব্যথা, জয়েন্ট পেইন, বাতরোগ, ব্যাকপেইন ও প্রবীণদের চলাচলের সমস্যা মূল্যায়ন।',
+    descriptionEn: 'Bone and joint pain, arthritis, lumbar pain and mobility checkup for elders.',
+    badge: 'অর্থোপেডিক',
+    duration: '৪৫ মিনিট',
+    isActive: true 
+  },
+  { 
+    id: 'geriatric', 
+    nameBn: 'বয়োবৃদ্ধ ও প্রবীণ কেয়ার (Geriatric Care)', 
+    nameEn: 'Elderly & Geriatric Care', 
+    icon: 'Clock', 
+    fee: 1400, 
+    descriptionBn: 'শয্যাশায়ী রোগী ও বয়স্কদের সার্বিক হেলথ চেকআপ, ভাইটালস মনিটরিং ও গাইডলাইন।',
+    descriptionEn: 'Bedridden patients, comprehensive geriatric vitals review and home nursing guidance.',
+    badge: 'প্রবীণ কেয়ার',
+    duration: '৪৫-৬০ মিনিট',
+    isActive: true 
+  },
+  { 
+    id: 'neurology', 
+    nameBn: 'স্নায়ু ও ব্রেইন বিশেষজ্ঞ (Neurologist)', 
+    nameEn: 'Neurology Specialist', 
+    icon: 'Zap', 
+    fee: 1800, 
+    descriptionBn: 'স্ট্রোক পরবর্তী পরিচর্যা, প্যারালাইসিস, তীব্র মাথাব্যথা ও স্নায়ুর জটিলতা পরামর্শ।',
+    descriptionEn: 'Post-stroke rehab advice, neuropathic pain, migraine and nervous disorder consultation.',
+    badge: 'স্নায়ুরোগ',
+    duration: '৪৫ মিনিট',
+    isActive: true 
+  },
+  { 
+    id: 'other', 
+    nameBn: 'অন্যান্য বিশেষায়িত পরামর্শ (Other Specialty)', 
+    nameEn: 'Other Specialist Consultation', 
+    icon: 'Stethoscope', 
+    fee: 1500, 
+    descriptionBn: 'রোগীর বিশেষ চাহিদা অনুযায়ী বিশেষায়িত অভিজ্ঞ চিকিৎসকের বাসা ভিজিট।',
+    descriptionEn: 'Custom medical specialist home visit as per specific patient symptoms.',
+    badge: 'অন কল',
+    duration: '৪৫ মিনিট',
+    isActive: true 
+  }
 ];
+
+export const DEFAULT_DOCTOR_AT_HOME_SCHEDULE: DoctorAtHomeScheduleConfig = {
+  maxAdvanceDays: 7, // User requirement: সর্বোচ্চ ৭ দিনের বেশি অগ্রীম বুক করা যাবে না
+  weeklyHolidays: [5], // 5 = Friday (শুক্রবার সাপ্তাহিক ছুটি)
+  holidayDates: [], // Special holiday dates e.g. ['2026-10-25']
+  timeSlots: [
+    { id: 'morning_1', timeBn: 'সকাল ৯:০০ - ১২:০০ (সকাল স্লট)', timeEn: 'Morning (09:00 AM - 12:00 PM)', label: 'Morning Slot', isActive: true },
+    { id: 'afternoon_1', timeBn: 'দুপুর ১২:০০ - ৩:০০ (দুপুর স্লট)', timeEn: 'Afternoon (12:00 PM - 03:00 PM)', label: 'Afternoon Slot', isActive: true },
+    { id: 'evening_1', timeBn: 'বিকাল ৩:০০ - সন্ধ্যা ৬:০০ (বিকাল স্লট)', timeEn: 'Evening (03:00 PM - 06:00 PM)', label: 'Evening Slot', isActive: true },
+    { id: 'night_1', timeBn: 'সন্ধ্যা ৬:০০ - রাত ৯:০০ (রাত স্লট)', timeEn: 'Night (06:00 PM - 09:00 PM)', label: 'Night Slot', isActive: true }
+  ],
+  holidayNoticeBn: 'শুক্রবার ও সরকারি ছুটির দিনে শুধুমাত্র জরুরি ডাক্তার ভিজিট অন-কল ভিত্তিতে প্রদান করা হয়।',
+  holidayNoticeEn: 'Friday and holidays operate on an emergency on-call schedule.'
+};
+
+export const getStoredDoctorAtHomeSpecialties = (): DoctorAtHomeSpecialty[] => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.DOCTOR_AT_HOME_SPECIALTIES);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.error("Error reading stored doctor at home specialties:", e);
+  }
+  return DEFAULT_DOCTOR_AT_HOME_SPECIALTIES;
+};
+
+export const saveStoredDoctorAtHomeSpecialties = (specialties: DoctorAtHomeSpecialty[]): void => {
+  try {
+    localStorage.setItem(STORAGE_KEYS.DOCTOR_AT_HOME_SPECIALTIES, JSON.stringify(specialties));
+  } catch (e) {
+    console.error("Error saving doctor at home specialties:", e);
+  }
+};
+
+export const getStoredDoctorAtHomeSchedule = (): DoctorAtHomeScheduleConfig => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.DOCTOR_AT_HOME_SCHEDULE);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') {
+        return {
+          ...DEFAULT_DOCTOR_AT_HOME_SCHEDULE,
+          ...parsed,
+          maxAdvanceDays: Math.min(7, Math.max(1, Number(parsed.maxAdvanceDays) || 7)) // Capped at 7
+        };
+      }
+    }
+  } catch (e) {
+    console.error("Error reading stored doctor at home schedule:", e);
+  }
+  return DEFAULT_DOCTOR_AT_HOME_SCHEDULE;
+};
+
+export const saveStoredDoctorAtHomeSchedule = (schedule: DoctorAtHomeScheduleConfig): void => {
+  try {
+    const sanitized = {
+      ...schedule,
+      maxAdvanceDays: Math.min(7, Math.max(1, Number(schedule.maxAdvanceDays) || 7)) // Capped at 7
+    };
+    localStorage.setItem(STORAGE_KEYS.DOCTOR_AT_HOME_SCHEDULE, JSON.stringify(sanitized));
+  } catch (e) {
+    console.error("Error saving doctor at home schedule:", e);
+  }
+};
 
 export const DEFAULT_DOCTOR_AT_HOME_BOOKINGS: DoctorAtHomeBooking[] = [
   {

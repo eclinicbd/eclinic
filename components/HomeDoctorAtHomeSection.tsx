@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { 
   Home, 
   Stethoscope, 
@@ -11,11 +11,12 @@ import {
   CheckCircle2, 
   Sparkles, 
   User, 
+  UserCheck,
   Zap, 
   Calendar 
 } from 'lucide-react';
 import { Language } from '../types';
-import { DEFAULT_DOCTOR_AT_HOME_SPECIALTIES } from '../services/dataStorage';
+import { getStoredDoctorAtHomeSpecialties } from '../services/dataStorage';
 
 interface HomeDoctorAtHomeSectionProps {
   lang: Language;
@@ -34,6 +35,25 @@ export const HomeDoctorAtHomeSection: React.FC<HomeDoctorAtHomeSectionProps> = (
   description,
   hotline = '01700-000000'
 }) => {
+  const activeSpecialties = useMemo(() => {
+    const all = getStoredDoctorAtHomeSpecialties();
+    const active = all.filter(s => s.isActive !== false);
+    return active.length > 0 ? active : all;
+  }, []);
+
+  const renderIcon = (iconName?: string) => {
+    switch (iconName) {
+      case 'Activity': return <Activity size={20} />;
+      case 'HeartPulse': return <HeartPulse size={20} />;
+      case 'User': return <User size={20} />;
+      case 'UserCheck': return <UserCheck size={20} />;
+      case 'ShieldCheck': return <ShieldCheck size={20} />;
+      case 'Clock': return <Clock size={20} />;
+      case 'Zap': return <Zap size={20} />;
+      case 'Calendar': return <Calendar size={20} />;
+      default: return <Stethoscope size={20} />;
+    }
+  };
   return (
     <section id="doctor-at-home" className="py-20 bg-gradient-to-b from-slate-50 via-teal-50/20 to-white relative overflow-hidden border-b border-slate-200/80">
       {/* Background ambient blurs */}
@@ -144,7 +164,7 @@ export const HomeDoctorAtHomeSection: React.FC<HomeDoctorAtHomeSectionProps> = (
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {DEFAULT_DOCTOR_AT_HOME_SPECIALTIES.slice(0, 6).map(spec => (
+            {activeSpecialties.map(spec => (
               <div 
                 key={spec.id} 
                 className="group bg-white p-5 rounded-2xl border border-slate-200 hover:border-emerald-400 hover:shadow-lg transition-all duration-300 flex flex-col justify-between"
@@ -152,37 +172,38 @@ export const HomeDoctorAtHomeSection: React.FC<HomeDoctorAtHomeSectionProps> = (
                 <div>
                   <div className="flex items-center justify-between mb-3.5">
                     <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-700 group-hover:bg-emerald-600 group-hover:text-white transition-colors flex items-center justify-center font-bold shadow-2xs">
-                      {spec.id === 'general_physician' && <Stethoscope size={20} />}
-                      {spec.id === 'diabetes' && <Activity size={20} />}
-                      {spec.id === 'pediatrician' && <HeartPulse size={20} />}
-                      {spec.id === 'cardiology' && <HeartPulse size={20} />}
-                      {spec.id === 'gynecology' && <User size={20} />}
-                      {spec.id === 'orthopedics' && <ShieldCheck size={20} />}
+                      {renderIcon(spec.icon)}
                     </div>
 
-                    <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 text-xs font-black border border-emerald-200/80">
-                      ৳ {spec.fee}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      {spec.badge && (
+                        <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 text-[10px] font-bold border border-amber-200/80">
+                          {spec.badge}
+                        </span>
+                      )}
+                      <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 text-xs font-black border border-emerald-200/80">
+                        ৳ {spec.fee}
+                      </span>
+                    </div>
                   </div>
 
                   <h4 className="font-extrabold text-slate-900 text-base mb-1.5 group-hover:text-emerald-700 transition-colors">
                     {lang === 'bn' ? spec.nameBn : spec.nameEn}
                   </h4>
 
-                  <p className="text-xs text-slate-500 leading-relaxed mb-4">
-                    {spec.id === 'general_physician' && (lang === 'bn' ? 'জ্বর, সর্দি-কাশি, পেটের সমস্যা, শারীরিক দুর্বলতা ও সাধারণ রোগের চিকিৎসা।' : 'Fever, cold, general ailments, weakness and family health checkups.')}
-                    {spec.id === 'diabetes' && (lang === 'bn' ? 'ডায়াবেটিস নিয়ন্ত্রণ, ইনসুলিন সমন্বয় ও হরমোনজনিত জটিলতার চিকিৎসাপত্র।' : 'Diabetes management, insulin titration and hormonal counseling.')}
-                    {spec.id === 'pediatrician' && (lang === 'bn' ? 'নবজাতক ও শিশুদের জ্বর, শ্বাসকষ্ট, পেটখারাপ ও রুটিন বিকাশ পরীক্ষা।' : 'Infant & child health, pediatric fever, tummy ache & care.')}
-                    {spec.id === 'cardiology' && (lang === 'bn' ? 'উচ্চ রক্তচাপ, হার্ট প্যালপিটেশন ও রুটিন কার্ডিয়াক ওষুধ পর্যালোচনা।' : 'Hypertension, heart palpitations and cardiac medication review.')}
-                    {spec.id === 'gynecology' && (lang === 'bn' ? 'গর্ভকালীন পরামর্শ, মহিলাদের স্বাস্থ্য পরীক্ষা ও প্রেসক্রিপশন।' : 'Antenatal guidance, women health and obstetric care.')}
-                    {spec.id === 'orthopedics' && (lang === 'bn' ? 'হাড়ের ব্যথা, জয়েন্ট পেইন, বাতরোগ ও প্রবীণদের চলাচলের সমস্যা।' : 'Bone, joint pains, arthritis and mobility evaluation.')}
+                  <p className="text-xs text-slate-500 leading-relaxed mb-4 line-clamp-2">
+                    {lang === 'bn' 
+                      ? (spec.descriptionBn || 'অভিজ্ঞ চিকিৎসকের ফিজিক্যাল হোম ভিজিট ও প্রেসক্রিপশন।') 
+                      : (spec.descriptionEn || 'Specialist doctor doorstep consultation and digital prescription.')}
                   </p>
                 </div>
 
                 <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
                   <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-1">
                     <CheckCircle2 size={12} className="text-emerald-600" />
-                    {lang === 'bn' ? 'প্রেসক্রিপশন অন্তর্ভুক্ত' : 'Prescription included'}
+                    {spec.duration 
+                      ? (lang === 'bn' ? `${spec.duration} ভিজিট` : `${spec.duration} visit`) 
+                      : (lang === 'bn' ? 'প্রেসক্রিপশন অন্তর্ভুক্ত' : 'Prescription included')}
                   </span>
 
                   <button

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Language, BookingHistoryItem, ReportItem, PatientUser, DoctorAppointment, EPrescription } from '../types';
+import { Language, BookingHistoryItem, ReportItem, PatientUser, DoctorAppointment, EPrescription, DoctorAtHomeBooking } from '../types';
 import { TRANSLATIONS } from '../translations';
 import { 
   LayoutDashboard, 
@@ -34,14 +34,15 @@ import {
   Copy,
   Check,
   CreditCard,
-  QrCode
+  QrCode,
+  Home
 } from 'lucide-react';
 import { Button } from './Button';
 import { ProfilePictureModal, PRESET_AVATARS } from './ProfilePictureModal';
 import { InvoiceModal } from './InvoiceModal';
-import { printOrDownloadInvoice } from '../services/invoiceService';
+import { printOrDownloadInvoice, printOrDownloadDoctorAtHomeSlip, downloadDoctorAtHomeSlipHtml } from '../services/invoiceService';
 import { formatOrderId } from './BookingModal';
-import { getStoredDoctorAppointments } from '../services/dataStorage';
+import { getStoredDoctorAppointments, getStoredDoctorAtHomeBookings } from '../services/dataStorage';
 
 interface UserDashboardProps {
   lang: Language;
@@ -73,6 +74,12 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
     if (!currentPatient.phone) return all;
     return all.filter(a => a.patientPhone === currentPatient.phone || !a.patientPhone);
   });
+  const [doctorAtHomeList, setDoctorAtHomeList] = useState<DoctorAtHomeBooking[]>(() => {
+    const all = getStoredDoctorAtHomeBookings();
+    if (!currentPatient.phone) return all;
+    return all.filter(b => b.patientPhone === currentPatient.phone || !b.patientPhone);
+  });
+  const [consultFilter, setConsultFilter] = useState<'all' | 'video' | 'doctorAtHome'>('all');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const t = TRANSLATIONS[lang];
 
@@ -798,72 +805,190 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                 )}
               </div>
 
-              {doctorAppointments.length === 0 ? (
-                <div className="bg-white rounded-3xl p-12 text-center border border-slate-100 space-y-3">
-                  <Stethoscope className="w-12 h-12 text-slate-300 mx-auto" />
-                  <h4 className="font-bold text-slate-700 text-sm">
-                    {lang === 'bn' ? 'কোনো ডাক্তার অ্যাপয়েন্টমেন্টের রেকর্ড নেই' : 'No doctor consultation appointments yet'}
-                  </h4>
-                  <p className="text-xs text-slate-400 max-w-md mx-auto">
-                    {lang === 'bn' 
-                      ? 'হোমপেজের ডাক্তার কন্সালটেন্সি সেকশন থেকে দেশসেরা বিশেষজ্ঞ চিকিৎসকদের সাথে অ্যাপয়েন্টমেন্ট ও ভিডিও কল বুক করুন।' 
-                      : 'Book appointments and HD live video consultations with verified specialist doctors on the homepage.'}
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 gap-3">
-                  {doctorAppointments.map(apt => (
-                    <div key={apt.id} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:shadow-md transition-all">
-                      <div className="flex items-start sm:items-center gap-4">
-                        <img
-                          src={apt.doctorImage || 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=300'}
-                          alt={apt.doctorName}
-                          className="w-14 h-14 rounded-2xl object-cover border border-slate-200 shrink-0"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=300';
-                          }}
-                        />
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-xs font-mono font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded">
-                              {apt.id}
-                            </span>
-                            <span className="text-[11px] font-bold text-emerald-700 uppercase bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                              {apt.consultationType} Call
-                            </span>
+              {/* Filter Pills */}
+              <div className="flex items-center gap-2 flex-wrap pb-1">
+                <button
+                  type="button"
+                  onClick={() => setConsultFilter('all')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    consultFilter === 'all'
+                      ? 'bg-primary text-white shadow-xs'
+                      : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                  }`}
+                >
+                  {lang === 'bn' ? 'সকল কনসালটেন্সি' : 'All Consultations'} ({doctorAppointments.length + doctorAtHomeList.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConsultFilter('video')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    consultFilter === 'video'
+                      ? 'bg-primary text-white shadow-xs'
+                      : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                  }`}
+                >
+                  <Video size={13} />
+                  <span>{lang === 'bn' ? 'অনলাইন / ভিডিও ডাক্তার' : 'Online / Video Doctor'}</span> ({doctorAppointments.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConsultFilter('doctorAtHome')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    consultFilter === 'doctorAtHome'
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'bg-white text-emerald-800 hover:bg-emerald-50 border border-emerald-200'
+                  }`}
+                >
+                  <Home size={13} />
+                  <span>{lang === 'bn' ? 'Doctor at Home (হোম ভিজিট)' : 'Doctor at Home Visits'}</span> ({doctorAtHomeList.length})
+                </button>
+              </div>
+
+              {/* 1. Doctor at Home Bookings */}
+              {(consultFilter === 'all' || consultFilter === 'doctorAtHome') && doctorAtHomeList.length > 0 && (
+                <div className="space-y-3 pt-1">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-extrabold text-xs text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                      <Home size={14} className="text-emerald-600" />
+                      <span>{lang === 'bn' ? 'Doctor at Home বুকিং রেকর্ড' : 'Doctor at Home Booking Records'}</span>
+                    </h4>
+                    <span className="text-[11px] text-slate-400 font-semibold">{doctorAtHomeList.length} {lang === 'bn' ? 'টি বুকিং' : 'Bookings'}</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-3">
+                    {doctorAtHomeList.map(dah => (
+                      <div key={dah.id} className="bg-white p-5 rounded-2xl shadow-sm border border-emerald-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:shadow-md hover:border-emerald-300 transition-all">
+                        <div className="flex items-start sm:items-center gap-3.5">
+                          <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-200/80">
+                            <Home size={22} />
                           </div>
-                          <h4 className="font-bold text-slate-900 text-sm mt-1">{apt.doctorName}</h4>
-                          <p className="text-xs text-slate-500 font-medium">{apt.doctorSpecialty} &bull; {apt.doctorHospital}</p>
-                          <p className="text-[11px] text-slate-600 mt-1 font-semibold flex items-center gap-1.5">
-                            <Clock size={12} className="text-sky-600" />
-                            <span>{apt.appointmentDate} &bull; {apt.appointmentTimeSlot}</span>
-                          </p>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-xs font-mono font-black text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                                {dah.id}
+                              </span>
+                              <span className="text-[10px] font-bold text-amber-800 uppercase bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                                {dah.status}
+                              </span>
+                              <span className="text-[10px] font-bold text-slate-600 uppercase bg-slate-100 px-2 py-0.5 rounded-full">
+                                {dah.paymentMethod} &bull; {dah.paymentStatus}
+                              </span>
+                            </div>
+                            <h4 className="font-bold text-slate-900 text-sm mt-1">{dah.doctorTypeLabel}</h4>
+                            <p className="text-xs text-slate-600 font-medium">
+                              {lang === 'bn' ? 'রোগী:' : 'Patient:'} {dah.patientName} &bull; {dah.patientPhone}
+                            </p>
+                            <p className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-1">
+                              <MapPin size={12} className="text-rose-500 shrink-0" />
+                              <span className="truncate">{dah.address}</span>
+                            </p>
+                            <p className="text-[11px] text-slate-600 mt-1 font-semibold flex items-center gap-1.5">
+                              <Clock size={12} className="text-emerald-600" />
+                              <span>{dah.date} &bull; {dah.timeSlot} &bull; ৳{dah.consultationFee}</span>
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                          <button
+                            type="button"
+                            onClick={() => printOrDownloadDoctorAtHomeSlip(dah, lang)}
+                            className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                            title="Print Doctor at Home visit slip"
+                          >
+                            <Printer size={14} />
+                            <span>{lang === 'bn' ? 'স্লিপ প্রিন্ট' : 'Print Slip'}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => downloadDoctorAtHomeSlipHtml(dah, lang)}
+                            className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center gap-1 cursor-pointer"
+                            title="Download slip file"
+                          >
+                            <Download size={13} />
+                            <span>{lang === 'bn' ? 'ডাউনলোড' : 'Download'}</span>
+                          </button>
                         </div>
                       </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-                      <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
-                        {apt.consultationType === 'video' && onOpenVideoRoom && (
-                          <button
-                            onClick={() => onOpenVideoRoom(apt)}
-                            className="flex-1 sm:flex-initial px-3.5 py-2.5 sm:py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
-                          >
-                            <Video size={14} />
-                            <span>{lang === 'bn' ? 'ভিডিও রুমে প্রবেশ' : 'Join Video'}</span>
-                          </button>
-                        )}
+              {/* 2. Video / Online Appointments */}
+              {(consultFilter === 'all' || consultFilter === 'video') && (
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-extrabold text-xs text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                      <Video size={14} className="text-sky-600" />
+                      <span>{lang === 'bn' ? 'অনলাইন / ভিডিও ডাক্তার অ্যাপয়েন্টমেন্ট' : 'Video / Online Consultations'}</span>
+                    </h4>
+                    <span className="text-[11px] text-slate-400 font-semibold">{doctorAppointments.length} {lang === 'bn' ? 'টি' : 'Appts'}</span>
+                  </div>
 
-                        {apt.prescription && onOpenPrescription && (
-                          <button
-                            onClick={() => onOpenPrescription(apt.prescription!)}
-                            className="flex-1 sm:flex-initial px-3.5 py-2.5 sm:py-2 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 font-bold text-xs flex items-center justify-center gap-1.5 border border-sky-200 cursor-pointer"
-                          >
-                            <FileText size={14} />
-                            <span>{lang === 'bn' ? 'ই-প্রেসক্রিপশন' : 'Prescription'}</span>
-                          </button>
-                        )}
-                      </div>
+                  {doctorAppointments.length === 0 ? (
+                    <div className="bg-white rounded-3xl p-8 text-center border border-slate-100 space-y-2">
+                      <Stethoscope className="w-10 h-10 text-slate-300 mx-auto" />
+                      <h4 className="font-bold text-slate-700 text-sm">
+                        {lang === 'bn' ? 'কোনো ভিডিও অ্যাপয়েন্টমেন্ট রেকর্ড নেই' : 'No video consultation appointments yet'}
+                      </h4>
                     </div>
-                  ))}
+                  ) : (
+                    <div className="grid grid-cols-1 gap-3">
+                      {doctorAppointments.map(apt => (
+                        <div key={apt.id} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:shadow-md transition-all">
+                          <div className="flex items-start sm:items-center gap-4">
+                            <img
+                              src={apt.doctorImage || 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=300'}
+                              alt={apt.doctorName}
+                              className="w-14 h-14 rounded-2xl object-cover border border-slate-200 shrink-0"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=300';
+                              }}
+                            />
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-xs font-mono font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded">
+                                  {apt.id}
+                                </span>
+                                <span className="text-[11px] font-bold text-emerald-700 uppercase bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                  {apt.consultationType} Call
+                                </span>
+                              </div>
+                              <h4 className="font-bold text-slate-900 text-sm mt-1">{apt.doctorName}</h4>
+                              <p className="text-xs text-slate-500 font-medium">{apt.doctorSpecialty} &bull; {apt.doctorHospital}</p>
+                              <p className="text-[11px] text-slate-600 mt-1 font-semibold flex items-center gap-1.5">
+                                <Clock size={12} className="text-sky-600" />
+                                <span>{apt.appointmentDate} &bull; {apt.appointmentTimeSlot}</span>
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                            {apt.consultationType === 'video' && onOpenVideoRoom && (
+                              <button
+                                onClick={() => onOpenVideoRoom(apt)}
+                                className="flex-1 sm:flex-initial px-3.5 py-2.5 sm:py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                              >
+                                <Video size={14} />
+                                <span>{lang === 'bn' ? 'ভিডিও রুমে প্রবেশ' : 'Join Video'}</span>
+                              </button>
+                            )}
+
+                            {apt.prescription && onOpenPrescription && (
+                              <button
+                                onClick={() => onOpenPrescription(apt.prescription!)}
+                                className="flex-1 sm:flex-initial px-3.5 py-2.5 sm:py-2 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 font-bold text-xs flex items-center justify-center gap-1.5 border border-sky-200 cursor-pointer"
+                              >
+                                <FileText size={14} />
+                                <span>{lang === 'bn' ? 'ই-প্রেসক্রিপশন' : 'Prescription'}</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

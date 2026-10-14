@@ -385,8 +385,40 @@ export interface DoctorAppointment {
   ePrescriptionId?: string;
   prescription?: EPrescription;
   videoRoomId?: string;
+}
+
 // Doctor at Home (হোমে ডাক্তার সার্ভিস) Interface
 export type DoctorAtHomeStatus = 'pending' | 'confirmed' | 'assigned' | 'completed' | 'cancelled';
+
+export interface DoctorAtHomeSpecialty {
+  id: string;
+  nameBn: string;
+  nameEn: string;
+  icon: string; // e.g. 'Stethoscope' | 'Activity' | 'HeartPulse' | 'User' | 'ShieldCheck' | 'Clock' | 'Zap'
+  fee: number;
+  descriptionBn?: string;
+  descriptionEn?: string;
+  badge?: string;
+  duration?: string;
+  isActive: boolean;
+}
+
+export interface DoctorAtHomeTimeSlot {
+  id: string;
+  timeBn: string;
+  timeEn: string;
+  label: string;
+  isActive?: boolean;
+}
+
+export interface DoctorAtHomeScheduleConfig {
+  maxAdvanceDays: number; // max 7 days
+  weeklyHolidays: number[]; // 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
+  holidayDates: string[]; // YYYY-MM-DD
+  timeSlots: DoctorAtHomeTimeSlot[];
+  holidayNoticeBn?: string;
+  holidayNoticeEn?: string;
+}
 
 export interface DoctorAtHomeBooking {
   id: string; // e.g. "DAH-83921"
@@ -399,12 +431,12 @@ export interface DoctorAtHomeBooking {
   area?: string; // Area in Dhaka (e.g. Dhanmondi, Gulshan, Mirpur, Uttara, etc.)
   date: string; // YYYY-MM-DD
   timeSlot: string; // e.g. "সকাল ৯:০০ - ১২:০০"
-  doctorType: string; // "general_physician" | "diabetes" | "pediatrician" | "cardiology" | "gynecology" | "orthopedics" | "geriatric" | "other"
+  doctorType: string; // Specialty ID
   doctorTypeLabel: string; // e.g. "General Physician / সাধারণ চিকিৎসক"
   symptoms: string; // Patient symptoms & complaints
   consultationFee: number; // Visiting fee
   paymentMethod: PaymentMethod;
-  paymentStatus: 'unpaid' | 'paid' | 'pending';
+  paymentStatus: 'unpaid' | 'paid' | 'pending' | 'pending_verification';
   transactionId?: string;
   senderPhone?: string;
   status: DoctorAtHomeStatus;
@@ -466,11 +498,14 @@ export interface SiteSettings {
 
   // Doctor at Home (বাসায় ডাক্তার সেবা) Section
   showDoctorAtHomeSection?: boolean;
+  isDoctorAtHomeActive?: boolean;
   doctorAtHomeBadge?: string;
   doctorAtHomeTitle?: string;
   doctorAtHomeDesc?: string;
   doctorAtHomeFee?: number;
   doctorAtHomeHotline?: string;
+  doctorAtHomeSpecialties?: DoctorAtHomeSpecialty[];
+  doctorAtHomeSchedule?: DoctorAtHomeScheduleConfig;
 
   // Nursing & Care Section
   showNursingSection?: boolean; // Below Packages visibility toggle

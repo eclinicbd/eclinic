@@ -24,11 +24,21 @@ import {
   Banknote,
   Smartphone,
   Wallet,
-  LogIn
+  LogIn,
+  Download,
+  Eye,
+  EyeOff
 } from 'lucide-react';
-import { DoctorAtHomeBooking, Language, PaymentMethod, PatientUser, PaymentGatewaysConfig } from '../types';
-import { DEFAULT_DOCTOR_AT_HOME_SPECIALTIES, getStoredPaymentConfig, getStoredCurrentPatient, getStoredSiteSettings } from '../services/dataStorage';
-import { printOrDownloadDoctorAtHomeSlip } from '../services/invoiceService';
+import { DoctorAtHomeBooking, Language, PaymentMethod, PatientUser, PaymentGatewaysConfig, DoctorAtHomeSpecialty, DoctorAtHomeScheduleConfig } from '../types';
+import { 
+  DEFAULT_DOCTOR_AT_HOME_SPECIALTIES, 
+  getStoredPaymentConfig, 
+  getStoredCurrentPatient, 
+  getStoredSiteSettings,
+  getStoredDoctorAtHomeSpecialties,
+  getStoredDoctorAtHomeSchedule 
+} from '../services/dataStorage';
+import { printOrDownloadDoctorAtHomeSlip, downloadDoctorAtHomeSlipHtml } from '../services/invoiceService';
 
 interface DoctorAtHomeBookingModalProps {
   isOpen: boolean;
@@ -97,6 +107,14 @@ export const DoctorAtHomeBookingModal: React.FC<DoctorAtHomeBookingModalProps> =
   const siteSettings = getStoredSiteSettings(lang);
   const [paymentConfig, setPaymentConfig] = useState<PaymentGatewaysConfig>(getStoredPaymentConfig);
 
+  // Dynamic Specialties & Schedule Config from Admin Settings
+  const [specialtiesList, setSpecialtiesList] = useState<DoctorAtHomeSpecialty[]>(() => {
+    const all = getStoredDoctorAtHomeSpecialties();
+    const active = all.filter(s => s.isActive !== false);
+    return active.length > 0 ? active : all;
+  });
+  const [scheduleConfig, setScheduleConfig] = useState<DoctorAtHomeScheduleConfig>(() => getStoredDoctorAtHomeSchedule());
+
   const [selectedSpecialty, setSelectedSpecialty] = useState<string>(defaultSpecialty || 'general_physician');
   const [patientName, setPatientName] = useState('');
   const [patientPhone, setPatientPhone] = useState('');
@@ -125,17 +143,46 @@ export const DoctorAtHomeBookingModal: React.FC<DoctorAtHomeBookingModalProps> =
   const [confirmedBooking, setConfirmedBooking] = useState<DoctorAtHomeBooking | null>(null);
   const [copiedId, setCopiedId] = useState(false);
   const [hasAutoFilledProfile, setHasAutoFilledProfile] = useState(false);
+  const [showSlipPreview, setShowSlipPreview] = useState(false);
+
+  // 7 Days advance booking calculation (Admin panel & booking requirement)
+  const maxAdvanceDays = Math.min(7, Math.max(1, scheduleConfig.maxAdvanceDays || 7));
+  const maxBookingDate = new Date();
+  maxBookingDate.setDate(maxBookingDate.getDate() + maxAdvanceDays);
+  const maxBookingDateStr = maxBookingDate.toISOString().split('T')[0];
+
+  // Active Time Slots from Schedule Config
+  const activeTimeSlots = (scheduleConfig.timeSlots || []).filter(s => s.isActive !== false);
+  const availableTimeSlots = activeTimeSlots.length > 0 ? activeTimeSlots : TIME_SLOTS;
+
+  // Holiday checks for selected date
+  const selectedDateObj = new Date(appointmentDate + 'T00:00:00');
+  const selectedDayOfWeek = selectedDateObj.getDay();
+  const isWeeklyHoliday = (scheduleConfig.weeklyHolidays || []).includes(selectedDayOfWeek);
+  const isSpecialHoliday = (scheduleConfig.holidayDates || []).includes(appointmentDate);
+  const isHolidayDate = isWeeklyHoliday || isSpecialHoliday;
 
   // Auto-populate patient details whenever modal opens or currentPatient changes
   useEffect(() => {
     if (isOpen) {
       setPaymentConfig(getStoredPaymentConfig());
+      const loadedSpecs = getStoredDoctorAtHomeSpecialties();
+      const activeSpecs = loadedSpecs.filter(s => s.isActive !== false);
+      const effectiveSpecs = activeSpecs.length > 0 ? activeSpecs : loadedSpecs;
+      setSpecialtiesList(effectiveSpecs);
+
+      const loadedSchedule = getStoredDoctorAtHomeSchedule();
+      setScheduleConfig(loadedSchedule);
+
       setErrorMsg(null);
       setConfirmedBooking(null);
       setCopiedId(false);
+      setShowSlipPreview(false);
 
-      if (defaultSpecialty) {
+      if (defaultSpecialty && effectiveSpecs.some(s => s.id === defaultSpecialty)) {
         setSelectedSpecialty(defaultSpecialty);
+      } else if (effectiveSpecs.length > 0 && !effectiveSpecs.some(s => s.id === selectedSpecialty)) {
+        setSelectedSpecialty(effectiveSpecs[0].id);
       }
 
       // Check logged-in user profile
@@ -170,7 +217,8 @@ export const DoctorAtHomeBookingModal: React.FC<DoctorAtHomeBookingModalProps> =
 
   if (!isOpen) return null;
 
-  const currentSpecialtyObj = DEFAULT_DOCTOR_AT_HOME_SPECIALTIES.find(s => s.id === selectedSpecialty) 
+  const currentSpecialtyObj = specialtiesList.find(s => s.id === selectedSpecialty) 
+    || specialtiesList[0] 
     || DEFAULT_DOCTOR_AT_HOME_SPECIALTIES[0];
 
   const visitingFee = currentSpecialtyObj.fee;
@@ -262,6 +310,26 @@ export const DoctorAtHomeBookingModal: React.FC<DoctorAtHomeBookingModalProps> =
       return;
     }
 
+    // Advance Booking Window: User explicitly requested maximum 7 days advance booking limit
+    const chosenDate = new Date(appointmentDate + 'T00:00:00');
+    const todayDate = new Date(todayStr + 'T00:00:00');
+    const diffTime = chosenDate.getTime() - todayDate.getTime();
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays > 7) {
+      setErrorMsg(isBn 
+        ? 'দুঃখিত, "Doctor at Home" সার্ভিসে সর্বোচ্চ ৭ দিনের বেশি অগ্রীম বুকিং করা যাবে না।' 
+        : 'Sorry, Doctor at Home appointments cannot be booked more than 7 days in advance.');
+      return;
+    }
+
+    if (diffDays < 0) {
+      setErrorMsg(isBn 
+        ? 'অনুগ্রহ করে আজকের বা আগামী ৭ দিনের মধ্যের একটি সঠিক তারিখ নির্বাচন করুন।' 
+        : 'Please select today or a date within the next 7 days.');
+      return;
+    }
+
     // 2. Payment Method Validations matching Test & Doctor Consultations
     if (paymentMethod === 'bkash' || paymentMethod === 'nagad' || paymentMethod === 'rocket') {
       const cleanSender = senderPhone.trim().replace(/\D/g, '');
@@ -346,6 +414,12 @@ export const DoctorAtHomeBookingModal: React.FC<DoctorAtHomeBookingModalProps> =
   const handlePrintSlip = () => {
     if (confirmedBooking) {
       printOrDownloadDoctorAtHomeSlip(confirmedBooking, lang, siteSettings);
+    }
+  };
+
+  const handleDownloadSlipHtml = () => {
+    if (confirmedBooking) {
+      downloadDoctorAtHomeSlipHtml(confirmedBooking, lang, siteSettings);
     }
   };
 
@@ -463,15 +537,35 @@ export const DoctorAtHomeBookingModal: React.FC<DoctorAtHomeBookingModalProps> =
                 </div>
               </div>
 
-              {/* Action Buttons: Print Slip, WhatsApp, Close */}
-              <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+              {/* Action Buttons: Print Slip, Download Slip, Preview, WhatsApp, Close */}
+              <div className="flex flex-wrap items-center justify-center gap-2.5 pt-2">
                 <button 
                   type="button"
                   onClick={handlePrintSlip}
-                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-md transition-all cursor-pointer active:scale-95"
+                  className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md transition-all cursor-pointer active:scale-95"
+                  title="Print Doctor at Home receipt slip"
                 >
-                  <Printer size={16} />
-                  <span>{isBn ? 'স্লিপ প্রিন্ট / ডাউনলোড করুন' : 'Print / Download Slip'}</span>
+                  <Printer size={15} />
+                  <span>{isBn ? 'স্লিপ প্রিন্ট করুন' : 'Print Slip'}</span>
+                </button>
+
+                <button 
+                  type="button"
+                  onClick={handleDownloadSlipHtml}
+                  className="px-4 py-2.5 bg-white border border-emerald-300 hover:bg-emerald-50 text-emerald-800 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
+                  title="Download slip as offline HTML file"
+                >
+                  <Download size={14} className="text-emerald-600" />
+                  <span>{isBn ? 'স্লিপ ডাউনলোড (.html)' : 'Download Slip'}</span>
+                </button>
+
+                <button 
+                  type="button"
+                  onClick={() => setShowSlipPreview(!showSlipPreview)}
+                  className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  {showSlipPreview ? <EyeOff size={14} /> : <Eye size={14} />}
+                  <span>{showSlipPreview ? (isBn ? 'প্রিভিউ লুকান' : 'Hide Preview') : (isBn ? 'স্লিপ প্রিভিউ' : 'View Receipt')}</span>
                 </button>
 
                 <a 
@@ -480,7 +574,7 @@ export const DoctorAtHomeBookingModal: React.FC<DoctorAtHomeBookingModalProps> =
                   )}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer"
+                  className="px-3.5 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
                 >
                   <MessageCircle size={15} className="text-emerald-600" />
                   <span>{isBn ? 'হোয়াটসঅ্যাপ' : 'WhatsApp'}</span>
@@ -489,11 +583,77 @@ export const DoctorAtHomeBookingModal: React.FC<DoctorAtHomeBookingModalProps> =
                 <button 
                   type="button"
                   onClick={onClose}
-                  className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all cursor-pointer"
+                  className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all cursor-pointer"
                 >
                   {isBn ? 'বন্ধ করুন' : 'Close'}
                 </button>
               </div>
+
+              {/* Embedded Official Slip Preview Card */}
+              {showSlipPreview && (
+                <div className="mt-4 p-5 bg-white border-2 border-emerald-400 rounded-2xl shadow-lg text-left text-slate-800 space-y-4 animate-fadeIn">
+                  <div className="flex items-center justify-between border-b border-emerald-100 pb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="p-2 bg-emerald-100 text-emerald-800 rounded-xl">
+                        <Home size={20} />
+                      </div>
+                      <div>
+                        <h4 className="font-extrabold text-slate-900 text-sm">
+                          {siteSettings.siteName || 'ই-ক্লিনিক বিডি'} &bull; অফিসিয়াল হোম ডক্টর স্লিপ
+                        </h4>
+                        <span className="text-[11px] text-slate-400 font-mono">ID: {confirmedBooking.id} &bull; Generated: {new Date().toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handlePrintSlip}
+                      className="px-3 py-1 bg-emerald-600 text-white text-xs font-bold rounded-lg flex items-center gap-1 cursor-pointer hover:bg-emerald-700"
+                    >
+                      <Printer size={13} /> {isBn ? 'প্রিন্ট' : 'Print'}
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-xs bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                    <div>
+                      <span className="text-[10px] text-slate-500 font-semibold block uppercase">রোগীর নাম</span>
+                      <strong className="text-slate-900">{confirmedBooking.patientName} ({confirmedBooking.patientGender === 'female' ? 'মহিলা' : confirmedBooking.patientGender === 'male' ? 'পুরুষ' : 'অন্যান্য'})</strong>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-500 font-semibold block uppercase">মোবাইল নম্বর</span>
+                      <strong className="text-slate-900 font-mono">{confirmedBooking.patientPhone}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-500 font-semibold block uppercase">ডাক্তার স্পেশালিটি</span>
+                      <strong className="text-emerald-700">{confirmedBooking.doctorTypeLabel}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-500 font-semibold block uppercase">ভিজিটের তারিখ ও স্লট</span>
+                      <strong className="text-slate-900">{confirmedBooking.date} • {confirmedBooking.timeSlot}</strong>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-[10px] text-slate-500 font-semibold block uppercase">রোগীর পূর্ণ ঠিকানা</span>
+                      <p className="text-slate-800 font-medium">{confirmedBooking.address}</p>
+                    </div>
+                    {confirmedBooking.symptoms && (
+                      <div className="col-span-2">
+                        <span className="text-[10px] text-slate-500 font-semibold block uppercase">রোগের লক্ষণ / সমস্যা</span>
+                        <p className="text-slate-700 italic">{confirmedBooking.symptoms}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-emerald-50/70 border border-emerald-200/80 rounded-xl text-xs">
+                    <div>
+                      <span className="text-[10px] text-emerald-800 block uppercase font-semibold">পেমেন্ট মেথড ও স্ট্যাটাস</span>
+                      <strong className="text-slate-900 uppercase">{confirmedBooking.paymentMethod} &bull; {confirmedBooking.paymentStatus}</strong>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[10px] text-emerald-800 block uppercase font-semibold">মোট ভিজিট ফি</span>
+                      <strong className="text-base font-black text-emerald-800">৳{confirmedBooking.consultationFee}</strong>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             /* Booking Form */
@@ -541,7 +701,7 @@ export const DoctorAtHomeBookingModal: React.FC<DoctorAtHomeBookingModalProps> =
                 </label>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {DEFAULT_DOCTOR_AT_HOME_SPECIALTIES.map((spec) => {
+                  {specialtiesList.filter(s => s.isActive !== false).map((spec) => {
                     const isSelected = selectedSpecialty === spec.id;
                     return (
                       <div
@@ -555,11 +715,23 @@ export const DoctorAtHomeBookingModal: React.FC<DoctorAtHomeBookingModalProps> =
                       >
                         <div className="flex items-start justify-between gap-1">
                           <span className={`w-2 h-2 rounded-full mt-1 ${isSelected ? 'bg-emerald-600' : 'bg-slate-300'}`} />
-                          <span className="font-extrabold text-xs text-emerald-800">৳{spec.fee}</span>
+                          <div className="flex items-center gap-1">
+                            {spec.badge && (
+                              <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-200/60">
+                                {spec.badge}
+                              </span>
+                            )}
+                            <span className="font-extrabold text-xs text-emerald-800">৳{spec.fee}</span>
+                          </div>
                         </div>
                         <h4 className="font-bold text-xs text-slate-900 mt-2 leading-tight">
                           {isBn ? spec.nameBn : spec.nameEn}
                         </h4>
+                        {spec.duration && (
+                          <span className="text-[10px] text-slate-400 mt-0.5 block">
+                            {spec.duration}
+                          </span>
+                        )}
                       </div>
                     );
                   })}
@@ -715,7 +887,7 @@ export const DoctorAtHomeBookingModal: React.FC<DoctorAtHomeBookingModalProps> =
                   <div className="flex items-center justify-between mb-1">
                     <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                       <Calendar size={14} className="text-primary" />
-                      <span>{isBn ? 'তারিখ *' : 'Visit Date *'}</span>
+                      <span>{isBn ? 'ভিজিট তারিখ (সর্বোচ্চ ৭ দিন) *' : 'Visit Date (Max 7 Days) *'}</span>
                     </label>
                     <div className="flex items-center gap-1">
                       <button 
@@ -734,14 +906,36 @@ export const DoctorAtHomeBookingModal: React.FC<DoctorAtHomeBookingModalProps> =
                       </button>
                     </div>
                   </div>
+
                   <input 
                     type="date"
                     required
                     min={todayStr}
+                    max={maxBookingDateStr}
                     value={appointmentDate}
                     onChange={e => setAppointmentDate(e.target.value)}
                     className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white cursor-pointer"
                   />
+
+                  <div className="flex items-center justify-between mt-1 px-1">
+                    <span className="text-[10px] text-slate-500 font-medium">
+                      {isBn ? `সীমা: ${todayStr} থেকে ${maxBookingDateStr}` : `Window: ${todayStr} to ${maxBookingDateStr}`}
+                    </span>
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200/60">
+                      {isBn ? 'সর্বোচ্চ ৭ দিন' : 'Max 7 Days'}
+                    </span>
+                  </div>
+
+                  {isHolidayDate && (
+                    <div className="mt-1.5 p-2.5 bg-amber-50 border border-amber-200/90 rounded-xl text-[11px] text-amber-900 flex items-start gap-1.5">
+                      <AlertCircle size={14} className="text-amber-600 shrink-0 mt-0.5" />
+                      <span>
+                        {isBn 
+                          ? (scheduleConfig.holidayNoticeBn || '⚠️ এই তারিখে নিয়মিত ক্লিনিক্যাল সময়সূচি সীমিত বা বন্ধ (ছুটি)। তবে বিশেষ জরুরি প্রয়োজনে অন-কল ডাক্তার ভিজিট প্রদান করা হবে।') 
+                          : (scheduleConfig.holidayNoticeEn || '⚠️ Routine visit hours are off on this holiday. Emergency on-call doctor is available.')}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Time Slot */}
@@ -755,12 +949,15 @@ export const DoctorAtHomeBookingModal: React.FC<DoctorAtHomeBookingModalProps> =
                     onChange={e => setTimeSlot(e.target.value)}
                     className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
                   >
-                    {TIME_SLOTS.map(s => (
+                    {availableTimeSlots.map(s => (
                       <option key={s.id} value={isBn ? s.timeBn : s.timeEn}>
                         {isBn ? s.timeBn : s.timeEn}
                       </option>
                     ))}
                   </select>
+                  <span className="text-[10px] text-slate-400 mt-1 block px-1">
+                    {isBn ? 'অ্যাডমিন নির্ধারিত সক্রিয় স্লটসমূহ প্রদর্শিত হচ্ছে' : 'Active admin slots shown'}
+                  </span>
                 </div>
               </div>
 
