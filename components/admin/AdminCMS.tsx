@@ -68,7 +68,8 @@ import {
   saveStoredDoctorAtHomeSchedule, 
   DEFAULT_DOCTOR_AT_HOME_SPECIALTIES, 
   DEFAULT_DOCTOR_AT_HOME_SCHEDULE,
-  getDoctorSpecialtyDefaultImage 
+  getDoctorSpecialtyDefaultImage,
+  MALE_DOCTOR_VECTOR_ICON
 } from '../../services/dataStorage';
 import { printOrDownloadInvoice } from '../../services/invoiceService';
 
@@ -552,7 +553,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
       descriptionEn: '',
       badge: lang === 'bn' ? 'স্পেশালিস্ট' : 'Specialist',
       duration: '৩০-৪৫ মিনিট',
-      imageUrl: getDoctorSpecialtyDefaultImage(),
+      imageUrl: MALE_DOCTOR_VECTOR_ICON,
       isActive: true
     });
     setIsSpecialtyModalOpen(true);
@@ -562,7 +563,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
     setEditingSpecialty(spec);
     setSpecialtyFormData({ 
       ...spec,
-      imageUrl: spec.imageUrl || getDoctorSpecialtyDefaultImage(spec.id)
+      imageUrl: (!spec.imageUrl || spec.imageUrl.includes('unsplash.com')) ? MALE_DOCTOR_VECTOR_ICON : spec.imageUrl
     });
     setIsSpecialtyModalOpen(true);
   };
@@ -582,7 +583,10 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
               ...s, 
               ...specialtyFormData, 
               id: s.id,
-              imageUrl: specialtyFormData.imageUrl?.trim() || s.imageUrl || getDoctorSpecialtyDefaultImage(s.id)
+              fee: Number(specialtyFormData.fee) || s.fee || 1500,
+              imageUrl: (!specialtyFormData.imageUrl || specialtyFormData.imageUrl.includes('unsplash.com')) 
+                ? MALE_DOCTOR_VECTOR_ICON 
+                : specialtyFormData.imageUrl.trim()
             } as DoctorAtHomeSpecialty)
           : s
       );
@@ -597,7 +601,9 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
         descriptionEn: specialtyFormData.descriptionEn?.trim() || '',
         badge: specialtyFormData.badge?.trim() || '',
         duration: specialtyFormData.duration?.trim() || '৩০-৪৫ মিনিট',
-        imageUrl: specialtyFormData.imageUrl?.trim() || getDoctorSpecialtyDefaultImage(),
+        imageUrl: (!specialtyFormData.imageUrl || specialtyFormData.imageUrl.includes('unsplash.com')) 
+          ? MALE_DOCTOR_VECTOR_ICON 
+          : specialtyFormData.imageUrl.trim(),
         isActive: specialtyFormData.isActive !== false
       };
       updatedList = [...doctorSpecialtiesList, newSpec];
@@ -4262,19 +4268,19 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                         </div>
                       </div>
 
-                      {/* Circular Colorful Doctor Image in the Middle */}
+                      {/* Circular Male Doctor Vector Icon in the Middle */}
                       <div className="flex justify-center my-2.5">
                         <div className="relative">
                           <img
-                            src={spec.imageUrl || getDoctorSpecialtyDefaultImage(spec.id)}
+                            src={(!spec.imageUrl || spec.imageUrl.includes('unsplash.com')) ? MALE_DOCTOR_VECTOR_ICON : spec.imageUrl}
                             alt={spec.nameBn}
-                            className={`w-16 h-16 rounded-full object-cover border-2 shadow-xs transition-all ${
+                            className={`w-16 h-16 rounded-full object-cover border-2 shadow-xs transition-all bg-sky-50 ${
                               isEnabled 
                                 ? 'border-emerald-400 ring-2 ring-emerald-50' 
                                 : 'border-slate-300 grayscale opacity-75'
                             }`}
                             onError={(e) => {
-                              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=400';
+                              (e.target as HTMLImageElement).src = MALE_DOCTOR_VECTOR_ICON;
                             }}
                           />
                           <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] border border-white">
@@ -5692,19 +5698,24 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
             </div>
 
             <form onSubmit={handleSaveSpecialty} className="space-y-4">
-              {/* Doctor Colorful Photo Preview & URL input */}
+              {/* Male Doctor Vector Icon Preview & Settings */}
               <div className="p-4 bg-gradient-to-br from-emerald-50/70 to-teal-50/40 rounded-2xl border border-emerald-200/80">
-                <label className="block text-xs font-bold text-slate-800 mb-2">
-                  {lang === 'bn' ? 'ডাক্তারের রঙিন ছবি (Doctor Colorful Photo)' : 'Doctor Colorful Photo'}
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-bold text-slate-800">
+                    {lang === 'bn' ? 'ডাক্তারের ভেক্টর আইকন ছবি (Male Doctor Vector Icon)' : 'Male Doctor Vector Icon'}
+                  </label>
+                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    {lang === 'bn' ? 'সবার জন্য একই ছবি' : 'Same Picture For All'}
+                  </span>
+                </div>
                 <div className="flex flex-col sm:flex-row items-center gap-4">
                   <div className="relative shrink-0">
                     <img
-                      src={specialtyFormData.imageUrl || getDoctorSpecialtyDefaultImage(editingSpecialty?.id)}
-                      alt="Doctor Preview"
-                      className="w-20 h-20 rounded-full object-cover border-3 border-emerald-400 shadow-md ring-4 ring-emerald-100"
+                      src={(!specialtyFormData.imageUrl || specialtyFormData.imageUrl.includes('unsplash.com')) ? MALE_DOCTOR_VECTOR_ICON : specialtyFormData.imageUrl}
+                      alt="Male Doctor Vector Preview"
+                      className="w-20 h-20 rounded-full object-cover border-3 border-emerald-400 shadow-md ring-4 ring-emerald-100 bg-sky-50"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=400';
+                        (e.target as HTMLImageElement).src = MALE_DOCTOR_VECTOR_ICON;
                       }}
                     />
                     <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs border border-white">
@@ -5713,31 +5724,20 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                   </div>
 
                   <div className="flex-1 w-full space-y-2">
-                    <input
-                      type="url"
-                      value={specialtyFormData.imageUrl || ''}
-                      onChange={e => setSpecialtyFormData({ ...specialtyFormData, imageUrl: e.target.value })}
-                      placeholder="https://images.unsplash.com/photo-... (Doctor Image URL)"
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-mono focus:ring-2 focus:ring-emerald-400 outline-none bg-white"
-                    />
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      {lang === 'bn' 
+                        ? 'Doctor at Home সার্ভিসের প্রতিটি স্পেশালিটি কার্ডে পুরুষ ডাক্তারের প্রফেশনাল ভেক্টর আইকন প্রদর্শিত হবে।' 
+                        : 'Professional Male Doctor Vector Icon is displayed uniformly for all Doctor at Home specialty cards.'}
+                    </p>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[10px] text-slate-500 font-semibold">{lang === 'bn' ? 'কুইক প্রিসেট ছবি:' : 'Quick Presets:'}</span>
-                      {[
-                        { label: 'General Medicine', url: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=400' },
-                        { label: 'Female Doctor', url: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=400' },
-                        { label: 'Pediatric / Child', url: 'https://images.unsplash.com/photo-1594824813576-905ffb700b52?auto=format&fit=crop&q=80&w=400' },
-                        { label: 'Cardiology / Senior', url: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=400' },
-                        { label: 'Surgeon / Specialist', url: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=400' }
-                      ].map((preset, pIdx) => (
-                        <button
-                          key={pIdx}
-                          type="button"
-                          onClick={() => setSpecialtyFormData({ ...specialtyFormData, imageUrl: preset.url })}
-                          className="px-2 py-0.5 rounded-md bg-white hover:bg-emerald-100 text-[10px] font-bold text-slate-700 border border-slate-200 cursor-pointer"
-                        >
-                          {preset.label}
-                        </button>
-                      ))}
+                      <button
+                        type="button"
+                        onClick={() => setSpecialtyFormData({ ...specialtyFormData, imageUrl: MALE_DOCTOR_VECTOR_ICON })}
+                        className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+                      >
+                        <Sparkles size={13} />
+                        <span>{lang === 'bn' ? 'মেল ডাক্তার ভেক্টর আইকন সেট করুন' : 'Apply Male Doctor Vector Icon'}</span>
+                      </button>
                     </div>
                   </div>
                 </div>

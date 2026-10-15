@@ -905,9 +905,9 @@ export const getStoredSiteSettings = (lang: Language): SiteSettings => {
         services: (Array.isArray(parsed.services) && parsed.services.length > 0) ? parsed.services : defaultSettings.services,
         nursingServices: (Array.isArray(parsed.nursingServices) && parsed.nursingServices.length > 0) ? parsed.nursingServices : defaultSettings.nursingServices,
         doctorAtHomeSpecialties: (Array.isArray(parsed.doctorAtHomeSpecialties) && parsed.doctorAtHomeSpecialties.length > 0) 
-          ? parsed.doctorAtHomeSpecialties.map(s => ({ ...s, imageUrl: s.imageUrl || getDoctorSpecialtyDefaultImage(s.id) }))
+          ? parsed.doctorAtHomeSpecialties.map(s => ({ ...s, imageUrl: (!s.imageUrl || s.imageUrl.includes('unsplash.com')) ? MALE_DOCTOR_VECTOR_ICON : s.imageUrl }))
           : (Array.isArray(otherParsed?.doctorAtHomeSpecialties) && otherParsed.doctorAtHomeSpecialties.length > 0 
-              ? otherParsed.doctorAtHomeSpecialties.map(s => ({ ...s, imageUrl: s.imageUrl || getDoctorSpecialtyDefaultImage(s.id) }))
+              ? otherParsed.doctorAtHomeSpecialties.map(s => ({ ...s, imageUrl: (!s.imageUrl || s.imageUrl.includes('unsplash.com')) ? MALE_DOCTOR_VECTOR_ICON : s.imageUrl }))
               : getStoredDoctorAtHomeSpecialties()),
         homeSectionsOrder: (Array.isArray(parsed.homeSectionsOrder) && parsed.homeSectionsOrder.length > 0) ? parsed.homeSectionsOrder : (Array.isArray(otherParsed?.homeSectionsOrder) && otherParsed.homeSectionsOrder.length > 0 ? otherParsed.homeSectionsOrder : defaultSettings.homeSectionsOrder)
       };
@@ -924,7 +924,7 @@ export const getStoredSiteSettings = (lang: Language): SiteSettings => {
         showServicesSection: otherParsed.showServicesSection !== false,
         heroImages: (Array.isArray(otherParsed.heroImages) && otherParsed.heroImages.length > 0) ? otherParsed.heroImages : defaultSettings.heroImages,
         doctorAtHomeSpecialties: (Array.isArray(otherParsed.doctorAtHomeSpecialties) && otherParsed.doctorAtHomeSpecialties.length > 0)
-          ? otherParsed.doctorAtHomeSpecialties.map(s => ({ ...s, imageUrl: s.imageUrl || getDoctorSpecialtyDefaultImage(s.id) }))
+          ? otherParsed.doctorAtHomeSpecialties.map(s => ({ ...s, imageUrl: (!s.imageUrl || s.imageUrl.includes('unsplash.com')) ? MALE_DOCTOR_VECTOR_ICON : s.imageUrl }))
           : getStoredDoctorAtHomeSpecialties(),
         homeSectionsOrder: (Array.isArray(otherParsed.homeSectionsOrder) && otherParsed.homeSectionsOrder.length > 0) ? otherParsed.homeSectionsOrder : defaultSettings.homeSectionsOrder
       };
@@ -1588,19 +1588,10 @@ export const saveEPrescription = (prescription: EPrescription): void => {
   }
 };
 
-export const getDoctorSpecialtyDefaultImage = (idOrCategory?: string): string => {
-  const map: Record<string, string> = {
-    general_physician: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=400',
-    diabetes: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=400',
-    pediatrician: 'https://images.unsplash.com/photo-1594824813576-905ffb700b52?auto=format&fit=crop&q=80&w=400',
-    cardiology: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=400',
-    gynecology: 'https://images.unsplash.com/photo-1651008376811-b90baee60c1f?auto=format&fit=crop&q=80&w=400',
-    orthopedics: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=400',
-    geriatric: 'https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&q=80&w=400',
-    neurology: 'https://images.unsplash.com/photo-1622902046580-2b47f47f5471?auto=format&fit=crop&q=80&w=400',
-    other: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400'
-  };
-  return (idOrCategory && map[idOrCategory]) || 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=400';
+export const MALE_DOCTOR_VECTOR_ICON = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><defs><linearGradient id="bg" x1="0%25" y1="0%25" x2="100%25" y2="100%25"><stop offset="0%25" stop-color="%23e0f2fe"/><stop offset="100%25" stop-color="%23ccfbf1"/></linearGradient><linearGradient id="skin" x1="0%25" y1="0%25" x2="0%25" y2="100%25"><stop offset="0%25" stop-color="%23fed7aa"/><stop offset="100%25" stop-color="%23fcd34d"/></linearGradient><linearGradient id="coat" x1="0%25" y1="0%25" x2="100%25" y2="100%25"><stop offset="0%25" stop-color="%23ffffff"/><stop offset="100%25" stop-color="%23f1f5f9"/></linearGradient><linearGradient id="hair" x1="0%25" y1="0%25" x2="0%25" y2="100%25"><stop offset="0%25" stop-color="%23334155"/><stop offset="100%25" stop-color="%230f172a"/></linearGradient><linearGradient id="scrubs" x1="0%25" y1="0%25" x2="100%25" y2="100%25"><stop offset="0%25" stop-color="%230284c7"/><stop offset="100%25" stop-color="%230369a1"/></linearGradient></defs><circle cx="100" cy="100" r="96" fill="url(%23bg)" stroke="%2338bdf8" stroke-width="4"/><clipPath id="circleClip"><circle cx="100" cy="100" r="94"/></clipPath><g clip-path="url(%23circleClip)"><path d="M30 200 C30 152 56 132 100 132 C144 132 170 152 170 200 Z" fill="url(%23scrubs)"/><polygon points="100,154 86,132 114,132" fill="%230284c7"/><rect x="89" y="102" width="22" height="34" rx="4" fill="url(%23skin)"/><path d="M89 116 C95 124 105 124 111 116 Z" fill="%23f59e0b" opacity="0.3"/><ellipse cx="100" cy="88" rx="30" ry="34" fill="url(%23skin)"/><circle cx="69" cy="90" r="8" fill="%23fcd34d"/><circle cx="131" cy="90" r="8" fill="%23fcd34d"/><path d="M70 78 C70 50 82 42 100 42 C118 42 130 50 130 78 C124 70 114 66 100 66 C86 66 76 70 70 78 Z" fill="url(%23hair)"/><path d="M70 72 C68 84 72 90 73 90 C76 82 76 76 74 72 Z" fill="url(%23hair)"/><path d="M130 72 C132 84 128 90 127 90 C124 82 124 76 126 72 Z" fill="url(%23hair)"/><path d="M82 76 Q88 73 94 76" stroke="%230f172a" stroke-width="2.5" stroke-linecap="round" fill="none"/><path d="M106 76 Q112 73 118 76" stroke="%230f172a" stroke-width="2.5" stroke-linecap="round" fill="none"/><circle cx="88" cy="85" r="3.5" fill="%230f172a"/><circle cx="112" cy="85" r="3.5" fill="%230f172a"/><circle cx="89.5" cy="83.5" r="1.2" fill="%23ffffff"/><circle cx="113.5" cy="83.5" r="1.2" fill="%23ffffff"/><path d="M100 86 L97 94 L103 94" stroke="%23d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M92 102 Q100 110 108 102" stroke="%23b45309" stroke-width="2.5" stroke-linecap="round" fill="none"/><circle cx="78" cy="95" r="5" fill="%23fb7185" opacity="0.3"/><circle cx="122" cy="95" r="5" fill="%23fb7185" opacity="0.3"/><path d="M30 200 C30 156 50 140 76 138 L84 200 Z" fill="url(%23coat)"/><path d="M170 200 C170 156 150 140 124 138 L116 200 Z" fill="url(%23coat)"/><path d="M76 138 L88 170 L72 160 Z" fill="%23e2e8f0"/><path d="M124 138 L112 170 L128 160 Z" fill="%23e2e8f0"/><line x1="84" y1="170" x2="84" y2="200" stroke="%23cbd5e1" stroke-width="2"/><line x1="116" y1="170" x2="116" y2="200" stroke="%23cbd5e1" stroke-width="2"/><path d="M78 134 C72 150 76 178 92 184" stroke="%23334155" stroke-width="4.5" stroke-linecap="round" fill="none"/><path d="M122 134 C128 150 124 178 108 184" stroke="%23334155" stroke-width="4.5" stroke-linecap="round" fill="none"/><circle cx="100" cy="184" r="8" fill="%230284c7" stroke="%230f172a" stroke-width="2.5"/><circle cx="100" cy="184" r="3.5" fill="%23e2e8f0"/></g></svg>`;
+
+export const getDoctorSpecialtyDefaultImage = (_idOrCategory?: string): string => {
+  return MALE_DOCTOR_VECTOR_ICON;
 };
 
 /**
@@ -1617,7 +1608,7 @@ export const DEFAULT_DOCTOR_AT_HOME_SPECIALTIES: DoctorAtHomeSpecialty[] = [
     descriptionEn: 'Fever, cold, general ailments, weakness, routine health evaluation and prescriptions.',
     badge: 'সর্বাধিক জনপ্রিয়',
     duration: '৩০-৪৫ মিনিট',
-    imageUrl: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=400',
+    imageUrl: MALE_DOCTOR_VECTOR_ICON,
     isActive: true 
   },
   { 
@@ -1630,7 +1621,7 @@ export const DEFAULT_DOCTOR_AT_HOME_SPECIALTIES: DoctorAtHomeSpecialty[] = [
     descriptionEn: 'Diabetes management, blood glucose monitoring, insulin titration and hormone therapy.',
     badge: 'স্পেশালিস্ট',
     duration: '৩০-৪৫ মিনিট',
-    imageUrl: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=400',
+    imageUrl: MALE_DOCTOR_VECTOR_ICON,
     isActive: true 
   },
   { 
@@ -1643,7 +1634,7 @@ export const DEFAULT_DOCTOR_AT_HOME_SPECIALTIES: DoctorAtHomeSpecialty[] = [
     descriptionEn: 'Infant & child health, pediatric fever, asthma, gastro issues and developmental checkup.',
     badge: 'শিশু স্পেশালিস্ট',
     duration: '৩০-৪৫ মিনিট',
-    imageUrl: 'https://images.unsplash.com/photo-1594824813576-905ffb700b52?auto=format&fit=crop&q=80&w=400',
+    imageUrl: MALE_DOCTOR_VECTOR_ICON,
     isActive: true 
   },
   { 
@@ -1656,7 +1647,7 @@ export const DEFAULT_DOCTOR_AT_HOME_SPECIALTIES: DoctorAtHomeSpecialty[] = [
     descriptionEn: 'Hypertension, heart palpitations, ECG review and cardiac medication management.',
     badge: 'সিনিয়র কনসালটেন্ট',
     duration: '৪৫ মিনিট',
-    imageUrl: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=400',
+    imageUrl: MALE_DOCTOR_VECTOR_ICON,
     isActive: true 
   },
   { 
@@ -1669,7 +1660,7 @@ export const DEFAULT_DOCTOR_AT_HOME_SPECIALTIES: DoctorAtHomeSpecialty[] = [
     descriptionEn: 'Antenatal guidance, pregnancy care, women health consultation and prescriptions.',
     badge: 'লেডি কনসালটেন্ট',
     duration: '৪৫ মিনিট',
-    imageUrl: 'https://images.unsplash.com/photo-1651008376811-b90baee60c1f?auto=format&fit=crop&q=80&w=400',
+    imageUrl: MALE_DOCTOR_VECTOR_ICON,
     isActive: true 
   },
   { 
@@ -1682,7 +1673,7 @@ export const DEFAULT_DOCTOR_AT_HOME_SPECIALTIES: DoctorAtHomeSpecialty[] = [
     descriptionEn: 'Bone and joint pain, arthritis, lumbar pain and mobility checkup for elders.',
     badge: 'অর্থোপেডিক',
     duration: '৪৫ মিনিট',
-    imageUrl: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=400',
+    imageUrl: MALE_DOCTOR_VECTOR_ICON,
     isActive: true 
   },
   { 
@@ -1695,7 +1686,7 @@ export const DEFAULT_DOCTOR_AT_HOME_SPECIALTIES: DoctorAtHomeSpecialty[] = [
     descriptionEn: 'Bedridden patients, comprehensive geriatric vitals review and home nursing guidance.',
     badge: 'প্রবীণ কেয়ার',
     duration: '৪৫-৬০ মিনিট',
-    imageUrl: 'https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&q=80&w=400',
+    imageUrl: MALE_DOCTOR_VECTOR_ICON,
     isActive: true 
   },
   { 
@@ -1708,7 +1699,7 @@ export const DEFAULT_DOCTOR_AT_HOME_SPECIALTIES: DoctorAtHomeSpecialty[] = [
     descriptionEn: 'Post-stroke rehab advice, neuropathic pain, migraine and nervous disorder consultation.',
     badge: 'স্নায়ুরোগ',
     duration: '৪৫ মিনিট',
-    imageUrl: 'https://images.unsplash.com/photo-1622902046580-2b47f47f5471?auto=format&fit=crop&q=80&w=400',
+    imageUrl: MALE_DOCTOR_VECTOR_ICON,
     isActive: true 
   },
   { 
@@ -1721,7 +1712,7 @@ export const DEFAULT_DOCTOR_AT_HOME_SPECIALTIES: DoctorAtHomeSpecialty[] = [
     descriptionEn: 'Custom medical specialist home visit as per specific patient symptoms.',
     badge: 'অন কল',
     duration: '৪৫ মিনিট',
-    imageUrl: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
+    imageUrl: MALE_DOCTOR_VECTOR_ICON,
     isActive: true 
   }
 ];
@@ -1748,7 +1739,9 @@ export const getStoredDoctorAtHomeSpecialties = (): DoctorAtHomeSpecialty[] => {
       if (Array.isArray(parsed) && parsed.length > 0) {
         return parsed.map(s => ({
           ...s,
-          imageUrl: s.imageUrl || getDoctorSpecialtyDefaultImage(s.id)
+          imageUrl: (!s.imageUrl || s.imageUrl.includes('unsplash.com'))
+            ? MALE_DOCTOR_VECTOR_ICON
+            : s.imageUrl
         }));
       }
     }

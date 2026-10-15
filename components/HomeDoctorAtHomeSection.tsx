@@ -16,7 +16,7 @@ import {
   Calendar 
 } from 'lucide-react';
 import { Language, DoctorAtHomeSpecialty } from '../types';
-import { getStoredDoctorAtHomeSpecialties, getDoctorSpecialtyDefaultImage } from '../services/dataStorage';
+import { getStoredDoctorAtHomeSpecialties, getDoctorSpecialtyDefaultImage, MALE_DOCTOR_VECTOR_ICON } from '../services/dataStorage';
 
 interface HomeDoctorAtHomeSectionProps {
   lang: Language;
@@ -131,16 +131,16 @@ export const HomeDoctorAtHomeSection: React.FC<HomeDoctorAtHomeSectionProps> = (
                     </div>
                   </div>
 
-                  {/* Circular Colorful Doctor Image in the Middle */}
+                  {/* Circular Male Doctor Vector Icon in the Middle */}
                   <div className="flex justify-center my-3">
                     <div className="relative group/avatar">
                       <img
-                        src={spec.imageUrl || getDoctorSpecialtyDefaultImage(spec.id)}
+                        src={(!spec.imageUrl || spec.imageUrl.includes('unsplash.com')) ? MALE_DOCTOR_VECTOR_ICON : spec.imageUrl}
                         alt={lang === 'bn' ? spec.nameBn : spec.nameEn}
-                        className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-3 border-emerald-400 shadow-md ring-4 ring-emerald-50 group-hover:ring-emerald-100 group-hover:scale-105 transition-all duration-300"
+                        className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-3 border-emerald-400 shadow-md ring-4 ring-emerald-50 group-hover:ring-emerald-100 group-hover:scale-105 transition-all duration-300 bg-sky-50"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
-                          target.src = 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=400';
+                          target.src = MALE_DOCTOR_VECTOR_ICON;
                         }}
                       />
                       <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-xs border-2 border-white">

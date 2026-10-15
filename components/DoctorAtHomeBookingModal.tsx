@@ -38,7 +38,8 @@ import {
   getStoredSiteSettings,
   getStoredDoctorAtHomeSpecialties,
   getStoredDoctorAtHomeSchedule,
-  getDoctorSpecialtyDefaultImage 
+  getDoctorSpecialtyDefaultImage,
+  MALE_DOCTOR_VECTOR_ICON
 } from '../services/dataStorage';
 import { printOrDownloadDoctorAtHomeSlip, downloadDoctorAtHomeSlipHtml } from '../services/invoiceService';
 
@@ -854,16 +855,16 @@ export const DoctorAtHomeBookingModal: React.FC<DoctorAtHomeBookingModalProps> =
                           </div>
                         </div>
 
-                        {/* Circular colorful doctor image */}
+                        {/* Circular male doctor vector icon */}
                         <div className="flex justify-center my-1.5">
                           <img
-                            src={spec.imageUrl || getDoctorSpecialtyDefaultImage(spec.id)}
+                            src={(!spec.imageUrl || spec.imageUrl.includes('unsplash.com')) ? MALE_DOCTOR_VECTOR_ICON : spec.imageUrl}
                             alt={spec.nameBn}
-                            className={`w-11 h-11 rounded-full object-cover border-2 shadow-2xs transition-all ${
+                            className={`w-11 h-11 rounded-full object-cover border-2 shadow-2xs transition-all bg-sky-50 ${
                               isSelected ? 'border-emerald-600 ring-2 ring-emerald-300' : 'border-slate-200'
                             }`}
                             onError={(e) => {
-                              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=400';
+                              (e.target as HTMLImageElement).src = MALE_DOCTOR_VECTOR_ICON;
                             }}
                           />
                         </div>
