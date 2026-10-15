@@ -400,6 +400,7 @@ export interface DoctorAtHomeSpecialty {
   descriptionEn?: string;
   badge?: string;
   duration?: string;
+  imageUrl?: string;
   isActive: boolean;
 }
 

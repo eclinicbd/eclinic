@@ -904,6 +904,11 @@ export const getStoredSiteSettings = (lang: Language): SiteSettings => {
         aboutStats: (Array.isArray(parsed.aboutStats) && parsed.aboutStats.length > 0) ? parsed.aboutStats : defaultSettings.aboutStats,
         services: (Array.isArray(parsed.services) && parsed.services.length > 0) ? parsed.services : defaultSettings.services,
         nursingServices: (Array.isArray(parsed.nursingServices) && parsed.nursingServices.length > 0) ? parsed.nursingServices : defaultSettings.nursingServices,
+        doctorAtHomeSpecialties: (Array.isArray(parsed.doctorAtHomeSpecialties) && parsed.doctorAtHomeSpecialties.length > 0) 
+          ? parsed.doctorAtHomeSpecialties.map(s => ({ ...s, imageUrl: s.imageUrl || getDoctorSpecialtyDefaultImage(s.id) }))
+          : (Array.isArray(otherParsed?.doctorAtHomeSpecialties) && otherParsed.doctorAtHomeSpecialties.length > 0 
+              ? otherParsed.doctorAtHomeSpecialties.map(s => ({ ...s, imageUrl: s.imageUrl || getDoctorSpecialtyDefaultImage(s.id) }))
+              : getStoredDoctorAtHomeSpecialties()),
         homeSectionsOrder: (Array.isArray(parsed.homeSectionsOrder) && parsed.homeSectionsOrder.length > 0) ? parsed.homeSectionsOrder : (Array.isArray(otherParsed?.homeSectionsOrder) && otherParsed.homeSectionsOrder.length > 0 ? otherParsed.homeSectionsOrder : defaultSettings.homeSectionsOrder)
       };
     } else if (otherParsed && typeof otherParsed === 'object' && otherParsed.siteName) {
@@ -918,6 +923,9 @@ export const getStoredSiteSettings = (lang: Language): SiteSettings => {
         showHowItWorksSection: otherParsed.showHowItWorksSection !== false,
         showServicesSection: otherParsed.showServicesSection !== false,
         heroImages: (Array.isArray(otherParsed.heroImages) && otherParsed.heroImages.length > 0) ? otherParsed.heroImages : defaultSettings.heroImages,
+        doctorAtHomeSpecialties: (Array.isArray(otherParsed.doctorAtHomeSpecialties) && otherParsed.doctorAtHomeSpecialties.length > 0)
+          ? otherParsed.doctorAtHomeSpecialties.map(s => ({ ...s, imageUrl: s.imageUrl || getDoctorSpecialtyDefaultImage(s.id) }))
+          : getStoredDoctorAtHomeSpecialties(),
         homeSectionsOrder: (Array.isArray(otherParsed.homeSectionsOrder) && otherParsed.homeSectionsOrder.length > 0) ? otherParsed.homeSectionsOrder : defaultSettings.homeSectionsOrder
       };
     }
@@ -931,6 +939,10 @@ export const saveStoredSiteSettings = (lang: Language, settings: SiteSettings): 
   try {
     const key = lang === 'en' ? STORAGE_KEYS.SITE_SETTINGS_EN : STORAGE_KEYS.SITE_SETTINGS_BN;
     localStorage.setItem(key, JSON.stringify(settings));
+
+    if (settings.doctorAtHomeSpecialties && Array.isArray(settings.doctorAtHomeSpecialties)) {
+      saveStoredDoctorAtHomeSpecialties(settings.doctorAtHomeSpecialties);
+    }
 
     // Also sync contact information, logo, hero images, and phone numbers to other language version
     const otherLang = lang === 'en' ? 'bn' : 'en';
@@ -950,6 +962,8 @@ export const saveStoredSiteSettings = (lang: Language, settings: SiteSettings): 
       showPackagesSection: settings.showPackagesSection !== undefined ? settings.showPackagesSection : otherSettings.showPackagesSection,
       showDoctorsSection: settings.showDoctorsSection !== undefined ? settings.showDoctorsSection : otherSettings.showDoctorsSection,
       showNursingSection: settings.showNursingSection !== undefined ? settings.showNursingSection : otherSettings.showNursingSection,
+      showDoctorAtHomeSection: settings.showDoctorAtHomeSection !== undefined ? settings.showDoctorAtHomeSection : otherSettings.showDoctorAtHomeSection,
+      doctorAtHomeSpecialties: settings.doctorAtHomeSpecialties || otherSettings.doctorAtHomeSpecialties,
       showAppDownloadSection: settings.showAppDownloadSection !== undefined ? settings.showAppDownloadSection : otherSettings.showAppDownloadSection,
       showHowItWorksSection: settings.showHowItWorksSection !== undefined ? settings.showHowItWorksSection : otherSettings.showHowItWorksSection,
       showServicesSection: settings.showServicesSection !== undefined ? settings.showServicesSection : otherSettings.showServicesSection,
@@ -1574,6 +1588,21 @@ export const saveEPrescription = (prescription: EPrescription): void => {
   }
 };
 
+export const getDoctorSpecialtyDefaultImage = (idOrCategory?: string): string => {
+  const map: Record<string, string> = {
+    general_physician: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=400',
+    diabetes: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=400',
+    pediatrician: 'https://images.unsplash.com/photo-1594824813576-905ffb700b52?auto=format&fit=crop&q=80&w=400',
+    cardiology: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=400',
+    gynecology: 'https://images.unsplash.com/photo-1651008376811-b90baee60c1f?auto=format&fit=crop&q=80&w=400',
+    orthopedics: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=400',
+    geriatric: 'https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&q=80&w=400',
+    neurology: 'https://images.unsplash.com/photo-1622902046580-2b47f47f5471?auto=format&fit=crop&q=80&w=400',
+    other: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400'
+  };
+  return (idOrCategory && map[idOrCategory]) || 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=400';
+};
+
 /**
  * Doctor at Home (হোমে ডাক্তার সেবা) Management
  */
@@ -1588,6 +1617,7 @@ export const DEFAULT_DOCTOR_AT_HOME_SPECIALTIES: DoctorAtHomeSpecialty[] = [
     descriptionEn: 'Fever, cold, general ailments, weakness, routine health evaluation and prescriptions.',
     badge: 'সর্বাধিক জনপ্রিয়',
     duration: '৩০-৪৫ মিনিট',
+    imageUrl: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=400',
     isActive: true 
   },
   { 
@@ -1600,6 +1630,7 @@ export const DEFAULT_DOCTOR_AT_HOME_SPECIALTIES: DoctorAtHomeSpecialty[] = [
     descriptionEn: 'Diabetes management, blood glucose monitoring, insulin titration and hormone therapy.',
     badge: 'স্পেশালিস্ট',
     duration: '৩০-৪৫ মিনিট',
+    imageUrl: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=400',
     isActive: true 
   },
   { 
@@ -1612,6 +1643,7 @@ export const DEFAULT_DOCTOR_AT_HOME_SPECIALTIES: DoctorAtHomeSpecialty[] = [
     descriptionEn: 'Infant & child health, pediatric fever, asthma, gastro issues and developmental checkup.',
     badge: 'শিশু স্পেশালিস্ট',
     duration: '৩০-৪৫ মিনিট',
+    imageUrl: 'https://images.unsplash.com/photo-1594824813576-905ffb700b52?auto=format&fit=crop&q=80&w=400',
     isActive: true 
   },
   { 
@@ -1624,6 +1656,7 @@ export const DEFAULT_DOCTOR_AT_HOME_SPECIALTIES: DoctorAtHomeSpecialty[] = [
     descriptionEn: 'Hypertension, heart palpitations, ECG review and cardiac medication management.',
     badge: 'সিনিয়র কনসালটেন্ট',
     duration: '৪৫ মিনিট',
+    imageUrl: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=400',
     isActive: true 
   },
   { 
@@ -1636,6 +1669,7 @@ export const DEFAULT_DOCTOR_AT_HOME_SPECIALTIES: DoctorAtHomeSpecialty[] = [
     descriptionEn: 'Antenatal guidance, pregnancy care, women health consultation and prescriptions.',
     badge: 'লেডি কনসালটেন্ট',
     duration: '৪৫ মিনিট',
+    imageUrl: 'https://images.unsplash.com/photo-1651008376811-b90baee60c1f?auto=format&fit=crop&q=80&w=400',
     isActive: true 
   },
   { 
@@ -1648,6 +1682,7 @@ export const DEFAULT_DOCTOR_AT_HOME_SPECIALTIES: DoctorAtHomeSpecialty[] = [
     descriptionEn: 'Bone and joint pain, arthritis, lumbar pain and mobility checkup for elders.',
     badge: 'অর্থোপেডিক',
     duration: '৪৫ মিনিট',
+    imageUrl: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=400',
     isActive: true 
   },
   { 
@@ -1660,6 +1695,7 @@ export const DEFAULT_DOCTOR_AT_HOME_SPECIALTIES: DoctorAtHomeSpecialty[] = [
     descriptionEn: 'Bedridden patients, comprehensive geriatric vitals review and home nursing guidance.',
     badge: 'প্রবীণ কেয়ার',
     duration: '৪৫-৬০ মিনিট',
+    imageUrl: 'https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&q=80&w=400',
     isActive: true 
   },
   { 
@@ -1672,6 +1708,7 @@ export const DEFAULT_DOCTOR_AT_HOME_SPECIALTIES: DoctorAtHomeSpecialty[] = [
     descriptionEn: 'Post-stroke rehab advice, neuropathic pain, migraine and nervous disorder consultation.',
     badge: 'স্নায়ুরোগ',
     duration: '৪৫ মিনিট',
+    imageUrl: 'https://images.unsplash.com/photo-1622902046580-2b47f47f5471?auto=format&fit=crop&q=80&w=400',
     isActive: true 
   },
   { 
@@ -1684,6 +1721,7 @@ export const DEFAULT_DOCTOR_AT_HOME_SPECIALTIES: DoctorAtHomeSpecialty[] = [
     descriptionEn: 'Custom medical specialist home visit as per specific patient symptoms.',
     badge: 'অন কল',
     duration: '৪৫ মিনিট',
+    imageUrl: 'https://images.unsplash.com/photo-1579684385180-1647f26afacf?auto=format&fit=crop&q=80&w=400',
     isActive: true 
   }
 ];
@@ -1708,7 +1746,10 @@ export const getStoredDoctorAtHomeSpecialties = (): DoctorAtHomeSpecialty[] => {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+        return parsed.map(s => ({
+          ...s,
+          imageUrl: s.imageUrl || getDoctorSpecialtyDefaultImage(s.id)
+        }));
       }
     }
   } catch (e) {

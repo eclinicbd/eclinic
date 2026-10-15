@@ -15,8 +15,8 @@ import {
   Zap, 
   Calendar 
 } from 'lucide-react';
-import { Language } from '../types';
-import { getStoredDoctorAtHomeSpecialties } from '../services/dataStorage';
+import { Language, DoctorAtHomeSpecialty } from '../types';
+import { getStoredDoctorAtHomeSpecialties, getDoctorSpecialtyDefaultImage } from '../services/dataStorage';
 
 interface HomeDoctorAtHomeSectionProps {
   lang: Language;
@@ -25,6 +25,7 @@ interface HomeDoctorAtHomeSectionProps {
   title?: string;
   description?: string;
   hotline?: string;
+  specialties?: DoctorAtHomeSpecialty[];
 }
 
 export const HomeDoctorAtHomeSection: React.FC<HomeDoctorAtHomeSectionProps> = ({
@@ -33,13 +34,15 @@ export const HomeDoctorAtHomeSection: React.FC<HomeDoctorAtHomeSectionProps> = (
   badge,
   title,
   description,
-  hotline = '01700-000000'
+  hotline = '01700-000000',
+  specialties
 }) => {
   const activeSpecialties = useMemo(() => {
-    const all = getStoredDoctorAtHomeSpecialties();
-    const active = all.filter(s => s.isActive !== false);
-    return active.length > 0 ? active : all;
-  }, []);
+    const list = (specialties && specialties.length > 0)
+      ? specialties
+      : getStoredDoctorAtHomeSpecialties();
+    return list.filter(s => s.isActive === true || (s.isActive !== false && (s.isActive as any) !== 'false'));
+  }, [specialties]);
 
   const renderIcon = (iconName?: string) => {
     switch (iconName) {
@@ -81,65 +84,6 @@ export const HomeDoctorAtHomeSection: React.FC<HomeDoctorAtHomeSectionProps> = (
           </p>
         </div>
 
-        {/* Feature Highlights Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 sm:gap-5 mb-12">
-          <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold mb-3">
-              <Stethoscope size={22} />
-            </div>
-            <div>
-              <h3 className="font-bold text-slate-900 text-sm mb-1">
-                {lang === 'bn' ? 'অভিজ্ঞ স্পেশালিস্ট' : 'Specialist Doctors'}
-              </h3>
-              <p className="text-xs text-slate-500 leading-normal">
-                {lang === 'bn' ? 'মেডিসিন, ডায়াবেটিস, শিশু ও হৃদরোগের বিশেষজ্ঞ ডাক্তার।' : 'Medicine, Diabetes, Pediatrics & Cardiology specialists.'}
-              </p>
-            </div>
-          </div>
-
-          <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
-            <div className="w-10 h-10 rounded-xl bg-sky-50 text-sky-700 flex items-center justify-center font-bold mb-3">
-              <HeartPulse size={22} />
-            </div>
-            <div>
-              <h3 className="font-bold text-slate-900 text-sm mb-1">
-                {lang === 'bn' ? 'শারীরিক পরীক্ষা ও ভাইটালস' : 'Physical Exam & Vitals'}
-              </h3>
-              <p className="text-xs text-slate-500 leading-normal">
-                {lang === 'bn' ? 'প্রেসার, সুগার, পালস, অক্সিজেন ও সার্বিক ক্লিনিক্যাল চেকআপ।' : 'Blood pressure, glucose, pulse, oxygen & vitals check.'}
-              </p>
-            </div>
-          </div>
-
-          <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
-            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold mb-3">
-              <ShieldCheck size={22} />
-            </div>
-            <div>
-              <h3 className="font-bold text-slate-900 text-sm mb-1">
-                {lang === 'bn' ? 'ডিজিটাল প্রেসক্রিপশন' : 'Digital Prescription'}
-              </h3>
-              <p className="text-xs text-slate-500 leading-normal">
-                {lang === 'bn' ? 'তাৎক্ষণিক অফিশিয়াল প্রেসক্রিপশন ও ফলোআপ গাইডলাইন।' : 'Instant official digital prescription & follow-up care.'}
-              </p>
-            </div>
-          </div>
-
-          <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
-            <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold mb-3">
-              <Clock size={22} />
-            </div>
-            <div>
-              <h3 className="font-bold text-slate-900 text-sm mb-1">
-                {lang === 'bn' ? 'দ্রুত হোম সার্ভিস' : 'Fast Response'}
-              </h3>
-              <p className="text-xs text-slate-500 leading-normal">
-                {lang === 'bn' ? 'ঢাকা শহরের যে কোনো এলাকায় দ্রুততম সময়ে ডাক্তার পৌঁছে যান।' : 'Timely doorstep dispatch across all major Dhaka areas.'}
-              </p>
-            </div>
-          </div>
-        </div>
-
         {/* Doctor Specialties Cards Grid */}
         <div className="mb-12">
           <div className="flex items-center justify-between mb-6">
@@ -170,8 +114,8 @@ export const HomeDoctorAtHomeSection: React.FC<HomeDoctorAtHomeSectionProps> = (
                 className="group bg-white p-5 rounded-2xl border border-slate-200 hover:border-emerald-400 hover:shadow-lg transition-all duration-300 flex flex-col justify-between"
               >
                 <div>
-                  <div className="flex items-center justify-between mb-3.5">
-                    <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-700 group-hover:bg-emerald-600 group-hover:text-white transition-colors flex items-center justify-center font-bold shadow-2xs">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 group-hover:bg-emerald-600 group-hover:text-white transition-colors flex items-center justify-center font-bold shadow-2xs">
                       {renderIcon(spec.icon)}
                     </div>
 
@@ -187,11 +131,29 @@ export const HomeDoctorAtHomeSection: React.FC<HomeDoctorAtHomeSectionProps> = (
                     </div>
                   </div>
 
-                  <h4 className="font-extrabold text-slate-900 text-base mb-1.5 group-hover:text-emerald-700 transition-colors">
+                  {/* Circular Colorful Doctor Image in the Middle */}
+                  <div className="flex justify-center my-3">
+                    <div className="relative group/avatar">
+                      <img
+                        src={spec.imageUrl || getDoctorSpecialtyDefaultImage(spec.id)}
+                        alt={lang === 'bn' ? spec.nameBn : spec.nameEn}
+                        className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-3 border-emerald-400 shadow-md ring-4 ring-emerald-50 group-hover:ring-emerald-100 group-hover:scale-105 transition-all duration-300"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=400';
+                        }}
+                      />
+                      <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-xs border-2 border-white">
+                        <Stethoscope size={12} />
+                      </div>
+                    </div>
+                  </div>
+
+                  <h4 className="font-extrabold text-slate-900 text-base mb-1.5 text-center group-hover:text-emerald-700 transition-colors">
                     {lang === 'bn' ? spec.nameBn : spec.nameEn}
                   </h4>
 
-                  <p className="text-xs text-slate-500 leading-relaxed mb-4 line-clamp-2">
+                  <p className="text-xs text-slate-500 leading-relaxed mb-4 text-center line-clamp-2">
                     {lang === 'bn' 
                       ? (spec.descriptionBn || 'অভিজ্ঞ চিকিৎসকের ফিজিক্যাল হোম ভিজিট ও প্রেসক্রিপশন।') 
                       : (spec.descriptionEn || 'Specialist doctor doorstep consultation and digital prescription.')}

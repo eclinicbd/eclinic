@@ -1199,16 +1199,6 @@ export default function App() {
               </div>
 
               <div className="md:hidden flex items-center gap-2">
-                {/* Mobile: Doctor at Home quick pill */}
-                <button 
-                  onClick={() => handleOpenDoctorAtHomeModal()} 
-                  className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-300 font-extrabold text-[11px] flex items-center gap-1 shadow-2xs cursor-pointer"
-                  title="Doctor at Home"
-                >
-                  <Home size={12} className="text-emerald-700" />
-                  <span>{language === 'bn' ? 'বাসায় ডাক্তার' : 'Doctor at Home'}</span>
-                </button>
-
                 {/* Mobile: Only Login / Profile Option */}
                 {currentPatient ? (
                   <button 
@@ -1635,6 +1625,7 @@ export default function App() {
                       title={siteSettings.doctorAtHomeTitle}
                       description={siteSettings.doctorAtHomeDesc}
                       hotline={siteSettings.doctorAtHomeHotline || siteSettings.contactHotline || siteSettings.contactPhone}
+                      specialties={siteSettings.doctorAtHomeSpecialties}
                     />
                   );
 
@@ -1911,56 +1902,67 @@ export default function App() {
         </div>
       )}
 
-      {/* App Bar for Mobile (Bottom Navigation) - Active on Home, Packages, Tests, and Doctors Views */}
-      {(currentView === 'home' || currentView === 'tests' || currentView === 'packages' || currentView === 'doctors') && (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 z-30 flex justify-around py-2 pb-safe shadow-lg">
+      {/* App Bar for Mobile (Bottom Navigation) - Serial: Home, Test, Home Doctor, Book Test Now */}
+      {currentView !== 'admin' && (
+        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 z-30 grid grid-cols-4 py-2 pb-safe shadow-lg">
+          {/* 1. Home */}
           <button 
+            type="button"
             onClick={navigateToHome} 
-            className={`flex flex-col items-center px-3 py-1 transition-colors ${currentView === 'home' ? 'text-primary font-bold' : 'text-slate-500'}`}
+            className={`flex flex-col items-center justify-center px-1 py-1 transition-colors cursor-pointer ${
+              currentView === 'home' ? 'text-primary font-bold' : 'text-slate-500 hover:text-slate-800'
+            }`}
           >
-            <Home size={18} />
-            <span className="text-[10px] mt-0.5">{t.navHome}</span>
+            <Home size={19} className={currentView === 'home' ? 'text-primary' : 'text-slate-500'} />
+            <span className="text-[10px] mt-1 leading-none">{language === 'bn' ? 'হোম' : 'Home'}</span>
           </button>
-          {siteSettings.showPopularTestsSection !== false && (
-            <button 
-              onClick={() => navigateToTests()} 
-              className={`flex flex-col items-center px-3 py-1 transition-colors ${currentView === 'tests' ? 'text-primary font-bold' : 'text-slate-500'}`}
-            >
-              <FlaskConical size={18} />
-              <span className="text-[10px] mt-0.5">{t.navTests}</span>
-            </button>
-          )}
-          {isDoctorModuleActive && (
-            <button 
-              onClick={navigateToDoctors} 
-              className={`flex flex-col items-center px-3 py-1 transition-colors ${currentView === 'doctors' ? 'text-emerald-600 font-bold' : 'text-slate-500'}`}
-            >
-              <Stethoscope size={18} className={currentView === 'doctors' ? 'text-emerald-600' : ''} />
-              <span className="text-[10px] mt-0.5">{language === 'bn' ? 'ডাক্তার' : 'Doctor'}</span>
-            </button>
-          )}
-          {siteSettings.showPackagesSection !== false && (
-            <button 
-              onClick={navigateToPackages} 
-              className={`flex flex-col items-center px-3 py-1 transition-colors ${currentView === 'packages' ? 'text-primary font-bold' : 'text-slate-500'}`}
-            >
-              <Sparkles size={18} className={currentView === 'packages' ? 'text-amber-500' : ''} />
-              <span className="text-[10px] mt-0.5">{t.navPackages || (language === 'bn' ? 'প্যাকেজ' : 'Packages')}</span>
-            </button>
-          )}
+
+          {/* 2. Test */}
           <button 
-            onClick={openCartModal} 
-            className={`flex flex-col items-center px-3 py-1 ${cart.length > 0 ? 'text-primary font-bold' : 'text-slate-500'} relative`}
+            type="button"
+            onClick={() => navigateToTests()} 
+            className={`flex flex-col items-center justify-center px-1 py-1 transition-colors cursor-pointer ${
+              currentView === 'tests' ? 'text-primary font-bold' : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <FlaskConical size={19} className={currentView === 'tests' ? 'text-primary' : 'text-slate-500'} />
+            <span className="text-[10px] mt-1 leading-none">{language === 'bn' ? 'টেস্ট' : 'Test'}</span>
+          </button>
+
+          {/* 3. Home Doctor */}
+          <button 
+            type="button"
+            onClick={() => handleOpenDoctorAtHomeModal()} 
+            className="flex flex-col items-center justify-center px-1 py-1 transition-colors cursor-pointer text-emerald-700 hover:text-emerald-800 active:scale-95"
+            title={language === 'bn' ? 'বাসায় ডাক্তার সার্ভিস' : 'Doctor at Home Service'}
           >
             <div className="relative">
-              <ShoppingCart size={18} />
+              <Stethoscope size={19} className="text-emerald-600" />
+              <span className="absolute -top-0.5 -right-1 w-2 h-2 rounded-full bg-emerald-500 animate-pulse ring-1 ring-white" />
+            </div>
+            <span className="text-[10px] font-bold mt-1 leading-none text-emerald-700 whitespace-nowrap">
+              {language === 'bn' ? 'হোম ডক্টর' : 'Home Doctor'}
+            </span>
+          </button>
+
+          {/* 4. Book Test Now */}
+          <button 
+            type="button"
+            onClick={handleHeaderBookTestClick} 
+            className="flex flex-col items-center justify-center px-1 py-1 transition-colors cursor-pointer text-slate-700 hover:text-primary active:scale-95 relative"
+            title={language === 'bn' ? 'টেস্ট বুক করুন' : 'Book Test Now'}
+          >
+            <div className="relative">
+              <ShoppingCart size={19} className={cart.length > 0 ? 'text-primary' : 'text-slate-600'} />
               {cart.length > 0 && (
-                <span className="absolute -top-1.5 -right-2 bg-red-500 text-white text-[9px] font-black w-4 h-4 flex items-center justify-center rounded-full border border-white">
+                <span className="absolute -top-1.5 -right-2 bg-rose-500 text-white text-[9px] font-black w-4 h-4 flex items-center justify-center rounded-full border border-white">
                   {cart.length}
                 </span>
               )}
             </div>
-            <span className="text-[10px] font-medium mt-0.5">{t.navBookTestNow || (language === 'bn' ? 'কার্ট/বুক' : 'Cart/Book')}</span>
+            <span className={`text-[10px] mt-1 leading-none text-center whitespace-nowrap ${cart.length > 0 ? 'text-primary font-bold' : 'font-medium text-slate-700'}`}>
+              {language === 'bn' ? 'টেস্ট বুক করুন' : 'Book Test Now'}
+            </span>
           </button>
         </div>
       )}

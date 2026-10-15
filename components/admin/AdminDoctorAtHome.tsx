@@ -949,9 +949,19 @@ export const AdminDoctorAtHome: React.FC<AdminDoctorAtHomeProps> = ({
 
             <div className="space-y-3 text-xs text-slate-800" id="print-area">
               <div className="text-center pb-2 border-b border-dashed border-slate-200">
-                <h4 className="font-black text-base text-slate-900">LabHome BD Healthcare</h4>
-                <p className="text-[11px] text-slate-500">Doctor at Home Service - Visiting Doctor Slip</p>
-                <span className="font-mono font-bold text-xs text-primary mt-1 inline-block">ID: {viewingSlipBooking.id}</span>
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <img 
+                    src="/icon.svg" 
+                    alt="eClinic Bangladesh" 
+                    className="w-7 h-7 object-contain"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/icon.svg';
+                    }}
+                  />
+                  <h4 className="font-black text-base text-slate-900">eClinic Bangladesh</h4>
+                </div>
+                <p className="text-[11px] text-slate-500">{lang === 'bn' ? 'হোম ডক্টর সার্ভিস - ভিজিটিং ডক্টর স্লিপ' : 'Doctor at Home Service - Visiting Doctor Slip'}</p>
+                <span className="font-mono font-bold text-xs text-emerald-700 mt-1 inline-block">ID: {viewingSlipBooking.id}</span>
               </div>
 
               <div className="grid grid-cols-2 gap-2">

@@ -37,7 +37,8 @@ import {
   getStoredCurrentPatient, 
   getStoredSiteSettings,
   getStoredDoctorAtHomeSpecialties,
-  getStoredDoctorAtHomeSchedule 
+  getStoredDoctorAtHomeSchedule,
+  getDoctorSpecialtyDefaultImage 
 } from '../services/dataStorage';
 import { printOrDownloadDoctorAtHomeSlip, downloadDoctorAtHomeSlipHtml } from '../services/invoiceService';
 
@@ -852,7 +853,22 @@ export const DoctorAtHomeBookingModal: React.FC<DoctorAtHomeBookingModalProps> =
                             <span className="font-extrabold text-xs text-emerald-800">৳{spec.fee}</span>
                           </div>
                         </div>
-                        <h4 className="font-bold text-xs text-slate-900 mt-2 leading-tight">
+
+                        {/* Circular colorful doctor image */}
+                        <div className="flex justify-center my-1.5">
+                          <img
+                            src={spec.imageUrl || getDoctorSpecialtyDefaultImage(spec.id)}
+                            alt={spec.nameBn}
+                            className={`w-11 h-11 rounded-full object-cover border-2 shadow-2xs transition-all ${
+                              isSelected ? 'border-emerald-600 ring-2 ring-emerald-300' : 'border-slate-200'
+                            }`}
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=400';
+                            }}
+                          />
+                        </div>
+
+                        <h4 className="font-bold text-xs text-slate-900 mt-1 leading-tight text-center">
                           {isBn ? spec.nameBn : spec.nameEn}
                         </h4>
                         {spec.duration && (

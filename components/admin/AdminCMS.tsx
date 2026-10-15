@@ -67,7 +67,8 @@ import {
   getStoredDoctorAtHomeSchedule, 
   saveStoredDoctorAtHomeSchedule, 
   DEFAULT_DOCTOR_AT_HOME_SPECIALTIES, 
-  DEFAULT_DOCTOR_AT_HOME_SCHEDULE 
+  DEFAULT_DOCTOR_AT_HOME_SCHEDULE,
+  getDoctorSpecialtyDefaultImage 
 } from '../../services/dataStorage';
 import { printOrDownloadInvoice } from '../../services/invoiceService';
 
@@ -551,6 +552,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
       descriptionEn: '',
       badge: lang === 'bn' ? 'স্পেশালিস্ট' : 'Specialist',
       duration: '৩০-৪৫ মিনিট',
+      imageUrl: getDoctorSpecialtyDefaultImage(),
       isActive: true
     });
     setIsSpecialtyModalOpen(true);
@@ -558,7 +560,10 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
 
   const handleOpenEditSpecialty = (spec: DoctorAtHomeSpecialty) => {
     setEditingSpecialty(spec);
-    setSpecialtyFormData({ ...spec });
+    setSpecialtyFormData({ 
+      ...spec,
+      imageUrl: spec.imageUrl || getDoctorSpecialtyDefaultImage(spec.id)
+    });
     setIsSpecialtyModalOpen(true);
   };
 
@@ -573,7 +578,12 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
     if (editingSpecialty) {
       updatedList = doctorSpecialtiesList.map(s =>
         s.id === editingSpecialty.id
-          ? ({ ...s, ...specialtyFormData, id: s.id } as DoctorAtHomeSpecialty)
+          ? ({ 
+              ...s, 
+              ...specialtyFormData, 
+              id: s.id,
+              imageUrl: specialtyFormData.imageUrl?.trim() || s.imageUrl || getDoctorSpecialtyDefaultImage(s.id)
+            } as DoctorAtHomeSpecialty)
           : s
       );
     } else {
@@ -587,6 +597,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
         descriptionEn: specialtyFormData.descriptionEn?.trim() || '',
         badge: specialtyFormData.badge?.trim() || '',
         duration: specialtyFormData.duration?.trim() || '৩০-৪৫ মিনিট',
+        imageUrl: specialtyFormData.imageUrl?.trim() || getDoctorSpecialtyDefaultImage(),
         isActive: specialtyFormData.isActive !== false
       };
       updatedList = [...doctorSpecialtiesList, newSpec];
@@ -4251,6 +4262,27 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                         </div>
                       </div>
 
+                      {/* Circular Colorful Doctor Image in the Middle */}
+                      <div className="flex justify-center my-2.5">
+                        <div className="relative">
+                          <img
+                            src={spec.imageUrl || getDoctorSpecialtyDefaultImage(spec.id)}
+                            alt={spec.nameBn}
+                            className={`w-16 h-16 rounded-full object-cover border-2 shadow-xs transition-all ${
+                              isEnabled 
+                                ? 'border-emerald-400 ring-2 ring-emerald-50' 
+                                : 'border-slate-300 grayscale opacity-75'
+                            }`}
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=400';
+                            }}
+                          />
+                          <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] border border-white">
+                            <Stethoscope size={10} />
+                          </div>
+                        </div>
+                      </div>
+
                       {/* Description */}
                       <p className="text-xs text-slate-500 line-clamp-2 mb-3 leading-relaxed">
                         {spec.descriptionBn || (lang === 'bn' ? 'অভিজ্ঞ চিকিৎসকের ফিজিক্যাল হোম ভিজিট ও প্রেসক্রিপশন।' : 'Physical home visit & digital prescription.')}
@@ -5620,6 +5652,343 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                 </button>
                 <Button type="submit" className="px-5 py-2 text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white cursor-pointer">
                   <Check size={14} className="mr-1 inline" /> {lang === 'bn' ? 'সংরক্ষণ করুন' : 'Save Service'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* DOCTOR AT HOME SPECIALTY ADD / EDIT MODAL                                 */}
+      {/* ========================================================================= */}
+      {isSpecialtyModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-7 shadow-2xl border border-slate-100 my-8">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+                  <Stethoscope size={20} />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-900">
+                    {editingSpecialty 
+                      ? (lang === 'bn' ? 'ডাক্তার স্পেশালিটি কার্ড সম্পাদনা করুন' : 'Edit Doctor Specialty Card')
+                      : (lang === 'bn' ? 'নতুন ডাক্তার স্পেশালিটি যোগ করুন' : 'Add New Doctor Specialty Card')}
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    {lang === 'bn' ? 'স্পেশালিটির নাম, ছবি, ফি, ব্যাজ ও বিবরণ পরিচালনা করুন' : 'Manage specialty title, doctor photo, fee, badge and descriptions'}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsSpecialtyModalOpen(false)}
+                className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveSpecialty} className="space-y-4">
+              {/* Doctor Colorful Photo Preview & URL input */}
+              <div className="p-4 bg-gradient-to-br from-emerald-50/70 to-teal-50/40 rounded-2xl border border-emerald-200/80">
+                <label className="block text-xs font-bold text-slate-800 mb-2">
+                  {lang === 'bn' ? 'ডাক্তারের রঙিন ছবি (Doctor Colorful Photo)' : 'Doctor Colorful Photo'}
+                </label>
+                <div className="flex flex-col sm:flex-row items-center gap-4">
+                  <div className="relative shrink-0">
+                    <img
+                      src={specialtyFormData.imageUrl || getDoctorSpecialtyDefaultImage(editingSpecialty?.id)}
+                      alt="Doctor Preview"
+                      className="w-20 h-20 rounded-full object-cover border-3 border-emerald-400 shadow-md ring-4 ring-emerald-100"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=400';
+                      }}
+                    />
+                    <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs border border-white">
+                      <Stethoscope size={12} />
+                    </div>
+                  </div>
+
+                  <div className="flex-1 w-full space-y-2">
+                    <input
+                      type="url"
+                      value={specialtyFormData.imageUrl || ''}
+                      onChange={e => setSpecialtyFormData({ ...specialtyFormData, imageUrl: e.target.value })}
+                      placeholder="https://images.unsplash.com/photo-... (Doctor Image URL)"
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-mono focus:ring-2 focus:ring-emerald-400 outline-none bg-white"
+                    />
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] text-slate-500 font-semibold">{lang === 'bn' ? 'কুইক প্রিসেট ছবি:' : 'Quick Presets:'}</span>
+                      {[
+                        { label: 'General Medicine', url: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=400' },
+                        { label: 'Female Doctor', url: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=400' },
+                        { label: 'Pediatric / Child', url: 'https://images.unsplash.com/photo-1594824813576-905ffb700b52?auto=format&fit=crop&q=80&w=400' },
+                        { label: 'Cardiology / Senior', url: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=400' },
+                        { label: 'Surgeon / Specialist', url: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=400' }
+                      ].map((preset, pIdx) => (
+                        <button
+                          key={pIdx}
+                          type="button"
+                          onClick={() => setSpecialtyFormData({ ...specialtyFormData, imageUrl: preset.url })}
+                          className="px-2 py-0.5 rounded-md bg-white hover:bg-emerald-100 text-[10px] font-bold text-slate-700 border border-slate-200 cursor-pointer"
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Names */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    {lang === 'bn' ? 'স্পেশালিটির বাংলা নাম *' : 'Specialty Name (Bengali) *'}
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={specialtyFormData.nameBn || ''}
+                    onChange={e => setSpecialtyFormData({ ...specialtyFormData, nameBn: e.target.value })}
+                    placeholder="e.g. জেনারেল ফিজিশিয়ান (সাধারণ ও মেডিসিন চিকিৎসক)"
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-emerald-400 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    {lang === 'bn' ? 'স্পেশালিটির ইংরেজি নাম' : 'Specialty Name (English)'}
+                  </label>
+                  <input
+                    type="text"
+                    value={specialtyFormData.nameEn || ''}
+                    onChange={e => setSpecialtyFormData({ ...specialtyFormData, nameEn: e.target.value })}
+                    placeholder="e.g. General Physician / Medicine Doctor"
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-400 outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Fee, Duration & Badge */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    {lang === 'bn' ? 'ভিজিট ফি (টাকায়) *' : 'Visiting Fee (BDT) *'}
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    required
+                    value={specialtyFormData.fee || 0}
+                    onChange={e => setSpecialtyFormData({ ...specialtyFormData, fee: Number(e.target.value) })}
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-bold focus:ring-2 focus:ring-emerald-400 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    {lang === 'bn' ? 'ভিজিটের সময়কাল' : 'Visit Duration'}
+                  </label>
+                  <input
+                    type="text"
+                    value={specialtyFormData.duration || ''}
+                    onChange={e => setSpecialtyFormData({ ...specialtyFormData, duration: e.target.value })}
+                    placeholder="e.g. ৩০-৪৫ মিনিট"
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-400 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    {lang === 'bn' ? 'ব্যাজ (Badge)' : 'Badge Label'}
+                  </label>
+                  <input
+                    type="text"
+                    value={specialtyFormData.badge || ''}
+                    onChange={e => setSpecialtyFormData({ ...specialtyFormData, badge: e.target.value })}
+                    placeholder="e.g. জনপ্রিয় / স্পেশালিস্ট"
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-400 outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Icon Selector */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  {lang === 'bn' ? 'আইকন নির্বাচন করুন' : 'Select Icon'}
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { id: 'Stethoscope', icon: Stethoscope, label: 'Stethoscope' },
+                    { id: 'HeartPulse', icon: HeartPulse, label: 'HeartPulse' },
+                    { id: 'Activity', icon: Activity, label: 'Activity' },
+                    { id: 'User', icon: UserCheck, label: 'Doctor' },
+                    { id: 'ShieldCheck', icon: ShieldCheck, label: 'Shield' },
+                    { id: 'Clock', icon: Clock, label: 'Clock' },
+                    { id: 'Zap', icon: Zap, label: 'Zap' },
+                    { id: 'Calendar', icon: Calendar, label: 'Calendar' }
+                  ].map(item => {
+                    const isSelected = (specialtyFormData.icon || 'Stethoscope') === item.id;
+                    const ItemIcon = item.icon;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setSpecialtyFormData({ ...specialtyFormData, icon: item.id })}
+                        className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        <ItemIcon size={14} />
+                        <span>{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Descriptions */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    {lang === 'bn' ? 'বিবরণ (বাংলা)' : 'Description (Bengali)'}
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={specialtyFormData.descriptionBn || ''}
+                    onChange={e => setSpecialtyFormData({ ...specialtyFormData, descriptionBn: e.target.value })}
+                    placeholder="অভিজ্ঞ চিকিৎসকের ফিজিক্যাল হোম ভিজিট ও প্রেসক্রিপশন।"
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-400 outline-none resize-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    {lang === 'bn' ? 'বিবরণ (ইংরেজি)' : 'Description (English)'}
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={specialtyFormData.descriptionEn || ''}
+                    onChange={e => setSpecialtyFormData({ ...specialtyFormData, descriptionEn: e.target.value })}
+                    placeholder="Doorstep doctor consultation, checkup and digital prescription."
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-400 outline-none resize-none"
+                  />
+                </div>
+              </div>
+
+              {/* Active Toggle */}
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
+                <div>
+                  <span className="font-bold text-xs text-slate-800 block">
+                    {lang === 'bn' ? 'স্পেশালিটি সক্রিয় ও হোমপেজে দৃশ্যমান রাখুন' : 'Keep Specialty Active & Visible'}
+                  </span>
+                  <span className="text-[11px] text-slate-500">
+                    {lang === 'bn' ? 'আনচেক (ডিজেবল) করলে রোগীরা হোম পেজে এই কার্ডটি দেখতে পাবে না।' : 'Uncheck (disable) to hide this card from the homepage.'}
+                  </span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={specialtyFormData.isActive !== false}
+                  onChange={e => setSpecialtyFormData({ ...specialtyFormData, isActive: e.target.checked })}
+                  className="w-4 h-4 text-emerald-600 rounded accent-emerald-600 cursor-pointer"
+                />
+              </div>
+
+              {/* Modal Actions */}
+              <div className="pt-4 border-t border-slate-100 flex justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setIsSpecialtyModalOpen(false)}
+                  className="px-4 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <Button type="submit" className="px-5 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer">
+                  <Check size={14} className="mr-1 inline" /> {lang === 'bn' ? 'সংরক্ষণ করুন' : 'Save Specialty'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TIME SLOT ADD MODAL                                                       */}
+      {/* ========================================================================= */}
+      {isAddSlotModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+              <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                <Clock size={18} className="text-emerald-600" />
+                <span>{lang === 'bn' ? 'নতুন টাইম স্লট যোগ করুন' : 'Add New Time Slot'}</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsAddSlotModalOpen(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveSlot} className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  {lang === 'bn' ? 'স্লটের সময় (বাংলা) *' : 'Slot Time (Bengali) *'}
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={slotFormData.timeBn}
+                  onChange={e => setSlotFormData({ ...slotFormData, timeBn: e.target.value })}
+                  placeholder="e.g. সকাল ৯:০০ - ১২:০০ (সকাল স্লট)"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-emerald-400 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  {lang === 'bn' ? 'স্লটের সময় (ইংরেজি)' : 'Slot Time (English)'}
+                </label>
+                <input
+                  type="text"
+                  value={slotFormData.timeEn}
+                  onChange={e => setSlotFormData({ ...slotFormData, timeEn: e.target.value })}
+                  placeholder="e.g. Morning (09:00 AM - 12:00 PM)"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-400 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  {lang === 'bn' ? 'স্লটের সংক্ষিপ্ত নাম' : 'Slot Short Label'}
+                </label>
+                <input
+                  type="text"
+                  value={slotFormData.label}
+                  onChange={e => setSlotFormData({ ...slotFormData, label: e.target.value })}
+                  placeholder="e.g. Morning Slot"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-400 outline-none"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAddSlotModalOpen(false)}
+                  className="px-4 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <Button type="submit" className="px-5 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer">
+                  <Check size={14} className="mr-1 inline" /> {lang === 'bn' ? 'যোগ করুন' : 'Add Slot'}
                 </Button>
               </div>
             </form>
