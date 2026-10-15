@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Language, BookingHistoryItem, ReportItem, PatientUser, DoctorAppointment, EPrescription, DoctorAtHomeBooking } from '../types';
 import { TRANSLATIONS } from '../translations';
 import { 
@@ -42,7 +42,7 @@ import { ProfilePictureModal, PRESET_AVATARS } from './ProfilePictureModal';
 import { InvoiceModal } from './InvoiceModal';
 import { printOrDownloadInvoice, printOrDownloadDoctorAtHomeSlip, downloadDoctorAtHomeSlipHtml } from '../services/invoiceService';
 import { formatOrderId } from './BookingModal';
-import { getStoredDoctorAppointments, getStoredDoctorAtHomeBookings } from '../services/dataStorage';
+import { getStoredDoctorAppointments, getStoredDoctorAtHomeBookings, getStoredSiteSettings } from '../services/dataStorage';
 
 interface UserDashboardProps {
   lang: Language;
@@ -50,7 +50,9 @@ interface UserDashboardProps {
   currentPatient: PatientUser;
   onUpdateProfile: (updates: Partial<PatientUser>) => void;
   bookings: BookingHistoryItem[];
+  doctorAtHomeBookings?: DoctorAtHomeBooking[];
   onBookNewTest?: () => void;
+  onBookDoctorAtHome?: () => void;
   onOpenVideoRoom?: (appointment: DoctorAppointment) => void;
   onOpenPrescription?: (prescription: EPrescription) => void;
 }
@@ -63,22 +65,38 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   currentPatient,
   onUpdateProfile,
   bookings,
+  doctorAtHomeBookings,
   onBookNewTest,
+  onBookDoctorAtHome,
   onOpenVideoRoom,
   onOpenPrescription
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'bookings' | 'consultations' | 'reports' | 'profile'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'bookings' | 'consultations' | 'homeDoctor' | 'reports' | 'profile'>('overview');
   const [isPictureModalOpen, setIsPictureModalOpen] = useState(false);
+  const [selectedHomeDoctorSlip, setSelectedHomeDoctorSlip] = useState<DoctorAtHomeBooking | null>(null);
+  const [homeDoctorStatusFilter, setHomeDoctorStatusFilter] = useState<'all' | 'pending' | 'confirmed' | 'completed' | 'cancelled'>('all');
+  const [homeDoctorSearch, setHomeDoctorSearch] = useState('');
+
   const [doctorAppointments, setDoctorAppointments] = useState<DoctorAppointment[]>(() => {
     const all = getStoredDoctorAppointments();
     if (!currentPatient.phone) return all;
     return all.filter(a => a.patientPhone === currentPatient.phone || !a.patientPhone);
   });
   const [doctorAtHomeList, setDoctorAtHomeList] = useState<DoctorAtHomeBooking[]>(() => {
-    const all = getStoredDoctorAtHomeBookings();
+    const all = doctorAtHomeBookings || getStoredDoctorAtHomeBookings();
     if (!currentPatient.phone) return all;
     return all.filter(b => b.patientPhone === currentPatient.phone || !b.patientPhone);
   });
+
+  useEffect(() => {
+    const all = doctorAtHomeBookings || getStoredDoctorAtHomeBookings();
+    if (!currentPatient.phone) {
+      setDoctorAtHomeList(all);
+    } else {
+      setDoctorAtHomeList(all.filter(b => b.patientPhone === currentPatient.phone || !b.patientPhone));
+    }
+  }, [doctorAtHomeBookings, currentPatient.phone]);
+
   const [consultFilter, setConsultFilter] = useState<'all' | 'video' | 'doctorAtHome'>('all');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const t = TRANSLATIONS[lang];
@@ -101,6 +119,11 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   const [selectedInvoiceBooking, setSelectedInvoiceBooking] = useState<BookingHistoryItem | null>(null);
   const [mobileProfileTab, setMobileProfileTab] = useState<'all' | 'personal' | 'contact' | 'security' | 'card'>('all');
   const [copiedPatientId, setCopiedPatientId] = useState(false);
+  const siteSettings = useMemo(() => getStoredSiteSettings(lang), [lang]);
+  const invoiceLogo = siteSettings.invoiceLogoUrl || siteSettings.logoUrl || '/icon.svg';
+  const orgName = (siteSettings.invoiceOrgName && !siteSettings.invoiceOrgName.includes('LabHome')) 
+    ? siteSettings.invoiceOrgName 
+    : 'eClinic Bangladesh';
 
   const patientDisplayId = currentPatient.id?.startsWith('PAT-') 
     ? currentPatient.id 
@@ -388,6 +411,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               { id: 'overview' as const, icon: LayoutDashboard, label: lang === 'bn' ? 'ওভারভিউ' : 'Overview' },
               { id: 'bookings' as const, icon: CalendarDays, label: lang === 'bn' ? 'বুকিং' : 'Bookings', count: userBookings.length },
               { id: 'consultations' as const, icon: Stethoscope, label: lang === 'bn' ? 'ডাক্তার' : 'Doctors', count: doctorAppointments.length },
+              { id: 'homeDoctor' as const, icon: Home, label: lang === 'bn' ? 'হোম ডক্টর' : 'Home Doctor', count: doctorAtHomeList.length },
               { id: 'reports' as const, icon: FileText, label: lang === 'bn' ? 'রিপোর্টস' : 'Reports', count: userReports.length },
               { id: 'profile' as const, icon: User, label: lang === 'bn' ? 'প্রোফাইল' : 'Profile' }
             ].map(tab => {
@@ -475,10 +499,21 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
             <SidebarItem id="overview" icon={LayoutDashboard} label={t.dashOverview} />
             <SidebarItem id="bookings" icon={CalendarDays} label={t.dashBookings} count={userBookings.length} />
             <SidebarItem id="consultations" icon={Stethoscope} label={lang === 'bn' ? 'ডাক্তার ও ই-প্রেসক্রিপশন' : 'Doctor & Prescriptions'} count={doctorAppointments.length} />
+            <SidebarItem id="homeDoctor" icon={Home} label={lang === 'bn' ? 'হোম ডক্টর' : 'Home Doctor'} count={doctorAtHomeList.length} />
             <SidebarItem id="reports" icon={FileText} label={t.dashReports} count={userReports.length} />
             <SidebarItem id="profile" icon={User} label={t.dashProfile} />
             
             <div className="pt-4 mt-4 border-t border-slate-100 space-y-2">
+              {onBookDoctorAtHome && (
+                <button
+                  onClick={onBookDoctorAtHome}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all font-bold text-xs cursor-pointer border border-emerald-200"
+                >
+                  <Home size={15} />
+                  <span>{lang === 'bn' ? 'হোম ডক্টর বুক করুন' : 'Book Home Doctor'}</span>
+                </button>
+              )}
+
               {onBookNewTest && (
                 <button
                   onClick={onBookNewTest}
@@ -557,6 +592,49 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                     <p className="text-slate-500 text-[10px] sm:text-xs font-semibold truncate">{lang === 'bn' ? 'রিপোর্ট রেডি' : 'Reports Ready'}</p>
                     <h4 className="text-lg sm:text-2xl font-bold text-slate-800 leading-tight">{userReports.length}</h4>
                   </div>
+                </div>
+              </div>
+
+              {/* Doctor at Home Quick Overview Banner */}
+              <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white p-5 rounded-3xl shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 rounded-2xl bg-white/15 backdrop-blur-xs flex items-center justify-center shrink-0 border border-white/20 shadow-xs">
+                    <Home size={24} className="text-white" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-200">
+                        {lang === 'bn' ? 'হোম ডক্টর সার্ভিস' : 'Home Doctor Service'}
+                      </span>
+                      <span className="text-[10px] font-black bg-white/20 px-2 py-0.5 rounded-full text-white border border-white/20">
+                        {doctorAtHomeList.length} {lang === 'bn' ? 'টি বুকিং' : 'Bookings'}
+                      </span>
+                    </div>
+                    <h4 className="font-bold text-sm sm:text-base mt-0.5">
+                      {lang === 'bn' ? 'বাসায় চিকিৎসক ভিজিটের তথ্য ও মানি স্লিপ' : 'Doctor at Home Visits & Download Slips'}
+                    </h4>
+                    <p className="text-xs text-emerald-100 mt-0.5">
+                      {lang === 'bn' ? 'ডাক্তারের ভিজিট ট্র্যাকিং ও অফিশিয়াল স্লিপ ডাউনলোড করতে ট্যাবটি দেখুন।' : 'View doctor visits status and download official slips.'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('homeDoctor')}
+                    className="px-4 py-2 rounded-xl bg-white text-emerald-800 hover:bg-emerald-50 transition-all font-bold text-xs shadow-sm cursor-pointer"
+                  >
+                    {lang === 'bn' ? 'হোম ডক্টর বুকিং দেখুন' : 'View Home Doctor'}
+                  </button>
+                  {onBookDoctorAtHome && (
+                    <button
+                      type="button"
+                      onClick={onBookDoctorAtHome}
+                      className="px-3.5 py-2 rounded-xl bg-emerald-800/80 hover:bg-emerald-800 text-white transition-all font-bold text-xs border border-white/30 cursor-pointer"
+                    >
+                      {lang === 'bn' ? 'নতুন বুক করুন' : 'Book Now'}
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -991,6 +1069,417 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                   )}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* HOME DOCTOR TAB (Dedicated Doctor at Home bookings & slips management) */}
+          {activeTab === 'homeDoctor' && (
+            <div className="space-y-5 animate-in fade-in duration-300">
+              {/* Header Banner */}
+              <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white p-6 rounded-3xl shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-white text-[11px] font-black uppercase tracking-wider border border-white/20">
+                      {lang === 'bn' ? 'হোম ডক্টর সার্ভিস' : 'Doctor at Home Service'}
+                    </span>
+                    <span className="text-emerald-100 text-xs font-semibold">
+                      {doctorAtHomeList.length} {lang === 'bn' ? 'টি বুকিং রেকর্ড' : 'Booking Records'}
+                    </span>
+                  </div>
+                  <h3 className="font-extrabold text-xl sm:text-2xl text-white">
+                    {lang === 'bn' ? 'হোম ডক্টর বুকিং হিস্ট্রি ও স্লিপ' : 'Doctor at Home Bookings & Slips'}
+                  </h3>
+                  <p className="text-xs text-emerald-100 mt-1 max-w-xl">
+                    {lang === 'bn' 
+                      ? 'আপনার বাসায় চিকিৎসক ভিজিটের বুকিং তথ্য, বর্তমান অগ্রগতি এবং যেকোনো বুকিংয়ের মানি স্লিপ সরাসরি ডাউনলোড ও প্রিন্ট করুন।' 
+                      : 'Manage your home visit doctor appointments, check assignment status and download/print official service slips.'}
+                  </p>
+                </div>
+
+                {onBookDoctorAtHome && (
+                  <button
+                    type="button"
+                    onClick={onBookDoctorAtHome}
+                    className="px-5 py-3 rounded-2xl bg-white hover:bg-emerald-50 text-emerald-800 font-bold text-xs flex items-center justify-center gap-2 shadow-md hover:scale-[1.02] transition-all cursor-pointer shrink-0"
+                  >
+                    <PlusCircle size={17} className="text-emerald-600" />
+                    <span>{lang === 'bn' ? 'নতুন হোম ডক্টর বুক করুন' : 'Book Home Doctor'}</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Stats Cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                    <Home size={20} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold text-slate-500 uppercase">{lang === 'bn' ? 'মোট বুকিং' : 'Total Visits'}</p>
+                    <h4 className="text-lg font-bold text-slate-800">{doctorAtHomeList.length}</h4>
+                  </div>
+                </div>
+
+                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                    <Clock size={20} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold text-slate-500 uppercase">{lang === 'bn' ? 'অপেক্ষমাণ' : 'Pending'}</p>
+                    <h4 className="text-lg font-bold text-amber-700">
+                      {doctorAtHomeList.filter(b => b.status === 'pending').length}
+                    </h4>
+                  </div>
+                </div>
+
+                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                    <CheckCircle size={20} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold text-slate-500 uppercase">{lang === 'bn' ? 'নিশ্চিতকৃত' : 'Confirmed'}</p>
+                    <h4 className="text-lg font-bold text-blue-700">
+                      {doctorAtHomeList.filter(b => b.status === 'confirmed').length}
+                    </h4>
+                  </div>
+                </div>
+
+                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
+                    <ShieldCheck size={20} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold text-slate-500 uppercase">{lang === 'bn' ? 'সম্পন্ন' : 'Completed'}</p>
+                    <h4 className="text-lg font-bold text-teal-700">
+                      {doctorAtHomeList.filter(b => b.status === 'completed').length}
+                    </h4>
+                  </div>
+                </div>
+              </div>
+
+              {/* Filters & Search Row */}
+              <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
+                {/* Search */}
+                <div className="relative flex-1 max-w-md">
+                  <input
+                    type="text"
+                    value={homeDoctorSearch}
+                    onChange={e => setHomeDoctorSearch(e.target.value)}
+                    placeholder={lang === 'bn' ? 'রোগীর নাম, মোবাইল, এলাকা বা বুকিং আইডি...' : 'Search by name, phone, area or booking ID...'}
+                    className="w-full pl-9 pr-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white"
+                  />
+                  <FileText size={15} className="absolute left-3 top-2.5 text-slate-400" />
+                </div>
+
+                {/* Status Segmented Buttons */}
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                  {[
+                    { id: 'all' as const, label: lang === 'bn' ? 'সকল' : 'All' },
+                    { id: 'pending' as const, label: lang === 'bn' ? 'অপেক্ষমাণ' : 'Pending' },
+                    { id: 'confirmed' as const, label: lang === 'bn' ? 'নিশ্চিতকৃত' : 'Confirmed' },
+                    { id: 'completed' as const, label: lang === 'bn' ? 'সম্পন্ন' : 'Completed' }
+                  ].map(flt => (
+                    <button
+                      key={flt.id}
+                      type="button"
+                      onClick={() => setHomeDoctorStatusFilter(flt.id)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                        homeDoctorStatusFilter === flt.id
+                          ? 'bg-emerald-600 text-white shadow-xs'
+                          : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200'
+                      }`}
+                    >
+                      {flt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Booking Cards List */}
+              {(() => {
+                const filteredList = doctorAtHomeList.filter(item => {
+                  const matchesStatus = homeDoctorStatusFilter === 'all' || item.status === homeDoctorStatusFilter;
+                  const q = homeDoctorSearch.trim().toLowerCase();
+                  const matchesSearch = !q || (
+                    item.id.toLowerCase().includes(q) ||
+                    item.patientName.toLowerCase().includes(q) ||
+                    item.patientPhone.includes(q) ||
+                    item.doctorTypeLabel.toLowerCase().includes(q) ||
+                    (item.area && item.area.toLowerCase().includes(q)) ||
+                    item.address.toLowerCase().includes(q)
+                  );
+                  return matchesStatus && matchesSearch;
+                });
+
+                if (filteredList.length === 0) {
+                  return (
+                    <div className="bg-white rounded-3xl p-10 text-center border border-slate-100 shadow-sm space-y-4">
+                      <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto border-2 border-emerald-100">
+                        <Home size={32} />
+                      </div>
+                      <div className="max-w-md mx-auto space-y-1">
+                        <h4 className="font-bold text-slate-800 text-base">
+                          {homeDoctorSearch || homeDoctorStatusFilter !== 'all'
+                            ? (lang === 'bn' ? 'কোনো ফলাফল পাওয়া যায়নি' : 'No matching bookings found')
+                            : (lang === 'bn' ? 'এখনো কোনো হোম ডক্টর বুকিং করা হয়নি' : 'No Doctor at Home bookings yet')}
+                        </h4>
+                        <p className="text-xs text-slate-500 leading-relaxed">
+                          {lang === 'bn'
+                            ? 'আমাদের অভিজ্ঞ এমবিবিএস ও স্পেশালিস্ট ডাক্তার আপনার বাসায় গিয়ে প্রয়োজনীয় স্বাস্থ্য পরীক্ষা ও সঠিক প্রেসক্রিপশন প্রদান করবেন।'
+                            : 'Experienced MBBS & specialist doctors visit your home for diagnosis, vitals checkup & verified prescriptions.'}
+                        </p>
+                      </div>
+
+                      {onBookDoctorAtHome && (
+                        <button
+                          type="button"
+                          onClick={onBookDoctorAtHome}
+                          className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
+                        >
+                          <PlusCircle size={15} />
+                          <span>{lang === 'bn' ? 'হোম ডক্টর বুক করুন' : 'Book Home Doctor Now'}</span>
+                        </button>
+                      )}
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-4">
+                    {filteredList.map(dah => {
+                      const isPending = dah.status === 'pending';
+                      const isConfirmed = dah.status === 'confirmed';
+                      const isCompleted = dah.status === 'completed';
+
+                      return (
+                        <div 
+                          key={dah.id} 
+                          className="bg-white rounded-3xl p-5 sm:p-6 border border-emerald-100/80 shadow-sm hover:shadow-md transition-all space-y-4"
+                        >
+                          {/* Card Top: ID, Created, Status Badges */}
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-slate-100">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-mono font-black text-xs text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                                {dah.id}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleCopyOrderId(dah.id)}
+                                className="text-[11px] font-bold text-slate-500 hover:text-emerald-700 bg-slate-50 hover:bg-slate-100 px-2 py-0.5 rounded border border-slate-200 flex items-center gap-1 cursor-pointer"
+                                title="Copy Booking ID"
+                              >
+                                {copiedOrderId === dah.id ? <Check size={11} className="text-emerald-600" /> : <Copy size={11} />}
+                                <span>{copiedOrderId === dah.id ? (lang === 'bn' ? 'কপি হয়েছে' : 'Copied') : (lang === 'bn' ? 'কপি আইডি' : 'Copy ID')}</span>
+                              </button>
+                              <span className="text-[11px] text-slate-400 font-medium">
+                                {lang === 'bn' ? 'বুকিং সময়:' : 'Booked on:'} {new Date(dah.createdAt).toLocaleDateString(lang === 'bn' ? 'bn-BD' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {/* Status Badge */}
+                              <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
+                                isPending 
+                                  ? 'bg-amber-50 text-amber-800 border-amber-200' 
+                                  : isConfirmed 
+                                  ? 'bg-blue-50 text-blue-800 border-blue-200' 
+                                  : isCompleted 
+                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
+                                  : 'bg-rose-50 text-rose-800 border-rose-200'
+                              }`}>
+                                {isPending ? (lang === 'bn' ? '● অপেক্ষমাণ (যাচাই চলছে)' : '● Pending Verification') :
+                                 isConfirmed ? (lang === 'bn' ? '✓ নিশ্চিতকৃত (ডাক্তার নির্ধারিত)' : '✓ Confirmed') :
+                                 isCompleted ? (lang === 'bn' ? '✓ ভিজিট সম্পন্ন' : '✓ Completed') :
+                                 (lang === 'bn' ? '✕ বাতিলকৃত' : '✕ Cancelled')}
+                              </span>
+
+                              {/* Payment Badge */}
+                              <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-md ${
+                                dah.paymentStatus === 'paid'
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : dah.paymentStatus === 'pending_verification'
+                                  ? 'bg-amber-100 text-amber-800'
+                                  : 'bg-slate-100 text-slate-700'
+                              }`}>
+                                {dah.paymentMethod.toUpperCase()} &bull; {
+                                  dah.paymentStatus === 'paid' ? (lang === 'bn' ? 'পরিশোধিত' : 'Paid') :
+                                  dah.paymentStatus === 'pending_verification' ? (lang === 'bn' ? 'যাচাইাধীন' : 'Verifying') :
+                                  (lang === 'bn' ? 'অপরিশোধিত / ক্যাশ' : 'Unpaid/Cash')
+                                }
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Middle Section: Details Grid */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Left: Patient & Address */}
+                            <div className="space-y-2">
+                              <div>
+                                <h4 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                                  <Stethoscope size={18} className="text-emerald-600 shrink-0" />
+                                  <span>{dah.doctorTypeLabel}</span>
+                                </h4>
+                                <p className="text-xs font-semibold text-slate-600 mt-1 flex items-center gap-1.5">
+                                  <User size={13} className="text-primary shrink-0" />
+                                  <span>{lang === 'bn' ? 'রোগী:' : 'Patient:'} {dah.patientName}</span>
+                                  {dah.patientAge && <span>({dah.patientAge} {lang === 'bn' ? 'বছর' : 'yrs'})</span>}
+                                  {dah.patientGender && <span>&bull; {dah.patientGender === 'male' ? (lang === 'bn' ? 'পুরুষ' : 'Male') : (lang === 'bn' ? 'মহিলা' : 'Female')}</span>}
+                                </p>
+                                <p className="text-xs font-mono text-slate-600 mt-0.5 flex items-center gap-1.5">
+                                  <Phone size={13} className="text-emerald-600 shrink-0" />
+                                  <span>{dah.patientPhone}</span>
+                                  {dah.altPhone && <span className="text-slate-400 font-sans">({lang === 'bn' ? 'বিকল্প:' : 'Alt:'} {dah.altPhone})</span>}
+                                </p>
+                              </div>
+
+                              {/* Address */}
+                              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-xs">
+                                <div className="flex items-start gap-1.5">
+                                  <MapPin size={14} className="text-rose-500 shrink-0 mt-0.5" />
+                                  <div>
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <span className="font-bold text-slate-800">{lang === 'bn' ? 'ভিজিট ঠিকানা:' : 'Visit Address:'}</span>
+                                      {dah.area && (
+                                        <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                                          {dah.area}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-slate-600 mt-0.5 leading-relaxed">{dah.address}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Right: Schedule, Fee & Assigned Doctor */}
+                            <div className="space-y-2">
+                              {/* Date & Time Slot */}
+                              <div className="p-3 rounded-2xl bg-emerald-50/70 border border-emerald-100 flex items-center justify-between">
+                                <div>
+                                  <span className="text-[10px] font-bold text-emerald-800 uppercase block">
+                                    {lang === 'bn' ? 'নির্ধারিত ভিজিট তারিখ ও সময়' : 'Scheduled Visit Date & Slot'}
+                                  </span>
+                                  <div className="text-sm font-black text-slate-900 mt-0.5 flex items-center gap-2 flex-wrap">
+                                    <span className="flex items-center gap-1 text-emerald-700">
+                                      <CalendarDays size={14} />
+                                      <span>{dah.date}</span>
+                                    </span>
+                                    <span className="text-slate-300">&bull;</span>
+                                    <span className="flex items-center gap-1 text-slate-700 text-xs">
+                                      <Clock size={13} className="text-amber-600" />
+                                      <span>{dah.timeSlot}</span>
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <span className="text-[10px] font-bold text-slate-500 block uppercase">
+                                    {lang === 'bn' ? 'ভিজিট ফি' : 'Visiting Fee'}
+                                  </span>
+                                  <span className="text-base font-black text-emerald-800">
+                                    ৳{dah.consultationFee}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Symptoms */}
+                              {dah.symptoms && (
+                                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-xs">
+                                  <span className="font-bold text-slate-700 block mb-0.5">
+                                    {lang === 'bn' ? 'লক্ষণ বা সমস্যা:' : 'Symptoms / Issues:'}
+                                  </span>
+                                  <p className="text-slate-600 line-clamp-2 leading-relaxed">{dah.symptoms}</p>
+                                </div>
+                              )}
+
+                              {/* Assigned Doctor Box */}
+                              {dah.assignedDoctorName ? (
+                                <div className="p-2.5 rounded-xl bg-blue-50/70 border border-blue-100 text-xs flex items-center justify-between">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <Stethoscope size={16} className="text-blue-600 shrink-0" />
+                                    <div className="min-w-0">
+                                      <span className="text-[10px] font-bold text-blue-800 block uppercase">
+                                        {lang === 'bn' ? 'নিয়োজিত চিকিৎসক' : 'Assigned Doctor'}
+                                      </span>
+                                      <p className="font-bold text-slate-800 truncate">ডা. {dah.assignedDoctorName}</p>
+                                    </div>
+                                  </div>
+                                  {dah.assignedDoctorPhone && (
+                                    <a
+                                      href={`tel:${dah.assignedDoctorPhone}`}
+                                      className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] flex items-center gap-1 shrink-0 shadow-xs"
+                                    >
+                                      <Phone size={11} />
+                                      <span>{lang === 'bn' ? 'কল দিন' : 'Call'}</span>
+                                    </a>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="p-2.5 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-xs text-slate-500 flex items-center gap-2">
+                                  <Clock size={14} className="text-slate-400 shrink-0" />
+                                  <span>{lang === 'bn' ? 'ডাক্তার নির্ধারণ প্রক্রিয়াধীন (অ্যাডমিন কর্তৃক যাচাই চলছে)' : 'Doctor assignment is under review by admin'}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Card Footer: Action Buttons (User requirement: view/download slip) */}
+                          <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="flex items-center gap-2 text-xs text-slate-500">
+                              <ShieldCheck size={14} className="text-emerald-600" />
+                              <span>{lang === 'bn' ? 'অফিশিয়াল মানি রিসিট ও ট্র্যাকিং স্লিপ' : 'Official Money Receipt & Tracking Slip'}</span>
+                            </div>
+
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {/* Print Slip Button */}
+                              <button
+                                type="button"
+                                onClick={() => printOrDownloadDoctorAtHomeSlip(dah, lang)}
+                                className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm hover:shadow transition-all cursor-pointer"
+                                title="Print official Doctor at Home slip"
+                              >
+                                <Printer size={14} />
+                                <span>{lang === 'bn' ? 'স্লিপ প্রিন্ট করুন' : 'Print Slip'}</span>
+                              </button>
+
+                              {/* Download Slip HTML Button */}
+                              <button
+                                type="button"
+                                onClick={() => downloadDoctorAtHomeSlipHtml(dah, lang)}
+                                className="flex-1 sm:flex-initial px-3.5 py-2.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-800 font-bold text-xs flex items-center justify-center gap-1.5 border border-sky-200 transition-all cursor-pointer"
+                                title="Download complete HTML slip"
+                              >
+                                <Download size={14} />
+                                <span>{lang === 'bn' ? 'স্লিপ ডাউনলোড' : 'Download Slip'}</span>
+                              </button>
+
+                              {/* View Slip Modal Button */}
+                              <button
+                                type="button"
+                                onClick={() => setSelectedHomeDoctorSlip(dah)}
+                                className="px-3 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                                title="View slip preview on screen"
+                              >
+                                <Eye size={14} />
+                                <span>{lang === 'bn' ? 'স্লিপ দেখুন' : 'View Slip'}</span>
+                              </button>
+
+                              {/* Helpline Call */}
+                              <a
+                                href="tel:01700000000"
+                                className="px-3 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs flex items-center justify-center gap-1 border border-rose-200 transition-all"
+                                title="Emergency Call"
+                              >
+                                <Phone size={12} />
+                                <span>{lang === 'bn' ? 'সহায়তা' : 'Help'}</span>
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
           )}
 
@@ -1669,6 +2158,182 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
         order={selectedInvoiceBooking}
         lang={lang}
       />
+
+      {/* Official Doctor at Home Slip Modal */}
+      {selectedHomeDoctorSlip && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-3xl max-w-xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-emerald-100 overflow-hidden">
+            {/* Header */}
+            <div className="p-4 sm:p-5 bg-gradient-to-r from-emerald-600 to-teal-700 text-white flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <img 
+                  src={invoiceLogo} 
+                  alt="eClinic Bangladesh" 
+                  className="h-9 max-w-[120px] object-contain rounded-lg bg-white p-0.5 shadow-xs border border-white/20 shrink-0" 
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    if (!target.src.endsWith('/icon.svg')) {
+                      target.src = '/icon.svg';
+                    }
+                  }}
+                />
+                <div>
+                  <h3 className="font-extrabold text-sm sm:text-base tracking-tight text-white flex items-center gap-2">
+                    {lang === 'bn' ? 'হোম ডক্টর বুকিং স্লিপ' : 'Doctor at Home Booking Slip'}
+                    <span className="text-[10px] bg-emerald-400/20 text-emerald-100 font-bold px-2 py-0.5 rounded-full border border-emerald-400/30 uppercase">
+                      {selectedHomeDoctorSlip.status}
+                    </span>
+                  </h3>
+                  <p className="text-emerald-100 text-xs font-semibold">{orgName}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedHomeDoctorSlip(null)}
+                className="p-1.5 rounded-full hover:bg-white/20 text-white transition-colors cursor-pointer"
+              >
+                <XCircle size={20} />
+              </button>
+            </div>
+
+            {/* Slip Body */}
+            <div className="p-5 sm:p-6 overflow-y-auto space-y-4 text-xs">
+              {/* Slip Printable Card */}
+              <div className="border border-emerald-200 rounded-2xl p-4 bg-emerald-50/20 space-y-3">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-3 border-b border-emerald-100 gap-3">
+                  <div className="flex items-center gap-3">
+                    <img 
+                      src={invoiceLogo} 
+                      alt="eClinic Bangladesh" 
+                      className="h-10 max-w-[130px] object-contain rounded-lg bg-white p-1 border border-slate-200 shrink-0 shadow-xs" 
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        if (!target.src.endsWith('/icon.svg')) {
+                          target.src = '/icon.svg';
+                        }
+                      }}
+                    />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-base font-black text-slate-900 leading-tight">
+                          eClinic Bangladesh
+                        </h4>
+                        <span className="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full border border-emerald-200">
+                          {lang === 'bn' ? 'হোম ডক্টর' : 'Doctor at Home'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-emerald-700 font-semibold mt-0.5">
+                        {lang === 'bn' ? 'স্মার্ট হোম হেলথকেয়ার ও স্পেশালিস্ট ডক্টর সার্ভিস' : 'Smart Home Healthcare & Specialist Doctor Visit'}
+                      </p>
+                      <p className="text-[10px] text-slate-500">
+                        📍 {siteSettings.invoiceAddress || siteSettings.contactAddress || (lang === 'bn' ? 'বাড়ি ১২, রোড ৫, ধানমন্ডি, ঢাকা - ১২০৫' : 'House 12, Road 5, Dhanmondi, Dhaka - 1205')} &bull; 📞 {siteSettings.invoiceHotline || siteSettings.contactHotline || '+880 9613-828282'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="sm:text-right shrink-0">
+                    <span className="text-[10px] font-mono font-bold text-slate-600 block">
+                      ID: {selectedHomeDoctorSlip.id}
+                    </span>
+                    <span className="text-[9px] text-slate-400 block">
+                      {selectedHomeDoctorSlip.createdAt ? new Date(selectedHomeDoctorSlip.createdAt).toLocaleDateString() : selectedHomeDoctorSlip.date}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 text-slate-700">
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-400 block uppercase">{lang === 'bn' ? 'রোগীর নাম' : 'Patient Name'}</span>
+                    <p className="font-bold text-slate-900 text-xs">{selectedHomeDoctorSlip.patientName}</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-400 block uppercase">{lang === 'bn' ? 'যোগাযোগ নম্বর' : 'Phone'}</span>
+                    <p className="font-mono font-bold text-slate-900 text-xs">{selectedHomeDoctorSlip.patientPhone}</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-400 block uppercase">{lang === 'bn' ? 'স্পেশালিটি' : 'Specialty'}</span>
+                    <p className="font-bold text-emerald-800 text-xs">{selectedHomeDoctorSlip.doctorTypeLabel}</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-400 block uppercase">{lang === 'bn' ? 'নির্ধারিত সময়সূচি' : 'Schedule'}</span>
+                    <p className="font-bold text-slate-900 text-xs">{selectedHomeDoctorSlip.date} &bull; {selectedHomeDoctorSlip.timeSlot}</p>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-emerald-100">
+                  <span className="text-[10px] font-bold text-slate-400 block uppercase">{lang === 'bn' ? 'ভিজিট ঠিকানা' : 'Visiting Address'}</span>
+                  <p className="text-slate-800 font-medium text-xs mt-0.5">{selectedHomeDoctorSlip.address} {selectedHomeDoctorSlip.area ? `(${selectedHomeDoctorSlip.area})` : ''}</p>
+                </div>
+
+                {selectedHomeDoctorSlip.symptoms && (
+                  <div className="pt-2 border-t border-emerald-100">
+                    <span className="text-[10px] font-bold text-slate-400 block uppercase">{lang === 'bn' ? 'লক্ষণ / সমস্যা' : 'Symptoms'}</span>
+                    <p className="text-slate-700 text-xs mt-0.5">{selectedHomeDoctorSlip.symptoms}</p>
+                  </div>
+                )}
+
+                <div className="pt-2 border-t border-emerald-100 flex items-center justify-between font-bold text-sm">
+                  <span className="text-slate-700">{lang === 'bn' ? 'সর্বমোট ভিজিট ফি:' : 'Total Visiting Fee:'}</span>
+                  <span className="text-emerald-800 font-black">৳{selectedHomeDoctorSlip.consultationFee}</span>
+                </div>
+
+                <div className="flex items-center justify-between text-[11px] bg-white p-2.5 rounded-xl border border-emerald-100">
+                  <span>{lang === 'bn' ? 'পেমেন্ট মাধ্যম:' : 'Payment Method:'} <b>{selectedHomeDoctorSlip.paymentMethod.toUpperCase()}</b></span>
+                  <span className="font-bold uppercase text-emerald-700">
+                    {selectedHomeDoctorSlip.paymentStatus === 'paid' ? 'PAID' : selectedHomeDoctorSlip.paymentStatus === 'pending_verification' ? 'VERIFYING' : 'CASH ON DELIVERY'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Instructions */}
+              <div className="p-3 bg-sky-50 rounded-xl border border-sky-100 text-[11px] text-sky-900 space-y-1">
+                <p className="font-bold flex items-center gap-1">
+                  <CheckCircle size={13} className="text-sky-600" />
+                  <span>{lang === 'bn' ? 'জরুরি নির্দেশনা:' : 'Important Instructions:'}</span>
+                </p>
+                <p>
+                  {lang === 'bn'
+                    ? '১. ডাক্তার আসার পূর্বে রোগীর পূর্ববর্তী প্রেসক্রিপশন ও টেস্ট রিপোর্ট প্রস্তুত রাখুন।'
+                    : '1. Keep previous prescriptions and lab reports ready before the doctor arrives.'}
+                </p>
+                <p>
+                  {lang === 'bn'
+                    ? '২. নির্ধারিত সময়ের পূর্বে আমাদের কনফার্মেশন কল দেওয়া হবে।'
+                    : '2. Our support team will call you before the scheduled visit.'}
+                </p>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedHomeDoctorSlip(null)}
+                className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs border border-slate-200 cursor-pointer"
+              >
+                {lang === 'bn' ? 'বন্ধ করুন' : 'Close'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => downloadDoctorAtHomeSlipHtml(selectedHomeDoctorSlip, lang)}
+                className="px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm cursor-pointer"
+              >
+                <Download size={14} />
+                <span>{lang === 'bn' ? 'ডাউনলোড স্লিপ' : 'Download Slip'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => printOrDownloadDoctorAtHomeSlip(selectedHomeDoctorSlip, lang)}
+                className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm cursor-pointer"
+              >
+                <Printer size={14} />
+                <span>{lang === 'bn' ? 'প্রিন্ট করুন' : 'Print Slip'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

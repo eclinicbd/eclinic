@@ -972,7 +972,18 @@ export const saveStoredSiteSettings = (lang: Language, settings: SiteSettings): 
       linkedinUrl: settings.linkedinUrl || otherSettings.linkedinUrl,
       youtubeUrl: settings.youtubeUrl || otherSettings.youtubeUrl,
       instagramUrl: settings.instagramUrl || otherSettings.instagramUrl,
-      twitterUrl: settings.twitterUrl || otherSettings.twitterUrl
+      twitterUrl: settings.twitterUrl || otherSettings.twitterUrl,
+      invoiceLogoUrl: settings.invoiceLogoUrl !== undefined ? settings.invoiceLogoUrl : otherSettings.invoiceLogoUrl,
+      invoiceOrgName: settings.invoiceOrgName || otherSettings.invoiceOrgName,
+      invoiceOrgSubtitle: settings.invoiceOrgSubtitle || otherSettings.invoiceOrgSubtitle,
+      invoiceAddress: settings.invoiceAddress || otherSettings.invoiceAddress,
+      invoiceHotline: settings.invoiceHotline || otherSettings.invoiceHotline,
+      invoiceEmail: settings.invoiceEmail || otherSettings.invoiceEmail,
+      invoiceWebsite: settings.invoiceWebsite || otherSettings.invoiceWebsite,
+      invoiceTermsTitle: otherSettings.invoiceTermsTitle || settings.invoiceTermsTitle,
+      invoiceGuidelines: settings.invoiceGuidelines || otherSettings.invoiceGuidelines,
+      invoiceFooterNote: otherSettings.invoiceFooterNote || settings.invoiceFooterNote,
+      invoiceWatermark: settings.invoiceWatermark || otherSettings.invoiceWatermark
     };
 
     localStorage.setItem(otherKey, JSON.stringify(mergedOther));

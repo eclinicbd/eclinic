@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   X, 
   Home, 
@@ -27,7 +27,8 @@ import {
   LogIn,
   Download,
   Eye,
-  EyeOff
+  EyeOff,
+  Lock
 } from 'lucide-react';
 import { DoctorAtHomeBooking, Language, PaymentMethod, PatientUser, PaymentGatewaysConfig, DoctorAtHomeSpecialty, DoctorAtHomeScheduleConfig } from '../types';
 import { 
@@ -145,7 +146,48 @@ export const DoctorAtHomeBookingModal: React.FC<DoctorAtHomeBookingModalProps> =
   const [hasAutoFilledProfile, setHasAutoFilledProfile] = useState(false);
   const [showSlipPreview, setShowSlipPreview] = useState(false);
 
-  // 7 Days advance booking calculation (Admin panel & booking requirement)
+  // Check if a given date string (YYYY-MM-DD) is a holiday or off-schedule
+  const checkIsDateHoliday = (dateStr: string): { isHoliday: boolean; reasonBn: string; reasonEn: string } => {
+    if (!dateStr) return { isHoliday: false, reasonBn: '', reasonEn: '' };
+    const d = new Date(dateStr + 'T00:00:00');
+    const day = d.getDay();
+    const dayNamesBn = ['রবিবার', 'সোমবার', 'মঙ্গলবার', 'বুধবার', 'বৃহস্পতিবার', 'শুক্রবার', 'শনিবার'];
+    const dayNamesEn = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+    if ((scheduleConfig.weeklyHolidays || []).includes(day)) {
+      return {
+        isHoliday: true,
+        reasonBn: `${dayNamesBn[day]} সাপ্তাহিক ছুটির দিন (সিডিউল বন্ধ)`,
+        reasonEn: `${dayNamesEn[day]} Weekly Off-Day (Schedule Closed)`
+      };
+    }
+    if ((scheduleConfig.holidayDates || []).includes(dateStr)) {
+      return {
+        isHoliday: true,
+        reasonBn: 'বিশেষ সরকারি/ক্লিনিক্যাল ছুটি (সিডিউল বন্ধ)',
+        reasonEn: 'Special Holiday (Schedule Closed)'
+      };
+    }
+    return { isHoliday: false, reasonBn: '', reasonEn: '' };
+  };
+
+  // Helper to find the first open working day (non-holiday) within the 7-day window
+  const getFirstAvailableWorkingDate = (config: DoctorAtHomeScheduleConfig, maxDays: number = 7): string => {
+    for (let i = 0; i <= maxDays; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() + i);
+      const str = d.toISOString().split('T')[0];
+      const day = d.getDay();
+      const isWeekly = (config.weeklyHolidays || []).includes(day);
+      const isSpecial = (config.holidayDates || []).includes(str);
+      if (!isWeekly && !isSpecial) {
+        return str;
+      }
+    }
+    return new Date().toISOString().split('T')[0];
+  };
+
+  // 7 Days advance booking calculation (Admin panel & booking requirement: maximum 7 days)
   const maxAdvanceDays = Math.min(7, Math.max(1, scheduleConfig.maxAdvanceDays || 7));
   const maxBookingDate = new Date();
   maxBookingDate.setDate(maxBookingDate.getDate() + maxAdvanceDays);
@@ -155,12 +197,79 @@ export const DoctorAtHomeBookingModal: React.FC<DoctorAtHomeBookingModalProps> =
   const activeTimeSlots = (scheduleConfig.timeSlots || []).filter(s => s.isActive !== false);
   const availableTimeSlots = activeTimeSlots.length > 0 ? activeTimeSlots : TIME_SLOTS;
 
+  // Calendar dates for the 7-day window
+  const calendar7Days = useMemo(() => {
+    const list: {
+      dateStr: string;
+      dayNum: number;
+      month: string;
+      dayName: string;
+      isToday: boolean;
+      isTomorrow: boolean;
+      isHoliday: boolean;
+      holidayReason: string;
+    }[] = [];
+
+    const dayNamesBn = ['রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহঃ', 'শুক্র', 'শনি'];
+    const dayNamesEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const monthNamesBn = ['জানু', 'ফেব্রু', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টে', 'অক্টো', 'নভে', 'ডিসে'];
+    const monthNamesEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    for (let i = 0; i <= maxAdvanceDays; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() + i);
+      const dateStr = d.toISOString().split('T')[0];
+      const holCheck = checkIsDateHoliday(dateStr);
+
+      list.push({
+        dateStr,
+        dayNum: d.getDate(),
+        month: isBn ? monthNamesBn[d.getMonth()] : monthNamesEn[d.getMonth()],
+        dayName: isBn ? dayNamesBn[d.getDay()] : dayNamesEn[d.getDay()],
+        isToday: i === 0,
+        isTomorrow: i === 1,
+        isHoliday: holCheck.isHoliday,
+        holidayReason: isBn ? holCheck.reasonBn : holCheck.reasonEn
+      });
+    }
+    return list;
+  }, [maxAdvanceDays, scheduleConfig, isBn]);
+
+  // User requirement: "ছুটি/সিডিউল calendrer অপশনে হাইড থাকবে, সিলেক্ট করা যাবে না"
+  // Filter out holidays completely from selectable calendar options:
+  const openCalendarDays = useMemo(() => {
+    return calendar7Days.filter(d => !d.isHoliday);
+  }, [calendar7Days]);
+
+  const hiddenHolidaysCount = calendar7Days.length - openCalendarDays.length;
+
+  const handleDateSelect = (newDateStr: string) => {
+    setErrorMsg(null);
+    if (!newDateStr) return;
+
+    if (newDateStr < todayStr) {
+      setErrorMsg(isBn ? 'অতীতের কোনো তারিখ নির্বাচন করা যাবে না।' : 'Past dates cannot be selected.');
+      return;
+    }
+    if (newDateStr > maxBookingDateStr) {
+      setErrorMsg(isBn 
+        ? `সর্বোচ্চ ৭ দিনের বেশি (${maxBookingDateStr} পর্যন্ত) অগ্রীম বুকিং করা যাবে না।` 
+        : `Cannot book more than 7 days in advance (up to ${maxBookingDateStr}).`);
+      return;
+    }
+    const hol = checkIsDateHoliday(newDateStr);
+    if (hol.isHoliday) {
+      setErrorMsg(isBn 
+        ? `⚠️ এই তারিখটিতে (${newDateStr}) আমাদের হোম ভিজিট সিডিউল বন্ধ/ছুটি (${hol.reasonBn})। এটি সিলেক্ট করা যাবে না।` 
+        : `⚠️ ${newDateStr} is a holiday/off schedule (${hol.reasonEn}). Cannot be selected.`);
+      return;
+    }
+    setAppointmentDate(newDateStr);
+  };
+
   // Holiday checks for selected date
-  const selectedDateObj = new Date(appointmentDate + 'T00:00:00');
-  const selectedDayOfWeek = selectedDateObj.getDay();
-  const isWeeklyHoliday = (scheduleConfig.weeklyHolidays || []).includes(selectedDayOfWeek);
-  const isSpecialHoliday = (scheduleConfig.holidayDates || []).includes(appointmentDate);
-  const isHolidayDate = isWeeklyHoliday || isSpecialHoliday;
+  const selectedHol = checkIsDateHoliday(appointmentDate);
+  const isHolidayDate = selectedHol.isHoliday;
 
   // Auto-populate patient details whenever modal opens or currentPatient changes
   useEffect(() => {
@@ -173,6 +282,8 @@ export const DoctorAtHomeBookingModal: React.FC<DoctorAtHomeBookingModalProps> =
 
       const loadedSchedule = getStoredDoctorAtHomeSchedule();
       setScheduleConfig(loadedSchedule);
+      const firstValidDate = getFirstAvailableWorkingDate(loadedSchedule, 7);
+      setAppointmentDate(firstValidDate);
 
       setErrorMsg(null);
       setConfirmedBooking(null);
@@ -327,6 +438,15 @@ export const DoctorAtHomeBookingModal: React.FC<DoctorAtHomeBookingModalProps> =
       setErrorMsg(isBn 
         ? 'অনুগ্রহ করে আজকের বা আগামী ৭ দিনের মধ্যের একটি সঠিক তারিখ নির্বাচন করুন।' 
         : 'Please select today or a date within the next 7 days.');
+      return;
+    }
+
+    // Holiday & Schedule Off-day prevention
+    const holidayCheck = checkIsDateHoliday(appointmentDate);
+    if (holidayCheck.isHoliday) {
+      setErrorMsg(isBn 
+        ? `দুঃখিত, নির্বাচিত তারিখে (${appointmentDate}) আমাদের নিয়মিত সিডিউল বন্ধ/ছুটি রয়েছে (${holidayCheck.reasonBn})। ছুটির দিনে বুকিং সম্ভব নয়, অনুগ্রহ করে খোলা কার্যদিবস নির্বাচন করুন।` 
+        : `Doctor at Home schedule is closed on this holiday (${holidayCheck.reasonEn}). Please choose an available working day.`);
       return;
     }
 
@@ -593,13 +713,21 @@ export const DoctorAtHomeBookingModal: React.FC<DoctorAtHomeBookingModalProps> =
               {showSlipPreview && (
                 <div className="mt-4 p-5 bg-white border-2 border-emerald-400 rounded-2xl shadow-lg text-left text-slate-800 space-y-4 animate-fadeIn">
                   <div className="flex items-center justify-between border-b border-emerald-100 pb-3">
-                    <div className="flex items-center gap-2">
-                      <div className="p-2 bg-emerald-100 text-emerald-800 rounded-xl">
-                        <Home size={20} />
-                      </div>
+                    <div className="flex items-center gap-3">
+                      <img 
+                        src={siteSettings.invoiceLogoUrl || siteSettings.logoUrl || '/icon.svg'} 
+                        alt="eClinic Bangladesh" 
+                        className="h-10 max-w-[120px] object-contain rounded-lg bg-white border border-slate-200 p-1 shrink-0" 
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          if (!target.src.endsWith('/icon.svg')) {
+                            target.src = '/icon.svg';
+                          }
+                        }}
+                      />
                       <div>
                         <h4 className="font-extrabold text-slate-900 text-sm">
-                          {siteSettings.siteName || 'ই-ক্লিনিক বিডি'} &bull; অফিসিয়াল হোম ডক্টর স্লিপ
+                          eClinic Bangladesh &bull; {isBn ? 'অফিসিয়াল হোম ডক্টর স্লিপ' : 'Official Doctor at Home Slip'}
                         </h4>
                         <span className="text-[11px] text-slate-400 font-mono">ID: {confirmedBooking.id} &bull; Generated: {new Date().toLocaleDateString()}</span>
                       </div>
@@ -881,66 +1009,90 @@ export const DoctorAtHomeBookingModal: React.FC<DoctorAtHomeBookingModalProps> =
               </div>
 
               {/* 4. Appointment Date & Time Slot */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-3">
                 {/* Date Selection */}
                 <div>
-                  <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center justify-between mb-1.5 flex-wrap gap-1">
                     <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                       <Calendar size={14} className="text-primary" />
-                      <span>{isBn ? 'ভিজিট তারিখ (সর্বোচ্চ ৭ দিন) *' : 'Visit Date (Max 7 Days) *'}</span>
+                      <span>{isBn ? 'ভিজিট তারিখ (সর্বোচ্চ ৭ দিন অগ্রীম) *' : 'Visit Date (Max 7 Days Ahead) *'}</span>
                     </label>
-                    <div className="flex items-center gap-1">
-                      <button 
-                        type="button" 
-                        onClick={() => setAppointmentDate(todayStr)} 
-                        className={`px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-colors ${appointmentDate === todayStr ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-                      >
-                        {isBn ? 'আজ' : 'Today'}
-                      </button>
-                      <button 
-                        type="button" 
-                        onClick={() => setAppointmentDate(tomorrowStr)} 
-                        className={`px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-colors ${appointmentDate === tomorrowStr ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-                      >
-                        {isBn ? 'কাল' : 'Tomorrow'}
-                      </button>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                        {isBn ? 'সর্বোচ্চ ৭ দিন' : 'Max 7 Days'}
+                      </span>
+                      {hiddenHolidaysCount > 0 && (
+                        <span className="text-[10px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200" title={isBn ? 'ছুটির দিন ক্যালেন্ডার থেকে হাইড করা আছে' : 'Holidays hidden'}>
+                          {isBn ? `${hiddenHolidaysCount}টি বন্ধ দিন হাইড` : `${hiddenHolidaysCount} Off-days Hidden`}
+                        </span>
+                      )}
                     </div>
                   </div>
 
-                  <input 
-                    type="date"
-                    required
-                    min={todayStr}
-                    max={maxBookingDateStr}
-                    value={appointmentDate}
-                    onChange={e => setAppointmentDate(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white cursor-pointer"
-                  />
-
-                  <div className="flex items-center justify-between mt-1 px-1">
-                    <span className="text-[10px] text-slate-500 font-medium">
-                      {isBn ? `সীমা: ${todayStr} থেকে ${maxBookingDateStr}` : `Window: ${todayStr} to ${maxBookingDateStr}`}
-                    </span>
-                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200/60">
-                      {isBn ? 'সর্বোচ্চ ৭ দিন' : 'Max 7 Days'}
-                    </span>
-                  </div>
-
-                  {isHolidayDate && (
-                    <div className="mt-1.5 p-2.5 bg-amber-50 border border-amber-200/90 rounded-xl text-[11px] text-amber-900 flex items-start gap-1.5">
-                      <AlertCircle size={14} className="text-amber-600 shrink-0 mt-0.5" />
-                      <span>
-                        {isBn 
-                          ? (scheduleConfig.holidayNoticeBn || '⚠️ এই তারিখে নিয়মিত ক্লিনিক্যাল সময়সূচি সীমিত বা বন্ধ (ছুটি)। তবে বিশেষ জরুরি প্রয়োজনে অন-কল ডাক্তার ভিজিট প্রদান করা হবে।') 
-                          : (scheduleConfig.holidayNoticeEn || '⚠️ Routine visit hours are off on this holiday. Emergency on-call doctor is available.')}
+                  {/* 7-Day Interactive Visual Calendar Strip - ONLY WORKING DAYS (Holidays hidden as requested: "ছুটি/সিডিউল calendrer অপশনে হাইড থাকবে, সিলেক্ট করা যাবে না") */}
+                  <div className="space-y-1 mb-2">
+                    <div className="flex items-center justify-between text-[11px] font-semibold text-slate-600 px-0.5">
+                      <span>{isBn ? 'খোলা কার্যদিবস নির্বাচন করুন:' : 'Select Available Working Date:'}</span>
+                      <span className="text-[10px] text-slate-400">
+                        {isBn ? 'ছুটির দিন হাইড করা আছে (সিলেক্ট অযোগ্য)' : 'Holidays hidden & non-selectable'}
                       </span>
                     </div>
-                  )}
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-1.5">
+                      {openCalendarDays.map(item => {
+                        const isSelected = appointmentDate === item.dateStr;
+                        return (
+                          <button
+                            key={item.dateStr}
+                            type="button"
+                            onClick={() => handleDateSelect(item.dateStr)}
+                            className={`p-2 rounded-xl text-center border transition-all cursor-pointer flex flex-col items-center justify-between min-h-[58px] ${
+                              isSelected
+                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm ring-2 ring-emerald-300'
+                                : 'bg-white hover:bg-emerald-50 text-slate-700 border-slate-200 hover:border-emerald-300'
+                            }`}
+                          >
+                            <span className={`text-[10px] font-bold uppercase ${isSelected ? 'text-emerald-100' : 'text-slate-500'}`}>
+                              {item.isToday ? (isBn ? 'আজ' : 'Today') : item.isTomorrow ? (isBn ? 'কাল' : 'Tomorrow') : item.dayName}
+                            </span>
+                            <span className="text-xs font-black my-0.5">
+                              {item.dayNum} {item.month}
+                            </span>
+                            <span className={`text-[9px] font-semibold px-1 rounded ${isSelected ? 'bg-white/20 text-white' : 'bg-emerald-50 text-emerald-700'}`}>
+                              {isBn ? 'খোলা' : 'Open'}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Date Input with strict 7-day constraint and immediate holiday rejection */}
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <input 
+                        type="date"
+                        required
+                        min={todayStr}
+                        max={maxBookingDateStr}
+                        value={appointmentDate}
+                        onChange={e => handleDateSelect(e.target.value)}
+                        className="flex-1 px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white cursor-pointer"
+                      />
+                      <div className="text-[11px] font-mono font-bold text-emerald-800 bg-emerald-50 px-2.5 py-2 rounded-xl border border-emerald-200 whitespace-nowrap">
+                        {appointmentDate}
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between px-1 text-[10px] text-slate-400">
+                      <span>{isBn ? `বুকিং গ্রহণযোগ্য: ${todayStr} থেকে ${maxBookingDateStr}` : `Allowed: ${todayStr} to ${maxBookingDateStr}`}</span>
+                      <span className="text-emerald-700 font-bold">{isBn ? '✓ ছুটির দিনে বুকিং সম্পূর্ণ নিষিদ্ধ' : '✓ Holiday bookings blocked'}</span>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Time Slot */}
                 <div>
-                  <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5 mb-1">
+                  <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5 mb-1.5">
                     <Clock size={14} className="text-amber-500" />
                     <span>{isBn ? 'পছন্দের সময় স্লট *' : 'Preferred Time Slot *'}</span>
                   </label>

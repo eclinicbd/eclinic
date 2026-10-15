@@ -7157,7 +7157,8 @@ export const DEFAULT_SITE_SETTINGS_BN: SiteSettings = {
   services: DEFAULT_SERVICES_BN,
 
   // Invoice & Money Receipt Defaults
-  invoiceOrgName: 'LabHome BD - Smart Healthcare Services',
+  invoiceLogoUrl: '/icon.svg',
+  invoiceOrgName: 'eClinic Bangladesh',
   invoiceOrgSubtitle: 'বিশ্বস্ত হোম ডায়াগনস্টিক ও ডিজিটাল ল্যাব কেয়ার নেটওয়ার্ক',
   invoiceAddress: 'বাড়ি ১২, রোড ৫, ধানমন্ডি, ঢাকা - ১২০৫, বাংলাদেশ',
   invoiceHotline: '+880 9613-828282 / 01700-000000',
@@ -7307,7 +7308,8 @@ export const DEFAULT_SITE_SETTINGS_EN: SiteSettings = {
   services: DEFAULT_SERVICES_EN,
 
   // Invoice & Money Receipt Defaults
-  invoiceOrgName: 'LabHome BD - Healthcare Services',
+  invoiceLogoUrl: '/icon.svg',
+  invoiceOrgName: 'eClinic Bangladesh',
   invoiceOrgSubtitle: 'Trusted Digital Diagnostic & Home Sample Collection Network',
   invoiceAddress: 'House #12, Road #5, Dhanmondi, Dhaka - 1205, Bangladesh',
   invoiceHotline: '+880 9613-828282 / +880 1700-000000',

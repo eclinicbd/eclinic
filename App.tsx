@@ -1298,9 +1298,13 @@ export default function App() {
           }}
           onUpdateProfile={handleUpdatePatientProfile}
           bookings={bookings}
+          doctorAtHomeBookings={doctorAtHomeBookings}
           onBookNewTest={() => {
             setCurrentView('home');
             setTimeout(() => scrollToSection('tests'), 100);
+          }}
+          onBookDoctorAtHome={() => {
+            setIsDoctorAtHomeModalOpen(true);
           }}
           onOpenVideoRoom={(apt) => setSelectedAppointmentForVideo(apt)}
           onOpenPrescription={(presc) => setSelectedPrescriptionForView(presc)}

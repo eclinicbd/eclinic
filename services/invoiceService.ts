@@ -806,11 +806,14 @@ export const generateDoctorAtHomeSlipHtml = (
     ? new Date(booking.createdAt).toLocaleString(isBn ? 'bn-BD' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' })
     : `${booking.date} ${booking.timeSlot}`;
 
-  const orgName = settings.siteName || (isBn ? 'ল্যাবহোম বিডি হেলথকেয়ার' : 'LabHome BD Healthcare');
-  const orgTagline = settings.siteTagline || (isBn ? 'স্মার্ট হোম হেলথকেয়ার ও স্পেশালিস্ট ডক্টর সার্ভিস' : 'Smart Home Healthcare & Specialist Doctor Visit');
-  const orgHotline = settings.contactHotline || settings.contactPhone || '01700-000000';
-  const orgEmail = settings.contactEmail || 'care@labhomebd.com';
-  const orgAddress = settings.contactAddress || 'House 24, Road 11, Dhanmondi, Dhaka-1209';
+  const invoiceLogo = settings?.invoiceLogoUrl || settings?.logoUrl || '/icon.svg';
+  const orgName = (settings?.invoiceOrgName && !settings.invoiceOrgName.includes('LabHome')) 
+    ? settings.invoiceOrgName 
+    : 'eClinic Bangladesh';
+  const orgTagline = settings?.invoiceOrgSubtitle || (isBn ? 'স্মার্ট হোম হেলথকেয়ার ও স্পেশালিস্ট ডক্টর সার্ভিস' : 'Smart Home Healthcare & Specialist Doctor Visit');
+  const orgHotline = settings?.invoiceHotline || settings?.contactHotline || settings?.contactPhone || '+880 9613-828282';
+  const orgEmail = settings?.invoiceEmail || settings?.contactEmail || 'care@eclinicbd.com';
+  const orgAddress = settings?.invoiceAddress || settings?.contactAddress || (isBn ? 'বাড়ি ১২, রোড ৫, ধানমন্ডি, ঢাকা - ১২০৫, বাংলাদেশ' : 'House #12, Road #5, Dhanmondi, Dhaka, Bangladesh');
 
   let paymentMethodLabel = isBn ? 'ভিজিটের সময় নগদ (ক্যাশ)' : 'Cash on Visit';
   if (booking.paymentMethod === 'bkash') {
@@ -868,16 +871,51 @@ export const generateDoctorAtHomeSlipHtml = (
       padding-bottom: 16px;
       margin-bottom: 20px;
     }
+    .brand-logo-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .logo-icon {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-size: 24px;
+      font-weight: 900;
+      flex-shrink: 0;
+      box-shadow: 0 2px 5px rgba(5, 150, 105, 0.2);
+    }
+    .brand-logo-img {
+      max-height: 48px;
+      max-width: 140px;
+      object-fit: contain;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      background: #ffffff;
+      padding: 3px;
+      flex-shrink: 0;
+    }
     .brand-title {
-      font-size: 22px;
+      font-size: 20px;
       font-weight: 900;
       color: #065f46;
       letter-spacing: -0.5px;
+      line-height: 1.15;
     }
     .brand-tagline {
       font-size: 11px;
       color: #64748b;
       margin-top: 2px;
+    }
+    .brand-address {
+      font-size: 10px;
+      color: #64748b;
+      margin-top: 3px;
     }
     .slip-badge {
       text-align: right;
@@ -1031,10 +1069,17 @@ export const generateDoctorAtHomeSlipHtml = (
   <div class="slip-container">
     <!-- Header -->
     <div class="header">
-      <div>
-        <h1 class="brand-title">${orgName}</h1>
-        <p class="brand-tagline">${orgTagline}</p>
-        <p style="font-size: 10.5px; color: #64748b; margin-top: 4px;">📍 ${orgAddress}</p>
+      <div class="brand-logo-wrap">
+        ${invoiceLogo ? `
+          <img src="${invoiceLogo}" alt="${orgName}" class="brand-logo-img" onerror="this.onerror=null;this.src='/icon.svg';" />
+        ` : `
+          <div class="logo-icon">+</div>
+        `}
+        <div>
+          <h1 class="brand-title">${orgName}</h1>
+          <p class="brand-tagline">${orgTagline}</p>
+          <p class="brand-address">📍 ${orgAddress} &bull; 📞 ${orgHotline}</p>
+        </div>
       </div>
       <div class="slip-badge">
         <span class="badge-pill">${isBn ? 'হোম ডক্টর বুকিং স্লিপ' : 'Doctor at Home Slip'}</span>
