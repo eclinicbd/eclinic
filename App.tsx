@@ -26,7 +26,8 @@ import {
   getStoredPatients,
   saveStoredPatients,
   getIsAdminSessionActive,
-  setAdminSessionActive
+  setAdminSessionActive,
+  cleanBrandText
 } from './services/dataStorage';
 import { 
   auth, 
@@ -249,9 +250,10 @@ export default function App() {
         el.href = faviconUrl;
       });
 
-      if (siteSettings.siteName) {
-        document.title = `${siteSettings.siteName} - ${siteSettings.siteTagline || (language === 'bn' ? 'স্মার্ট হেলথকেয়ার' : 'Smart Healthcare')}`;
-      }
+      const currentBrandTitle = (!siteSettings.siteName || siteSettings.siteName === 'LabHome BD' || siteSettings.siteName.toLowerCase().includes('labhome'))
+        ? 'eClinic Bangladesh'
+        : siteSettings.siteName;
+      document.title = `${currentBrandTitle} - ${siteSettings.siteTagline || (language === 'bn' ? 'স্মার্ট হেলথকেয়ার' : 'Smart Healthcare')}`;
     }
   }, [siteSettings, language]);
 
@@ -494,7 +496,16 @@ export default function App() {
     const unsubscribe = subscribeToSiteSettings(language, (liveSettings) => {
       if (liveSettings && Object.keys(liveSettings).length > 0) {
         setSiteSettings(prev => {
-          const merged = { ...prev, ...liveSettings };
+          const cleanSiteName = cleanBrandText(liveSettings.siteName) || 'eClinic Bangladesh';
+          const defaultCurrent = getStoredSiteSettings(language);
+          const merged: SiteSettings = { 
+            ...prev, 
+            ...liveSettings, 
+            siteName: cleanSiteName,
+            aboutTitle: liveSettings.aboutTitle || (language === 'bn' ? 'আমাদের সম্পর্কে (About Us)' : 'About eClinic Bangladesh'),
+            aboutDescription: liveSettings.aboutDescription || defaultCurrent.aboutDescription,
+            aboutStory: liveSettings.aboutStory || defaultCurrent.aboutStory
+          };
           saveStoredSiteSettings(language, merged);
           return merged;
         });
@@ -502,6 +513,35 @@ export default function App() {
     });
     return () => unsubscribe();
   }, [language]);
+
+  // Proactively repair and sync pristine eClinic Bangladesh settings to Firestore and localStorage
+  useEffect(() => {
+    try {
+      const bnKey = 'labhome_site_settings_bn_v2';
+      const enKey = 'labhome_site_settings_en_v2';
+      [bnKey, enKey].forEach(k => {
+        const raw = localStorage.getItem(k);
+        if (raw && (/lab\s*home/i.test(raw) || raw.includes('ল্যাবহোম') || raw.includes('ল্যাব হোম'))) {
+          try {
+            const parsed = JSON.parse(raw);
+            if (parsed && typeof parsed === 'object') {
+              if (parsed.siteName) parsed.siteName = cleanBrandText(parsed.siteName);
+              if (parsed.aboutTitle) parsed.aboutTitle = cleanBrandText(parsed.aboutTitle);
+              if (parsed.aboutDescription) parsed.aboutDescription = cleanBrandText(parsed.aboutDescription);
+              if (parsed.aboutStory) parsed.aboutStory = cleanBrandText(parsed.aboutStory);
+              if (parsed.contactEmail && parsed.contactEmail.includes('labhome')) parsed.contactEmail = 'support@eclinicbd.com';
+              if (parsed.invoiceEmail && parsed.invoiceEmail.includes('labhome')) parsed.invoiceEmail = 'support@eclinicbd.com';
+              if (parsed.invoiceWebsite && parsed.invoiceWebsite.includes('labhome')) parsed.invoiceWebsite = 'www.eclinicbd.com';
+              localStorage.setItem(k, JSON.stringify(parsed));
+            }
+          } catch {}
+        }
+      });
+    } catch {}
+
+    saveSiteSettingsToFirestore('bn', getStoredSiteSettings('bn'));
+    saveSiteSettingsToFirestore('en', getStoredSiteSettings('en'));
+  }, []);
 
   // Real-time subscription to Categories
   useEffect(() => {
@@ -1047,6 +1087,10 @@ export default function App() {
 
   const activeServices = (siteSettings.services || []).filter(s => s.isActive !== false);
 
+  const brandTitle = (!siteSettings.siteName || siteSettings.siteName === 'LabHome BD' || siteSettings.siteName.toLowerCase().includes('labhome'))
+    ? (t.appTitle && !t.appTitle.includes('LabHome') ? t.appTitle : 'eClinic Bangladesh')
+    : siteSettings.siteName;
+
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-20 md:pb-0 relative">
       
@@ -1059,7 +1103,7 @@ export default function App() {
                 {renderBrandLogo()}
                 <div>
                   <span className="text-xl sm:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-600 block leading-none">
-                    {siteSettings.siteName || t.appTitle}
+                    {brandTitle}
                   </span>
                   {siteSettings.siteTagline && (
                     <span className="text-[10px] text-slate-500 hidden sm:block truncate max-w-[220px]">
@@ -1835,14 +1879,52 @@ export default function App() {
                     {t.footerLinks.about}
                   </span>
                   <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 leading-tight">
-                    {siteSettings.aboutTitle || (language === 'bn' ? 'আমাদের সম্পর্কে' : 'About LabHome BD')}
+                    {(() => {
+                      if (language === 'bn') {
+                        if (!siteSettings.aboutTitle || /lab\s*home/i.test(siteSettings.aboutTitle) || siteSettings.aboutTitle.includes('About eClinic')) {
+                          return 'আমাদের সম্পর্কে (About Us)';
+                        }
+                        return cleanBrandText(siteSettings.aboutTitle);
+                      } else {
+                        if (!siteSettings.aboutTitle || /lab\s*home/i.test(siteSettings.aboutTitle) || /[\u0980-\u09FF]/.test(siteSettings.aboutTitle)) {
+                          return 'About eClinic Bangladesh';
+                        }
+                        return cleanBrandText(siteSettings.aboutTitle);
+                      }
+                    })()}
                   </h2>
                   <p className="text-base text-slate-600 leading-relaxed">
-                    {siteSettings.aboutDescription}
+                    {(() => {
+                      const rawDesc = siteSettings.aboutDescription;
+                      if (language === 'bn') {
+                        if (!rawDesc || !/[\u0980-\u09FF]/.test(rawDesc) || /lab\s*home/i.test(rawDesc)) {
+                          return 'eClinic Bangladesh হলো বাংলাদেশের একটি নির্ভরযোগ্য ডিজিটাল স্বাস্থ্যসেবা ও হোম ডায়াগনস্টিক প্ল্যাটফর্ম। ট্রাফিকের ভিড় এড়িয়ে ঘরে বসেই পপুলার, ল্যাবএইড, বারডেমসহ দেশের সেরা ল্যাব থেকে রক্ত পরীক্ষা ও ডায়াগনস্টিক টেস্টের সুবিধা দিতে আমরা বদ্ধপরিকর।';
+                        }
+                        return cleanBrandText(rawDesc);
+                      } else {
+                        if (!rawDesc || /[\u0980-\u09FF]/.test(rawDesc) || /lab\s*home/i.test(rawDesc)) {
+                          return 'eClinic Bangladesh is Bangladesh’s premier digital healthcare and doorstep diagnostic platform. Skip traffic jams and clinic queues by getting diagnostic tests done from top accredited labs directly from home.';
+                        }
+                        return cleanBrandText(rawDesc);
+                      }
+                    })()}
                   </p>
-                  {siteSettings.aboutStory && (
+                  {(siteSettings.aboutStory || language === 'bn') && (
                     <div className="p-5 bg-slate-50 rounded-2xl border-l-4 border-primary text-slate-700 text-sm leading-relaxed italic">
-                      "{siteSettings.aboutStory}"
+                      "{(() => {
+                        const rawStory = siteSettings.aboutStory;
+                        if (language === 'bn') {
+                          if (!rawStory || !/[\u0980-\u09FF]/.test(rawStory) || /lab\s*home/i.test(rawStory)) {
+                            return '২০২৪ সাল থেকে আমাদের দক্ষ মেডিকেল টেকনোলজিস্ট ও সার্টিফাইড ল্যাব পার্টনারদের মাধ্যমে ঢাকার হাজারো পরিবারের কাছে সহজে, নিরাপদে ও সাশ্রয়ী মূল্যে হোম স্যাম্পল কালেকশন ও ইনস্ট্যান্ট অনলাইন রিপোর্ট সেবা পৌঁছে দিচ্ছি।';
+                          }
+                          return cleanBrandText(rawStory);
+                        } else {
+                          if (!rawStory || /[\u0980-\u09FF]/.test(rawStory) || /lab\s*home/i.test(rawStory)) {
+                            return 'Founded in 2024, we empower thousands of families across Dhaka with prompt, hygienic, and affordable blood sample collection, analyzed at accredited labs like Popular, Labaid, BIRDEM, and BSMMU.';
+                          }
+                          return cleanBrandText(rawStory);
+                        }
+                      })()}"
                     </div>
                   )}
 
@@ -2113,7 +2195,7 @@ export default function App() {
               <div className="flex items-center gap-2.5">
                 {renderBrandLogo()}
                 <span className="text-xl font-bold text-white tracking-tight">
-                  {siteSettings.siteName || t.appTitle}
+                  {brandTitle}
                 </span>
               </div>
               <p className="text-sm text-slate-400 leading-relaxed">
@@ -2348,7 +2430,7 @@ export default function App() {
           </div>
 
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 pt-8 border-t border-slate-800 text-center text-xs flex flex-col sm:flex-row justify-between items-center gap-3 text-slate-500">
-            <p>© {new Date().getFullYear()} {siteSettings.siteName || 'LabHome BD'}. All rights reserved.</p>
+            <p>© {new Date().getFullYear()} {brandTitle}. All rights reserved.</p>
             <p className="text-[11px] text-slate-500">
               {language === 'bn' ? 'স্মার্ট ডায়াগনস্টিক ও হোম হেলথকেয়ার সল্যুশন' : 'Smart Diagnostic & Home Healthcare Platform'}
             </p>

@@ -121,7 +121,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   const [copiedPatientId, setCopiedPatientId] = useState(false);
   const siteSettings = useMemo(() => getStoredSiteSettings(lang), [lang]);
   const invoiceLogo = siteSettings.invoiceLogoUrl || siteSettings.logoUrl || '/icon.svg';
-  const orgName = (siteSettings.invoiceOrgName && !siteSettings.invoiceOrgName.includes('LabHome')) 
+  const orgName = (siteSettings.invoiceOrgName && !/lab\s*home/i.test(siteSettings.invoiceOrgName)) 
     ? siteSettings.invoiceOrgName 
     : 'eClinic Bangladesh';
 

@@ -7025,7 +7025,7 @@ export const DEFAULT_HOME_SECTIONS_ORDER: string[] = [
 ];
 
 export const DEFAULT_SITE_SETTINGS_BN: SiteSettings = {
-  siteName: 'LabHome BD',
+  siteName: 'eClinic Bangladesh',
   siteTagline: 'বাংলাদেশের বিশ্বস্ত হোম স্যাম্পল কালেকশন ও ডিজিটাল ডায়াগনস্টিক প্ল্যাটফর্ম',
   logoUrl: '',
   logoIcon: 'FlaskConical',
@@ -7134,7 +7134,7 @@ export const DEFAULT_SITE_SETTINGS_BN: SiteSettings = {
   // About Us
   aboutBadge: 'আমাদের সম্পর্কে',
   aboutTitle: 'আমাদের সম্পর্কে (About Us)',
-  aboutDescription: 'LabHome BD হলো বাংলাদেশের একটি নির্ভরযোগ্য ডিজিটাল স্বাস্থ্যসেবা ও হোম ডায়াগনস্টিক প্ল্যাটফর্ম। ট্রাফিকের ভিড় এড়িয়ে ঘরে বসেই পপুলার, ল্যাবএইড, বারডেমসহ দেশের সেরা ল্যাব থেকে রক্ত পরীক্ষা ও ডায়াগনস্টিক টেস্টের সুবিধা দিতে আমরা বদ্ধপরিকর।',
+  aboutDescription: 'eClinic Bangladesh হলো বাংলাদেশের একটি নির্ভরযোগ্য ডিজিটাল স্বাস্থ্যসেবা ও হোম ডায়াগনস্টিক প্ল্যাটফর্ম। ট্রাফিকের ভিড় এড়িয়ে ঘরে বসেই পপুলার, ল্যাবএইড, বারডেমসহ দেশের সেরা ল্যাব থেকে রক্ত পরীক্ষা ও ডায়াগনস্টিক টেস্টের সুবিধা দিতে আমরা বদ্ধপরিকর।',
   aboutStory: '২০২৪ সাল থেকে আমাদের দক্ষ মেডিকেল টেকনোলজিস্ট ও সার্টিফাইড ল্যাব পার্টনারদের মাধ্যমে ঢাকার হাজারো পরিবারের কাছে সহজে, নিরাপদে ও সাশ্রয়ী মূল্যে হোম স্যাম্পল কালেকশন ও ইনস্ট্যান্ট অনলাইন রিপোর্ট সেবা পৌঁছে দিচ্ছি।',
   aboutStats: [
     { label: 'সফল স্যাম্পল কালেকশন', value: '৫০,০০০+' },
@@ -7148,14 +7148,14 @@ export const DEFAULT_SITE_SETTINGS_BN: SiteSettings = {
   contactAddress: 'বাড়ি ১২, রোড ৫, ধানমন্ডি, ঢাকা - ১২০৫, বাংলাদেশ',
   contactPhone: '01700-000000',
   contactHotline: '09612-000000',
-  contactEmail: 'support@labhomebd.com',
+  contactEmail: 'support@eclinicbd.com',
   contactWhatsApp: '+8801586366002',
   emergencyNumber: '01800-000000',
   workingHours: 'সকাল ৭:০০ টা - রাত ১০:০০ টা (প্রতিদিন)',
-  facebookUrl: 'https://facebook.com/labhomebd',
-  linkedinUrl: 'https://linkedin.com/company/labhomebd',
-  youtubeUrl: 'https://youtube.com/@labhomebd',
-  instagramUrl: 'https://instagram.com/labhomebd',
+  facebookUrl: 'https://facebook.com/eclinicbangladesh',
+  linkedinUrl: 'https://linkedin.com/company/eclinicbangladesh',
+  youtubeUrl: 'https://youtube.com/@eclinicbangladesh',
+  instagramUrl: 'https://instagram.com/eclinicbangladesh',
   services: DEFAULT_SERVICES_BN,
 
   // Invoice & Money Receipt Defaults
@@ -7164,8 +7164,8 @@ export const DEFAULT_SITE_SETTINGS_BN: SiteSettings = {
   invoiceOrgSubtitle: 'বিশ্বস্ত হোম ডায়াগনস্টিক ও ডিজিটাল ল্যাব কেয়ার নেটওয়ার্ক',
   invoiceAddress: 'বাড়ি ১২, রোড ৫, ধানমন্ডি, ঢাকা - ১২০৫, বাংলাদেশ',
   invoiceHotline: '+880 9613-828282 / 01700-000000',
-  invoiceEmail: 'support@labhomebd.com',
-  invoiceWebsite: 'www.labhomebd.com',
+  invoiceEmail: 'support@eclinicbd.com',
+  invoiceWebsite: 'www.eclinicbd.com',
   invoiceTermsTitle: 'স্যাম্পল কালেকশন ও রিপোর্ট নির্দেশিকা (Important Guidelines):',
   invoiceGuidelines: [
     'ফাস্টিং ব্লাড সুগার বা লিপিড প্রোফাইল টেস্ট থাকলে অনুগ্রহ করে ৮-১০ ঘণ্টা উপবাস থাকুন।',
@@ -7174,11 +7174,11 @@ export const DEFAULT_SITE_SETTINGS_BN: SiteSettings = {
     'যেকোনো সহায়তায় আমাদের হটলাইনে (+880 9613-828282) যোগাযোগ করুন।'
   ],
   invoiceFooterNote: '✓ Verified Digital Money Receipt • Computer Generated',
-  invoiceWatermark: 'LabHome BD'
+  invoiceWatermark: 'eClinic BD'
 };
 
 export const DEFAULT_SITE_SETTINGS_EN: SiteSettings = {
-  siteName: 'LabHome BD',
+  siteName: 'eClinic Bangladesh',
   siteTagline: 'Trusted Home Sample Collection & Digital Diagnostic Platform in Bangladesh',
   logoUrl: '',
   logoIcon: 'FlaskConical',
@@ -7286,8 +7286,8 @@ export const DEFAULT_SITE_SETTINGS_EN: SiteSettings = {
 
   // About Us
   aboutBadge: 'About Us',
-  aboutTitle: 'About LabHome BD',
-  aboutDescription: 'LabHome BD is Bangladesh’s premier digital healthcare and doorstep diagnostic platform. Skip traffic jams and clinic queues by getting diagnostic tests done from top accredited labs directly from home.',
+  aboutTitle: 'About eClinic Bangladesh',
+  aboutDescription: 'eClinic Bangladesh is Bangladesh’s premier digital healthcare and doorstep diagnostic platform. Skip traffic jams and clinic queues by getting diagnostic tests done from top accredited labs directly from home.',
   aboutStory: 'Founded in 2024, we empower thousands of families across Dhaka with prompt, hygienic, and affordable blood sample collection, analyzed at accredited labs like Popular, Labaid, BIRDEM, and BSMMU.',
   aboutStats: [
     { label: 'Successful Collections', value: '50,000+' },
@@ -7301,14 +7301,14 @@ export const DEFAULT_SITE_SETTINGS_EN: SiteSettings = {
   contactAddress: 'House #12, Road #5, Dhanmondi, Dhaka - 1205, Bangladesh',
   contactPhone: '01700-000000',
   contactHotline: '09612-000000',
-  contactEmail: 'support@labhomebd.com',
+  contactEmail: 'support@eclinicbd.com',
   contactWhatsApp: '+8801586366002',
   emergencyNumber: '01800-000000',
   workingHours: '7:00 AM - 10:00 PM (Everyday)',
-  facebookUrl: 'https://facebook.com/labhomebd',
-  linkedinUrl: 'https://linkedin.com/company/labhomebd',
-  youtubeUrl: 'https://youtube.com/@labhomebd',
-  instagramUrl: 'https://instagram.com/labhomebd',
+  facebookUrl: 'https://facebook.com/eclinicbangladesh',
+  linkedinUrl: 'https://linkedin.com/company/eclinicbangladesh',
+  youtubeUrl: 'https://youtube.com/@eclinicbangladesh',
+  instagramUrl: 'https://instagram.com/eclinicbangladesh',
   services: DEFAULT_SERVICES_EN,
 
   // Invoice & Money Receipt Defaults
@@ -7317,8 +7317,8 @@ export const DEFAULT_SITE_SETTINGS_EN: SiteSettings = {
   invoiceOrgSubtitle: 'Trusted Digital Diagnostic & Home Sample Collection Network',
   invoiceAddress: 'House #12, Road #5, Dhanmondi, Dhaka - 1205, Bangladesh',
   invoiceHotline: '+880 9613-828282 / +880 1700-000000',
-  invoiceEmail: 'support@labhomebd.com',
-  invoiceWebsite: 'www.labhomebd.com',
+  invoiceEmail: 'support@eclinicbd.com',
+  invoiceWebsite: 'www.eclinicbd.com',
   invoiceTermsTitle: 'Sample Collection & Report Guidelines:',
   invoiceGuidelines: [
     'For fasting tests (FBS, Lipid Profile), ensure 8-10 hours overnight fasting.',
@@ -7327,7 +7327,7 @@ export const DEFAULT_SITE_SETTINGS_EN: SiteSettings = {
     'For any immediate queries or assistance, contact our 24/7 customer helpline.'
   ],
   invoiceFooterNote: '✓ Verified Digital Money Receipt • Computer Generated',
-  invoiceWatermark: 'LabHome BD'
+  invoiceWatermark: 'eClinic BD'
 };
 
 export const DEFAULT_PACKAGES_BN: HealthPackage[] = [

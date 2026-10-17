@@ -47,7 +47,9 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
   const siteSettings = getStoredSiteSettings(lang);
 
   const invoiceLogo = siteSettings.invoiceLogoUrl || siteSettings.logoUrl;
-  const orgName = siteSettings.invoiceOrgName || siteSettings.siteName || 'LabHome BD';
+  const orgName = (siteSettings.invoiceOrgName && !/lab\s*home/i.test(siteSettings.invoiceOrgName))
+    ? siteSettings.invoiceOrgName
+    : (siteSettings.siteName && !/lab\s*home/i.test(siteSettings.siteName) ? siteSettings.siteName : 'eClinic Bangladesh');
   const orgHotline = siteSettings.invoiceHotline || siteSettings.contactHotline || siteSettings.contactPhone || '+880 9613-828282';
   const guidelinesTitle = siteSettings.invoiceTermsTitle || (isBn ? 'স্যাম্পল কালেকশন ও রিপোর্ট নির্দেশিকা (Important Guidelines):' : 'Sample Collection & Report Guidelines:');
   const guidelinesList = (siteSettings.invoiceGuidelines && siteSettings.invoiceGuidelines.length > 0)

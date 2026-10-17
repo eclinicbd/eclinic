@@ -877,10 +877,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div className="h-5 w-px bg-slate-200" />
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold text-xs shadow-xs">
-                LH
+                eC
               </div>
               <div>
-                <span className="font-bold text-slate-900 text-sm block leading-none">LabHome BD</span>
+                <span className="font-bold text-slate-900 text-sm block leading-none">eClinic Bangladesh</span>
                 <span className="text-[10px] font-semibold text-emerald-600">
                   {isSuperAdmin ? 'Super Admin Portal' : `${currentStaff?.name} (${currentStaff?.role?.toUpperCase()})`}
                 </span>

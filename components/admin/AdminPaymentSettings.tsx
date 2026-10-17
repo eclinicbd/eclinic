@@ -528,12 +528,12 @@ export const AdminPaymentSettings: React.FC<AdminPaymentSettingsProps> = ({
                   <input
                     type="text"
                     readOnly
-                    value={config.bkash.callbackUrl || 'https://labhomebd.com/api/payment/bkash/callback'}
+                    value={config.bkash.callbackUrl || 'https://eclinicbd.com/api/payment/bkash/callback'}
                     className="flex-1 px-3 py-1.5 bg-slate-100 rounded-xl border border-slate-200 text-xs font-mono text-slate-600 select-all"
                   />
                   <button
                     type="button"
-                    onClick={() => handleCopy(config.bkash.callbackUrl || 'https://labhomebd.com/api/payment/bkash/callback', 'bkash_url')}
+                    onClick={() => handleCopy(config.bkash.callbackUrl || 'https://eclinicbd.com/api/payment/bkash/callback', 'bkash_url')}
                     className="px-3 py-1.5 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 flex items-center gap-1 cursor-pointer"
                   >
                     {copiedKey === 'bkash_url' ? <Check size={13} className="text-emerald-600" /> : <Copy size={13} />}
@@ -916,7 +916,7 @@ export const AdminPaymentSettings: React.FC<AdminPaymentSettingsProps> = ({
                 </label>
                 <input
                   type="text"
-                  placeholder={config.card.provider === 'stripe' ? 'pk_live_...' : 'e.g. labhomebd_live'}
+                  placeholder={config.card.provider === 'stripe' ? 'pk_live_...' : 'e.g. eclinicbd_live'}
                   value={config.card.storeId}
                   onChange={(e) => setConfig({
                     ...config,

@@ -417,7 +417,7 @@ export const PackagesView: React.FC<PackagesViewProps> = ({
         <section className="mt-16 bg-white rounded-3xl p-8 border border-slate-200/80 shadow-sm">
           <div className="text-center max-w-2xl mx-auto mb-8">
             <h3 className="text-xl sm:text-2xl font-bold text-slate-900">
-              {lang === 'bn' ? 'কেন ল্যাবহোম ডায়াগনস্টিক প্যাকেজ বেছে নেবেন?' : 'Why Choose LabHome Diagnostic Packages?'}
+              {lang === 'bn' ? 'কেন eClinic Bangladesh ডায়াগনস্টিক প্যাকেজ বেছে নেবেন?' : 'Why Choose eClinic Bangladesh Diagnostic Packages?'}
             </h3>
             <p className="text-xs sm:text-sm text-slate-600 mt-1">
               {lang === 'bn' ? 'সম্পূর্ণ নিরাপদ ও ঝামেলাহীন স্বাস্থ্যসেবা' : 'Hospital-standard safety and transparency right at your home'}

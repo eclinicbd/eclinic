@@ -3023,7 +3023,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                   type="text"
                   value={formData.siteName || ''}
                   onChange={e => setFormData({ ...formData, siteName: e.target.value })}
-                  placeholder="e.g. LabHome BD"
+                  placeholder="e.g. eClinic Bangladesh"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-primary outline-none"
                 />
               </div>
@@ -3245,7 +3245,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                           }}
                         />
                         <span className="text-xs font-semibold text-slate-100 truncate">
-                          {formData.siteName || 'LabHome BD'} - {formData.siteTagline || 'Smart Healthcare'}
+                          {formData.siteName || 'eClinic Bangladesh'} - {formData.siteTagline || 'Smart Healthcare'}
                         </span>
                       </div>
                       <span className="text-slate-400 hover:text-white text-[11px] font-bold cursor-pointer">×</span>
@@ -3276,7 +3276,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                       )}
                       <div>
                         <span className="font-bold text-base text-white block leading-tight">
-                          {formData.siteName || 'LabHome BD'}
+                          {formData.siteName || 'eClinic Bangladesh'}
                         </span>
                         <span className="text-[10px] text-slate-400 block truncate max-w-[180px]">
                           {formData.siteTagline || 'Home Diagnostic Service'}
@@ -3451,7 +3451,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                 type="email"
                 value={formData.contactEmail || ''}
                 onChange={e => setFormData({ ...formData, contactEmail: e.target.value })}
-                placeholder="support@labhomebd.com"
+                placeholder="support@eclinicbd.com"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none"
               />
             </div>
@@ -4812,7 +4812,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                   type="text"
                   value={formData.invoiceOrgName || formData.siteName || ''}
                   onChange={e => setFormData({ ...formData, invoiceOrgName: e.target.value })}
-                  placeholder="e.g. LabHome BD - Smart Healthcare Services"
+                  placeholder="e.g. eClinic Bangladesh - Smart Healthcare Services"
                   className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-slate-900 outline-none"
                 />
               </div>
@@ -4840,7 +4840,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                   type="text"
                   value={formData.invoiceWatermark || formData.siteName || ''}
                   onChange={e => setFormData({ ...formData, invoiceWatermark: e.target.value })}
-                  placeholder="e.g. LabHome BD"
+                  placeholder="e.g. eClinic BD"
                   className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-slate-900 outline-none font-mono"
                 />
               </div>
@@ -4886,7 +4886,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                     type="email"
                     value={formData.invoiceEmail || formData.contactEmail || ''}
                     onChange={e => setFormData({ ...formData, invoiceEmail: e.target.value })}
-                    placeholder="support@labhomebd.com"
+                    placeholder="support@eclinicbd.com"
                     className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-slate-900 outline-none"
                   />
                 </div>
@@ -4901,9 +4901,9 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                   </label>
                   <input
                     type="text"
-                    value={formData.invoiceWebsite || 'www.labhomebd.com'}
+                    value={formData.invoiceWebsite || 'www.eclinicbd.com'}
                     onChange={e => setFormData({ ...formData, invoiceWebsite: e.target.value })}
-                    placeholder="www.labhomebd.com"
+                    placeholder="www.eclinicbd.com"
                     className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-slate-900 outline-none font-mono"
                   />
                 </div>

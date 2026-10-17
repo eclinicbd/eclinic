@@ -169,13 +169,15 @@ export const generateInvoiceHtml = (
 
   // Brand / Organization Details from settings
   const invoiceLogo = settings?.invoiceLogoUrl || settings?.logoUrl || '';
-  const orgName = settings?.invoiceOrgName || settings?.siteName || 'LabHome BD';
+  const orgName = (settings?.invoiceOrgName && !settings.invoiceOrgName.includes('LabHome'))
+    ? settings.invoiceOrgName
+    : (settings?.siteName && !settings.siteName.includes('LabHome') ? settings.siteName : 'eClinic Bangladesh');
   const orgSubtitle = settings?.invoiceOrgSubtitle || settings?.siteTagline || (isBn ? 'বিশ্বস্ত হোম ডায়াগনস্টিক ও ডিজিটাল ল্যাব কেয়ার নেটওয়ার্ক' : 'Trusted Digital Lab & Home Sample Collection');
   const orgAddress = settings?.invoiceAddress || settings?.contactAddress || (isBn ? 'বাড়ি ১২, রোড ৫, ধানমন্ডি, ঢাকা - ১২০৫, বাংলাদেশ' : 'House #12, Road #5, Dhanmondi, Dhaka, Bangladesh');
   const orgHotline = settings?.invoiceHotline || settings?.contactHotline || settings?.contactPhone || '+880 9613-828282';
-  const orgEmail = settings?.invoiceEmail || settings?.contactEmail || 'support@labhomebd.com';
-  const orgWebsite = settings?.invoiceWebsite || 'www.labhomebd.com';
-  const watermarkText = settings?.invoiceWatermark || orgName || 'LabHome BD';
+  const orgEmail = settings?.invoiceEmail || settings?.contactEmail || 'support@eclinicbd.com';
+  const orgWebsite = settings?.invoiceWebsite || 'www.eclinicbd.com';
+  const watermarkText = (settings?.invoiceWatermark && !settings.invoiceWatermark.includes('LabHome')) ? settings.invoiceWatermark : 'eClinic BD';
   const guidelinesTitle = settings?.invoiceTermsTitle || (isBn ? 'স্যাম্পল কালেকশন ও রিপোর্ট নির্দেশিকা (Important Guidelines):' : 'Sample Collection & Report Guidelines:');
   const guidelinesList = (settings?.invoiceGuidelines && settings.invoiceGuidelines.length > 0)
     ? settings.invoiceGuidelines

@@ -113,7 +113,7 @@ export const EPrescriptionModal: React.FC<EPrescriptionModalProps> = ({
             {/* Platform / Clinic Brand Stamp */}
             <div className="text-left sm:text-right">
               <span className="text-sm font-extrabold text-sky-600 tracking-tight block">
-                LabHome BD Telemedicine
+                eClinic BD Telemedicine
               </span>
               <span className="text-[10px] text-slate-400 block">
                 Verified Digital E-Prescription
@@ -333,7 +333,7 @@ export const EPrescriptionModal: React.FC<EPrescriptionModalProps> = ({
               </div>
               <div className="text-[10px] text-slate-500">
                 <p className="font-bold text-slate-700">{isBn ? 'ডিজিটাল ভেরিফিকেশন কোড' : 'Verified QR Digital Stamp'}</p>
-                <p>LabHome BD Health Network</p>
+                <p>eClinic Bangladesh Health Network</p>
                 <p className="font-mono">Security Hash: {prescription.id}-AUTH</p>
               </div>
             </div>

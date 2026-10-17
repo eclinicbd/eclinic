@@ -142,13 +142,13 @@ export const NursingCareSection: React.FC<NursingCareSectionProps> = ({
     const text = service 
       ? (
           lang === 'bn'
-            ? `হ্যালো LabHome BD, আমি "${service.title}" নার্সিং সেবাটি সম্পর্কে বিস্তারিত জানতে এবং বুক করতে চাই।`
-            : `Hello LabHome BD, I would like to inquire about and book "${service.title}" nursing service.`
+            ? `হ্যালো eClinic Bangladesh, আমি "${service.title}" নার্সিং সেবাটি সম্পর্কে বিস্তারিত জানতে এবং বুক করতে চাই।`
+            : `Hello eClinic Bangladesh, I would like to inquire about and book "${service.title}" nursing service.`
         )
       : (
           lang === 'bn'
-            ? 'হ্যালো LabHome BD, আমি বাসায় হোম নার্সিং ও কেয়ারগিভার সার্ভিস সম্পর্কে জানতে চাই।'
-            : 'Hello LabHome BD, I would like to know about your Home Nursing & Caregiver services.'
+            ? 'হ্যালো eClinic Bangladesh, আমি বাসায় হোম নার্সিং ও কেয়ারগিভার সার্ভিস সম্পর্কে জানতে চাই।'
+            : 'Hello eClinic Bangladesh, I would like to know about your Home Nursing & Caregiver services.'
         );
     const url = getWhatsAppUrl(whatsapp, text);
     if (url && url !== '#') {

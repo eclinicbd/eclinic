@@ -143,7 +143,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder={lang === 'bn' ? 'admin অথবা admin@labhome.com' : 'admin or admin@labhome.com'}
+                placeholder={lang === 'bn' ? 'admin অথবা admin@eclinicbd.com' : 'admin or admin@eclinicbd.com'}
                 autoFocus
                 required
                 className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 text-sm font-medium text-slate-900 bg-slate-50/50 transition-all outline-none"

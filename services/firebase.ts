@@ -44,6 +44,7 @@ import {
   Doctor,
   DoctorAtHomeBooking
 } from '../types';
+import { cleanBrandText } from './dataStorage';
 import { sendPatientRegistrationNotificationEmail } from './emailNotificationService';
 
 // Initialize Firebase App
@@ -515,9 +516,19 @@ export const getBookingsFromFirestore = async (): Promise<BookingHistoryItem[]> 
 
 export const saveSiteSettingsToFirestore = async (lang: Language, settings: SiteSettings): Promise<boolean> => {
   try {
+    const cleanSettings: SiteSettings = {
+      ...settings,
+      siteName: cleanBrandText(settings.siteName) || 'eClinic Bangladesh',
+      aboutTitle: cleanBrandText(settings.aboutTitle) || (lang === 'bn' ? 'আমাদের সম্পর্কে (About Us)' : 'About eClinic Bangladesh'),
+      aboutDescription: cleanBrandText(settings.aboutDescription),
+      aboutStory: cleanBrandText(settings.aboutStory),
+      invoiceOrgName: cleanBrandText(settings.invoiceOrgName) || 'eClinic Bangladesh',
+      invoiceWatermark: (settings.invoiceWatermark && !settings.invoiceWatermark.includes('LabHome')) ? settings.invoiceWatermark : 'eClinic BD'
+    };
+
     const settingsDoc = doc(db, 'site_settings', `config_${lang}`);
     await setDoc(settingsDoc, cleanFirestoreData({
-      ...settings,
+      ...cleanSettings,
       updatedAt: new Date().toISOString()
     }), { merge: true });
 
@@ -537,6 +548,7 @@ export const saveSiteSettingsToFirestore = async (lang: Language, settings: Site
     if (Object.keys(globalVisibilityFields).length > 0) {
       await setDoc(otherDoc, cleanFirestoreData({
         ...globalVisibilityFields,
+        siteName: cleanSettings.siteName,
         updatedAt: new Date().toISOString()
       }), { merge: true });
     }
@@ -554,7 +566,64 @@ export const subscribeToSiteSettings = (lang: Language, callback: (settings: Sit
     return onSnapshot(settingsDoc, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.data() as SiteSettings;
-        callback(data);
+        let cleanAboutTitle: string;
+        if (lang === 'bn') {
+          if (!data.aboutTitle || /lab\s*home/i.test(data.aboutTitle) || data.aboutTitle.includes('About eClinic')) {
+            cleanAboutTitle = 'আমাদের সম্পর্কে (About Us)';
+          } else {
+            cleanAboutTitle = cleanBrandText(data.aboutTitle);
+          }
+        } else {
+          if (!data.aboutTitle || /lab\s*home/i.test(data.aboutTitle) || /[\u0980-\u09FF]/.test(data.aboutTitle)) {
+            cleanAboutTitle = 'About eClinic Bangladesh';
+          } else {
+            cleanAboutTitle = cleanBrandText(data.aboutTitle);
+          }
+        }
+
+        const rawDesc = data.aboutDescription;
+        const cleanAboutDesc = (lang === 'bn')
+          ? (!rawDesc || !/[\u0980-\u09FF]/.test(rawDesc) || /lab\s*home/i.test(rawDesc)
+              ? 'eClinic Bangladesh হলো বাংলাদেশের একটি নির্ভরযোগ্য ডিজিটাল স্বাস্থ্যসেবা ও হোম ডায়াগনস্টিক প্ল্যাটফর্ম। ট্রাফিকের ভিড় এড়িয়ে ঘরে বসেই পপুলার, ল্যাবএইড, বারডেমসহ দেশের সেরা ল্যাব থেকে রক্ত পরীক্ষা ও ডায়াগনস্টিক টেস্টের সুবিধা দিতে আমরা বদ্ধপরিকর।'
+              : cleanBrandText(rawDesc))
+          : (!rawDesc || /[\u0980-\u09FF]/.test(rawDesc) || /lab\s*home/i.test(rawDesc)
+              ? 'eClinic Bangladesh is Bangladesh’s premier digital healthcare and doorstep diagnostic platform. Skip traffic jams and clinic queues by getting diagnostic tests done from top accredited labs directly from home.'
+              : cleanBrandText(rawDesc));
+
+        const rawStory = data.aboutStory;
+        const cleanAboutStory = (lang === 'bn')
+          ? (!rawStory || !/[\u0980-\u09FF]/.test(rawStory) || /lab\s*home/i.test(rawStory)
+              ? '২০২৪ সাল থেকে আমাদের দক্ষ মেডিকেল টেকনোলজিস্ট ও সার্টিফাইড ল্যাব পার্টনারদের মাধ্যমে ঢাকার হাজারো পরিবারের কাছে সহজে, নিরাপদে ও সাশ্রয়ী মূল্যে হোম স্যাম্পল কালেকশন ও ইনস্ট্যান্ট অনলাইন রিপোর্ট সেবা পৌঁছে দিচ্ছি।'
+              : cleanBrandText(rawStory))
+          : (!rawStory || /[\u0980-\u09FF]/.test(rawStory) || /lab\s*home/i.test(rawStory)
+              ? 'Founded in 2024, we empower thousands of families across Dhaka with prompt, hygienic, and affordable blood sample collection, analyzed at accredited labs like Popular, Labaid, BIRDEM, and BSMMU.'
+              : cleanBrandText(rawStory));
+
+        const cleanSettings: SiteSettings = {
+          ...data,
+          siteName: cleanBrandText(data.siteName) || 'eClinic Bangladesh',
+          aboutTitle: cleanAboutTitle,
+          aboutDescription: cleanAboutDesc,
+          aboutStory: cleanAboutStory,
+          invoiceOrgName: cleanBrandText(data.invoiceOrgName) || 'eClinic Bangladesh',
+          invoiceWatermark: (data.invoiceWatermark && !data.invoiceWatermark.includes('LabHome')) ? data.invoiceWatermark : 'eClinic BD'
+        };
+
+        // If stored Firestore data still contains "LabHome" anywhere, immediately self-heal in Firestore!
+        const rawJson = JSON.stringify(data);
+        if (/lab\s*home/i.test(rawJson) || rawJson.includes('ল্যাবহোম') || rawJson.includes('ল্যাব হোম')) {
+          setDoc(settingsDoc, cleanFirestoreData({
+            siteName: cleanSettings.siteName,
+            aboutTitle: cleanSettings.aboutTitle,
+            aboutDescription: cleanSettings.aboutDescription,
+            aboutStory: cleanSettings.aboutStory,
+            invoiceOrgName: cleanSettings.invoiceOrgName,
+            invoiceWatermark: cleanSettings.invoiceWatermark,
+            updatedAt: new Date().toISOString()
+          }), { merge: true }).catch(() => {});
+        }
+
+        callback(cleanSettings);
       }
     }, (_error) => {
       // Handled quietly

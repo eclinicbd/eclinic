@@ -540,7 +540,7 @@ export const AdminDoctorAtHome: React.FC<AdminDoctorAtHomeProps> = ({
                   <a
                     href={getWhatsAppUrl(
                       booking.patientPhone,
-                      `আসসালামু আলাইকুম ${booking.patientName}, LabHome BD থেকে আপনার Doctor at Home বুকিং (ID: ${booking.id}) এর জন্য যোগাযোগ করছি। তারিখ: ${booking.date}, সময়: ${booking.timeSlot}।`
+                      `আসসালামু আলাইকুম ${booking.patientName}, eClinic Bangladesh থেকে আপনার Doctor Home বুকিং (ID: ${booking.id}) এর জন্য যোগাযোগ করছি। তারিখ: ${booking.date}, সময়: ${booking.timeSlot}।`
                     )}
                     target="_blank"
                     rel="noopener noreferrer"

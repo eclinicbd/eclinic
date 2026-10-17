@@ -866,6 +866,30 @@ export const saveStoredBookings = (bookings: BookingHistoryItem[]): void => {
   }
 };
 
+/**
+ * Sanitizes any string across the application to enforce "eClinic Bangladesh" over legacy "LabHome BD"
+ */
+export const cleanBrandText = (text?: string): string => {
+  if (!text || typeof text !== 'string') return '';
+  return text
+    .replace(/support@labhomebd\.com/gi, 'support@eclinicbd.com')
+    .replace(/www\.labhomebd\.com/gi, 'www.eclinicbd.com')
+    .replace(/labhomebd\.com/gi, 'eclinicbd.com')
+    .replace(/labhome\.com/gi, 'eclinicbd.com')
+    .replace(/facebook\.com\/labhomebd/gi, 'facebook.com/eclinicbangladesh')
+    .replace(/linkedin\.com\/company\/labhomebd/gi, 'linkedin.com/company/eclinicbangladesh')
+    .replace(/youtube\.com\/@labhomebd/gi, 'youtube.com/@eclinicbangladesh')
+    .replace(/instagram\.com\/labhomebd/gi, 'instagram.com/eclinicbangladesh')
+    .replace(/Lab\s*Home\s*BD/gi, 'eClinic Bangladesh')
+    .replace(/LabHome\s*BD/gi, 'eClinic Bangladesh')
+    .replace(/Lab\s*Home/gi, 'eClinic')
+    .replace(/LabHome/gi, 'eClinic')
+    .replace(/ল্যাব\s*হোম\s*বিডি/gi, 'eClinic Bangladesh')
+    .replace(/ল্যাবহোম\s*বিডি/gi, 'eClinic Bangladesh')
+    .replace(/ল্যাব\s*হোম/gi, 'eClinic')
+    .replace(/ল্যাবহোম/gi, 'eClinic');
+};
+
 export const getStoredSiteSettings = (lang: Language): SiteSettings => {
   const defaultSettings = getDefaultSiteSettings(lang);
   try {
@@ -891,9 +915,65 @@ export const getStoredSiteSettings = (lang: Language): SiteSettings => {
       const rawWhatsApp = parsed.contactWhatsApp || otherParsed?.contactWhatsApp;
       const cleanWhatsApp = (rawWhatsApp && !rawWhatsApp.includes('01700000000') && rawWhatsApp !== '01700-000000') ? rawWhatsApp : '+8801586366002';
 
+      const cleanSiteName = cleanBrandText(parsed.siteName) || 'eClinic Bangladesh';
+
+      // Language-aware About Title
+      let cleanAboutTitle: string;
+      if (lang === 'bn') {
+        if (!parsed.aboutTitle || /lab\s*home/i.test(parsed.aboutTitle) || parsed.aboutTitle.includes('About eClinic')) {
+          cleanAboutTitle = 'আমাদের সম্পর্কে (About Us)';
+        } else {
+          cleanAboutTitle = cleanBrandText(parsed.aboutTitle);
+        }
+      } else {
+        if (!parsed.aboutTitle || /lab\s*home/i.test(parsed.aboutTitle) || /[\u0980-\u09FF]/.test(parsed.aboutTitle)) {
+          cleanAboutTitle = 'About eClinic Bangladesh';
+        } else {
+          cleanAboutTitle = cleanBrandText(parsed.aboutTitle);
+        }
+      }
+
+      // Language-aware About Description
+      let cleanAboutDesc: string;
+      const rawDesc = parsed.aboutDescription;
+      if (lang === 'bn') {
+        if (!rawDesc || !/[\u0980-\u09FF]/.test(rawDesc) || /lab\s*home/i.test(rawDesc)) {
+          cleanAboutDesc = defaultSettings.aboutDescription;
+        } else {
+          cleanAboutDesc = cleanBrandText(rawDesc);
+        }
+      } else {
+        if (!rawDesc || /[\u0980-\u09FF]/.test(rawDesc) || /lab\s*home/i.test(rawDesc)) {
+          cleanAboutDesc = defaultSettings.aboutDescription;
+        } else {
+          cleanAboutDesc = cleanBrandText(rawDesc);
+        }
+      }
+
+      // Language-aware About Story
+      let cleanAboutStory: string;
+      const rawStory = parsed.aboutStory;
+      if (lang === 'bn') {
+        if (!rawStory || !/[\u0980-\u09FF]/.test(rawStory) || /lab\s*home/i.test(rawStory)) {
+          cleanAboutStory = defaultSettings.aboutStory;
+        } else {
+          cleanAboutStory = cleanBrandText(rawStory);
+        }
+      } else {
+        if (!rawStory || /[\u0980-\u09FF]/.test(rawStory) || /lab\s*home/i.test(rawStory)) {
+          cleanAboutStory = defaultSettings.aboutStory;
+        } else {
+          cleanAboutStory = cleanBrandText(rawStory);
+        }
+      }
+
+      const cleanInvoiceOrg = cleanBrandText(parsed.invoiceOrgName) || 'eClinic Bangladesh';
+      const cleanWatermark = (parsed.invoiceWatermark && !parsed.invoiceWatermark.includes('LabHome')) ? parsed.invoiceWatermark : 'eClinic BD';
+
       return {
         ...defaultSettings,
         ...parsed,
+        siteName: cleanSiteName,
         contactWhatsApp: cleanWhatsApp,
         heroBtnHomeDoctor: parsed.heroBtnHomeDoctor || (lang === 'bn' ? 'হোম ডক্টর' : 'Home Doctor'),
         showHeroHomeDoctorBtn: parsed.showHeroHomeDoctorBtn !== undefined ? parsed.showHeroHomeDoctorBtn : true,
@@ -905,6 +985,11 @@ export const getStoredSiteSettings = (lang: Language): SiteSettings => {
         showAppDownloadSection: !isAppInactive,
         showHowItWorksSection: !isHowItWorksInactive,
         showServicesSection: !isServicesInactive,
+        aboutTitle: cleanAboutTitle,
+        aboutDescription: cleanAboutDesc,
+        aboutStory: cleanAboutStory,
+        invoiceOrgName: cleanInvoiceOrg,
+        invoiceWatermark: cleanWatermark,
         heroImages: (Array.isArray(parsed.heroImages) && parsed.heroImages.length > 0) ? parsed.heroImages : (Array.isArray(otherParsed?.heroImages) && otherParsed.heroImages.length > 0 ? otherParsed.heroImages : defaultSettings.heroImages),
         howItWorksSteps: (Array.isArray(parsed.howItWorksSteps) && parsed.howItWorksSteps.length > 0) ? parsed.howItWorksSteps : defaultSettings.howItWorksSteps,
         aboutStats: (Array.isArray(parsed.aboutStats) && parsed.aboutStats.length > 0) ? parsed.aboutStats : defaultSettings.aboutStats,
@@ -921,8 +1006,13 @@ export const getStoredSiteSettings = (lang: Language): SiteSettings => {
       const rawWhatsApp = otherParsed.contactWhatsApp;
       const cleanWhatsApp = (rawWhatsApp && !rawWhatsApp.includes('01700000000') && rawWhatsApp !== '01700-000000') ? rawWhatsApp : '+8801586366002';
 
+      const cleanSiteName = cleanBrandText(otherParsed.siteName) || 'eClinic Bangladesh';
+      const cleanInvoiceOrg = cleanBrandText(otherParsed.invoiceOrgName) || 'eClinic Bangladesh';
+      const cleanWatermark = (otherParsed.invoiceWatermark && !otherParsed.invoiceWatermark.includes('LabHome')) ? otherParsed.invoiceWatermark : 'eClinic BD';
+
       return {
         ...defaultSettings,
+        siteName: cleanSiteName,
         contactWhatsApp: cleanWhatsApp,
         heroBtnHomeDoctor: otherParsed.heroBtnHomeDoctor || (lang === 'bn' ? 'হোম ডক্টর' : 'Home Doctor'),
         showHeroHomeDoctorBtn: otherParsed.showHeroHomeDoctorBtn !== undefined ? otherParsed.showHeroHomeDoctorBtn : true,
@@ -934,6 +1024,12 @@ export const getStoredSiteSettings = (lang: Language): SiteSettings => {
         showAppDownloadSection: otherParsed.showAppDownloadSection !== false,
         showHowItWorksSection: otherParsed.showHowItWorksSection !== false,
         showServicesSection: otherParsed.showServicesSection !== false,
+        aboutTitle: defaultSettings.aboutTitle,
+        aboutDescription: defaultSettings.aboutDescription,
+        aboutStory: defaultSettings.aboutStory,
+        siteTagline: defaultSettings.siteTagline,
+        invoiceOrgName: cleanInvoiceOrg,
+        invoiceWatermark: cleanWatermark,
         heroImages: (Array.isArray(otherParsed.heroImages) && otherParsed.heroImages.length > 0) ? otherParsed.heroImages : defaultSettings.heroImages,
         doctorAtHomeSpecialties: (Array.isArray(otherParsed.doctorAtHomeSpecialties) && otherParsed.doctorAtHomeSpecialties.length > 0)
           ? otherParsed.doctorAtHomeSpecialties.map(s => ({ ...s, imageUrl: (!s.imageUrl || s.imageUrl.includes('unsplash.com')) ? MALE_DOCTOR_VECTOR_ICON : s.imageUrl }))
@@ -950,7 +1046,19 @@ export const getStoredSiteSettings = (lang: Language): SiteSettings => {
 export const saveStoredSiteSettings = (lang: Language, settings: SiteSettings): void => {
   try {
     const key = lang === 'en' ? STORAGE_KEYS.SITE_SETTINGS_EN : STORAGE_KEYS.SITE_SETTINGS_BN;
-    localStorage.setItem(key, JSON.stringify(settings));
+    const defaultSettingsCurrent = getDefaultSiteSettings(lang);
+
+    const cleanSettings: SiteSettings = {
+      ...settings,
+      siteName: cleanBrandText(settings.siteName) || 'eClinic Bangladesh',
+      aboutTitle: lang === 'bn' 
+        ? (settings.aboutTitle && !/lab\s*home/i.test(settings.aboutTitle) && !settings.aboutTitle.includes('About eClinic') ? cleanBrandText(settings.aboutTitle) : 'আমাদের সম্পর্কে (About Us)')
+        : (settings.aboutTitle && !/lab\s*home/i.test(settings.aboutTitle) && !/[\u0980-\u09FF]/.test(settings.aboutTitle) ? cleanBrandText(settings.aboutTitle) : 'About eClinic Bangladesh'),
+      aboutDescription: cleanBrandText(settings.aboutDescription) || defaultSettingsCurrent.aboutDescription,
+      aboutStory: cleanBrandText(settings.aboutStory) || defaultSettingsCurrent.aboutStory,
+      invoiceOrgName: cleanBrandText(settings.invoiceOrgName) || 'eClinic Bangladesh'
+    };
+    localStorage.setItem(key, JSON.stringify(cleanSettings));
 
     if (settings.doctorAtHomeSpecialties && Array.isArray(settings.doctorAtHomeSpecialties)) {
       saveStoredDoctorAtHomeSpecialties(settings.doctorAtHomeSpecialties);
@@ -961,9 +1069,17 @@ export const saveStoredSiteSettings = (lang: Language, settings: SiteSettings): 
     const otherKey = otherLang === 'en' ? STORAGE_KEYS.SITE_SETTINGS_EN : STORAGE_KEYS.SITE_SETTINGS_BN;
     const otherStored = localStorage.getItem(otherKey);
     let otherSettings: SiteSettings = otherStored ? JSON.parse(otherStored) : getDefaultSiteSettings(otherLang);
+    const defaultSettingsOther = getDefaultSiteSettings(otherLang);
 
     const mergedOther: SiteSettings = {
       ...otherSettings,
+      siteName: cleanBrandText(otherSettings.siteName) || 'eClinic Bangladesh',
+      aboutTitle: otherLang === 'bn'
+        ? (otherSettings.aboutTitle && !/lab\s*home/i.test(otherSettings.aboutTitle) && !otherSettings.aboutTitle.includes('About eClinic') ? cleanBrandText(otherSettings.aboutTitle) : 'আমাদের সম্পর্কে (About Us)')
+        : (otherSettings.aboutTitle && !/lab\s*home/i.test(otherSettings.aboutTitle) && !/[\u0980-\u09FF]/.test(otherSettings.aboutTitle) ? cleanBrandText(otherSettings.aboutTitle) : 'About eClinic Bangladesh'),
+      aboutDescription: cleanBrandText(otherSettings.aboutDescription) || defaultSettingsOther.aboutDescription,
+      aboutStory: cleanBrandText(otherSettings.aboutStory) || defaultSettingsOther.aboutStory,
+      invoiceOrgName: cleanBrandText(otherSettings.invoiceOrgName) || 'eClinic Bangladesh',
       logoUrl: settings.logoUrl,
       logoIcon: settings.logoIcon,
       faviconUrl: settings.faviconUrl || otherSettings.faviconUrl,
@@ -1002,7 +1118,6 @@ export const saveStoredSiteSettings = (lang: Language, settings: SiteSettings): 
       instagramUrl: settings.instagramUrl || otherSettings.instagramUrl,
       twitterUrl: settings.twitterUrl || otherSettings.twitterUrl,
       invoiceLogoUrl: settings.invoiceLogoUrl !== undefined ? settings.invoiceLogoUrl : otherSettings.invoiceLogoUrl,
-      invoiceOrgName: settings.invoiceOrgName || otherSettings.invoiceOrgName,
       invoiceOrgSubtitle: settings.invoiceOrgSubtitle || otherSettings.invoiceOrgSubtitle,
       invoiceAddress: settings.invoiceAddress || otherSettings.invoiceAddress,
       invoiceHotline: settings.invoiceHotline || otherSettings.invoiceHotline,
@@ -1247,6 +1362,7 @@ export const verifyStaffOrAdminLogin = (inputUsername: string, inputPass: string
     cleanInputUser === 'admin' ||
     cleanInputUser === 'murad' ||
     cleanInputUser === 'muradhn.abc@gmail.com' ||
+    cleanInputUser === 'admin@eclinicbd.com' ||
     cleanInputUser === 'admin@labhome.com';
 
   if (isAdminUserMatch && (inputPass === adminCreds.password || inputPass === 'murad123' || inputPass === 'admin123')) {

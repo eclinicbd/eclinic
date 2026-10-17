@@ -1,7 +1,7 @@
 
 export const TRANSLATIONS = {
   bn: {
-    appTitle: "LabHome BD",
+    appTitle: "eClinic Bangladesh",
     navHome: "হোম",
     navTests: "টেস্টসমূহ",
     navPackages: "হেলথ প্যাকেজ",
@@ -201,7 +201,7 @@ export const TRANSLATIONS = {
     adminSaveSiteSuccess: "সাইটের কনটেন্ট ও সেটিংস সফলভাবে সেভ করা হয়েছে!",
     sectionServicesTitle: "আমাদের প্রধান স্বাস্থ্যসেবাসমূহ",
     sectionServicesDesc: "ঘরে বসে রক্ত পরীক্ষা ছাড়াও উন্নত টেলিমেডিসিন, জরুরি মনিটরিং এবং অনলাইন রিপোর্ট সেবা।",
-    sectionAboutTitle: "কেন LabHome BD আপনার সেরা পছন্দ?",
+    sectionAboutTitle: "কেন eClinic Bangladesh আপনার সেরা পছন্দ?",
     viewAllServices: "সকল সেবা দেখুন",
     callHotline: "হটলাইনে কল করুন",
     chatWhatsApp: "হোয়াটসঅ্যাপে কথা বলুন",
@@ -241,7 +241,7 @@ export const TRANSLATIONS = {
     authLoginToPrefill: "লগইন থাকলে আপনার তথ্য স্বয়ংক্রিয়ভাবে বসে যাবে"
   },
   en: {
-    appTitle: "LabHome BD",
+    appTitle: "eClinic Bangladesh",
     navHome: "Home",
     navTests: "Tests",
     navPackages: "Health Packages",
@@ -441,7 +441,7 @@ export const TRANSLATIONS = {
     adminSaveSiteSuccess: "Site content & settings saved successfully!",
     sectionServicesTitle: "Our Specialized Healthcare Services",
     sectionServicesDesc: "Beyond home blood tests, enjoy complete telemedicine, emergency monitoring and digital reporting.",
-    sectionAboutTitle: "Why Choose LabHome BD?",
+    sectionAboutTitle: "Why Choose eClinic Bangladesh?",
     viewAllServices: "View All Services",
     callHotline: "Call Hotline",
     chatWhatsApp: "Chat on WhatsApp",
