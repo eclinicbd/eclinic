@@ -26,7 +26,7 @@ import {
   Download 
 } from 'lucide-react';
 import { DoctorAtHomeBooking, DoctorAtHomeStatus, Language, PaymentMethod } from '../../types';
-import { DEFAULT_DOCTOR_AT_HOME_SPECIALTIES } from '../../services/dataStorage';
+import { DEFAULT_DOCTOR_AT_HOME_SPECIALTIES, getWhatsAppUrl } from '../../services/dataStorage';
 import { printOrDownloadDoctorAtHomeSlip, downloadDoctorAtHomeSlipHtml } from '../../services/invoiceService';
 
 interface AdminDoctorAtHomeProps {
@@ -538,9 +538,10 @@ export const AdminDoctorAtHome: React.FC<AdminDoctorAtHomeProps> = ({
                 <div className="flex items-center gap-1.5">
                   {/* WhatsApp Direct */}
                   <a
-                    href={`https://wa.me/88${booking.patientPhone.replace(/\D/g, '')}?text=${encodeURIComponent(
+                    href={getWhatsAppUrl(
+                      booking.patientPhone,
                       `আসসালামু আলাইকুম ${booking.patientName}, LabHome BD থেকে আপনার Doctor at Home বুকিং (ID: ${booking.id}) এর জন্য যোগাযোগ করছি। তারিখ: ${booking.date}, সময়: ${booking.timeSlot}।`
-                    )}`}
+                    )}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors border border-emerald-200"

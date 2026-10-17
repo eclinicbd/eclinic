@@ -23,6 +23,7 @@ import {
   Phone
 } from 'lucide-react';
 import { Button } from './Button';
+import { getWhatsAppUrl } from '../services/dataStorage';
 
 interface NursingCareSectionProps {
   services?: NursingCareService[];
@@ -138,19 +139,25 @@ export const NursingCareSection: React.FC<NursingCareSectionProps> = ({
   };
 
   const handleWhatsAppChat = (service?: NursingCareService) => {
-    const cleanPhone = whatsapp.replace(/[^0-9]/g, '');
     const text = service 
-      ? encodeURIComponent(
+      ? (
           lang === 'bn'
             ? `হ্যালো LabHome BD, আমি "${service.title}" নার্সিং সেবাটি সম্পর্কে বিস্তারিত জানতে এবং বুক করতে চাই।`
             : `Hello LabHome BD, I would like to inquire about and book "${service.title}" nursing service.`
         )
-      : encodeURIComponent(
+      : (
           lang === 'bn'
             ? 'হ্যালো LabHome BD, আমি বাসায় হোম নার্সিং ও কেয়ারগিভার সার্ভিস সম্পর্কে জানতে চাই।'
             : 'Hello LabHome BD, I would like to know about your Home Nursing & Caregiver services.'
         );
-    window.open(`https://wa.me/${cleanPhone}?text=${text}`, '_blank');
+    const url = getWhatsAppUrl(whatsapp, text);
+    if (url && url !== '#') {
+      try {
+        window.open(url, '_blank', 'noopener,noreferrer');
+      } catch (_) {
+        window.location.href = url;
+      }
+    }
   };
 
   if (activeServices.length === 0) {

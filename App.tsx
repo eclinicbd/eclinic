@@ -60,7 +60,7 @@ import {
   sendOrderNotificationEmail, 
   sendPatientRegistrationNotificationEmail 
 } from './services/emailNotificationService';
-import { saveStoredPaymentConfig } from './services/dataStorage';
+import { saveStoredPaymentConfig, getWhatsAppUrl } from './services/dataStorage';
 import { TestCard } from './components/TestCard';
 import { BookingModal, calculateAccessoriesFee } from './components/BookingModal';
 import { UserDashboard } from './components/UserDashboard';
@@ -1359,17 +1359,32 @@ export default function App() {
                   <p className="text-lg text-slate-600 mb-8 leading-relaxed max-w-lg mx-auto md:mx-0">
                     {siteSettings.heroDesc || t.heroDesc}
                   </p>
-                  <div className="flex flex-col sm:flex-row gap-3 justify-center md:justify-start">
-                    <Button onClick={() => navigateToTests()} className="px-8 py-4 text-lg shadow-lg shadow-sky-200">
-                      {siteSettings.heroBtnBook || t.heroBtnBook}
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center md:justify-start flex-wrap">
+                    {/* 1. Book Test Button */}
+                    <Button onClick={() => navigateToTests()} className="px-7 py-3.5 sm:py-4 text-base sm:text-lg shadow-lg shadow-sky-200 flex items-center justify-center gap-2 cursor-pointer">
+                      <FlaskConical size={18} />
+                      <span>{siteSettings.heroBtnBook || t.heroBtnBook}</span>
                     </Button>
 
-                    {siteSettings.contactWhatsApp && (
+                    {/* 2. Home Doctor Button (Configured via Admin CMS -> Hero Banner Headline & Texts) */}
+                    {siteSettings.showHeroHomeDoctorBtn !== false && (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenDoctorAtHomeModal()}
+                        className="px-6 sm:px-7 py-3.5 sm:py-4 text-base sm:text-lg font-bold rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-200 flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95"
+                      >
+                        <Stethoscope size={18} />
+                        <span>{siteSettings.heroBtnHomeDoctor || (language === 'bn' ? 'হোম ডক্টর' : 'Home Doctor')}</span>
+                      </button>
+                    )}
+
+                    {/* 3. WhatsApp Direct Button (Properly handles +8801586366002 & all formats) */}
+                    {(siteSettings.contactWhatsApp || '+8801586366002') && (
                       <a 
-                        href={`https://wa.me/88${siteSettings.contactWhatsApp.replace(/[^0-9]/g, '')}`}
+                        href={getWhatsAppUrl(siteSettings.contactWhatsApp || '+8801586366002', language === 'bn' ? 'হ্যালো, আমি eClinic থেকে স্বাস্থ্যসেবা সম্পর্কে জানতে চাচ্ছি।' : 'Hello, I want to inquire about eClinic services.')}
                         target="_blank"
-                        rel="noreferrer"
-                        className="px-6 py-3.5 text-base font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl hover:bg-emerald-100 flex items-center justify-center gap-2 transition-colors shadow-xs"
+                        rel="noopener noreferrer"
+                        className="px-6 py-3.5 sm:py-4 text-base font-semibold text-emerald-800 bg-emerald-50 border border-emerald-300 rounded-2xl hover:bg-emerald-100 flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer active:scale-95"
                       >
                         <MessageSquare size={18} className="text-emerald-600" /> WhatsApp
                       </a>
@@ -2307,16 +2322,16 @@ export default function App() {
                     </a>
                   </li>
                 )}
-                {siteSettings.contactWhatsApp && (
+                {(siteSettings.contactWhatsApp || '+8801586366002') && (
                   <li className="flex items-center gap-2.5">
                     <MessageSquare size={16} className="text-emerald-500 flex-shrink-0" />
                     <a 
-                      href={`https://wa.me/88${siteSettings.contactWhatsApp.replace(/[^0-9]/g, '')}`} 
+                      href={getWhatsAppUrl(siteSettings.contactWhatsApp || '+8801586366002', language === 'bn' ? 'হ্যালো, আমি eClinic থেকে স্বাস্থ্যসেবা সম্পর্কে জানতে চাচ্ছি।' : 'Hello, I want to inquire about eClinic services.')} 
                       target="_blank" 
-                      rel="noreferrer" 
-                      className="hover:text-emerald-400 transition-colors font-medium"
+                      rel="noopener noreferrer" 
+                      className="hover:text-emerald-400 transition-colors font-medium cursor-pointer"
                     >
-                      WhatsApp: {siteSettings.contactWhatsApp}
+                      WhatsApp: {siteSettings.contactWhatsApp || '+8801586366002'}
                     </a>
                   </li>
                 )}

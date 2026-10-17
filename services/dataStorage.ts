@@ -888,9 +888,15 @@ export const getStoredSiteSettings = (lang: Language): SiteSettings => {
       const isHowItWorksInactive = parsed.showHowItWorksSection === false || (otherParsed && otherParsed.showHowItWorksSection === false);
       const isServicesInactive = parsed.showServicesSection === false || (otherParsed && otherParsed.showServicesSection === false);
 
+      const rawWhatsApp = parsed.contactWhatsApp || otherParsed?.contactWhatsApp;
+      const cleanWhatsApp = (rawWhatsApp && !rawWhatsApp.includes('01700000000') && rawWhatsApp !== '01700-000000') ? rawWhatsApp : '+8801586366002';
+
       return {
         ...defaultSettings,
         ...parsed,
+        contactWhatsApp: cleanWhatsApp,
+        heroBtnHomeDoctor: parsed.heroBtnHomeDoctor || (lang === 'bn' ? 'হোম ডক্টর' : 'Home Doctor'),
+        showHeroHomeDoctorBtn: parsed.showHeroHomeDoctorBtn !== undefined ? parsed.showHeroHomeDoctorBtn : true,
         showDoctorsSection: !isDocInactive,
         showNursingSection: !isNursingInactive,
         showPartnerSection: !isPartnerInactive,
@@ -912,8 +918,14 @@ export const getStoredSiteSettings = (lang: Language): SiteSettings => {
         homeSectionsOrder: (Array.isArray(parsed.homeSectionsOrder) && parsed.homeSectionsOrder.length > 0) ? parsed.homeSectionsOrder : (Array.isArray(otherParsed?.homeSectionsOrder) && otherParsed.homeSectionsOrder.length > 0 ? otherParsed.homeSectionsOrder : defaultSettings.homeSectionsOrder)
       };
     } else if (otherParsed && typeof otherParsed === 'object' && otherParsed.siteName) {
+      const rawWhatsApp = otherParsed.contactWhatsApp;
+      const cleanWhatsApp = (rawWhatsApp && !rawWhatsApp.includes('01700000000') && rawWhatsApp !== '01700-000000') ? rawWhatsApp : '+8801586366002';
+
       return {
         ...defaultSettings,
+        contactWhatsApp: cleanWhatsApp,
+        heroBtnHomeDoctor: otherParsed.heroBtnHomeDoctor || (lang === 'bn' ? 'হোম ডক্টর' : 'Home Doctor'),
+        showHeroHomeDoctorBtn: otherParsed.showHeroHomeDoctorBtn !== undefined ? otherParsed.showHeroHomeDoctorBtn : true,
         showDoctorsSection: otherParsed.showDoctorsSection !== false,
         showNursingSection: otherParsed.showNursingSection !== false,
         showPartnerSection: otherParsed.showPartnerSection !== false,
@@ -971,6 +983,8 @@ export const saveStoredSiteSettings = (lang: Language, settings: SiteSettings): 
       iosAppUrl: settings.iosAppUrl || otherSettings.iosAppUrl,
       apkDownloadUrl: settings.apkDownloadUrl || otherSettings.apkDownloadUrl,
       showAppButtonsInHero: settings.showAppButtonsInHero !== undefined ? settings.showAppButtonsInHero : otherSettings.showAppButtonsInHero,
+      showHeroHomeDoctorBtn: settings.showHeroHomeDoctorBtn !== undefined ? settings.showHeroHomeDoctorBtn : otherSettings.showHeroHomeDoctorBtn,
+      heroBtnHomeDoctor: settings.heroBtnHomeDoctor || otherSettings.heroBtnHomeDoctor,
       showAppButtonsInFooter: settings.showAppButtonsInFooter !== undefined ? settings.showAppButtonsInFooter : otherSettings.showAppButtonsInFooter,
       aboutImage: settings.aboutImage || otherSettings.aboutImage,
       contactAddress: otherSettings.contactAddress || settings.contactAddress,
@@ -1619,7 +1633,7 @@ export const DEFAULT_DOCTOR_AT_HOME_SPECIALTIES: DoctorAtHomeSpecialty[] = [
     fee: 1500, 
     descriptionBn: 'ডায়াবেটিস নিয়ন্ত্রণ, সুগার পরীক্ষা, ইনসুলিন সমন্বয় ও হরমোনজনিত জটিলতার চিকিৎসাপত্র।',
     descriptionEn: 'Diabetes management, blood glucose monitoring, insulin titration and hormone therapy.',
-    badge: 'স্পেশালিস্ট',
+    badge: '',
     duration: '৩০-৪৫ মিনিট',
     imageUrl: MALE_DOCTOR_VECTOR_ICON,
     isActive: true 
@@ -1632,7 +1646,7 @@ export const DEFAULT_DOCTOR_AT_HOME_SPECIALTIES: DoctorAtHomeSpecialty[] = [
     fee: 1500, 
     descriptionBn: 'নবজাতক ও শিশুদের জ্বর, নিউমোনিয়া, সর্দি, পেটখারাপ ও রুটিন বিকাশ পরীক্ষা।',
     descriptionEn: 'Infant & child health, pediatric fever, asthma, gastro issues and developmental checkup.',
-    badge: 'শিশু স্পেশালিস্ট',
+    badge: 'শিশু বিভাগ',
     duration: '৩০-৪৫ মিনিট',
     imageUrl: MALE_DOCTOR_VECTOR_ICON,
     isActive: true 
@@ -1719,7 +1733,7 @@ export const DEFAULT_DOCTOR_AT_HOME_SPECIALTIES: DoctorAtHomeSpecialty[] = [
 
 export const DEFAULT_DOCTOR_AT_HOME_SCHEDULE: DoctorAtHomeScheduleConfig = {
   maxAdvanceDays: 7, // User requirement: সর্বোচ্চ ৭ দিনের বেশি অগ্রীম বুক করা যাবে না
-  weeklyHolidays: [5], // 5 = Friday (শুক্রবার সাপ্তাহিক ছুটি)
+  weeklyHolidays: [], // Default: No off-days unless explicitly selected by admin
   holidayDates: [], // Special holiday dates e.g. ['2026-10-25']
   timeSlots: [
     { id: 'morning_1', timeBn: 'সকাল ৯:০০ - ১২:০০ (সকাল স্লট)', timeEn: 'Morning (09:00 AM - 12:00 PM)', label: 'Morning Slot', isActive: true },
@@ -1739,6 +1753,7 @@ export const getStoredDoctorAtHomeSpecialties = (): DoctorAtHomeSpecialty[] => {
       if (Array.isArray(parsed) && parsed.length > 0) {
         return parsed.map(s => ({
           ...s,
+          badge: (s.badge === 'স্পেশালিস্ট' || s.badge === 'Specialist' || s.badge === '★ Specialist' || s.badge === 'শিশু স্পেশালিস্ট') ? '' : s.badge,
           imageUrl: (!s.imageUrl || s.imageUrl.includes('unsplash.com'))
             ? MALE_DOCTOR_VECTOR_ICON
             : s.imageUrl
@@ -1765,9 +1780,18 @@ export const getStoredDoctorAtHomeSchedule = (): DoctorAtHomeScheduleConfig => {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && typeof parsed === 'object') {
+        const weeklyHolidays = (parsed.adminConfiguredHolidays && Array.isArray(parsed.weeklyHolidays))
+          ? parsed.weeklyHolidays
+          : [];
+        const holidayDates = (parsed.adminConfiguredHolidays && Array.isArray(parsed.holidayDates))
+          ? parsed.holidayDates
+          : [];
         return {
           ...DEFAULT_DOCTOR_AT_HOME_SCHEDULE,
           ...parsed,
+          adminConfiguredHolidays: !!parsed.adminConfiguredHolidays,
+          weeklyHolidays,
+          holidayDates,
           maxAdvanceDays: Math.min(7, Math.max(1, Number(parsed.maxAdvanceDays) || 7)) // Capped at 7
         };
       }
@@ -1920,4 +1944,46 @@ export const importAllDataBackup = (data: any): boolean => {
     return false;
   }
 };
+
+/**
+ * Normalizes any Bangladeshi / international phone number for WhatsApp URLs
+ * Handles +8801586366002, 8801586366002, 01586366002, etc. properly.
+ */
+export const normalizeWhatsAppNumber = (phone?: string): string => {
+  if (!phone) return '8801586366002';
+  let digits = phone.replace(/\D/g, '');
+  if (!digits || digits === '01700000000' || digits === '8801700000000' || digits === '00000000000') {
+    return '8801586366002';
+  }
+
+  // If already starts with 880, e.g. 8801586366002
+  if (digits.startsWith('880')) {
+    return digits;
+  }
+  // If starts with 01 e.g. 01586366002 -> 8801586366002
+  if (digits.startsWith('01') && digits.length === 11) {
+    return '88' + digits;
+  }
+  // If starts with 0
+  if (digits.startsWith('0')) {
+    return '88' + digits;
+  }
+  // If starts with 1 e.g. 1586366002 (10 digits) -> 8801586366002
+  if (digits.startsWith('1') && digits.length === 10) {
+    return '880' + digits;
+  }
+  // If does not start with 88, prefix 88
+  if (!digits.startsWith('88')) {
+    return '88' + digits;
+  }
+  return digits;
+};
+
+export const getWhatsAppUrl = (phone?: string, text?: string): string => {
+  const norm = normalizeWhatsAppNumber(phone || '+8801586366002');
+  const encodedText = text ? encodeURIComponent(text) : '';
+  // api.whatsapp.com works seamlessly across desktop (WhatsApp Web) & mobile app without wa.me redirect blocks
+  return `https://api.whatsapp.com/send?phone=${norm}${encodedText ? `&text=${encodedText}` : ''}`;
+};
+
 

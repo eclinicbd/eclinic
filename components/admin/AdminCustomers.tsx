@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BookingHistoryItem, Language, PatientUser } from '../../types';
 import { TRANSLATIONS } from '../../translations';
+import { getWhatsAppUrl } from '../../services/dataStorage';
 import { 
   Users, 
   Search, 
@@ -355,9 +356,9 @@ export const AdminCustomers: React.FC<AdminCustomersProps> = ({
                             <Phone size={11} /> {lang === 'bn' ? 'কল' : 'Call'}
                           </a>
                           <a 
-                            href={`https://wa.me/88${cleanPhoneDigits}`}
+                            href={getWhatsAppUrl(cleanPhoneDigits)}
                             target="_blank"
-                            rel="noreferrer"
+                            rel="noopener noreferrer"
                             className="p-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors text-[11px] flex items-center gap-1 font-bold px-2 cursor-pointer shadow-2xs"
                             title="Chat on WhatsApp"
                           >

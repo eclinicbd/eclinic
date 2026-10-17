@@ -39,7 +39,8 @@ import {
   getStoredDoctorAtHomeSpecialties,
   getStoredDoctorAtHomeSchedule,
   getDoctorSpecialtyDefaultImage,
-  MALE_DOCTOR_VECTOR_ICON
+  MALE_DOCTOR_VECTOR_ICON,
+  getWhatsAppUrl
 } from '../services/dataStorage';
 import { printOrDownloadDoctorAtHomeSlip, downloadDoctorAtHomeSlipHtml } from '../services/invoiceService';
 
@@ -80,16 +81,30 @@ const TIME_SLOTS = [
   { id: 'night_1', timeBn: 'সন্ধ্যা ৬:০০ - রাত ৯:০০ (Night)', timeEn: 'Night (06:00 PM - 09:00 PM)', label: 'Night Slot' }
 ];
 
-const QUICK_SYMPTOMS = [
+const QUICK_SYMPTOMS_BN = [
   'জ্বর ও সর্দি-কাশি',
-  'উচ্চ রক্তচাপ (High BP)',
-  'ডায়াবেটিস নিয়ন্ত্রণহীন',
-  'পেটব্যথা ও বমি',
+  'উচ্চ রক্তচাপ ও প্রেসার',
+  'অনিয়ন্ত্রিত ডায়াবেটিস',
+  'পেটব্যথা, গ্যাস ও বমি ভাব',
   'শারীরিক দুর্বলতা ও ক্লান্তি',
   'শ্বাসকষ্ট বা বুকে অস্বস্তি',
-  'শিশুর জ্বর ও কান্না',
+  'শিশুর জ্বর ও ঠান্ডা-কাশি',
   'হাড় ও জয়েন্টে তীব্র ব্যথা',
+  'মাথাব্যথা ও মাইগ্রেন',
   'রুটিন হোম হেলথ চেকআপ'
+];
+
+const QUICK_SYMPTOMS_EN = [
+  'Fever, Cold & Cough',
+  'High Blood Pressure (BP)',
+  'Uncontrolled Diabetes',
+  'Abdominal Pain & Vomiting',
+  'Physical Weakness & Fatigue',
+  'Breathing Difficulty',
+  'Child Fever & Discomfort',
+  'Bone & Joint Pain',
+  'Severe Headache & Migraine',
+  'Routine Home Health Checkup'
 ];
 
 export const DoctorAtHomeBookingModal: React.FC<DoctorAtHomeBookingModalProps> = ({
@@ -151,6 +166,10 @@ export const DoctorAtHomeBookingModal: React.FC<DoctorAtHomeBookingModalProps> =
   // Check if a given date string (YYYY-MM-DD) is a holiday or off-schedule
   const checkIsDateHoliday = (dateStr: string): { isHoliday: boolean; reasonBn: string; reasonEn: string } => {
     if (!dateStr) return { isHoliday: false, reasonBn: '', reasonEn: '' };
+    // Only check holidays if admin has explicitly configured them
+    if (!scheduleConfig.adminConfiguredHolidays) {
+      return { isHoliday: false, reasonBn: '', reasonEn: '' };
+    }
     const d = new Date(dateStr + 'T00:00:00');
     const day = d.getDay();
     const dayNamesBn = ['রবিবার', 'সোমবার', 'মঙ্গলবার', 'বুধবার', 'বৃহস্পতিবার', 'শুক্রবার', 'শনিবার'];
@@ -180,8 +199,8 @@ export const DoctorAtHomeBookingModal: React.FC<DoctorAtHomeBookingModalProps> =
       d.setDate(d.getDate() + i);
       const str = d.toISOString().split('T')[0];
       const day = d.getDay();
-      const isWeekly = (config.weeklyHolidays || []).includes(day);
-      const isSpecial = (config.holidayDates || []).includes(str);
+      const isWeekly = config.adminConfiguredHolidays && (config.weeklyHolidays || []).includes(day);
+      const isSpecial = config.adminConfiguredHolidays && (config.holidayDates || []).includes(str);
       if (!isWeekly && !isSpecial) {
         return str;
       }
@@ -286,6 +305,9 @@ export const DoctorAtHomeBookingModal: React.FC<DoctorAtHomeBookingModalProps> =
       setScheduleConfig(loadedSchedule);
       const firstValidDate = getFirstAvailableWorkingDate(loadedSchedule, 7);
       setAppointmentDate(firstValidDate);
+      const activeSlots = (loadedSchedule.timeSlots || []).filter(s => s.isActive !== false);
+      const firstSlot = activeSlots.length > 0 ? activeSlots[0] : TIME_SLOTS[0];
+      setTimeSlot(isBn ? firstSlot.timeBn : firstSlot.timeEn);
 
       setErrorMsg(null);
       setConfirmedBooking(null);
@@ -392,10 +414,16 @@ export const DoctorAtHomeBookingModal: React.FC<DoctorAtHomeBookingModalProps> =
     setTimeout(() => setCopiedNumber(null), 2000);
   };
 
+  // Always show symptoms in Bengali as requested
+  const quickSymptoms = QUICK_SYMPTOMS_BN;
+
   const handleQuickSymptom = (sym: string) => {
     setSymptoms(prev => {
       if (!prev.trim()) return sym;
-      if (prev.includes(sym)) return prev;
+      if (prev.includes(sym)) {
+        const parts = prev.split(',').map(p => p.trim()).filter(p => p && p !== sym);
+        return parts.join(', ');
+      }
       return `${prev}, ${sym}`;
     });
   };
@@ -555,21 +583,13 @@ export const DoctorAtHomeBookingModal: React.FC<DoctorAtHomeBookingModalProps> =
               <Home size={26} className="text-white" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded-full bg-white/25 text-white text-[10px] font-extrabold uppercase tracking-wider backdrop-blur-sm">
-                  {isBn ? 'হোম হেলথকেয়ার' : 'Home Visit Service'}
-                </span>
-                <span className="px-2 py-0.5 rounded-full bg-amber-400 text-slate-900 text-[10px] font-black uppercase tracking-wider">
-                  ★ Specialist
-                </span>
-              </div>
-              <h2 className="text-xl sm:text-2xl font-black text-white leading-tight mt-1">
-                {isBn ? 'Doctor at Home (বাসায় ডাক্তার সেবা)' : 'Doctor at Home Service'}
+              <h2 className="text-xl sm:text-2xl font-black text-white leading-tight">
+                {isBn ? 'Doctor at Home (বাসায় ডাক্তার)' : 'Doctor at Home'}
               </h2>
               <p className="text-emerald-100 text-xs sm:text-sm mt-0.5">
                 {isBn 
-                  ? 'আপনার বাসা বা অফিসে অভিজ্ঞ বিশেষজ্ঞ ডাক্তারের ফিজিক্যাল ভিজিট ও চিকিৎসা' 
-                  : 'Qualified specialist doctor visits your residence for full clinical checkup'}
+                  ? 'আপনার বাসা বা অফিসে অভিজ্ঞ চিকিৎসকের ফিজিক্যাল ভিজিট ও সেবা' 
+                  : 'Qualified doctor visits your residence for full clinical checkup'}
               </p>
             </div>
           </div>
@@ -691,9 +711,10 @@ export const DoctorAtHomeBookingModal: React.FC<DoctorAtHomeBookingModalProps> =
                 </button>
 
                 <a 
-                  href={`https://wa.me/88${(siteSettings.contactWhatsApp || siteSettings.contactPhone || '01700000000').replace(/\D/g, '')}?text=${encodeURIComponent(
+                  href={getWhatsAppUrl(
+                    siteSettings.contactWhatsApp || siteSettings.contactPhone || '01586366002',
                     `আসসালামু আলাইকুম, আমি Doctor at Home বুকিং করেছি। ট্র্যাকিং আইডি: ${confirmedBooking.id}, রোগী: ${confirmedBooking.patientName}, স্পেশালিটি: ${confirmedBooking.doctorTypeLabel}।`
-                  )}`}
+                  )}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="px-3.5 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
@@ -846,7 +867,7 @@ export const DoctorAtHomeBookingModal: React.FC<DoctorAtHomeBookingModalProps> =
                         <div className="flex items-start justify-between gap-1">
                           <span className={`w-2 h-2 rounded-full mt-1 ${isSelected ? 'bg-emerald-600' : 'bg-slate-300'}`} />
                           <div className="flex items-center gap-1">
-                            {spec.badge && (
+                            {spec.badge && !spec.badge.includes('Specialist') && !spec.badge.includes('স্পেশালিস্ট') && !spec.badge.includes('★') && (
                               <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-200/60">
                                 {spec.badge}
                               </span>
@@ -1025,139 +1046,121 @@ export const DoctorAtHomeBookingModal: React.FC<DoctorAtHomeBookingModalProps> =
                 </div>
               </div>
 
-              {/* 4. Appointment Date & Time Slot */}
+              {/* 4. Appointment Date & Time Slot (Styled like Lab Test Booking & Checkout format) */}
               <div className="space-y-3">
-                {/* Date Selection */}
-                <div>
-                  <div className="flex items-center justify-between mb-1.5 flex-wrap gap-1">
-                    <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                      <Calendar size={14} className="text-primary" />
-                      <span>{isBn ? 'ভিজিট তারিখ (সর্বোচ্চ ৭ দিন অগ্রীম) *' : 'Visit Date (Max 7 Days Ahead) *'}</span>
+                {/* Appointment Date Selection */}
+                <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                      <Calendar size={15} className="text-emerald-600" />
+                      <span>{isBn ? 'ভিজিট তারিখ নির্বাচন করুন *' : 'Select Visit Date *'}</span>
                     </label>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                        {isBn ? 'সর্বোচ্চ ৭ দিন' : 'Max 7 Days'}
+                      <span className="text-[10px] text-slate-500 font-mono">
+                        {appointmentDate || (isBn ? 'তারিখ সিলেক্ট করুন' : 'Select Date')}
                       </span>
-                      {hiddenHolidaysCount > 0 && (
-                        <span className="text-[10px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200" title={isBn ? 'ছুটির দিন ক্যালেন্ডার থেকে হাইড করা আছে' : 'Holidays hidden'}>
+                      {scheduleConfig.adminConfiguredHolidays && hiddenHolidaysCount > 0 && (scheduleConfig.weeklyHolidays?.length > 0 || scheduleConfig.holidayDates?.length > 0) && (
+                        <span className="text-[9px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
                           {isBn ? `${hiddenHolidaysCount}টি বন্ধ দিন হাইড` : `${hiddenHolidaysCount} Off-days Hidden`}
                         </span>
                       )}
                     </div>
                   </div>
 
-                  {/* 7-Day Interactive Visual Calendar Strip - ONLY WORKING DAYS (Holidays hidden as requested: "ছুটি/সিডিউল calendrer অপশনে হাইড থাকবে, সিলেক্ট করা যাবে না") */}
-                  <div className="space-y-1 mb-2">
-                    <div className="flex items-center justify-between text-[11px] font-semibold text-slate-600 px-0.5">
-                      <span>{isBn ? 'খোলা কার্যদিবস নির্বাচন করুন:' : 'Select Available Working Date:'}</span>
-                      <span className="text-[10px] text-slate-400">
-                        {isBn ? 'ছুটির দিন হাইড করা আছে (সিলেক্ট অযোগ্য)' : 'Holidays hidden & non-selectable'}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-1.5">
-                      {openCalendarDays.map(item => {
-                        const isSelected = appointmentDate === item.dateStr;
-                        return (
-                          <button
-                            key={item.dateStr}
-                            type="button"
-                            onClick={() => handleDateSelect(item.dateStr)}
-                            className={`p-2 rounded-xl text-center border transition-all cursor-pointer flex flex-col items-center justify-between min-h-[58px] ${
-                              isSelected
-                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm ring-2 ring-emerald-300'
-                                : 'bg-white hover:bg-emerald-50 text-slate-700 border-slate-200 hover:border-emerald-300'
-                            }`}
-                          >
-                            <span className={`text-[10px] font-bold uppercase ${isSelected ? 'text-emerald-100' : 'text-slate-500'}`}>
-                              {item.isToday ? (isBn ? 'আজ' : 'Today') : item.isTomorrow ? (isBn ? 'কাল' : 'Tomorrow') : item.dayName}
-                            </span>
-                            <span className="text-xs font-black my-0.5">
-                              {item.dayNum} {item.month}
-                            </span>
-                            <span className={`text-[9px] font-semibold px-1 rounded ${isSelected ? 'bg-white/20 text-white' : 'bg-emerald-50 text-emerald-700'}`}>
-                              {isBn ? 'খোলা' : 'Open'}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Date Input with strict 7-day constraint and immediate holiday rejection */}
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <input 
-                        type="date"
-                        required
-                        min={todayStr}
-                        max={maxBookingDateStr}
-                        value={appointmentDate}
-                        onChange={e => handleDateSelect(e.target.value)}
-                        className="flex-1 px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white cursor-pointer"
-                      />
-                      <div className="text-[11px] font-mono font-bold text-emerald-800 bg-emerald-50 px-2.5 py-2 rounded-xl border border-emerald-200 whitespace-nowrap">
-                        {appointmentDate}
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between px-1 text-[10px] text-slate-400">
-                      <span>{isBn ? `বুকিং গ্রহণযোগ্য: ${todayStr} থেকে ${maxBookingDateStr}` : `Allowed: ${todayStr} to ${maxBookingDateStr}`}</span>
-                      <span className="text-emerald-700 font-bold">{isBn ? '✓ ছুটির দিনে বুকিং সম্পূর্ণ নিষিদ্ধ' : '✓ Holiday bookings blocked'}</span>
-                    </div>
+                  {/* Horizontal Date Picker Cards (Matching Lab Test Booking format) */}
+                  <div className="flex gap-2 overflow-x-auto pb-1 custom-scrollbar">
+                    {openCalendarDays.map(item => {
+                      const isSelected = appointmentDate === item.dateStr;
+                      return (
+                        <button
+                          key={item.dateStr}
+                          type="button"
+                          onClick={() => handleDateSelect(item.dateStr)}
+                          className={`p-2 rounded-xl text-center flex-1 min-w-[64px] border transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm ring-2 ring-emerald-300 font-bold'
+                              : 'bg-slate-50/80 text-slate-700 border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/50'
+                          }`}
+                        >
+                          <p className={`text-[10px] uppercase font-bold ${isSelected ? 'text-emerald-100' : 'opacity-80'}`}>
+                            {item.isToday ? (isBn ? 'আজ' : 'Today') : item.isTomorrow ? (isBn ? 'কাল' : 'Tomorrow') : item.dayName}
+                          </p>
+                          <p className="text-base font-black leading-tight my-0.5">{item.dayNum}</p>
+                          <p className={`text-[10px] ${isSelected ? 'text-emerald-100' : 'opacity-80'}`}>{item.month}</p>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
-                {/* Time Slot */}
-                <div>
-                  <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5 mb-1.5">
-                    <Clock size={14} className="text-amber-500" />
-                    <span>{isBn ? 'পছন্দের সময় স্লট *' : 'Preferred Time Slot *'}</span>
-                  </label>
-                  <select
-                    value={timeSlot}
-                    onChange={e => setTimeSlot(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
-                  >
-                    {availableTimeSlots.map(s => (
-                      <option key={s.id} value={isBn ? s.timeBn : s.timeEn}>
-                        {isBn ? s.timeBn : s.timeEn}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="text-[10px] text-slate-400 mt-1 block px-1">
-                    {isBn ? 'অ্যাডমিন নির্ধারিত সক্রিয় স্লটসমূহ প্রদর্শিত হচ্ছে' : 'Active admin slots shown'}
-                  </span>
+                {/* Time Slot Selection (Matching Lab Test Booking format with clickable slot buttons) */}
+                <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                      <Clock size={15} className="text-emerald-600" />
+                      <span>{isBn ? 'সময়সূচি (Time Slot) নির্বাচন করুন *' : 'Select Time Slot *'}</span>
+                    </label>
+                    <span className="text-[10px] text-slate-500 font-mono">
+                      {timeSlot ? `Selected: ${timeSlot}` : (isBn ? 'স্লট সিলেক্ট করুন' : 'Pick a slot')}
+                    </span>
+                  </div>
+
+                  {/* Slot buttons grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2">
+                    {availableTimeSlots.map(s => {
+                      const slotVal = isBn ? s.timeBn : s.timeEn;
+                      const isSelected = timeSlot === slotVal;
+                      return (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => setTimeSlot(slotVal)}
+                          className={`p-2.5 rounded-xl text-[11px] font-semibold border transition-all text-center cursor-pointer ${
+                            isSelected
+                              ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm font-bold ring-2 ring-emerald-300'
+                              : 'bg-slate-50/80 text-slate-800 border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/50'
+                          }`}
+                        >
+                          <span className="block leading-snug">{slotVal}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
-              {/* 5. Symptoms & Health Condition */}
-              <div className="space-y-2">
+              {/* 5. Patient Symptoms & Problem (2-Column Grid Layout) */}
+              <div className="space-y-2.5">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                     <FileText size={14} className="text-primary" />
-                    <span>{isBn ? 'রোগীর উপসর্গ বা শারীরিক সমস্যা *' : 'Patient Symptoms & Problem *'}</span>
+                    <span>রোগীর উপসর্গ বা শারীরিক সমস্যা *</span>
                   </label>
                   <span className="text-[10px] text-slate-400">
-                    {isBn ? 'ট্যাগ স্পর্শ করে যোগ করুন' : 'Tap tags to add'}
+                    ট্যাপ করে যোগ করুন
                   </span>
                 </div>
 
-                {/* Quick Symptom Tags */}
-                <div className="flex flex-wrap gap-1.5">
-                  {QUICK_SYMPTOMS.map(sym => (
-                    <button
-                      key={sym}
-                      type="button"
-                      onClick={() => handleQuickSymptom(sym)}
-                      className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
-                        symptoms.includes(sym)
-                          ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border-slate-200'
-                      }`}
-                    >
-                      + {sym}
-                    </button>
-                  ))}
+                {/* Quick Symptom Tags - 2 Columns Layout */}
+                <div className="grid grid-cols-2 gap-1.5">
+                  {quickSymptoms.map(sym => {
+                    const isAdded = symptoms.includes(sym);
+                    return (
+                      <button
+                        key={sym}
+                        type="button"
+                        onClick={() => handleQuickSymptom(sym)}
+                        className={`text-[11px] font-bold px-2.5 py-1.5 rounded-xl border transition-all cursor-pointer text-left flex items-center gap-1.5 ${
+                          isAdded
+                            ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200'
+                        }`}
+                      >
+                        <span className="text-emerald-600 font-extrabold shrink-0">+</span>
+                        <span className="truncate">{sym}</span>
+                      </button>
+                    );
+                  })}
                 </div>
 
                 <textarea 
@@ -1165,7 +1168,7 @@ export const DoctorAtHomeBookingModal: React.FC<DoctorAtHomeBookingModalProps> =
                   required
                   value={symptoms}
                   onChange={e => setSymptoms(e.target.value)}
-                  placeholder={isBn ? 'রোগীর কী সমস্যা হচ্ছে, কতদিন ধরে, কোনো ঔষধ চললে তার বিবরণ লিখুন...' : 'Describe symptoms, duration, current medicines, etc.'}
+                  placeholder="রোগীর কী সমস্যা হচ্ছে, কতদিন ধরে, কোনো ঔষধ চললে তার বিবরণ লিখুন..."
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white resize-none"
                 />
               </div>

@@ -7037,6 +7037,8 @@ export const DEFAULT_SITE_SETTINGS_BN: SiteSettings = {
   heroTitleHighlight: 'হোম স্যাম্পল কালেকশন',
   heroDesc: 'পপুলার, ল্যাবএইড, বারডেমসহ দেশের শীর্ষ ডায়াগনস্টিক সেন্টার থেকে বিশেষজ্ঞের মাধ্যমে রক্ত সংগ্রহ ও ডিজিটাল রিপোর্ট ডেলিভারি।',
   heroBtnBook: 'টেস্ট বুক করুন',
+  heroBtnHomeDoctor: 'হোম ডক্টর',
+  showHeroHomeDoctorBtn: true,
   heroImages: [...DEFAULT_HERO_IMAGES],
 
   // Homepage Sections Ordering
@@ -7147,7 +7149,7 @@ export const DEFAULT_SITE_SETTINGS_BN: SiteSettings = {
   contactPhone: '01700-000000',
   contactHotline: '09612-000000',
   contactEmail: 'support@labhomebd.com',
-  contactWhatsApp: '01700000000',
+  contactWhatsApp: '+8801586366002',
   emergencyNumber: '01800-000000',
   workingHours: 'সকাল ৭:০০ টা - রাত ১০:০০ টা (প্রতিদিন)',
   facebookUrl: 'https://facebook.com/labhomebd',
@@ -7188,6 +7190,8 @@ export const DEFAULT_SITE_SETTINGS_EN: SiteSettings = {
   heroTitleHighlight: 'Doorstep Sample Collection',
   heroDesc: 'Book certified lab diagnostics from Popular, Labaid, BIRDEM & get fast digital reports delivered directly to your device.',
   heroBtnBook: 'Book Test Now',
+  heroBtnHomeDoctor: 'Home Doctor',
+  showHeroHomeDoctorBtn: true,
   heroImages: [...DEFAULT_HERO_IMAGES],
 
   // Homepage Sections Ordering
@@ -7298,7 +7302,7 @@ export const DEFAULT_SITE_SETTINGS_EN: SiteSettings = {
   contactPhone: '01700-000000',
   contactHotline: '09612-000000',
   contactEmail: 'support@labhomebd.com',
-  contactWhatsApp: '01700000000',
+  contactWhatsApp: '+8801586366002',
   emergencyNumber: '01800-000000',
   workingHours: '7:00 AM - 10:00 PM (Everyday)',
   facebookUrl: 'https://facebook.com/labhomebd',

@@ -69,7 +69,8 @@ import {
   DEFAULT_DOCTOR_AT_HOME_SPECIALTIES, 
   DEFAULT_DOCTOR_AT_HOME_SCHEDULE,
   getDoctorSpecialtyDefaultImage,
-  MALE_DOCTOR_VECTOR_ICON
+  MALE_DOCTOR_VECTOR_ICON,
+  getWhatsAppUrl
 } from '../../services/dataStorage';
 import { printOrDownloadInvoice } from '../../services/invoiceService';
 
@@ -551,7 +552,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
       fee: 1500,
       descriptionBn: '',
       descriptionEn: '',
-      badge: lang === 'bn' ? 'স্পেশালিস্ট' : 'Specialist',
+      badge: '',
       duration: '৩০-৪৫ মিনিট',
       imageUrl: MALE_DOCTOR_VECTOR_ICON,
       isActive: true
@@ -682,7 +683,8 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
     const updated = exists ? current.filter(d => d !== dayIndex) : [...current, dayIndex];
     const newSchedule: DoctorAtHomeScheduleConfig = {
       ...doctorScheduleConfig,
-      weeklyHolidays: updated
+      weeklyHolidays: updated,
+      adminConfiguredHolidays: true
     };
     const newSettings = { ...formData, doctorAtHomeSchedule: newSchedule };
     setFormData(newSettings);
@@ -1098,32 +1100,66 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                 />
               </div>
 
-              {/* Button Texts */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    {lang === 'bn' ? 'প্রধান বাটন টেক্সট (CTA Button)' : 'Primary Button CTA Text'}
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.heroBtnBook || ''}
-                    onChange={e => setFormData({ ...formData, heroBtnBook: e.target.value })}
-                    placeholder="e.g. টেস্ট বুক করুন"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-primary outline-none"
-                  />
-                </div>
+              {/* Button Texts & Options */}
+              <div className="space-y-4 pt-1 border-t border-slate-100">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* 1. Primary CTA: Book Test Button */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      {lang === 'bn' ? '১. বুক টেস্ট বাটন টেক্সট (Primary CTA)' : '1. Book Test Button (Primary CTA)'}
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.heroBtnBook || ''}
+                      onChange={e => setFormData({ ...formData, heroBtnBook: e.target.value })}
+                      placeholder="e.g. টেস্ট বুক করুন"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-primary outline-none"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    {lang === 'bn' ? 'হোয়াটসঅ্যাপ হেল্পলাইন নম্বর' : 'WhatsApp Number for Quick Chat'}
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.contactWhatsApp || ''}
-                    onChange={e => setFormData({ ...formData, contactWhatsApp: e.target.value })}
-                    placeholder="01700000000"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none"
-                  />
+                  {/* 2. Home Doctor Button (Requested Feature) */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-bold text-slate-700">
+                        {lang === 'bn' ? '২. হোম ডক্টর বাটন টেক্সট (Home Doctor Button)' : '2. Home Doctor Button Text'}
+                      </label>
+                      <label className="flex items-center gap-1.5 cursor-pointer text-[11px] font-semibold text-emerald-700">
+                        <input
+                          type="checkbox"
+                          checked={formData.showHeroHomeDoctorBtn !== false}
+                          onChange={e => setFormData({ ...formData, showHeroHomeDoctorBtn: e.target.checked })}
+                          className="rounded text-emerald-600 focus:ring-emerald-500 w-3.5 h-3.5"
+                        />
+                        <span>{lang === 'bn' ? 'চালু' : 'Enabled'}</span>
+                      </label>
+                    </div>
+                    <input
+                      type="text"
+                      value={formData.heroBtnHomeDoctor || ''}
+                      onChange={e => setFormData({ ...formData, heroBtnHomeDoctor: e.target.value })}
+                      placeholder={lang === 'bn' ? 'e.g. হোম ডক্টর' : 'e.g. Home Doctor'}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-emerald-300 bg-emerald-50/40 text-xs font-semibold text-emerald-900 focus:ring-2 focus:ring-emerald-500 outline-none"
+                    />
+                  </div>
+
+                  {/* 3. WhatsApp Direct Helpline */}
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      {lang === 'bn' ? '৩. হোয়াটসঅ্যাপ হেল্পলাইন নম্বর (WhatsApp Number)' : '3. WhatsApp Helpline Number'}
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.contactWhatsApp || ''}
+                      onChange={e => setFormData({ ...formData, contactWhatsApp: e.target.value })}
+                      placeholder="+8801586366002"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary outline-none font-mono"
+                    />
+                    <span className="text-[10px] text-slate-400 mt-1 block">
+                      {lang === 'bn' 
+                        ? 'টিপস: নম্বরটি "+8801586366002" বা "01586366002" যেকোনোভাবে দিলেই লিংকটি স্বয়ংক্রিয়ভাবে সঠিক চ্যাটে ওপেন হবে।' 
+                        : 'Tip: Supports both "+8801586366002" and "01586366002" formats automatically.'}
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -1165,10 +1201,16 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                   </p>
 
                   {/* CTA Buttons */}
-                  <div className="flex items-center gap-2 pt-1">
+                  <div className="flex items-center gap-2 pt-1 flex-wrap">
                     <div className="px-3 py-1.5 bg-sky-500 text-white text-[11px] font-bold rounded-lg shadow-sm">
                       {formData.heroBtnBook || 'টেস্ট বুক করুন'}
                     </div>
+                    {formData.showHeroHomeDoctorBtn !== false && (
+                      <div className="px-3 py-1.5 bg-emerald-600 text-white text-[11px] font-bold rounded-lg shadow-sm flex items-center gap-1">
+                        <Stethoscope size={11} />
+                        <span>{formData.heroBtnHomeDoctor || (lang === 'bn' ? 'হোম ডক্টর বুক করুন' : 'Book Home Doctor')}</span>
+                      </div>
+                    )}
                     {formData.contactWhatsApp && (
                       <div className="px-2.5 py-1.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[11px] font-semibold rounded-lg flex items-center gap-1">
                         <MessageSquare size={11} /> WhatsApp
@@ -3451,7 +3493,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                 type="text"
                 value={formData.contactWhatsApp || ''}
                 onChange={e => setFormData({ ...formData, contactWhatsApp: e.target.value })}
-                placeholder="01700000000"
+                placeholder="+8801586366002"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-primary outline-none"
               />
             </div>
@@ -3628,7 +3670,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
               )}
               {formData.contactWhatsApp && (
                 <a
-                  href={`https://wa.me/88${formData.contactWhatsApp.replace(/[^0-9]/g, '')}`}
+                  href={getWhatsAppUrl(formData.contactWhatsApp)}
                   target="_blank"
                   rel="noreferrer"
                   className="px-3 py-1.5 bg-emerald-50 border border-emerald-300 hover:bg-emerald-100 text-emerald-800 rounded-lg text-xs font-semibold flex items-center gap-1.5"
@@ -4237,9 +4279,11 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
                     <div>
                       {/* Top Bar on Card: Badge, Fee & Status */}
                       <div className="flex items-center justify-between gap-2 mb-2.5">
-                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-[10px] font-black border border-emerald-200/80">
-                          {spec.badge || (lang === 'bn' ? 'স্পেশালিস্ট' : 'Specialist')}
-                        </span>
+                        {spec.badge ? (
+                          <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-[10px] font-black border border-emerald-200/80">
+                            {spec.badge}
+                          </span>
+                        ) : <span />}
                         <div className="flex items-center gap-1.5">
                           <span className="text-sm font-black text-slate-900 font-mono">৳{spec.fee}</span>
                         </div>

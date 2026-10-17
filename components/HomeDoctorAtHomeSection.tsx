@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { 
   Home, 
   Stethoscope, 
@@ -7,11 +7,12 @@ import {
   ShieldCheck, 
   Clock, 
   Phone, 
+  ChevronLeft,
   ChevronRight, 
   CheckCircle2, 
   Sparkles, 
   User, 
-  UserCheck,
+  UserCheck, 
   Zap, 
   Calendar 
 } from 'lucide-react';
@@ -57,6 +58,19 @@ export const HomeDoctorAtHomeSection: React.FC<HomeDoctorAtHomeSectionProps> = (
       default: return <Stethoscope size={20} />;
     }
   };
+  const specialtiesScrollRef = useRef<HTMLDivElement>(null);
+
+  const scrollSpecialties = (direction: 'left' | 'right') => {
+    if (specialtiesScrollRef.current) {
+      const isMobile = window.innerWidth < 640;
+      const scrollAmount = isMobile ? specialtiesScrollRef.current.clientWidth : 360;
+      specialtiesScrollRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
+
   return (
     <section id="doctor-at-home" className="py-20 bg-gradient-to-b from-slate-50 via-teal-50/20 to-white relative overflow-hidden border-b border-slate-200/80">
       {/* Background ambient blurs */}
@@ -84,9 +98,9 @@ export const HomeDoctorAtHomeSection: React.FC<HomeDoctorAtHomeSectionProps> = (
           </p>
         </div>
 
-        {/* Doctor Specialties Cards Grid */}
+        {/* Doctor Specialties Cards Grid / Mobile 1-Card Carousel */}
         <div className="mb-12">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
             <div>
               <h3 className="text-xl font-extrabold text-slate-900">
                 {lang === 'bn' ? 'কি ধরনের ডাক্তার প্রয়োজন?' : 'Available Doctor Specialties'}
@@ -97,21 +111,47 @@ export const HomeDoctorAtHomeSection: React.FC<HomeDoctorAtHomeSectionProps> = (
                   : 'Select specialty according to patient condition and book home visit'}
               </p>
             </div>
-            <button
-              onClick={() => onOpenBookingModal()}
-              className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-all cursor-pointer"
-            >
-              <Home size={14} />
-              <span>{lang === 'bn' ? 'সব ধরণের ডাক্তার' : 'All Doctors'}</span>
-              <ChevronRight size={14} />
-            </button>
+
+            {/* Navigation Scroll Buttons & View All (Matching Regular Diagnostic Tests & Lab Partners) */}
+            <div className="flex items-center gap-2 self-start sm:self-auto">
+              <button 
+                type="button"
+                onClick={() => scrollSpecialties('left')}
+                aria-label="Scroll left"
+                className="p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-emerald-700 hover:border-emerald-500 hover:bg-emerald-50 shadow-xs transition-all cursor-pointer"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <button 
+                type="button"
+                onClick={() => scrollSpecialties('right')}
+                aria-label="Scroll right"
+                className="p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-emerald-700 hover:border-emerald-500 hover:bg-emerald-50 shadow-xs transition-all cursor-pointer"
+              >
+                <ChevronRight size={18} />
+              </button>
+              <button
+                type="button"
+                onClick={() => onOpenBookingModal()}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-all cursor-pointer ml-1"
+              >
+                <Home size={14} />
+                <span>{lang === 'bn' ? 'সব ধরণের ডাক্তার' : 'All Doctors'}</span>
+                <ChevronRight size={14} />
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Cards: Mobile 1-Card width carousel with horizontal swipe scroll, and desktop 2-3 column responsive grid */}
+          <div 
+            ref={specialtiesScrollRef}
+            className="flex sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-4 overflow-x-auto sm:overflow-visible pb-4 pt-1 px-1 scroll-smooth no-scrollbar select-none snap-x snap-mandatory"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
             {activeSpecialties.map(spec => (
               <div 
                 key={spec.id} 
-                className="group bg-white p-5 rounded-2xl border border-slate-200 hover:border-emerald-400 hover:shadow-lg transition-all duration-300 flex flex-col justify-between"
+                className="w-full min-w-full sm:min-w-0 sm:w-auto flex-shrink-0 sm:flex-shrink snap-center group bg-white p-5 rounded-2xl border border-slate-200 hover:border-emerald-400 hover:shadow-lg transition-all duration-300 flex flex-col justify-between"
               >
                 <div>
                   <div className="flex items-center justify-between mb-3">
@@ -179,6 +219,15 @@ export const HomeDoctorAtHomeSection: React.FC<HomeDoctorAtHomeSectionProps> = (
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Mobile Swipe Hint */}
+          <div className="flex items-center justify-between sm:hidden px-1 pt-2 text-[11px] text-slate-500 font-medium">
+            <span>{lang === 'bn' ? `মোট ${activeSpecialties.length}টি স্পেশালিটি (১টি করে শো করছে)` : `${activeSpecialties.length} Specialties (Showing 1 card per view)`}</span>
+            <span className="text-emerald-700 font-bold flex items-center gap-1">
+              <span>{lang === 'bn' ? 'স্ক্রোল করুন' : 'Swipe/Scroll'}</span>
+              <ChevronRight size={12} />
+            </span>
           </div>
         </div>
 

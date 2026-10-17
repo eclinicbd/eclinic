@@ -419,6 +419,7 @@ export interface DoctorAtHomeScheduleConfig {
   timeSlots: DoctorAtHomeTimeSlot[];
   holidayNoticeBn?: string;
   holidayNoticeEn?: string;
+  adminConfiguredHolidays?: boolean;
 }
 
 export interface DoctorAtHomeBooking {
@@ -463,6 +464,8 @@ export interface SiteSettings {
   heroTitleHighlight?: string;
   heroDesc?: string;
   heroBtnBook?: string;
+  heroBtnHomeDoctor?: string; // Hero banner Home Doctor button text
+  showHeroHomeDoctorBtn?: boolean; // Toggle to show/hide Home Doctor button in hero banner
   heroImages?: string[];
 
   // Homepage Sections Ordering & Visibility
