@@ -584,7 +584,7 @@ export const DoctorAtHomeBookingModal: React.FC<DoctorAtHomeBookingModalProps> =
             </div>
             <div>
               <h2 className="text-xl sm:text-2xl font-black text-white leading-tight">
-                {isBn ? 'Doctor at Home (বাসায় ডাক্তার)' : 'Doctor at Home'}
+                {isBn ? 'Doctor Home (ডাক্তার হোম)' : 'Doctor Home'}
               </h2>
               <p className="text-emerald-100 text-xs sm:text-sm mt-0.5">
                 {isBn 

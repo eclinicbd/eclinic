@@ -1086,10 +1086,10 @@ export default function App() {
                 {siteSettings.showPopularTestsSection !== false && (
                   <button 
                     onClick={() => navigateToTests()} 
-                    className={`px-3.5 py-1.5 rounded-full transition-all flex items-center gap-1.5 ${
+                    className={`px-3.5 py-1.5 rounded-full transition-all flex items-center gap-1.5 font-bold shadow-2xs cursor-pointer ${
                       currentView === 'tests' 
-                        ? 'bg-sky-50 text-primary font-bold border border-sky-200 shadow-2xs' 
-                        : 'text-slate-600 hover:text-primary hover:bg-slate-50'
+                        ? 'bg-sky-100 text-sky-800 border border-sky-300 ring-2 ring-sky-200' 
+                        : 'bg-sky-50 text-primary hover:bg-sky-100 border border-sky-200'
                     }`}
                   >
                     <FlaskConical size={14} />
@@ -1127,14 +1127,14 @@ export default function App() {
                   </button>
                 )}
 
-                {/* Doctor at Home (Home Visit Service) */}
+                {/* Doctor Home (Renamed from Doctor at Home) */}
                 <button 
                   onClick={() => handleOpenDoctorAtHomeModal()} 
                   className="px-3.5 py-1.5 rounded-full transition-all flex items-center gap-1.5 text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 font-bold shadow-2xs cursor-pointer"
-                  title={language === 'bn' ? 'বাসায় ডাক্তার বুক করুন' : 'Book Doctor at Home'}
+                  title={language === 'bn' ? 'ডাক্তার হোম' : 'Doctor Home'}
                 >
                   <Home size={14} className="text-emerald-700" />
-                  <span>{language === 'bn' ? 'বাসায় ডাক্তার' : 'Doctor at Home'}</span>
+                  <span>{language === 'bn' ? 'ডাক্তার হোম' : 'Doctor Home'}</span>
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 </button>
 
@@ -2243,7 +2243,7 @@ export default function App() {
                     className="hover:text-emerald-400 text-emerald-300 font-bold transition-colors cursor-pointer flex items-center gap-1.5"
                   >
                     <Home size={14} className="text-emerald-400" />
-                    <span>{language === 'bn' ? 'Doctor at Home (বাসায় ডাক্তার সেবা)' : 'Doctor at Home Service'}</span>
+                    <span>{language === 'bn' ? 'Doctor Home (ডাক্তার হোম)' : 'Doctor Home Service'}</span>
                   </button>
                 </li>
                 {isDoctorModuleActive && (
