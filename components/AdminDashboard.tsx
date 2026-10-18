@@ -357,7 +357,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const handleSaveTest = (testToSave: TestPackage) => {
     const trimmedName = testToSave.name.trim().toLowerCase();
     const isDuplicate = tests.some(t => {
-      if (editingTest && t.id === editingTest.id) return false;
+      if (editingTest && String(t.id) === String(editingTest.id)) return false;
       return t.name.trim().toLowerCase() === trimmedName;
     });
 
@@ -367,7 +367,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
 
     if (editingTest) {
-      const updated = tests.map(t => t.id === testToSave.id ? testToSave : t);
+      const updated = tests.map(t => String(t.id) === String(testToSave.id) ? testToSave : t);
       onUpdateTests(updated);
       showToast(t.adminSaveSuccess);
     } else {
@@ -379,10 +379,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   const handleToggleHideTest = (testId: string) => {
-    const targetTest = tests.find(t => t.id === testId);
+    const targetTest = tests.find(t => String(t.id) === String(testId));
     if (!targetTest) return;
     const isNowHidden = !targetTest.isHidden;
-    const updated = tests.map(t => t.id === testId ? { ...t, isHidden: isNowHidden } : t);
+    const updated = tests.map(t => String(t.id) === String(testId) ? { ...t, isHidden: isNowHidden } : t);
     onUpdateTests(updated);
     showToast(isNowHidden ? t.adminHideSuccess : t.adminUnhideSuccess);
   };
@@ -408,7 +408,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const handleQuickUpdateTestOrderCount = (testId: string, delta: number) => {
     const updated = tests.map(t => {
-      if (t.id === testId) {
+      if (String(t.id) === String(testId)) {
         const currentCount = t.orderCount || 0;
         const newCount = Math.max(0, currentCount + delta);
         return { ...t, orderCount: newCount };
@@ -438,7 +438,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const handleFixPopularRates = () => {
     const defaultCatalogTests = getTests(lang);
     const updated = tests.map(test => {
-      const def = defaultCatalogTests.find(d => d.id === test.id || d.name.trim().toLowerCase() === test.name.trim().toLowerCase());
+      const def = defaultCatalogTests.find(d => String(d.id) === String(test.id) || d.name.trim().toLowerCase() === test.name.trim().toLowerCase());
       if (def && def.priceByLab?.['lab_popular']) {
         return {
           ...test,
@@ -463,7 +463,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const handleQuickUpdateLabPrice = (testId: string, labId: string, delta: number) => {
     const updated = tests.map(t => {
-      if (t.id === testId) {
+      if (String(t.id) === String(testId)) {
         const currentSelling = t.priceByLab?.[labId] ?? t.price;
         const newSelling = Math.max(0, currentSelling + delta);
         const currentOrig = t.originalPriceByLab?.[labId] ?? t.originalPrice ?? currentSelling;

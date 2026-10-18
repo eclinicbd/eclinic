@@ -391,19 +391,25 @@ export default function App() {
   };
 
   const handleUpdateTests = (updated: TestPackage[]) => {
-    // Strictly ensure unique test names (case-insensitive and trimmed)
-    const seen = new Set<string>();
+    // Strictly ensure unique tests by ID first, and unique test names (case-insensitive and trimmed)
+    const seenIds = new Set<string>();
+    const seenNames = new Set<string>();
     const uniqueList: TestPackage[] = [];
     for (const item of updated) {
+      const strId = String(item.id);
       const norm = (item.name || '').trim().toLowerCase();
-      if (norm && !seen.has(norm)) {
-        seen.add(norm);
-        uniqueList.push(item);
+      if (norm && !seenIds.has(strId) && !seenNames.has(norm)) {
+        seenIds.add(strId);
+        seenNames.add(norm);
+        uniqueList.push({ ...item, id: strId });
       }
     }
     setTests(uniqueList);
     saveStoredTests(language, uniqueList);
     saveTestsToFirestore(language, uniqueList);
+    const otherLang = language === 'en' ? 'bn' : 'en';
+    const otherTests = getStoredTests(otherLang);
+    saveTestsToFirestore(otherLang, otherTests);
   };
 
   const handleUpdateLabs = (updated: LabPartner[]) => {
@@ -570,46 +576,21 @@ export default function App() {
     const unsubscribe = subscribeToTests(language, (liveTests) => {
       const defaultList = getTests(language);
       if (liveTests && liveTests.length > 0) {
-        // Guarantee all 38 default tests exist even if Firestore contains an old list (e.g. 18 items)
-        const liveMap = new Map(liveTests.map(t => [t.id, t]));
-        const missingDefaults = defaultList.filter(d => !liveMap.has(d.id));
-        let combined = missingDefaults.length > 0 ? [...liveTests, ...missingDefaults] : liveTests;
+        const liveMap = new Map(liveTests.map(t => [String(t.id), t]));
+        const missingDefaults = defaultList.filter(d => !liveMap.has(String(d.id)));
+        let combined = missingDefaults.length > 0 ? [...liveTests, ...missingDefaults.map(d => ({ ...d, id: String(d.id) }))] : liveTests;
 
-        // Auto-heal for tests where Popular Diagnostic price was previously glitched to 250
-        let popularRatesHealed = false;
-        combined = combined.map(test => {
-          const def = defaultList.find(d => d.id === test.id);
-          if (def && test.priceByLab?.['lab_popular'] === 250 && def.priceByLab?.['lab_popular'] && def.priceByLab['lab_popular'] !== 250) {
-            popularRatesHealed = true;
-            return {
-              ...test,
-              priceByLab: {
-                ...(test.priceByLab || {}),
-                'lab_popular': def.priceByLab['lab_popular']
-              },
-              originalPriceByLab: {
-                ...(test.originalPriceByLab || {}),
-                'lab_popular': def.originalPriceByLab?.['lab_popular'] || def.originalPrice || def.price
-              }
-            };
-          }
-          return test;
-        });
-        if (popularRatesHealed) {
-          try {
-            saveStoredTests(language, combined);
-            saveTestsToFirestore(language, combined);
-          } catch (_e) {}
-        }
-
-        // Ensure strict uniqueness by test name (case-insensitive and trimmed)
+        // Ensure strict uniqueness by test ID and test name
+        const seenIds = new Set<string>();
         const seenNames = new Set<string>();
         const uniqueCombined: TestPackage[] = [];
         for (const test of combined) {
+          const strId = String(test.id);
           const norm = (test.name || '').trim().toLowerCase();
-          if (norm && !seenNames.has(norm)) {
+          if (norm && !seenIds.has(strId) && !seenNames.has(norm)) {
+            seenIds.add(strId);
             seenNames.add(norm);
-            uniqueCombined.push(test);
+            uniqueCombined.push({ ...test, id: strId });
           }
         }
         combined = uniqueCombined;
@@ -617,8 +598,8 @@ export default function App() {
         setTests(combined);
         saveStoredTests(language, combined);
 
-        // If Firestore had fewer tests or needed healing, automatically update Firestore
-        if (missingDefaults.length > 0 || popularRatesHealed) {
+        // If Firestore was missing default tests, update Firestore
+        if (missingDefaults.length > 0) {
           saveTestsToFirestore(language, combined);
         }
       } else {
@@ -1030,7 +1011,8 @@ export default function App() {
   const filteredTests = tests.filter(test => {
     if (test.isHidden) return false;
     const matchesSearch = test.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = activeCategory === 'All' || test.category === activeCategory;
+    const testCats = (test.categories && test.categories.length > 0) ? test.categories : [test.category];
+    const matchesCategory = activeCategory === 'All' || testCats.includes(activeCategory);
     return matchesSearch && matchesCategory;
   });
 
@@ -1879,52 +1861,18 @@ export default function App() {
                     {t.footerLinks.about}
                   </span>
                   <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 leading-tight">
-                    {(() => {
-                      if (language === 'bn') {
-                        if (!siteSettings.aboutTitle || /lab\s*home/i.test(siteSettings.aboutTitle) || siteSettings.aboutTitle.includes('About eClinic')) {
-                          return 'আমাদের সম্পর্কে (About Us)';
-                        }
-                        return cleanBrandText(siteSettings.aboutTitle);
-                      } else {
-                        if (!siteSettings.aboutTitle || /lab\s*home/i.test(siteSettings.aboutTitle) || /[\u0980-\u09FF]/.test(siteSettings.aboutTitle)) {
-                          return 'About eClinic Bangladesh';
-                        }
-                        return cleanBrandText(siteSettings.aboutTitle);
-                      }
-                    })()}
+                    {cleanBrandText(siteSettings.aboutTitle) || (language === 'bn' ? 'আমাদের সম্পর্কে (About Us)' : 'About eClinic Bangladesh')}
                   </h2>
                   <p className="text-base text-slate-600 leading-relaxed">
-                    {(() => {
-                      const rawDesc = siteSettings.aboutDescription;
-                      if (language === 'bn') {
-                        if (!rawDesc || !/[\u0980-\u09FF]/.test(rawDesc) || /lab\s*home/i.test(rawDesc)) {
-                          return 'eClinic Bangladesh হলো বাংলাদেশের একটি নির্ভরযোগ্য ডিজিটাল স্বাস্থ্যসেবা ও হোম ডায়াগনস্টিক প্ল্যাটফর্ম। ট্রাফিকের ভিড় এড়িয়ে ঘরে বসেই পপুলার, ল্যাবএইড, বারডেমসহ দেশের সেরা ল্যাব থেকে রক্ত পরীক্ষা ও ডায়াগনস্টিক টেস্টের সুবিধা দিতে আমরা বদ্ধপরিকর।';
-                        }
-                        return cleanBrandText(rawDesc);
-                      } else {
-                        if (!rawDesc || /[\u0980-\u09FF]/.test(rawDesc) || /lab\s*home/i.test(rawDesc)) {
-                          return 'eClinic Bangladesh is Bangladesh’s premier digital healthcare and doorstep diagnostic platform. Skip traffic jams and clinic queues by getting diagnostic tests done from top accredited labs directly from home.';
-                        }
-                        return cleanBrandText(rawDesc);
-                      }
-                    })()}
+                    {cleanBrandText(siteSettings.aboutDescription) || (language === 'bn'
+                      ? 'eClinic Bangladesh হলো বাংলাদেশের একটি নির্ভরযোগ্য ডিজিটাল স্বাস্থ্যসেবা ও হোম ডায়াগনস্টিক প্ল্যাটফর্ম। ট্রাফিকের ভিড় এড়িয়ে ঘরে বসেই পপুলার, ল্যাবএইড, বারডেমসহ দেশের সেরা ল্যাব থেকে রক্ত পরীক্ষা ও ডায়াগনস্টিক টেস্টের সুবিধা দিতে আমরা বদ্ধপরিকর।'
+                      : 'eClinic Bangladesh is Bangladesh’s premier digital healthcare and doorstep diagnostic platform. Skip traffic jams and clinic queues by getting diagnostic tests done from top accredited labs directly from home.')}
                   </p>
                   {(siteSettings.aboutStory || language === 'bn') && (
                     <div className="p-5 bg-slate-50 rounded-2xl border-l-4 border-primary text-slate-700 text-sm leading-relaxed italic">
-                      "{(() => {
-                        const rawStory = siteSettings.aboutStory;
-                        if (language === 'bn') {
-                          if (!rawStory || !/[\u0980-\u09FF]/.test(rawStory) || /lab\s*home/i.test(rawStory)) {
-                            return '২০২৪ সাল থেকে আমাদের দক্ষ মেডিকেল টেকনোলজিস্ট ও সার্টিফাইড ল্যাব পার্টনারদের মাধ্যমে ঢাকার হাজারো পরিবারের কাছে সহজে, নিরাপদে ও সাশ্রয়ী মূল্যে হোম স্যাম্পল কালেকশন ও ইনস্ট্যান্ট অনলাইন রিপোর্ট সেবা পৌঁছে দিচ্ছি।';
-                          }
-                          return cleanBrandText(rawStory);
-                        } else {
-                          if (!rawStory || /[\u0980-\u09FF]/.test(rawStory) || /lab\s*home/i.test(rawStory)) {
-                            return 'Founded in 2024, we empower thousands of families across Dhaka with prompt, hygienic, and affordable blood sample collection, analyzed at accredited labs like Popular, Labaid, BIRDEM, and BSMMU.';
-                          }
-                          return cleanBrandText(rawStory);
-                        }
-                      })()}"
+                      "{cleanBrandText(siteSettings.aboutStory) || (language === 'bn'
+                        ? '২০২৪ সাল থেকে আমাদের দক্ষ মেডিকেল টেকনোলজিস্ট ও সার্টিফাইড ল্যাব পার্টনারদের মাধ্যমে ঢাকার হাজারো পরিবারের কাছে সহজে, নিরাপদে ও সাশ্রয়ী মূল্যে হোম স্যাম্পল কালেকশন ও ইনস্ট্যান্ট অনলাইন রিপোর্ট সেবা পৌঁছে দিচ্ছি।'
+                        : 'Founded in 2024, we empower thousands of families across Dhaka with prompt, hygienic, and affordable blood sample collection, analyzed at accredited labs like Popular, Labaid, BIRDEM, and BSMMU.')}"
                     </div>
                   )}
 

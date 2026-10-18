@@ -611,47 +611,30 @@ export const getStoredTests = (lang: Language): TestPackage[] => {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed) && parsed.length > 0) {
         let changed = false;
-        const existingIds = new Set(parsed.map((p: TestPackage) => p.id));
-        const missingDefaults = defaultList.filter(d => !existingIds.has(d.id));
-        let updatedList: TestPackage[] = parsed;
+        const existingIds = new Set(parsed.map((p: TestPackage) => String(p.id)));
+        const missingDefaults = defaultList.filter(d => !existingIds.has(String(d.id)));
+        let updatedList: TestPackage[] = parsed.map((p: TestPackage) => ({ ...p, id: String(p.id) }));
         if (missingDefaults.length > 0) {
-          updatedList = [...parsed, ...missingDefaults];
+          updatedList = [...updatedList, ...missingDefaults.map(d => ({ ...d, id: String(d.id) }))];
           changed = true;
         }
 
-        // Auto-heal for tests where Popular Diagnostic price was previously glitched to 250
-        updatedList = updatedList.map(test => {
-          const def = defaultList.find(d => d.id === test.id);
-          if (def && test.priceByLab?.['lab_popular'] === 250 && def.priceByLab?.['lab_popular'] && def.priceByLab['lab_popular'] !== 250) {
-            changed = true;
-            return {
-              ...test,
-              priceByLab: {
-                ...(test.priceByLab || {}),
-                'lab_popular': def.priceByLab['lab_popular']
-              },
-              originalPriceByLab: {
-                ...(test.originalPriceByLab || {}),
-                'lab_popular': def.originalPriceByLab?.['lab_popular'] || def.originalPrice || def.price
-              }
-            };
-          }
-          return test;
-        });
-
-        // Strictly deduplicate by test name so no test exists twice with the same name
+        // Strictly deduplicate by test ID and test name so no test exists twice
+        const seenIds = new Set<string>();
         const seenNames = new Set<string>();
-        const deduplicatedByName: TestPackage[] = [];
+        const deduplicated: TestPackage[] = [];
         for (const t of updatedList) {
+          const strId = String(t.id);
           const normName = (t.name || '').trim().toLowerCase();
-          if (normName && !seenNames.has(normName)) {
+          if (normName && !seenIds.has(strId) && !seenNames.has(normName)) {
+            seenIds.add(strId);
             seenNames.add(normName);
-            deduplicatedByName.push(t);
-          } else if (normName && seenNames.has(normName)) {
-            changed = true; // Duplicate test pruned
+            deduplicated.push({ ...t, id: strId });
+          } else {
+            changed = true;
           }
         }
-        updatedList = deduplicatedByName;
+        updatedList = deduplicated;
 
         if (changed) {
           localStorage.setItem(key, JSON.stringify(updatedList));
@@ -668,9 +651,10 @@ export const getStoredTests = (lang: Language): TestPackage[] => {
 export const saveStoredTests = (lang: Language, tests: TestPackage[]): void => {
   try {
     const key = lang === 'en' ? STORAGE_KEYS.TESTS_EN : STORAGE_KEYS.TESTS_BN;
-    localStorage.setItem(key, JSON.stringify(tests));
+    const cleanTests = tests.map(t => ({ ...t, id: String(t.id) }));
+    localStorage.setItem(key, JSON.stringify(cleanTests));
     
-    // Also sync test IDs, prices, hidden status, and new custom tests to other language
+    // Also sync test IDs, names, descriptions, prices, lab matrix, categories, and status to other language
     const otherLang = lang === 'en' ? 'bn' : 'en';
     const otherKey = otherLang === 'en' ? STORAGE_KEYS.TESTS_EN : STORAGE_KEYS.TESTS_BN;
     const otherStored = localStorage.getItem(otherKey);
@@ -678,30 +662,34 @@ export const saveStoredTests = (lang: Language, tests: TestPackage[]): void => {
     
     // Update existing or append new
     const updatedOtherTests = [...otherTests];
-    tests.forEach(test => {
-      const idx = updatedOtherTests.findIndex(ot => ot.id === test.id);
+    cleanTests.forEach(test => {
+      const idx = updatedOtherTests.findIndex(ot => String(ot.id) === String(test.id));
       if (idx !== -1) {
         updatedOtherTests[idx] = {
           ...updatedOtherTests[idx],
+          name: test.name || updatedOtherTests[idx].name,
+          description: test.description !== undefined ? test.description : updatedOtherTests[idx].description,
           price: test.price,
           originalPrice: test.originalPrice,
           discountPercent: test.discountPercent,
-          priceByLab: test.priceByLab,
-          originalPriceByLab: test.originalPriceByLab,
-          isHidden: test.isHidden,
-          category: test.category,
-          turnaroundTime: test.turnaroundTime,
-          image: test.image,
-          orderCount: test.orderCount
+          priceByLab: test.priceByLab ? { ...test.priceByLab } : updatedOtherTests[idx].priceByLab,
+          originalPriceByLab: test.originalPriceByLab ? { ...test.originalPriceByLab } : updatedOtherTests[idx].originalPriceByLab,
+          hiddenLabs: test.hiddenLabs ? [...test.hiddenLabs] : [],
+          isHidden: !!test.isHidden,
+          category: test.category || updatedOtherTests[idx].category,
+          categories: (test.categories && test.categories.length > 0) ? [...test.categories] : updatedOtherTests[idx].categories,
+          turnaroundTime: test.turnaroundTime || updatedOtherTests[idx].turnaroundTime,
+          image: test.image || updatedOtherTests[idx].image,
+          orderCount: test.orderCount !== undefined ? test.orderCount : updatedOtherTests[idx].orderCount
         };
       } else {
         updatedOtherTests.unshift({ ...test });
       }
     });
     // Remove deleted custom tests from other language, but preserve default catalog tests
-    const defaultIds = new Set(getDefaultTests(lang).map(d => d.id));
-    const currentIds = new Set(tests.map(t => t.id));
-    const filteredOther = updatedOtherTests.filter(ot => currentIds.has(ot.id) || defaultIds.has(ot.id));
+    const defaultIds = new Set(getDefaultTests(lang).map(d => String(d.id)));
+    const currentIds = new Set(cleanTests.map(t => String(t.id)));
+    const filteredOther = updatedOtherTests.filter(ot => currentIds.has(String(ot.id)) || defaultIds.has(String(ot.id)));
     localStorage.setItem(otherKey, JSON.stringify(filteredOther));
   } catch (e) {
     console.error("Failed to save tests to storage:", e);
@@ -919,52 +907,26 @@ export const getStoredSiteSettings = (lang: Language): SiteSettings => {
 
       // Language-aware About Title
       let cleanAboutTitle: string;
-      if (lang === 'bn') {
-        if (!parsed.aboutTitle || /lab\s*home/i.test(parsed.aboutTitle) || parsed.aboutTitle.includes('About eClinic')) {
-          cleanAboutTitle = 'আমাদের সম্পর্কে (About Us)';
-        } else {
-          cleanAboutTitle = cleanBrandText(parsed.aboutTitle);
-        }
+      if (parsed.aboutTitle && parsed.aboutTitle.trim()) {
+        cleanAboutTitle = cleanBrandText(parsed.aboutTitle.trim());
       } else {
-        if (!parsed.aboutTitle || /lab\s*home/i.test(parsed.aboutTitle) || /[\u0980-\u09FF]/.test(parsed.aboutTitle)) {
-          cleanAboutTitle = 'About eClinic Bangladesh';
-        } else {
-          cleanAboutTitle = cleanBrandText(parsed.aboutTitle);
-        }
+        cleanAboutTitle = defaultSettings.aboutTitle || (lang === 'bn' ? 'আমাদের সম্পর্কে (About Us)' : 'About eClinic Bangladesh');
       }
 
       // Language-aware About Description
       let cleanAboutDesc: string;
-      const rawDesc = parsed.aboutDescription;
-      if (lang === 'bn') {
-        if (!rawDesc || !/[\u0980-\u09FF]/.test(rawDesc) || /lab\s*home/i.test(rawDesc)) {
-          cleanAboutDesc = defaultSettings.aboutDescription;
-        } else {
-          cleanAboutDesc = cleanBrandText(rawDesc);
-        }
+      if (parsed.aboutDescription && parsed.aboutDescription.trim()) {
+        cleanAboutDesc = cleanBrandText(parsed.aboutDescription.trim());
       } else {
-        if (!rawDesc || /[\u0980-\u09FF]/.test(rawDesc) || /lab\s*home/i.test(rawDesc)) {
-          cleanAboutDesc = defaultSettings.aboutDescription;
-        } else {
-          cleanAboutDesc = cleanBrandText(rawDesc);
-        }
+        cleanAboutDesc = defaultSettings.aboutDescription;
       }
 
       // Language-aware About Story
       let cleanAboutStory: string;
-      const rawStory = parsed.aboutStory;
-      if (lang === 'bn') {
-        if (!rawStory || !/[\u0980-\u09FF]/.test(rawStory) || /lab\s*home/i.test(rawStory)) {
-          cleanAboutStory = defaultSettings.aboutStory;
-        } else {
-          cleanAboutStory = cleanBrandText(rawStory);
-        }
+      if (parsed.aboutStory && parsed.aboutStory.trim()) {
+        cleanAboutStory = cleanBrandText(parsed.aboutStory.trim());
       } else {
-        if (!rawStory || /[\u0980-\u09FF]/.test(rawStory) || /lab\s*home/i.test(rawStory)) {
-          cleanAboutStory = defaultSettings.aboutStory;
-        } else {
-          cleanAboutStory = cleanBrandText(rawStory);
-        }
+        cleanAboutStory = defaultSettings.aboutStory;
       }
 
       const cleanInvoiceOrg = cleanBrandText(parsed.invoiceOrgName) || 'eClinic Bangladesh';
@@ -974,6 +936,10 @@ export const getStoredSiteSettings = (lang: Language): SiteSettings => {
         ...defaultSettings,
         ...parsed,
         siteName: cleanSiteName,
+        siteTagline: cleanBrandText(parsed.siteTagline) || defaultSettings.siteTagline,
+        aboutBadge: cleanBrandText(parsed.aboutBadge) || defaultSettings.aboutBadge,
+        contactEmail: cleanBrandText(parsed.contactEmail) || 'support@eclinicbd.com',
+        contactAddress: cleanBrandText(parsed.contactAddress) || defaultSettings.contactAddress,
         contactWhatsApp: cleanWhatsApp,
         heroBtnHomeDoctor: parsed.heroBtnHomeDoctor || (lang === 'bn' ? 'হোম ডক্টর' : 'Home Doctor'),
         showHeroHomeDoctorBtn: parsed.showHeroHomeDoctorBtn !== undefined ? parsed.showHeroHomeDoctorBtn : true,
@@ -992,7 +958,9 @@ export const getStoredSiteSettings = (lang: Language): SiteSettings => {
         invoiceWatermark: cleanWatermark,
         heroImages: (Array.isArray(parsed.heroImages) && parsed.heroImages.length > 0) ? parsed.heroImages : (Array.isArray(otherParsed?.heroImages) && otherParsed.heroImages.length > 0 ? otherParsed.heroImages : defaultSettings.heroImages),
         howItWorksSteps: (Array.isArray(parsed.howItWorksSteps) && parsed.howItWorksSteps.length > 0) ? parsed.howItWorksSteps : defaultSettings.howItWorksSteps,
-        aboutStats: (Array.isArray(parsed.aboutStats) && parsed.aboutStats.length > 0) ? parsed.aboutStats : defaultSettings.aboutStats,
+        aboutStats: (Array.isArray(parsed.aboutStats) && parsed.aboutStats.length > 0) 
+          ? parsed.aboutStats.map((st: any) => ({ label: cleanBrandText(st?.label), value: cleanBrandText(st?.value) }))
+          : defaultSettings.aboutStats,
         services: (Array.isArray(parsed.services) && parsed.services.length > 0) ? parsed.services : defaultSettings.services,
         nursingServices: (Array.isArray(parsed.nursingServices) && parsed.nursingServices.length > 0) ? parsed.nursingServices : defaultSettings.nursingServices,
         doctorAtHomeSpecialties: (Array.isArray(parsed.doctorAtHomeSpecialties) && parsed.doctorAtHomeSpecialties.length > 0) 
@@ -1051,12 +1019,18 @@ export const saveStoredSiteSettings = (lang: Language, settings: SiteSettings): 
     const cleanSettings: SiteSettings = {
       ...settings,
       siteName: cleanBrandText(settings.siteName) || 'eClinic Bangladesh',
-      aboutTitle: lang === 'bn' 
-        ? (settings.aboutTitle && !/lab\s*home/i.test(settings.aboutTitle) && !settings.aboutTitle.includes('About eClinic') ? cleanBrandText(settings.aboutTitle) : 'আমাদের সম্পর্কে (About Us)')
-        : (settings.aboutTitle && !/lab\s*home/i.test(settings.aboutTitle) && !/[\u0980-\u09FF]/.test(settings.aboutTitle) ? cleanBrandText(settings.aboutTitle) : 'About eClinic Bangladesh'),
-      aboutDescription: cleanBrandText(settings.aboutDescription) || defaultSettingsCurrent.aboutDescription,
-      aboutStory: cleanBrandText(settings.aboutStory) || defaultSettingsCurrent.aboutStory,
-      invoiceOrgName: cleanBrandText(settings.invoiceOrgName) || 'eClinic Bangladesh'
+      siteTagline: cleanBrandText(settings.siteTagline) || defaultSettingsCurrent.siteTagline,
+      aboutBadge: cleanBrandText(settings.aboutBadge) || defaultSettingsCurrent.aboutBadge,
+      aboutTitle: settings.aboutTitle && settings.aboutTitle.trim() ? cleanBrandText(settings.aboutTitle.trim()) : defaultSettingsCurrent.aboutTitle,
+      aboutDescription: settings.aboutDescription && settings.aboutDescription.trim() ? cleanBrandText(settings.aboutDescription.trim()) : defaultSettingsCurrent.aboutDescription,
+      aboutStory: settings.aboutStory && settings.aboutStory.trim() ? cleanBrandText(settings.aboutStory.trim()) : defaultSettingsCurrent.aboutStory,
+      aboutStats: (Array.isArray(settings.aboutStats) && settings.aboutStats.length > 0)
+        ? settings.aboutStats.map((st: any) => ({ label: cleanBrandText(st?.label), value: cleanBrandText(st?.value) }))
+        : defaultSettingsCurrent.aboutStats,
+      contactAddress: cleanBrandText(settings.contactAddress) || defaultSettingsCurrent.contactAddress,
+      contactEmail: cleanBrandText(settings.contactEmail) || 'support@eclinicbd.com',
+      invoiceOrgName: cleanBrandText(settings.invoiceOrgName) || 'eClinic Bangladesh',
+      invoiceWatermark: (settings.invoiceWatermark && !settings.invoiceWatermark.includes('LabHome')) ? settings.invoiceWatermark : 'eClinic BD'
     };
     localStorage.setItem(key, JSON.stringify(cleanSettings));
 
@@ -1074,12 +1048,18 @@ export const saveStoredSiteSettings = (lang: Language, settings: SiteSettings): 
     const mergedOther: SiteSettings = {
       ...otherSettings,
       siteName: cleanBrandText(otherSettings.siteName) || 'eClinic Bangladesh',
-      aboutTitle: otherLang === 'bn'
-        ? (otherSettings.aboutTitle && !/lab\s*home/i.test(otherSettings.aboutTitle) && !otherSettings.aboutTitle.includes('About eClinic') ? cleanBrandText(otherSettings.aboutTitle) : 'আমাদের সম্পর্কে (About Us)')
-        : (otherSettings.aboutTitle && !/lab\s*home/i.test(otherSettings.aboutTitle) && !/[\u0980-\u09FF]/.test(otherSettings.aboutTitle) ? cleanBrandText(otherSettings.aboutTitle) : 'About eClinic Bangladesh'),
-      aboutDescription: cleanBrandText(otherSettings.aboutDescription) || defaultSettingsOther.aboutDescription,
-      aboutStory: cleanBrandText(otherSettings.aboutStory) || defaultSettingsOther.aboutStory,
+      siteTagline: cleanBrandText(otherSettings.siteTagline) || defaultSettingsOther.siteTagline,
+      aboutBadge: cleanBrandText(otherSettings.aboutBadge) || defaultSettingsOther.aboutBadge,
+      aboutTitle: otherSettings.aboutTitle && otherSettings.aboutTitle.trim() ? cleanBrandText(otherSettings.aboutTitle.trim()) : defaultSettingsOther.aboutTitle,
+      aboutDescription: otherSettings.aboutDescription && otherSettings.aboutDescription.trim() ? cleanBrandText(otherSettings.aboutDescription.trim()) : defaultSettingsOther.aboutDescription,
+      aboutStory: otherSettings.aboutStory && otherSettings.aboutStory.trim() ? cleanBrandText(otherSettings.aboutStory.trim()) : defaultSettingsOther.aboutStory,
+      aboutStats: (Array.isArray(otherSettings.aboutStats) && otherSettings.aboutStats.length > 0)
+        ? otherSettings.aboutStats.map((st: any) => ({ label: cleanBrandText(st?.label), value: cleanBrandText(st?.value) }))
+        : defaultSettingsOther.aboutStats,
+      contactAddress: cleanBrandText(otherSettings.contactAddress) || defaultSettingsOther.contactAddress,
+      contactEmail: cleanBrandText(otherSettings.contactEmail) || 'support@eclinicbd.com',
       invoiceOrgName: cleanBrandText(otherSettings.invoiceOrgName) || 'eClinic Bangladesh',
+      invoiceWatermark: (otherSettings.invoiceWatermark && !otherSettings.invoiceWatermark.includes('LabHome')) ? otherSettings.invoiceWatermark : 'eClinic BD',
       logoUrl: settings.logoUrl,
       logoIcon: settings.logoIcon,
       faviconUrl: settings.faviconUrl || otherSettings.faviconUrl,
@@ -1103,10 +1083,8 @@ export const saveStoredSiteSettings = (lang: Language, settings: SiteSettings): 
       heroBtnHomeDoctor: settings.heroBtnHomeDoctor || otherSettings.heroBtnHomeDoctor,
       showAppButtonsInFooter: settings.showAppButtonsInFooter !== undefined ? settings.showAppButtonsInFooter : otherSettings.showAppButtonsInFooter,
       aboutImage: settings.aboutImage || otherSettings.aboutImage,
-      contactAddress: otherSettings.contactAddress || settings.contactAddress,
       contactPhone: settings.contactPhone,
       contactHotline: settings.contactHotline,
-      contactEmail: settings.contactEmail,
       contactWhatsApp: settings.contactWhatsApp,
       emergencyNumber: settings.emergencyNumber,
       doctorsEmergencyHotline: settings.doctorsEmergencyHotline || otherSettings.doctorsEmergencyHotline,
@@ -1125,8 +1103,7 @@ export const saveStoredSiteSettings = (lang: Language, settings: SiteSettings): 
       invoiceWebsite: settings.invoiceWebsite || otherSettings.invoiceWebsite,
       invoiceTermsTitle: otherSettings.invoiceTermsTitle || settings.invoiceTermsTitle,
       invoiceGuidelines: settings.invoiceGuidelines || otherSettings.invoiceGuidelines,
-      invoiceFooterNote: otherSettings.invoiceFooterNote || settings.invoiceFooterNote,
-      invoiceWatermark: settings.invoiceWatermark || otherSettings.invoiceWatermark
+      invoiceFooterNote: otherSettings.invoiceFooterNote || settings.invoiceFooterNote
     };
 
     localStorage.setItem(otherKey, JSON.stringify(mergedOther));

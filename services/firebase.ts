@@ -519,9 +519,16 @@ export const saveSiteSettingsToFirestore = async (lang: Language, settings: Site
     const cleanSettings: SiteSettings = {
       ...settings,
       siteName: cleanBrandText(settings.siteName) || 'eClinic Bangladesh',
+      siteTagline: cleanBrandText(settings.siteTagline),
+      aboutBadge: cleanBrandText(settings.aboutBadge),
       aboutTitle: cleanBrandText(settings.aboutTitle) || (lang === 'bn' ? 'আমাদের সম্পর্কে (About Us)' : 'About eClinic Bangladesh'),
       aboutDescription: cleanBrandText(settings.aboutDescription),
       aboutStory: cleanBrandText(settings.aboutStory),
+      aboutStats: (Array.isArray(settings.aboutStats) && settings.aboutStats.length > 0)
+        ? settings.aboutStats.map((st: any) => ({ label: cleanBrandText(st?.label), value: cleanBrandText(st?.value) }))
+        : settings.aboutStats,
+      contactAddress: cleanBrandText(settings.contactAddress),
+      contactEmail: cleanBrandText(settings.contactEmail) || 'support@eclinicbd.com',
       invoiceOrgName: cleanBrandText(settings.invoiceOrgName) || 'eClinic Bangladesh',
       invoiceWatermark: (settings.invoiceWatermark && !settings.invoiceWatermark.includes('LabHome')) ? settings.invoiceWatermark : 'eClinic BD'
     };
@@ -566,45 +573,35 @@ export const subscribeToSiteSettings = (lang: Language, callback: (settings: Sit
     return onSnapshot(settingsDoc, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.data() as SiteSettings;
-        let cleanAboutTitle: string;
-        if (lang === 'bn') {
-          if (!data.aboutTitle || /lab\s*home/i.test(data.aboutTitle) || data.aboutTitle.includes('About eClinic')) {
-            cleanAboutTitle = 'আমাদের সম্পর্কে (About Us)';
-          } else {
-            cleanAboutTitle = cleanBrandText(data.aboutTitle);
-          }
-        } else {
-          if (!data.aboutTitle || /lab\s*home/i.test(data.aboutTitle) || /[\u0980-\u09FF]/.test(data.aboutTitle)) {
-            cleanAboutTitle = 'About eClinic Bangladesh';
-          } else {
-            cleanAboutTitle = cleanBrandText(data.aboutTitle);
-          }
-        }
+        const cleanAboutTitle = data.aboutTitle && data.aboutTitle.trim()
+          ? cleanBrandText(data.aboutTitle.trim())
+          : (lang === 'bn' ? 'আমাদের সম্পর্কে (About Us)' : 'About eClinic Bangladesh');
 
-        const rawDesc = data.aboutDescription;
-        const cleanAboutDesc = (lang === 'bn')
-          ? (!rawDesc || !/[\u0980-\u09FF]/.test(rawDesc) || /lab\s*home/i.test(rawDesc)
+        const cleanAboutDesc = data.aboutDescription && data.aboutDescription.trim()
+          ? cleanBrandText(data.aboutDescription.trim())
+          : (lang === 'bn'
               ? 'eClinic Bangladesh হলো বাংলাদেশের একটি নির্ভরযোগ্য ডিজিটাল স্বাস্থ্যসেবা ও হোম ডায়াগনস্টিক প্ল্যাটফর্ম। ট্রাফিকের ভিড় এড়িয়ে ঘরে বসেই পপুলার, ল্যাবএইড, বারডেমসহ দেশের সেরা ল্যাব থেকে রক্ত পরীক্ষা ও ডায়াগনস্টিক টেস্টের সুবিধা দিতে আমরা বদ্ধপরিকর।'
-              : cleanBrandText(rawDesc))
-          : (!rawDesc || /[\u0980-\u09FF]/.test(rawDesc) || /lab\s*home/i.test(rawDesc)
-              ? 'eClinic Bangladesh is Bangladesh’s premier digital healthcare and doorstep diagnostic platform. Skip traffic jams and clinic queues by getting diagnostic tests done from top accredited labs directly from home.'
-              : cleanBrandText(rawDesc));
+              : 'eClinic Bangladesh is Bangladesh’s premier digital healthcare and doorstep diagnostic platform. Skip traffic jams and clinic queues by getting diagnostic tests done from top accredited labs directly from home.');
 
-        const rawStory = data.aboutStory;
-        const cleanAboutStory = (lang === 'bn')
-          ? (!rawStory || !/[\u0980-\u09FF]/.test(rawStory) || /lab\s*home/i.test(rawStory)
+        const cleanAboutStory = data.aboutStory && data.aboutStory.trim()
+          ? cleanBrandText(data.aboutStory.trim())
+          : (lang === 'bn'
               ? '২০২৪ সাল থেকে আমাদের দক্ষ মেডিকেল টেকনোলজিস্ট ও সার্টিফাইড ল্যাব পার্টনারদের মাধ্যমে ঢাকার হাজারো পরিবারের কাছে সহজে, নিরাপদে ও সাশ্রয়ী মূল্যে হোম স্যাম্পল কালেকশন ও ইনস্ট্যান্ট অনলাইন রিপোর্ট সেবা পৌঁছে দিচ্ছি।'
-              : cleanBrandText(rawStory))
-          : (!rawStory || /[\u0980-\u09FF]/.test(rawStory) || /lab\s*home/i.test(rawStory)
-              ? 'Founded in 2024, we empower thousands of families across Dhaka with prompt, hygienic, and affordable blood sample collection, analyzed at accredited labs like Popular, Labaid, BIRDEM, and BSMMU.'
-              : cleanBrandText(rawStory));
+              : 'Founded in 2024, we empower thousands of families across Dhaka with prompt, hygienic, and affordable blood sample collection, analyzed at accredited labs like Popular, Labaid, BIRDEM, and BSMMU.');
 
         const cleanSettings: SiteSettings = {
           ...data,
           siteName: cleanBrandText(data.siteName) || 'eClinic Bangladesh',
+          siteTagline: cleanBrandText(data.siteTagline) || (lang === 'bn' ? 'বাংলাদেশের বিশ্বস্ত হোম স্যাম্পল কালেকশন ও ডিজিটাল ডায়াগনস্টিক প্ল্যাটফর্ম' : 'Trusted Home Sample Collection & Digital Diagnostic Platform in Bangladesh'),
+          aboutBadge: cleanBrandText(data.aboutBadge) || (lang === 'bn' ? 'আমাদের সম্পর্কে' : 'About Us'),
           aboutTitle: cleanAboutTitle,
           aboutDescription: cleanAboutDesc,
           aboutStory: cleanAboutStory,
+          aboutStats: (Array.isArray(data.aboutStats) && data.aboutStats.length > 0)
+            ? data.aboutStats.map((st: any) => ({ label: cleanBrandText(st?.label), value: cleanBrandText(st?.value) }))
+            : data.aboutStats,
+          contactEmail: cleanBrandText(data.contactEmail) || 'support@eclinicbd.com',
+          contactAddress: cleanBrandText(data.contactAddress) || data.contactAddress,
           invoiceOrgName: cleanBrandText(data.invoiceOrgName) || 'eClinic Bangladesh',
           invoiceWatermark: (data.invoiceWatermark && !data.invoiceWatermark.includes('LabHome')) ? data.invoiceWatermark : 'eClinic BD'
         };

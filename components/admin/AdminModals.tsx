@@ -278,7 +278,7 @@ export const TestFormModal: React.FC<TestModalProps> = ({
 
     // Strict duplicate test name check (case-insensitive and trimmed)
     const isDuplicate = existingTests.some(t => {
-      if (editingTest && t.id === editingTest.id) return false;
+      if (editingTest && String(t.id) === String(editingTest.id)) return false;
       return t.name.trim().toLowerCase() === trimmedName.toLowerCase();
     });
 
@@ -311,7 +311,7 @@ export const TestFormModal: React.FC<TestModalProps> = ({
 
     const finalCats = selectedCategories.length > 0 ? selectedCategories : ['General'];
     const testToSave: TestPackage = {
-      id: editingTest ? editingTest.id : `test_${Date.now()}`,
+      id: editingTest ? String(editingTest.id) : `test_${Date.now()}`,
       name: formData.name.trim(),
       description: formData.description || '',
       category: finalCats[0],
