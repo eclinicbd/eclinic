@@ -146,6 +146,21 @@ export const AdminTests: React.FC<AdminTestsProps> = ({
           </select>
         </div>
 
+        {/* Sort: test Name (A-Z) placed directly next to All Category */}
+        <div>
+          <select 
+            value={sortBy} 
+            onChange={(e) => setSortBy(e.target.value as any)}
+            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-slate-50 outline-none cursor-pointer text-slate-800"
+            title="Sort Tests"
+          >
+            <option value="name_asc">🔤 {lang === 'bn' ? 'test Name (A-Z)' : 'test Name (A-Z)'}</option>
+            <option value="default">📋 {lang === 'bn' ? 'ডিফল্ট ক্রম (Default Order)' : 'Default Order'}</option>
+            <option value="price_low">💲 {lang === 'bn' ? 'মূল্য: কম থেকে বেশি' : 'Price: Low to High'}</option>
+            <option value="price_high">💲 {lang === 'bn' ? 'মূল্য: বেশি থেকে কম' : 'Price: High to Low'}</option>
+          </select>
+        </div>
+
         {/* Visibility */}
         <div>
           <select 
@@ -156,20 +171,6 @@ export const AdminTests: React.FC<AdminTestsProps> = ({
             <option value="all">👁️ {t.adminAllVisibility} ({tests.length})</option>
             <option value="visible">✓ {t.adminOnlyVisible} ({visibleCount})</option>
             <option value="hidden">🚫 {t.adminOnlyHidden} ({hiddenCount})</option>
-          </select>
-        </div>
-
-        {/* Sort */}
-        <div>
-          <select 
-            value={sortBy} 
-            onChange={(e) => setSortBy(e.target.value as any)}
-            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium bg-slate-50 outline-none cursor-pointer"
-          >
-            <option value="default">Default Order</option>
-            <option value="name_asc">Alphabetical (A - Z)</option>
-            <option value="price_low">Price: Low to High</option>
-            <option value="price_high">Price: High to Low</option>
           </select>
         </div>
       </div>

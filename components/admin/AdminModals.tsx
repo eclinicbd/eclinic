@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { TestPackage, HealthPackage, LabPartner, BookingHistoryItem, BookingStatus, Language, ServiceItem, CategoryItem } from '../../types';
 import { TRANSLATIONS } from '../../translations';
 import { generateUniqueOrderId, formatOrderId, calculateAccessoriesFee } from '../BookingModal';
@@ -41,7 +41,8 @@ import {
   Download,
   Upload,
   ImageIcon,
-  RotateCcw
+  RotateCcw,
+  ArrowDownAZ
 } from 'lucide-react';
 import { printOrDownloadInvoice, resolveOrderCollectionFee } from '../../services/invoiceService';
 import { getTests } from '../../constants';
@@ -1428,6 +1429,12 @@ export const LabTestsManagerModal: React.FC<LabTestsManagerModalProps> = ({
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [filterActiveState, setFilterActiveState] = useState<'all' | 'active' | 'inactive'>('all');
   const [localTests, setLocalTests] = useState<TestPackage[]>([]);
+  const [sortBy, setSortBy] = useState<'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'discount-desc' | 'default'>('name-asc');
+  const [selectedDiscountPercent, setSelectedDiscountPercent] = useState<number>(15);
+  const [isCustomDiscount, setIsCustomDiscount] = useState<boolean>(false);
+  const [customDiscountValue, setCustomDiscountValue] = useState<string>('');
+  const [discountScope, setDiscountScope] = useState<'active' | 'filtered' | 'all'>('active');
+  const [discountFeedback, setDiscountFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -1435,14 +1442,16 @@ export const LabTestsManagerModal: React.FC<LabTestsManagerModalProps> = ({
       setSearchTerm('');
       setSelectedCategory('All');
       setFilterActiveState('all');
+      setSortBy('name-asc');
+      setDiscountFeedback(null);
     }
   }, [isOpen]);
 
-  if (!isOpen || !lab) return null;
-
   const categories = ['All', ...Array.from(new Set(tests.map(t => t.category).filter(Boolean)))];
+  const centerDiscount = lab?.discountPercent || 0;
 
   const handleToggleTestActive = (testId: string) => {
+    if (!lab) return;
     setLocalTests(prev => prev.map(t => {
       if (t.id !== testId) return t;
       const currentHidden = t.hiddenLabs || [];
@@ -1458,6 +1467,7 @@ export const LabTestsManagerModal: React.FC<LabTestsManagerModalProps> = ({
   };
 
   const handleSetAllActive = () => {
+    if (!lab) return;
     setLocalTests(prev => prev.map(t => ({
       ...t,
       hiddenLabs: (t.hiddenLabs || []).filter(id => id !== lab.id)
@@ -1465,6 +1475,7 @@ export const LabTestsManagerModal: React.FC<LabTestsManagerModalProps> = ({
   };
 
   const handleSetAllInactive = () => {
+    if (!lab) return;
     setLocalTests(prev => prev.map(t => {
       const currentHidden = t.hiddenLabs || [];
       return {
@@ -1475,6 +1486,7 @@ export const LabTestsManagerModal: React.FC<LabTestsManagerModalProps> = ({
   };
 
   const handleLabPriceChange = (testId: string, sellingPrice: number) => {
+    if (!lab) return;
     setLocalTests(prev => prev.map(t => {
       if (t.id !== testId) return t;
       return {
@@ -1487,13 +1499,28 @@ export const LabTestsManagerModal: React.FC<LabTestsManagerModalProps> = ({
     }));
   };
 
-  const centerDiscount = lab.discountPercent || 0;
+  // Bulk Apply chosen discount percentage (2%, 5%, 7%, 10%, 12%, 15%, 18%, 20%, 25%, 30%, custom)
+  const handleApplySelectedDiscount = (percentOverride?: number) => {
+    if (!lab) return;
+    let percent = percentOverride !== undefined 
+      ? percentOverride 
+      : (isCustomDiscount ? parseFloat(customDiscountValue) : selectedDiscountPercent);
 
-  const handleApplyCenterDiscountToAll = () => {
-    const disc = centerDiscount > 0 ? centerDiscount : 15;
+    if (isNaN(percent) || percent < 0) percent = 0;
+    if (percent > 99) percent = 99;
+
+    const targetList = discountScope === 'filtered' 
+      ? filteredTests 
+      : discountScope === 'all'
+        ? localTests
+        : localTests.filter(t => !(t.hiddenLabs || []).includes(lab.id));
+
+    const targetIds = new Set(targetList.map(t => t.id));
+
     setLocalTests(prev => prev.map(t => {
+      if (!targetIds.has(t.id)) return t;
       const reg = t.originalPriceByLab?.[lab.id] || t.originalPrice || t.price;
-      const discounted = Math.round(reg * (1 - disc / 100));
+      const discounted = Math.max(0, Math.round(reg * (1 - percent / 100)));
       return {
         ...t,
         originalPriceByLab: {
@@ -1506,9 +1533,17 @@ export const LabTestsManagerModal: React.FC<LabTestsManagerModalProps> = ({
         }
       };
     }));
+
+    const count = targetIds.size;
+    const msg = lang === 'bn' 
+      ? `${count}টি টেস্টে ${percent}% ছাড় সফলভাবে প্রয়োগ করা হয়েছে!` 
+      : `Successfully applied ${percent}% discount to ${count} tests!`;
+    setDiscountFeedback(msg);
+    setTimeout(() => setDiscountFeedback(null), 3500);
   };
 
   const handleRemoveDiscountFromAll = () => {
+    if (!lab) return;
     setLocalTests(prev => prev.map(t => {
       const reg = t.originalPriceByLab?.[lab.id] || t.originalPrice || t.price;
       return {
@@ -1523,9 +1558,13 @@ export const LabTestsManagerModal: React.FC<LabTestsManagerModalProps> = ({
         }
       };
     }));
+    const msg = lang === 'bn' ? 'সকল টেস্টের ছাড় বাতিল করা হয়েছে (মূল রেট কার্যকর)!' : 'Removed discounts from all tests!';
+    setDiscountFeedback(msg);
+    setTimeout(() => setDiscountFeedback(null), 3500);
   };
 
   const handleRestoreLabDefaults = () => {
+    if (!lab) return;
     const defaultList = getTests(lang);
     setLocalTests(prev => prev.map(t => {
       const def = defaultList.find(d => d.id === t.id);
@@ -1544,9 +1583,13 @@ export const LabTestsManagerModal: React.FC<LabTestsManagerModalProps> = ({
         }
       };
     }));
+    const msg = lang === 'bn' ? 'অফিসিয়াল ক্যাটালগের মূল রেট রিস্টোর করা হয়েছে!' : 'Official catalog rates restored!';
+    setDiscountFeedback(msg);
+    setTimeout(() => setDiscountFeedback(null), 3500);
   };
 
   const handleToggleTestDiscount = (testId: string) => {
+    if (!lab) return;
     setLocalTests(prev => prev.map(t => {
       if (t.id !== testId) return t;
       const reg = t.originalPriceByLab?.[lab.id] || t.originalPrice || t.price;
@@ -1567,9 +1610,11 @@ export const LabTestsManagerModal: React.FC<LabTestsManagerModalProps> = ({
           }
         };
       } else {
-        // Apply center discount
-        const disc = centerDiscount > 0 ? centerDiscount : 15;
-        const discounted = Math.round(reg * (1 - disc / 100));
+        // Apply selected discount percentage
+        const disc = isCustomDiscount 
+          ? (Number(customDiscountValue) || 15) 
+          : (selectedDiscountPercent > 0 ? selectedDiscountPercent : (centerDiscount > 0 ? centerDiscount : 15));
+        const discounted = Math.max(0, Math.round(reg * (1 - disc / 100)));
         return {
           ...t,
           originalPriceByLab: {
@@ -1590,25 +1635,66 @@ export const LabTestsManagerModal: React.FC<LabTestsManagerModalProps> = ({
     onClose();
   };
 
-  const activeCount = localTests.filter(t => !(t.hiddenLabs || []).includes(lab.id)).length;
+  const activeCount = lab ? localTests.filter(t => !(t.hiddenLabs || []).includes(lab.id)).length : 0;
   const inactiveCount = localTests.length - activeCount;
 
-  const filteredTests = localTests.filter(test => {
-    const isInactive = (test.hiddenLabs || []).includes(lab.id);
-    const isActive = !isInactive;
+  // Filtered & Sorted tests (supports test Name A-Z, Z-A, Price, Discount)
+  const filteredTests = useMemo(() => {
+    if (!lab) return [];
+    const list = localTests.filter(test => {
+      const isInactive = (test.hiddenLabs || []).includes(lab.id);
+      const isActive = !isInactive;
 
-    if (filterActiveState === 'active' && !isActive) return false;
-    if (filterActiveState === 'inactive' && !isInactive) return false;
+      if (filterActiveState === 'active' && !isActive) return false;
+      if (filterActiveState === 'inactive' && !isInactive) return false;
 
-    const testCats = (test.categories && test.categories.length > 0) ? test.categories : [test.category || ''];
-    if (selectedCategory !== 'All' && !testCats.includes(selectedCategory)) return false;
+      const testCats = (test.categories && test.categories.length > 0) ? test.categories : [test.category || ''];
+      if (selectedCategory !== 'All' && !testCats.includes(selectedCategory)) return false;
 
-    if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase();
-      return test.name.toLowerCase().includes(term) || (test.description && test.description.toLowerCase().includes(term));
-    }
-    return true;
-  });
+      if (searchTerm.trim()) {
+        const term = searchTerm.toLowerCase();
+        return test.name.toLowerCase().includes(term) || (test.description && test.description.toLowerCase().includes(term));
+      }
+      return true;
+    });
+
+    return [...list].sort((a, b) => {
+      if (sortBy === 'name-asc') {
+        return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+      }
+      if (sortBy === 'name-desc') {
+        return b.name.localeCompare(a.name, undefined, { numeric: true, sensitivity: 'base' });
+      }
+      if (sortBy === 'price-asc') {
+        const priceA = a.priceByLab?.[lab.id] ?? a.price;
+        const priceB = b.priceByLab?.[lab.id] ?? b.price;
+        return priceA - priceB;
+      }
+      if (sortBy === 'price-desc') {
+        const priceA = a.priceByLab?.[lab.id] ?? a.price;
+        const priceB = b.priceByLab?.[lab.id] ?? b.price;
+        return priceB - priceA;
+      }
+      if (sortBy === 'discount-desc') {
+        const origA = a.originalPriceByLab?.[lab.id] ?? a.originalPrice ?? a.price;
+        const saleA = a.priceByLab?.[lab.id] ?? a.price;
+        const discA = origA > 0 ? (origA - saleA) / origA : 0;
+
+        const origB = b.originalPriceByLab?.[lab.id] ?? b.originalPrice ?? b.price;
+        const saleB = b.priceByLab?.[lab.id] ?? b.price;
+        const discB = origB > 0 ? (origB - saleB) / origB : 0;
+
+        return discB - discA;
+      }
+      return 0;
+    });
+  }, [localTests, filterActiveState, selectedCategory, searchTerm, sortBy, lab]);
+
+  if (!isOpen || !lab) return null;
+
+  const currentDiscountPercent = isCustomDiscount 
+    ? (Number(customDiscountValue) || 15) 
+    : (selectedDiscountPercent > 0 ? selectedDiscountPercent : 15);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
@@ -1634,8 +1720,8 @@ export const LabTestsManagerModal: React.FC<LabTestsManagerModalProps> = ({
               </div>
               <p className="text-xs text-slate-500 mt-0.5">
                 {lang === 'bn'
-                  ? 'এই সেন্টারের জন্য টেস্ট অ্যাক্টিভেশন, সেন্টারের স্বয়ংক্রিয় ছাড় প্রয়োগ অথবা নির্দিষ্ট টেস্টে ম্যানুয়ালি ছাড় তুলে নেওয়ার সুবিধা।'
-                  : 'Manage active tests, auto-apply center discount, or manually remove discount per test.'}
+                  ? 'এই সেন্টারের জন্য টেস্ট অ্যাক্টিভেশন, বিভিন্ন হারে ডিসকাউন্ট প্রয়োগ অথবা নির্দিষ্ট টেস্টে কাস্টম মূল্য নির্ধারণ করুন।'
+                  : 'Manage active tests, select & apply discounts at various rates, or customize rates per test.'}
               </p>
             </div>
           </div>
@@ -1645,64 +1731,170 @@ export const LabTestsManagerModal: React.FC<LabTestsManagerModalProps> = ({
         </div>
 
         {/* Quick Stats & Bulk Actions Toolbar */}
-        <div className="py-3 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 text-xs">
-          <div className="flex items-center gap-2">
-            <span className="text-slate-500 font-medium">
-              মোট: <strong>{localTests.length}</strong> | 
-              এক্টিভ: <strong className="text-emerald-600 font-bold">{activeCount}</strong> | 
-              ইনঅ্যাক্টিভ: <strong className="text-amber-600 font-bold">{inactiveCount}</strong>
-            </span>
+        <div className="py-2.5 px-3 bg-slate-50 rounded-2xl border border-slate-200/80 my-2.5 space-y-2">
+          {/* Row 1: General Stats & Status Controls */}
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="text-slate-500 font-medium">
+                মোট: <strong>{localTests.length}</strong> | 
+                এক্টিভ: <strong className="text-emerald-600 font-bold">{activeCount}</strong> | 
+                ইনঅ্যাক্টিভ: <strong className="text-amber-600 font-bold">{inactiveCount}</strong>
+              </span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                onClick={handleRestoreLabDefaults}
+                className="px-2.5 py-1 bg-sky-50 text-sky-700 hover:bg-sky-100 rounded-lg font-bold border border-sky-200 transition-colors flex items-center gap-1 cursor-pointer"
+                title={lang === 'bn' ? 'অফিসিয়াল ক্যাটালগের মূল রেট রিস্টোর করুন' : 'Restore official catalog rates'}
+              >
+                <RotateCcw size={12} className="text-sky-600" />
+                <span>{lang === 'bn' ? 'ক্যাটালগ রেট রিস্টোর' : 'Restore Rates'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleRemoveDiscountFromAll}
+                className="px-2.5 py-1 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg font-bold border border-slate-200 transition-colors flex items-center gap-1 cursor-pointer"
+                title={lang === 'bn' ? 'সকল টেস্ট থেকে ছাড় প্রত্যাহার করুন' : 'Remove discount from all tests'}
+              >
+                <span>❌ {lang === 'bn' ? 'সব ছাড় বাতিল' : 'No Discount'}</span>
+              </button>
+              <div className="w-px h-3.5 bg-slate-200 mx-0.5" />
+              <button
+                type="button"
+                onClick={handleSetAllActive}
+                className="px-2.5 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg font-bold border border-emerald-200 transition-colors flex items-center gap-1 cursor-pointer"
+              >
+                <Check size={12} />
+                <span>{lang === 'bn' ? 'সকল এক্টিভ' : 'Activate All'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleSetAllInactive}
+                className="px-2.5 py-1 bg-amber-50 text-amber-800 hover:bg-amber-100 rounded-lg font-bold border border-amber-200 transition-colors flex items-center gap-1 cursor-pointer"
+              >
+                <EyeOff size={12} />
+                <span>{lang === 'bn' ? 'সব বন্ধ' : 'Deactivate All'}</span>
+              </button>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={handleApplyCenterDiscountToAll}
-              className="px-2.5 py-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-xl font-bold border border-rose-200 transition-colors flex items-center gap-1 cursor-pointer"
-              title={lang === 'bn' ? 'সকল এক্টিভ টেস্টে সেন্টারের ছাড় প্রয়োগ করুন' : 'Apply center discount to all active tests'}
-            >
-              <Tag size={13} />
-              <span>{lang === 'bn' ? `সকল টেস্টে ${centerDiscount > 0 ? `${centerDiscount}%` : '১৫%'} ছাড় দিন` : `Apply ${centerDiscount > 0 ? `${centerDiscount}%` : '15%'} Discount`}</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleRemoveDiscountFromAll}
-              className="px-2.5 py-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl font-bold border border-slate-200 transition-colors flex items-center gap-1 cursor-pointer"
-              title={lang === 'bn' ? 'সকল টেস্ট থেকে ছাড় প্রত্যাহার করুন' : 'Remove discount from all tests'}
-            >
-              <span>❌ {lang === 'bn' ? 'সব ছাড় বাতিল' : 'No Discount'}</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleRestoreLabDefaults}
-              className="px-2.5 py-1.5 bg-sky-50 text-sky-700 hover:bg-sky-100 rounded-xl font-bold border border-sky-200 transition-colors flex items-center gap-1 cursor-pointer"
-              title={lang === 'bn' ? 'অফিসিয়াল ক্যাটালগের মূল রেট রিস্টোর করুন' : 'Restore official catalog rates'}
-            >
-              <RotateCcw size={13} className="text-sky-600" />
-              <span>{lang === 'bn' ? 'ক্যাটালগ রেট রিস্টোর' : 'Restore Catalog Rates'}</span>
-            </button>
-            <div className="w-px h-4 bg-slate-200 mx-0.5" />
-            <button
-              type="button"
-              onClick={handleSetAllActive}
-              className="px-2.5 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl font-bold border border-emerald-200 transition-colors flex items-center gap-1 cursor-pointer"
-            >
-              <Check size={13} />
-              <span>{lang === 'bn' ? 'সকল এক্টিভ' : 'Activate All'}</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleSetAllInactive}
-              className="px-2.5 py-1.5 bg-amber-50 text-amber-800 hover:bg-amber-100 rounded-xl font-bold border border-amber-200 transition-colors flex items-center gap-1 cursor-pointer"
-            >
-              <EyeOff size={13} />
-              <span>{lang === 'bn' ? 'সব বন্ধ' : 'Deactivate All'}</span>
-            </button>
+          {/* Row 2: Selectable Discount Percentages & Apply Feature */}
+          <div className="pt-2 border-t border-slate-200/70 flex flex-wrap items-center justify-between gap-2.5 text-xs">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-1.5 font-bold text-slate-800">
+                <Tag size={13} className="text-rose-600" />
+                <span>{lang === 'bn' ? 'ডিসকাউন্ট নির্বাচন:' : 'Select Discount:'}</span>
+              </div>
+
+              {/* Discount Selector Dropdown */}
+              <select
+                value={isCustomDiscount ? 'custom' : selectedDiscountPercent}
+                onChange={(e) => {
+                  if (e.target.value === 'custom') {
+                    setIsCustomDiscount(true);
+                  } else {
+                    setIsCustomDiscount(false);
+                    setSelectedDiscountPercent(Number(e.target.value));
+                  }
+                }}
+                className="px-2.5 py-1.5 bg-white border border-rose-300 font-bold text-rose-800 rounded-xl outline-none cursor-pointer text-xs focus:ring-2 focus:ring-rose-400"
+              >
+                <option value={2}>{lang === 'bn' ? 'Apply 2% Discount (২% ছাড়)' : 'Apply 2% Discount'}</option>
+                <option value={5}>{lang === 'bn' ? 'Apply 5% Discount (৫% ছাড়)' : 'Apply 5% Discount'}</option>
+                <option value={7}>{lang === 'bn' ? 'Apply 7% Discount (৭% ছাড়)' : 'Apply 7% Discount'}</option>
+                <option value={10}>{lang === 'bn' ? 'Apply 10% Discount (১০% ছাড়)' : 'Apply 10% Discount'}</option>
+                <option value={12}>{lang === 'bn' ? 'Apply 12% Discount (১২% ছাড়)' : 'Apply 12% Discount'}</option>
+                <option value={15}>{lang === 'bn' ? 'Apply 15% Discount (১৫% ছাড়)' : 'Apply 15% Discount'}</option>
+                <option value={18}>{lang === 'bn' ? 'Apply 18% Discount (১৮% ছাড়)' : 'Apply 18% Discount'}</option>
+                <option value={20}>{lang === 'bn' ? 'Apply 20% Discount (২০% ছাড়)' : 'Apply 20% Discount'}</option>
+                <option value={25}>{lang === 'bn' ? 'Apply 25% Discount (২৫% ছাড়)' : 'Apply 25% Discount'}</option>
+                <option value={30}>{lang === 'bn' ? 'Apply 30% Discount (৩০% ছাড়)' : 'Apply 30% Discount'}</option>
+                {centerDiscount > 0 && (
+                  <option value={centerDiscount}>
+                    {lang === 'bn' ? `Apply ${centerDiscount}% Center Default (${centerDiscount}% সেন্টারের অটো ছাড়)` : `Apply ${centerDiscount}% Center Default`}
+                  </option>
+                )}
+                <option value="custom">{lang === 'bn' ? 'Custom % (কাস্টম শতাংশ)...' : 'Custom %...'}</option>
+              </select>
+
+              {/* Custom percentage input */}
+              {isCustomDiscount && (
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    min="1"
+                    max="99"
+                    placeholder="%"
+                    value={customDiscountValue}
+                    onChange={(e) => setCustomDiscountValue(e.target.value)}
+                    className="w-14 px-2 py-1 bg-white border border-rose-300 rounded-lg text-xs font-bold text-center outline-none focus:ring-2 focus:ring-rose-400"
+                  />
+                  <span className="font-bold text-slate-500">%</span>
+                </div>
+              )}
+
+              {/* Scope */}
+              <select
+                value={discountScope}
+                onChange={(e) => setDiscountScope(e.target.value as any)}
+                className="px-2 py-1.5 bg-white border border-slate-300 text-slate-700 font-medium rounded-xl outline-none text-xs cursor-pointer"
+                title={lang === 'bn' ? 'কোন টেস্টগুলোতে প্রয়োগ করবেন' : 'Target tests'}
+              >
+                <option value="active">{lang === 'bn' ? `সকল এক্টিভ টেস্টে (${activeCount})` : `All Active Tests (${activeCount})`}</option>
+                <option value="filtered">{lang === 'bn' ? `ফিল্টারকৃত টেস্টে (${filteredTests.length})` : `Filtered Tests (${filteredTests.length})`}</option>
+                <option value="all">{lang === 'bn' ? `সকল টেস্টে (${localTests.length})` : `All Tests (${localTests.length})`}</option>
+              </select>
+
+              {/* Apply Button */}
+              <button
+                type="button"
+                onClick={() => handleApplySelectedDiscount()}
+                className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+              >
+                <Check size={13} />
+                <span>{lang === 'bn' ? 'ছাড় প্রয়োগ করুন' : 'Apply Discount'}</span>
+              </button>
+            </div>
+
+            {/* Quick Presets Buttons (2%, 5%, 7%, 10%, 15%, 20%) */}
+            <div className="flex items-center gap-1 flex-wrap">
+              <span className="text-[11px] text-slate-400 font-semibold">{lang === 'bn' ? 'কুইক:' : 'Quick:'}</span>
+              {[2, 5, 7, 10, 15, 20].map((pct) => (
+                <button
+                  key={pct}
+                  type="button"
+                  onClick={() => {
+                    setIsCustomDiscount(false);
+                    setSelectedDiscountPercent(pct);
+                    handleApplySelectedDiscount(pct);
+                  }}
+                  className={`px-2 py-0.5 rounded-lg text-[11px] font-bold border transition-all cursor-pointer ${
+                    !isCustomDiscount && selectedDiscountPercent === pct
+                      ? 'bg-rose-100 text-rose-800 border-rose-300 shadow-2xs'
+                      : 'bg-white text-slate-600 border-slate-200 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200'
+                  }`}
+                  title={lang === 'bn' ? `${pct}% ছাড় প্রয়োগ করুন` : `Apply ${pct}% discount`}
+                >
+                  {pct}%
+                </button>
+              ))}
+            </div>
           </div>
+
+          {/* Feedback notification banner */}
+          {discountFeedback && (
+            <div className="py-1 px-3 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold flex items-center gap-1.5 animate-fadeIn">
+              <CheckCircle2 size={13} className="text-emerald-600" />
+              <span>{discountFeedback}</span>
+            </div>
+          )}
         </div>
 
-        {/* Filters */}
-        <div className="py-3 grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+        {/* Filters: Search, All Category, test Name (A-Z), Status Switcher */}
+        <div className="py-2.5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-xs">
+          {/* Search Box */}
           <div className="relative">
             <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
             <input 
@@ -1710,22 +1902,43 @@ export const LabTestsManagerModal: React.FC<LabTestsManagerModalProps> = ({
               placeholder={lang === 'bn' ? 'টেস্টের নাম দিয়ে খুঁজুন...' : 'Search test name...'}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-8 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-primary"
+              className="w-full pl-8 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-primary text-xs"
             />
           </div>
 
+          {/* All Category Dropdown */}
           <div>
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none cursor-pointer"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none cursor-pointer text-xs font-medium text-slate-700"
             >
               {categories.map(c => (
-                <option key={c} value={c}>{c === 'All' ? (lang === 'bn' ? 'সকল ক্যাটাগরি' : 'All Categories') : c}</option>
+                <option key={c} value={c}>
+                  {c === 'All' ? (lang === 'bn' ? 'সকল ক্যাটাগরি (All Category)' : 'All Category') : c}
+                </option>
               ))}
             </select>
           </div>
 
+          {/* Sort Dropdown: test Name (A-Z) - PLACED DIRECTLY NEXT TO ALL CATEGORY AS REQUESTED */}
+          <div>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none cursor-pointer text-xs font-bold text-slate-800"
+              title={lang === 'bn' ? 'টেস্ট সাজানোর ক্রম' : 'Sort test order'}
+            >
+              <option value="name-asc">🔤 {lang === 'bn' ? 'test Name (A-Z)' : 'test Name (A-Z)'}</option>
+              <option value="name-desc">🔤 {lang === 'bn' ? 'test Name (Z-A)' : 'test Name (Z-A)'}</option>
+              <option value="price-asc">💲 {lang === 'bn' ? 'মূল্য: কম থেকে বেশি (Price Low-High)' : 'Price: Low to High'}</option>
+              <option value="price-desc">💲 {lang === 'bn' ? 'মূল্য: বেশি থেকে কম (Price High-Low)' : 'Price: High to Low'}</option>
+              <option value="discount-desc">🏷️ {lang === 'bn' ? 'সর্বোচ্চ ছাড় (Max Discount)' : 'Max Discount'}</option>
+              <option value="default">📋 {lang === 'bn' ? 'ডিফল্ট ক্রম (Default Order)' : 'Default Order'}</option>
+            </select>
+          </div>
+
+          {/* Active/Inactive/All Filter */}
           <div className="flex bg-slate-100 p-1 rounded-xl gap-1">
             <button
               type="button"
@@ -1907,7 +2120,7 @@ export const LabTestsManagerModal: React.FC<LabTestsManagerModalProps> = ({
                         ) : (
                           <>
                             <Tag size={11} />
-                            <span>{lang === 'bn' ? `${centerDiscount > 0 ? `${centerDiscount}%` : '১৫%'} ছাড় দিন` : `Apply ${centerDiscount > 0 ? `${centerDiscount}%` : '15%'}%`}</span>
+                            <span>{lang === 'bn' ? `${currentDiscountPercent}% ছাড় দিন` : `Apply ${currentDiscountPercent}%`}</span>
                           </>
                         )}
                       </button>
