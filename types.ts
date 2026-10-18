@@ -29,8 +29,8 @@ export interface TestPackage {
   hiddenLabs?: string[]; // List of Lab IDs where this test/package is hidden/unavailable
   isPackage?: boolean;
   testCount?: number;
-  includededTests?: string[];
   orderCount?: number; // Total number of times this test has been ordered/performed
+  updatedAt?: string; // Timestamp of last edit for reliable multi-device sync
 }
 
 export interface HealthPackage extends TestPackage {
@@ -422,6 +422,27 @@ export interface DoctorAtHomeScheduleConfig {
   adminConfiguredHolidays?: boolean;
 }
 
+export interface HomeVisitDoctor {
+  id: string; // e.g. "HVD-101"
+  name: string; // e.g. "ডাঃ তানভীর হাসান (MBBS)"
+  nameEn?: string; // e.g. "Dr. Tanvir Hasan"
+  phone: string; // e.g. "01711-223344"
+  altPhone?: string;
+  email?: string;
+  specialty: string; // e.g. "general_physician", "pediatrician", "medicine"
+  specialtyLabel?: string; // e.g. "জেনারেল ফিজিশিয়ান (General Physician)"
+  degrees: string; // e.g. "MBBS, BCS (Health), FCPS (Medicine-FP)"
+  designation?: string; // e.g. "Medical Officer / Resident Physician"
+  hospital?: string; // e.g. "Dhaka Medical College Hospital"
+  area: string; // Coverage areas e.g. "ধানমন্ডি, কলাবাগান, মোহাম্মদপুর"
+  gender?: 'male' | 'female';
+  isAvailable?: boolean; // Currently available for home visit dispatch
+  notes?: string;
+  totalVisits?: number; // Total number of home visits assigned/completed
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface DoctorAtHomeBooking {
   id: string; // e.g. "DAH-83921"
   patientName: string;
@@ -442,8 +463,12 @@ export interface DoctorAtHomeBooking {
   transactionId?: string;
   senderPhone?: string;
   status: DoctorAtHomeStatus;
+  assignedDoctorId?: string; // ID of the assigned visiting doctor
   assignedDoctorName?: string;
   assignedDoctorPhone?: string;
+  assignedDoctorSpecialty?: string;
+  assignedDoctorDesignation?: string;
+  assignedAt?: string; // Timestamp when doctor was assigned
   adminNotes?: string;
   emergencyInstructions?: string;
   createdAt: string;

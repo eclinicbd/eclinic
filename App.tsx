@@ -571,14 +571,42 @@ export default function App() {
     return () => unsubscribe();
   }, [language]);
 
-  // Real-time subscription to Tests
+  // Real-time subscription to Tests with robust local conflict protection
   useEffect(() => {
-    const unsubscribe = subscribeToTests(language, (liveTests) => {
+    const unsubscribe = subscribeToTests(language, (liveTests, metadata) => {
       const defaultList = getTests(language);
       if (liveTests && liveTests.length > 0) {
-        const liveMap = new Map(liveTests.map(t => [String(t.id), t]));
+        const localTimestampStr = localStorage.getItem(`labhome_tests_updated_at_${language}`);
+        const localTimestamp = localTimestampStr ? new Date(localTimestampStr).getTime() : 0;
+        const firestoreTimestamp = metadata?.updatedAt ? new Date(metadata.updatedAt).getTime() : 0;
+
+        const storedList = getStoredTests(language);
+        const storedMap = new Map(storedList.map(t => [String(t.id), t]));
+
+        // Merge live tests with locally edited tests to prevent stale Firestore snapshots from rolling back admin edits
+        const mergedLive = liveTests.map(liveItem => {
+          const strId = String(liveItem.id);
+          const localItem = storedMap.get(strId);
+          if (localItem) {
+            const localItemTime = localItem.updatedAt ? new Date(localItem.updatedAt).getTime() : localTimestamp;
+            if (localItemTime > firestoreTimestamp) {
+              return localItem;
+            }
+          }
+          return liveItem;
+        });
+
+        const liveMap = new Map(mergedLive.map(t => [String(t.id), t]));
+        // Also ensure any custom tests added locally are preserved
+        storedList.forEach(st => {
+          if (!liveMap.has(String(st.id))) {
+            mergedLive.push(st);
+            liveMap.set(String(st.id), st);
+          }
+        });
+
         const missingDefaults = defaultList.filter(d => !liveMap.has(String(d.id)));
-        let combined = missingDefaults.length > 0 ? [...liveTests, ...missingDefaults.map(d => ({ ...d, id: String(d.id) }))] : liveTests;
+        let combined = missingDefaults.length > 0 ? [...mergedLive, ...missingDefaults.map(d => ({ ...d, id: String(d.id) }))] : mergedLive;
 
         // Ensure strict uniqueness by test ID and test name
         const seenIds = new Set<string>();
@@ -597,15 +625,9 @@ export default function App() {
 
         setTests(combined);
         saveStoredTests(language, combined);
-
-        // If Firestore was missing default tests, update Firestore
-        if (missingDefaults.length > 0) {
-          saveTestsToFirestore(language, combined);
-        }
       } else {
         const defaults = getStoredTests(language);
         setTests(defaults);
-        saveTestsToFirestore(language, defaults);
       }
     });
     return () => unsubscribe();

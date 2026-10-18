@@ -42,7 +42,8 @@ import {
   StaffUser,
   DateSlotConfig,
   Doctor,
-  DoctorAtHomeBooking
+  DoctorAtHomeBooking,
+  HomeVisitDoctor
 } from '../types';
 import { cleanBrandText } from './dataStorage';
 import { sendPatientRegistrationNotificationEmail } from './emailNotificationService';
@@ -714,14 +715,20 @@ export const saveTestsToFirestore = async (lang: Language, tests: TestPackage[])
   }
 };
 
-export const subscribeToTests = (lang: Language, callback: (tests: TestPackage[]) => void) => {
+export const subscribeToTests = (
+  lang: Language, 
+  callback: (tests: TestPackage[], metadata?: { updatedAt?: string; hasPendingWrites?: boolean }) => void
+) => {
   try {
     const testsDoc = doc(db, 'tests', `list_${lang}`);
     return onSnapshot(testsDoc, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.data();
         if (Array.isArray(data.items) && data.items.length > 0) {
-          callback(data.items as TestPackage[]);
+          callback(data.items as TestPackage[], {
+            updatedAt: data.updatedAt,
+            hasPendingWrites: snapshot.metadata.hasPendingWrites
+          });
         }
       }
     }, (_error) => {
@@ -1045,6 +1052,41 @@ export const subscribeToDoctorAtHomeBookings = (callback: (bookings: DoctorAtHom
         const data = snapshot.data();
         if (data && Array.isArray(data.items)) {
           callback(data.items as DoctorAtHomeBooking[]);
+        }
+      }
+    }, (_error) => {
+      // Handled quietly
+    });
+  } catch (_error) {
+    return () => {};
+  }
+};
+
+/**
+ * Home Visit Doctors (হোম ভিজিট ডাক্তারদের তালিকা) Cloud Firestore Sync
+ */
+export const saveHomeVisitDoctorsToFirestore = async (doctors: HomeVisitDoctor[]): Promise<boolean> => {
+  try {
+    const hvdDoc = doc(db, 'settings', 'home_visit_doctors');
+    await setDoc(hvdDoc, cleanFirestoreData({
+      items: doctors,
+      updatedAt: new Date().toISOString()
+    }), { merge: true });
+    return true;
+  } catch (error) {
+    console.error("Error saving Home Visit Doctors to Firestore:", error);
+    return false;
+  }
+};
+
+export const subscribeToHomeVisitDoctors = (callback: (doctors: HomeVisitDoctor[]) => void) => {
+  try {
+    const hvdDoc = doc(db, 'settings', 'home_visit_doctors');
+    return onSnapshot(hvdDoc, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        if (data && Array.isArray(data.items)) {
+          callback(data.items as HomeVisitDoctor[]);
         }
       }
     }, (_error) => {

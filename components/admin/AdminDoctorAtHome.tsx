@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Home, 
   Search, 
@@ -23,10 +23,29 @@ import {
   CreditCard, 
   Tag, 
   Save,
-  Download 
+  Download,
+  Users,
+  UserCheck,
+  UserX,
+  Award,
+  Building,
+  Check,
+  RefreshCw,
+  Sparkles,
+  Send,
+  FileText
 } from 'lucide-react';
-import { DoctorAtHomeBooking, DoctorAtHomeStatus, Language, PaymentMethod } from '../../types';
-import { DEFAULT_DOCTOR_AT_HOME_SPECIALTIES, getWhatsAppUrl } from '../../services/dataStorage';
+import { DoctorAtHomeBooking, DoctorAtHomeStatus, Language, PaymentMethod, HomeVisitDoctor } from '../../types';
+import { 
+  DEFAULT_DOCTOR_AT_HOME_SPECIALTIES, 
+  getWhatsAppUrl, 
+  getStoredHomeVisitDoctors, 
+  saveStoredHomeVisitDoctors 
+} from '../../services/dataStorage';
+import { 
+  saveHomeVisitDoctorsToFirestore, 
+  subscribeToHomeVisitDoctors 
+} from '../../services/firebase';
 import { printOrDownloadDoctorAtHomeSlip, downloadDoctorAtHomeSlipHtml } from '../../services/invoiceService';
 
 interface AdminDoctorAtHomeProps {
@@ -34,6 +53,8 @@ interface AdminDoctorAtHomeProps {
   bookings: DoctorAtHomeBooking[];
   onUpdateBookings: (bookings: DoctorAtHomeBooking[]) => void;
   showToast: (msg: string) => void;
+  initialDoctors?: HomeVisitDoctor[];
+  onUpdateDoctors?: (doctors: HomeVisitDoctor[]) => void;
 }
 
 export const AdminDoctorAtHome: React.FC<AdminDoctorAtHomeProps> = ({

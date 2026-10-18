@@ -366,13 +366,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       return;
     }
 
+    const testWithTimestamp: TestPackage = {
+      ...testToSave,
+      updatedAt: new Date().toISOString()
+    };
+
     if (editingTest) {
-      const updated = tests.map(t => String(t.id) === String(testToSave.id) ? testToSave : t);
+      const updated = tests.map(t => String(t.id) === String(testWithTimestamp.id) ? testWithTimestamp : t);
       onUpdateTests(updated);
-      showToast(t.adminSaveSuccess);
+      showToast(lang === 'bn' 
+        ? `"${testWithTimestamp.name}" টেস্টের তথ্য ও মূল্য (৳${testWithTimestamp.price}) সফলভাবে আপডেট করা হয়েছে!` 
+        : `"${testWithTimestamp.name}" updated successfully (৳${testWithTimestamp.price})!`);
     } else {
-      onUpdateTests([testToSave, ...tests]);
-      showToast(t.adminSaveSuccess);
+      onUpdateTests([testWithTimestamp, ...tests]);
+      showToast(lang === 'bn' 
+        ? `"${testWithTimestamp.name}" টেস্ট সফলভাবে যুক্ত করা হয়েছে!` 
+        : `"${testWithTimestamp.name}" added successfully!`);
     }
     setIsTestModalOpen(false);
     setEditingTest(null);

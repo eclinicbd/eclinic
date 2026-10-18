@@ -103,6 +103,8 @@ export const TestFormModal: React.FC<TestModalProps> = ({
   const [selectedCategories, setSelectedCategories] = useState<string[]>(['General']);
   const [targetLabForPricing, setTargetLabForPricing] = useState<string>('ALL');
   const [applySuccessMsg, setApplySuccessMsg] = useState<string | null>(null);
+  const [syncLabsWithBasePrice, setSyncLabsWithBasePrice] = useState<boolean>(true);
+  const [customizedLabIds, setCustomizedLabIds] = useState<Set<string>>(new Set());
 
   // Quick Add Category State
   const [isAddingNewCat, setIsAddingNewCat] = useState(false);
@@ -126,6 +128,8 @@ export const TestFormModal: React.FC<TestModalProps> = ({
         : (editingTest.category ? [editingTest.category] : ['General']);
 
       setSelectedCategories(initCats);
+      setCustomizedLabIds(new Set());
+      setSyncLabsWithBasePrice(true);
       setFormData({
         ...editingTest,
         originalPrice: origPrice,
@@ -166,44 +170,120 @@ export const TestFormModal: React.FC<TestModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Handlers for base pricing
+  // Handlers for base pricing with auto lab sync
   const handleOriginalPriceChange = (orig: number) => {
     const origVal = Math.max(0, orig);
     const discPct = formData.discountPercent || 0;
     const newPrice = discPct > 0 ? Math.round(origVal * (1 - discPct / 100)) : origVal;
-    setFormData(prev => ({
-      ...prev,
-      originalPrice: origVal,
-      price: newPrice
-    }));
+
+    setFormData(prev => {
+      let updatedSelling = prev.priceByLab ? { ...prev.priceByLab } : {};
+      let updatedOrig = prev.originalPriceByLab ? { ...prev.originalPriceByLab } : {};
+
+      if (syncLabsWithBasePrice) {
+        labs.forEach(l => {
+          if (!customizedLabIds.has(l.id)) {
+            updatedSelling[l.id] = newPrice;
+            updatedOrig[l.id] = origVal;
+          }
+        });
+      }
+
+      return {
+        ...prev,
+        originalPrice: origVal,
+        price: newPrice,
+        priceByLab: updatedSelling,
+        originalPriceByLab: updatedOrig
+      };
+    });
   };
 
   const handleDiscountPercentChange = (pct: number) => {
     const safePct = Math.min(100, Math.max(0, pct));
-    const origVal = formData.originalPrice !== undefined ? formData.originalPrice : (formData.price || 0);
+    const origVal = formData.originalPrice !== undefined && formData.originalPrice > 0 ? formData.originalPrice : (formData.price || 0);
     const newPrice = Math.round(origVal * (1 - safePct / 100));
-    setFormData(prev => ({
-      ...prev,
-      discountPercent: safePct,
-      price: newPrice
-    }));
+
+    setFormData(prev => {
+      let updatedSelling = prev.priceByLab ? { ...prev.priceByLab } : {};
+      let updatedOrig = prev.originalPriceByLab ? { ...prev.originalPriceByLab } : {};
+
+      if (syncLabsWithBasePrice) {
+        labs.forEach(l => {
+          if (!customizedLabIds.has(l.id)) {
+            updatedSelling[l.id] = newPrice;
+            updatedOrig[l.id] = origVal;
+          }
+        });
+      }
+
+      return {
+        ...prev,
+        discountPercent: safePct,
+        price: newPrice,
+        priceByLab: updatedSelling,
+        originalPriceByLab: updatedOrig
+      };
+    });
   };
 
   const handlePriceChange = (sellingPrice: number) => {
     const saleVal = Math.max(0, sellingPrice);
-    const origVal = formData.originalPrice !== undefined && formData.originalPrice > 0 ? formData.originalPrice : saleVal;
-    const calculatedPct = origVal > saleVal ? Math.round(((origVal - saleVal) / origVal) * 100) : 0;
-    setFormData(prev => ({
-      ...prev,
-      price: saleVal,
-      originalPrice: origVal < saleVal ? saleVal : origVal,
-      discountPercent: calculatedPct
-    }));
+    const prevOrig = formData.originalPrice !== undefined && formData.originalPrice > 0 ? formData.originalPrice : saleVal;
+    const targetOrig = prevOrig < saleVal ? saleVal : prevOrig;
+    const calculatedPct = targetOrig > saleVal ? Math.round(((targetOrig - saleVal) / targetOrig) * 100) : 0;
+
+    setFormData(prev => {
+      let updatedSelling = prev.priceByLab ? { ...prev.priceByLab } : {};
+      let updatedOrig = prev.originalPriceByLab ? { ...prev.originalPriceByLab } : {};
+
+      if (syncLabsWithBasePrice) {
+        labs.forEach(l => {
+          if (!customizedLabIds.has(l.id)) {
+            updatedSelling[l.id] = saleVal;
+            updatedOrig[l.id] = targetOrig;
+          }
+        });
+      }
+
+      return {
+        ...prev,
+        price: saleVal,
+        originalPrice: targetOrig,
+        discountPercent: calculatedPct,
+        priceByLab: updatedSelling,
+        originalPriceByLab: updatedOrig
+      };
+    });
+  };
+
+  const handleSetZeroDiscount = () => {
+    const currentRate = formData.price || formData.originalPrice || 0;
+    setFormData(prev => {
+      let updatedSelling = prev.priceByLab ? { ...prev.priceByLab } : {};
+      let updatedOrig = prev.originalPriceByLab ? { ...prev.originalPriceByLab } : {};
+      labs.forEach(l => {
+        if (!customizedLabIds.has(l.id)) {
+          updatedSelling[l.id] = currentRate;
+          updatedOrig[l.id] = currentRate;
+        }
+      });
+      return {
+        ...prev,
+        originalPrice: currentRate,
+        price: currentRate,
+        discountPercent: 0,
+        priceByLab: updatedSelling,
+        originalPriceByLab: updatedOrig
+      };
+    });
+    setApplySuccessMsg(lang === 'bn' ? `ছাড় ছাড়া সরাসরি ৳${currentRate} রেগুলার মূল্য সেট করা হয়েছে!` : `Standard price ৳${currentRate} set (No discount)!`);
+    setTimeout(() => setApplySuccessMsg(null), 3000);
   };
 
   const handleApplyBaseToSelected = () => {
-    const baseOriginal = Number(formData.originalPrice) || Number(formData.price) || 0;
     const baseSelling = Number(formData.price) || 0;
+    const baseOriginal = Math.max(Number(formData.originalPrice) || 0, baseSelling);
 
     if (targetLabForPricing === 'ALL') {
       const updatedSelling: Record<string, number> = {};
@@ -212,13 +292,17 @@ export const TestFormModal: React.FC<TestModalProps> = ({
         updatedOriginal[l.id] = baseOriginal;
         updatedSelling[l.id] = baseSelling;
       });
+      setCustomizedLabIds(new Set());
       setFormData(prev => ({ 
         ...prev, 
+        originalPrice: baseOriginal,
+        price: baseSelling,
         originalPriceByLab: updatedOriginal,
         priceByLab: updatedSelling 
       }));
-      setApplySuccessMsg(lang === 'bn' ? 'সকল ল্যাবে এই রেট সফলভাবে সেট করা হয়েছে!' : 'Applied base rate to all partner labs!');
+      setApplySuccessMsg(lang === 'bn' ? `সকল সেন্টারে ৳${baseSelling} রেট সফলভাবে সেট করা হয়েছে!` : `Applied ৳${baseSelling} rate to all partner labs!`);
     } else {
+      setCustomizedLabIds(prev => new Set([...prev, targetLabForPricing]));
       setFormData(prev => ({
         ...prev,
         originalPriceByLab: {
@@ -232,7 +316,7 @@ export const TestFormModal: React.FC<TestModalProps> = ({
       }));
       const targetLabObj = labs.find(l => l.id === targetLabForPricing);
       const labName = targetLabObj ? targetLabObj.name : targetLabForPricing;
-      setApplySuccessMsg(lang === 'bn' ? `${labName} এ এই রেট সফলভাবে সেট করা হয়েছে!` : `Applied base rate to ${labName}!`);
+      setApplySuccessMsg(lang === 'bn' ? `${labName} এ ৳${baseSelling} সফলভাবে সেট করা হয়েছে!` : `Applied ৳${baseSelling} to ${labName}!`);
     }
 
     setTimeout(() => {
@@ -241,6 +325,7 @@ export const TestFormModal: React.FC<TestModalProps> = ({
   };
 
   const handleLabSellingPriceChange = (labId: string, val: number) => {
+    setCustomizedLabIds(prev => new Set([...prev, labId]));
     setFormData(prev => ({
       ...prev,
       priceByLab: {
@@ -251,6 +336,7 @@ export const TestFormModal: React.FC<TestModalProps> = ({
   };
 
   const handleLabOriginalPriceChange = (labId: string, val: number) => {
+    setCustomizedLabIds(prev => new Set([...prev, labId]));
     setFormData(prev => ({
       ...prev,
       originalPriceByLab: {
@@ -279,7 +365,7 @@ export const TestFormModal: React.FC<TestModalProps> = ({
 
     // Strict duplicate test name check (case-insensitive and trimmed)
     const isDuplicate = existingTests.some(t => {
-      if (editingTest && String(t.id) === String(editingTest.id)) return false;
+      if (editingTest && (String(t.id) === String(editingTest.id) || String(t.id) === String(formData.id))) return false;
       return t.name.trim().toLowerCase() === trimmedName.toLowerCase();
     });
 
@@ -292,21 +378,27 @@ export const TestFormModal: React.FC<TestModalProps> = ({
       return;
     }
 
-    const baseOriginal = Number(formData.originalPrice) || Number(formData.price) || 0;
     const baseSelling = Number(formData.price) || 0;
+    const baseOriginal = Math.max(Number(formData.originalPrice) || 0, baseSelling);
     const discountPct = baseOriginal > baseSelling 
-      ? (formData.discountPercent || Math.round(((baseOriginal - baseSelling) / baseOriginal) * 100))
+      ? (formData.discountPercent !== undefined ? formData.discountPercent : Math.round(((baseOriginal - baseSelling) / baseOriginal) * 100))
       : 0;
 
     const finalSellingPrices: Record<string, number> = { ...(formData.priceByLab || {}) };
     const finalOriginalPrices: Record<string, number> = { ...(formData.originalPriceByLab || {}) };
 
     labs.forEach(l => {
-      if (finalSellingPrices[l.id] === undefined || isNaN(finalSellingPrices[l.id])) {
+      // If syncLabsWithBasePrice is active and this lab was not individually customized
+      if (syncLabsWithBasePrice && !customizedLabIds.has(l.id)) {
         finalSellingPrices[l.id] = baseSelling;
-      }
-      if (finalOriginalPrices[l.id] === undefined || isNaN(finalOriginalPrices[l.id])) {
         finalOriginalPrices[l.id] = baseOriginal;
+      } else {
+        if (finalSellingPrices[l.id] === undefined || isNaN(finalSellingPrices[l.id])) {
+          finalSellingPrices[l.id] = baseSelling;
+        }
+        if (finalOriginalPrices[l.id] === undefined || isNaN(finalOriginalPrices[l.id])) {
+          finalOriginalPrices[l.id] = baseOriginal;
+        }
       }
     });
 
@@ -326,7 +418,8 @@ export const TestFormModal: React.FC<TestModalProps> = ({
       originalPriceByLab: finalOriginalPrices,
       priceByLab: finalSellingPrices,
       hiddenLabs: formData.hiddenLabs || [],
-      isHidden: !!formData.isHidden
+      isHidden: !!formData.isHidden,
+      updatedAt: new Date().toISOString()
     };
 
     onSave(testToSave);
@@ -596,6 +689,38 @@ export const TestFormModal: React.FC<TestModalProps> = ({
               </div>
             </div>
 
+            {/* Quick Discount Presets */}
+            <div className="flex items-center gap-1.5 flex-wrap pt-1">
+              <span className="text-[10px] font-bold text-slate-500">
+                {lang === 'bn' ? 'কুইক ডিসকাউন্ট অপশন:' : 'Quick Discount:'}
+              </span>
+              <button
+                type="button"
+                onClick={handleSetZeroDiscount}
+                className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all border cursor-pointer ${
+                  currentDiscountPct === 0 
+                    ? 'bg-slate-800 text-white border-slate-800 shadow-xs' 
+                    : 'bg-white text-slate-600 hover:bg-slate-100 border-slate-200'
+                }`}
+              >
+                0% ({lang === 'bn' ? 'ছাড় নেই' : 'No Discount'})
+              </button>
+              {[5, 7, 10, 15, 20].map(pct => (
+                <button
+                  key={pct}
+                  type="button"
+                  onClick={() => handleDiscountPercentChange(pct)}
+                  className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all border cursor-pointer ${
+                    currentDiscountPct === pct
+                      ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
+                      : 'bg-white text-rose-700 hover:bg-rose-50 border-rose-200'
+                  }`}
+                >
+                  {pct}% {lang === 'bn' ? 'ছাড়' : 'Off'}
+                </button>
+              ))}
+            </div>
+
             {/* Live Discount Calculator Preview */}
             <div className="p-2.5 bg-white rounded-lg border border-sky-100 flex items-center justify-between text-[11px]">
               <span className="text-slate-600 font-medium">
@@ -712,6 +837,30 @@ export const TestFormModal: React.FC<TestModalProps> = ({
                   {lang === 'bn' ? 'সেট করুন' : 'Apply'}
                 </button>
               </div>
+            </div>
+
+            {/* Auto-Sync Toggle */}
+            <div className="flex items-center justify-between p-2 bg-white rounded-lg border border-slate-200 text-[11px]">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={syncLabsWithBasePrice}
+                  onChange={(e) => setSyncLabsWithBasePrice(e.target.checked)}
+                  className="w-3.5 h-3.5 rounded text-primary focus:ring-primary cursor-pointer"
+                />
+                <span className="font-semibold text-slate-700">
+                  {lang === 'bn' 
+                    ? `বেস মূল্যের (৳${currentSelling}) সাথে সকল সেন্টারের মূল্য স্বয়ংক্রিয়ভাবে সিঙ্ক করুন`
+                    : `Auto-sync all diagnostic centers with base selling price (৳${currentSelling})`}
+                </span>
+              </label>
+              <button
+                type="button"
+                onClick={handleApplyBaseToSelected}
+                className="text-[10px] font-bold text-sky-600 hover:text-sky-800 underline cursor-pointer"
+              >
+                {lang === 'bn' ? 'সকল সেন্টারে রি-সিঙ্ক করুন' : 'Force sync all labs'}
+              </button>
             </div>
 
             {applySuccessMsg && (

@@ -1,4 +1,4 @@
-import { TestPackage, LabPartner, Language, BookingHistoryItem, SiteSettings, PatientUser, HealthPackage, CategoryItem, DateSlotConfig, TimeSlotConfigItem, StaffUser, StaffRole, StaffPermissions, PaymentGatewaysConfig, AdminCredentials, Doctor, DoctorAppointment, EPrescription, DoctorAtHomeBooking, DoctorAtHomeSpecialty, DoctorAtHomeScheduleConfig } from '../types';
+import { TestPackage, LabPartner, Language, BookingHistoryItem, SiteSettings, PatientUser, HealthPackage, CategoryItem, DateSlotConfig, TimeSlotConfigItem, StaffUser, StaffRole, StaffPermissions, PaymentGatewaysConfig, AdminCredentials, Doctor, DoctorAppointment, EPrescription, DoctorAtHomeBooking, DoctorAtHomeSpecialty, DoctorAtHomeScheduleConfig, HomeVisitDoctor } from '../types';
 import { 
   getTests as getDefaultTests, 
   getLabs as getDefaultLabs, 
@@ -23,6 +23,7 @@ const STORAGE_KEYS = {
   LABS_EN: 'labhome_labs_en_v3',
   BOOKINGS: 'labhome_bookings_v2',
   DOCTOR_AT_HOME_BOOKINGS: 'labhome_doctor_at_home_bookings_v1',
+  HOME_VISIT_DOCTORS: 'labhome_home_visit_doctors_v1',
   DOCTOR_AT_HOME_SPECIALTIES: 'labhome_doctor_at_home_specialties_v2',
   DOCTOR_AT_HOME_SCHEDULE: 'labhome_doctor_at_home_schedule_v1',
   CATEGORIES: 'labhome_categories_v2',
@@ -651,10 +652,16 @@ export const getStoredTests = (lang: Language): TestPackage[] => {
 export const saveStoredTests = (lang: Language, tests: TestPackage[]): void => {
   try {
     const key = lang === 'en' ? STORAGE_KEYS.TESTS_EN : STORAGE_KEYS.TESTS_BN;
-    const cleanTests = tests.map(t => ({ ...t, id: String(t.id) }));
+    const nowIso = new Date().toISOString();
+    const cleanTests = tests.map(t => ({ 
+      ...t, 
+      id: String(t.id),
+      updatedAt: t.updatedAt || nowIso
+    }));
     localStorage.setItem(key, JSON.stringify(cleanTests));
+    localStorage.setItem(`labhome_tests_updated_at_${lang}`, nowIso);
     
-    // Also sync test IDs, names, descriptions, prices, lab matrix, categories, and status to other language
+    // Also sync test IDs, prices, lab matrix, categories, and status to other language
     const otherLang = lang === 'en' ? 'bn' : 'en';
     const otherKey = otherLang === 'en' ? STORAGE_KEYS.TESTS_EN : STORAGE_KEYS.TESTS_BN;
     const otherStored = localStorage.getItem(otherKey);
@@ -667,8 +674,6 @@ export const saveStoredTests = (lang: Language, tests: TestPackage[]): void => {
       if (idx !== -1) {
         updatedOtherTests[idx] = {
           ...updatedOtherTests[idx],
-          name: test.name || updatedOtherTests[idx].name,
-          description: test.description !== undefined ? test.description : updatedOtherTests[idx].description,
           price: test.price,
           originalPrice: test.originalPrice,
           discountPercent: test.discountPercent,
@@ -680,10 +685,11 @@ export const saveStoredTests = (lang: Language, tests: TestPackage[]): void => {
           categories: (test.categories && test.categories.length > 0) ? [...test.categories] : updatedOtherTests[idx].categories,
           turnaroundTime: test.turnaroundTime || updatedOtherTests[idx].turnaroundTime,
           image: test.image || updatedOtherTests[idx].image,
-          orderCount: test.orderCount !== undefined ? test.orderCount : updatedOtherTests[idx].orderCount
+          orderCount: test.orderCount !== undefined ? test.orderCount : updatedOtherTests[idx].orderCount,
+          updatedAt: test.updatedAt || nowIso
         };
       } else {
-        updatedOtherTests.unshift({ ...test });
+        updatedOtherTests.unshift({ ...test, updatedAt: nowIso });
       }
     });
     // Remove deleted custom tests from other language, but preserve default catalog tests
@@ -691,6 +697,7 @@ export const saveStoredTests = (lang: Language, tests: TestPackage[]): void => {
     const currentIds = new Set(cleanTests.map(t => String(t.id)));
     const filteredOther = updatedOtherTests.filter(ot => currentIds.has(String(ot.id)) || defaultIds.has(String(ot.id)));
     localStorage.setItem(otherKey, JSON.stringify(filteredOther));
+    localStorage.setItem(`labhome_tests_updated_at_${otherLang}`, nowIso);
   } catch (e) {
     console.error("Failed to save tests to storage:", e);
   }
@@ -1996,6 +2003,129 @@ export const saveStoredDoctorAtHomeBookings = (bookings: DoctorAtHomeBooking[]):
     localStorage.setItem(STORAGE_KEYS.DOCTOR_AT_HOME_BOOKINGS, JSON.stringify(bookings));
   } catch (e) {
     console.error("Error saving doctor at home bookings:", e);
+  }
+};
+
+export const DEFAULT_HOME_VISIT_DOCTORS: HomeVisitDoctor[] = [
+  {
+    id: 'HVD-101',
+    name: 'ডাঃ তানভীর হাসান',
+    nameEn: 'Dr. Tanvir Hasan',
+    phone: '01711-223344',
+    altPhone: '01811-223344',
+    specialty: 'general_physician',
+    specialtyLabel: 'জেনারেল ফিজিশিয়ান (এমবিবিএস)',
+    degrees: 'MBBS, BCS (Health), PGT (Medicine)',
+    designation: 'মেডিকেল অফিসার',
+    hospital: 'ঢাকা মেডিকেল কলেজ হাসপাতাল',
+    area: 'ধানমন্ডি, মোহাম্মদপুর, লালমাটিয়া, কলাবাগান',
+    gender: 'male',
+    isAvailable: true,
+    totalVisits: 14,
+    notes: 'সাধারণ জ্বর, সর্দি, অ্যাজমা, প্রেসার ও ডায়াবেটিস রোগী দেখার বিশেষ অভিজ্ঞতা।'
+  },
+  {
+    id: 'HVD-102',
+    name: 'ডাঃ নুসরাত জাহান',
+    nameEn: 'Dr. Nusrat Jahan',
+    phone: '01819-334455',
+    specialty: 'pediatrician',
+    specialtyLabel: 'শিশু বিশেষজ্ঞ (Child Specialist)',
+    degrees: 'MBBS, DCH (Pediatrics), FCPS (P-1)',
+    designation: 'কনসালট্যান্ট পেডিয়াট্রিক',
+    hospital: 'ঢাকা শিশু হাসপাতাল',
+    area: 'মিরপুর, শ্যামলী, কল্যাণপুর, মোহাম্মদপুর',
+    gender: 'female',
+    isAvailable: true,
+    totalVisits: 22,
+    notes: 'নবজাতক ও শিশুদের রোগ নির্ণয়, পুষ্টি পরামর্শ এবং নিয়মিত হোম মনিটরিং।'
+  },
+  {
+    id: 'HVD-103',
+    name: 'ডাঃ রফিকুল ইসলাম',
+    nameEn: 'Dr. Rafiqul Islam',
+    phone: '01712-998877',
+    specialty: 'general_physician',
+    specialtyLabel: 'মেডিসিন ও বয়োজ্যেষ্ঠ কেয়ার',
+    degrees: 'MBBS, FCPS (Medicine-FP), MACP (USA)',
+    designation: 'রেসিডেন্ট ফিজিশিয়ান',
+    hospital: 'স্যার সলিমুল্লাহ মেডিকেল কলেজ (মিটফোর্ড)',
+    area: 'গুলশান, বনানী, বারিধারা, বাড্ডা',
+    gender: 'male',
+    isAvailable: true,
+    totalVisits: 19,
+    notes: 'বয়স্ক রোগীদের দীর্ঘস্থায়ী রোগ, স্ট্রোক ফলোআপ ও বেডরিডেন পেশেন্ট কেয়ার।'
+  },
+  {
+    id: 'HVD-104',
+    name: 'ডাঃ সাবিনা ইয়াসমিন',
+    nameEn: 'Dr. Sabina Yasmin',
+    phone: '01911-445566',
+    specialty: 'gynecologist',
+    specialtyLabel: 'গাইনী ও প্রসূতি রোগ বিশেষজ্ঞ',
+    degrees: 'MBBS, DGO, FCPS (Obs & Gynae)',
+    designation: 'সহকারী অধ্যাপক (গাইনী)',
+    hospital: 'বঙ্গবন্ধু শেখ মুজিব মেডিকেল বিশ্ববিদ্যালয় (BSMMU)',
+    area: 'উত্তরা, এয়ারপোর্ট, নিকুঞ্জ, খিলক্ষেত',
+    gender: 'female',
+    isAvailable: true,
+    totalVisits: 11,
+    notes: 'গর্ভবতী মায়ের হোম চেকআপ, এন্টিনেটাল কেয়ার ও মায়েদের শারীরিক কাউন্সেলিং।'
+  },
+  {
+    id: 'HVD-105',
+    name: 'ডাঃ আহসান হাবীব',
+    nameEn: 'Dr. Ahsan Habib',
+    phone: '01611-778899',
+    specialty: 'cardiologist',
+    specialtyLabel: 'কার্ডিওলজিস্ট (হৃদরোগ বিশেষজ্ঞ)',
+    degrees: 'MBBS, D-Card (NICVD), MD (Cardiology)',
+    designation: 'কার্ডিওলজি স্পেশালিস্ট',
+    hospital: 'জাতীয় হৃদরোগ ইনস্টিটিউট (NICVD)',
+    area: 'পান্থপথ, গ্রিনরোড, ফার্মগেট, তেজগাঁও',
+    gender: 'male',
+    isAvailable: true,
+    totalVisits: 16,
+    notes: 'ইসিজি রিপোর্ট অ্যানালাইসিস, উচ্চ রক্তচাপ নিয়ন্ত্রণ ও পোস্ট-হার্ট অ্যাটাক হোম ফলোআপ।'
+  },
+  {
+    id: 'HVD-106',
+    name: 'ডাঃ নাজমুল হুদা',
+    nameEn: 'Dr. Nazmul Huda',
+    phone: '01715-667788',
+    specialty: 'general_physician',
+    specialtyLabel: 'ডায়াবেটিস ও হরমোন বিশেষজ্ঞ',
+    degrees: 'MBBS, CCD (BIRDEM), PGT (Medicine)',
+    designation: 'ডায়াবেটোলজিস্ট',
+    hospital: 'বারডেম জেনারেল হাসপাতাল',
+    area: 'মতিঝিল, পল্টন, শান্তিনগর, মগবাজার',
+    gender: 'male',
+    isAvailable: true,
+    totalVisits: 28,
+    notes: 'ইনসুলিন ম্যানেজমেন্ট, ডায়াবেটিক ডায়াবেটিস ফুট কেয়ার ও গ্লুকোজ ট্র্যাকিং।'
+  }
+];
+
+export const getStoredHomeVisitDoctors = (): HomeVisitDoctor[] => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.HOME_VISIT_DOCTORS);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.error("Error reading stored home visit doctors:", e);
+  }
+  return DEFAULT_HOME_VISIT_DOCTORS;
+};
+
+export const saveStoredHomeVisitDoctors = (doctors: HomeVisitDoctor[]): void => {
+  try {
+    localStorage.setItem(STORAGE_KEYS.HOME_VISIT_DOCTORS, JSON.stringify(doctors));
+  } catch (e) {
+    console.error("Error saving home visit doctors:", e);
   }
 };
 
