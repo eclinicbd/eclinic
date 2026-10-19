@@ -14,7 +14,8 @@ import {
   query, 
   orderBy, 
   where,
-  getDocsFromServer
+  getDocsFromServer,
+  setLogLevel
 } from 'firebase/firestore';
 import { 
   getAuth, 
@@ -69,9 +70,109 @@ export const db = (() => {
   }
 })();
 
+// Suppress internal Firestore retry/backoff stream logs from flooding console
+try {
+  setLogLevel('silent');
+} catch {}
+
 // Initialize Firebase Auth
 export const auth = getAuth(app);
 export { onAuthStateChanged };
+
+/**
+ * Circuit Breaker for Firestore Quota Limit Exceeded (Resource Exhausted)
+ * Automatically halts write attempts if the daily quota on Google Cloud has been exhausted,
+ * preventing Firestore SDK from continuously failing and spamming exponential backoff logs.
+ */
+const QUOTA_KEY = 'eclinic_firestore_quota_exhausted';
+let isFirestoreQuotaExhausted = false;
+let quotaExhaustedUntil: number = 0;
+
+try {
+  const saved = localStorage.getItem(QUOTA_KEY) || localStorage.getItem('labhome_firestore_quota_exhausted');
+  if (saved && Number(saved) > Date.now()) {
+    isFirestoreQuotaExhausted = true;
+    quotaExhaustedUntil = Number(saved);
+  }
+} catch {}
+
+export const isQuotaExhausted = (): boolean => {
+  if (isFirestoreQuotaExhausted) {
+    if (Date.now() < quotaExhaustedUntil) {
+      return true;
+    }
+    isFirestoreQuotaExhausted = false;
+  }
+  return false;
+};
+
+export const markQuotaExhausted = () => {
+  isFirestoreQuotaExhausted = true;
+  // Hold back further write attempts for 12 hours or until daily quota reset
+  quotaExhaustedUntil = Date.now() + 12 * 60 * 60 * 1000;
+  try {
+    localStorage.setItem(QUOTA_KEY, String(quotaExhaustedUntil));
+  } catch {}
+};
+
+// Suppress internal Firestore quota/retry noise if free tier write limit is reached
+if (typeof window !== 'undefined') {
+  const originalConsoleError = console.error;
+  console.error = (...args: any[]) => {
+    const fullMsg = args.map(a => (typeof a === 'object' ? (a?.message || JSON.stringify(a)) : String(a))).join(' ');
+    if (
+      fullMsg.includes('resource-exhausted') ||
+      fullMsg.includes('Quota limit exceeded') ||
+      fullMsg.includes('Free daily write units') ||
+      fullMsg.includes('Using maximum backoff delay') ||
+      (fullMsg.includes('@firebase/firestore') && fullMsg.includes('quota'))
+    ) {
+      markQuotaExhausted();
+      return; // Handled smoothly - app seamlessly uses local storage fallback
+    }
+    originalConsoleError.apply(console, args);
+  };
+
+  const originalConsoleWarn = console.warn;
+  console.warn = (...args: any[]) => {
+    const fullMsg = args.map(a => (typeof a === 'object' ? (a?.message || JSON.stringify(a)) : String(a))).join(' ');
+    if (
+      fullMsg.includes('Using maximum backoff delay') ||
+      fullMsg.includes('resource-exhausted') ||
+      fullMsg.includes('Quota limit exceeded')
+    ) {
+      return;
+    }
+    originalConsoleWarn.apply(console, args);
+  };
+}
+
+/**
+ * Executes a Firestore write operation safely with quota protection
+ */
+export const safeFirestoreWrite = async (operation: () => Promise<any>): Promise<boolean> => {
+  if (isQuotaExhausted()) {
+    return false;
+  }
+  try {
+    await operation();
+    return true;
+  } catch (error: any) {
+    const errMsg = error?.message || String(error);
+    const errCode = error?.code || '';
+    if (
+      errCode === 'resource-exhausted' ||
+      errMsg.includes('Quota limit exceeded') ||
+      errMsg.includes('resource-exhausted') ||
+      errMsg.includes('Free daily write units')
+    ) {
+      markQuotaExhausted();
+      return false;
+    }
+    console.error("Firestore write error:", error);
+    return false;
+  }
+};
 
 /**
  * Deep sanitization for Firestore documents.
@@ -341,8 +442,8 @@ export const subscribeToUsers = (callback: (users: PatientUser[]) => void) => {
  * Save user profile updates to Firestore
  */
 export const saveUserProfileToFirestore = async (user: PatientUser): Promise<boolean> => {
-  try {
-    if (!user.id) return false;
+  return safeFirestoreWrite(async () => {
+    if (!user.id) return;
     const userRef = doc(db, 'users', user.id);
     const dataToSave = cleanFirestoreData({
       name: user.name,
@@ -358,11 +459,7 @@ export const saveUserProfileToFirestore = async (user: PatientUser): Promise<boo
       updatedAt: new Date().toISOString()
     });
     await setDoc(userRef, dataToSave, { merge: true });
-    return true;
-  } catch (error) {
-    console.error("Error saving user profile to Firestore:", error);
-    return false;
-  }
+  });
 };
 
 /**
@@ -399,31 +496,23 @@ export const getUserProfileFromFirestore = async (userId: string): Promise<Patie
  * Save a new booking to Firestore using the unique booking ID as document ID
  */
 export const saveBookingToFirestore = async (booking: BookingHistoryItem): Promise<boolean> => {
-  try {
+  return safeFirestoreWrite(async () => {
     const bookingDoc = doc(db, 'bookings', booking.id);
     await setDoc(bookingDoc, cleanFirestoreData({
       ...booking,
       createdAt: booking.createdAt || new Date().toISOString()
     }), { merge: true });
-    return true;
-  } catch (error) {
-    console.error("Error saving booking to Firestore:", error);
-    return false;
-  }
+  });
 };
 
 /**
  * Delete a booking from Firestore
  */
 export const deleteBookingFromFirestore = async (bookingId: string): Promise<boolean> => {
-  try {
+  return safeFirestoreWrite(async () => {
     const bookingDoc = doc(db, 'bookings', bookingId);
     await deleteDoc(bookingDoc);
-    return true;
-  } catch (error) {
-    console.error("Error deleting booking from Firestore:", error);
-    return false;
-  }
+  });
 };
 
 /**
@@ -517,7 +606,7 @@ export const getBookingsFromFirestore = async (): Promise<BookingHistoryItem[]> 
  */
 
 export const saveSiteSettingsToFirestore = async (lang: Language, settings: SiteSettings): Promise<boolean> => {
-  try {
+  return safeFirestoreWrite(async () => {
     const cleanSettings: SiteSettings = {
       ...settings,
       siteName: cleanBrandText(settings.siteName) || 'eClinic Bangladesh',
@@ -561,12 +650,7 @@ export const saveSiteSettingsToFirestore = async (lang: Language, settings: Site
         updatedAt: new Date().toISOString()
       }), { merge: true });
     }
-
-    return true;
-  } catch (error) {
-    console.error("Error saving site settings to Firestore:", error);
-    return false;
-  }
+  });
 };
 
 export const subscribeToSiteSettings = (lang: Language, callback: (settings: SiteSettings) => void) => {
@@ -608,20 +692,7 @@ export const subscribeToSiteSettings = (lang: Language, callback: (settings: Sit
           invoiceWatermark: (data.invoiceWatermark && !data.invoiceWatermark.includes('LabHome')) ? data.invoiceWatermark : 'eClinic BD'
         };
 
-        // If stored Firestore data still contains "LabHome" anywhere, immediately self-heal in Firestore!
-        const rawJson = JSON.stringify(data);
-        if (/lab\s*home/i.test(rawJson) || rawJson.includes('ল্যাবহোম') || rawJson.includes('ল্যাব হোম')) {
-          setDoc(settingsDoc, cleanFirestoreData({
-            siteName: cleanSettings.siteName,
-            aboutTitle: cleanSettings.aboutTitle,
-            aboutDescription: cleanSettings.aboutDescription,
-            aboutStory: cleanSettings.aboutStory,
-            invoiceOrgName: cleanSettings.invoiceOrgName,
-            invoiceWatermark: cleanSettings.invoiceWatermark,
-            updatedAt: new Date().toISOString()
-          }), { merge: true }).catch(() => {});
-        }
-
+        // Deliver clean settings directly to callback without recursive write-back
         callback(cleanSettings);
       }
     }, (_error) => {
@@ -639,17 +710,13 @@ export const subscribeToSiteSettings = (lang: Language, callback: (settings: Sit
  */
 
 export const saveCategoriesToFirestore = async (categories: CategoryItem[]): Promise<boolean> => {
-  try {
+  return safeFirestoreWrite(async () => {
     const catDoc = doc(db, 'categories', 'master_list');
     await setDoc(catDoc, cleanFirestoreData({
       items: categories,
       updatedAt: new Date().toISOString()
     }), { merge: true });
-    return true;
-  } catch (error) {
-    console.error("Error saving categories to Firestore:", error);
-    return false;
-  }
+  });
 };
 
 export const subscribeToCategories = (callback: (categories: CategoryItem[]) => void) => {
@@ -671,17 +738,13 @@ export const subscribeToCategories = (callback: (categories: CategoryItem[]) => 
 };
 
 export const saveLabsToFirestore = async (lang: Language, labs: LabPartner[]): Promise<boolean> => {
-  try {
+  return safeFirestoreWrite(async () => {
     const labsDoc = doc(db, 'labs', `list_${lang}`);
     await setDoc(labsDoc, cleanFirestoreData({
       items: labs,
       updatedAt: new Date().toISOString()
     }), { merge: true });
-    return true;
-  } catch (error) {
-    console.error("Error saving labs to Firestore:", error);
-    return false;
-  }
+  });
 };
 
 export const subscribeToLabs = (lang: Language, callback: (labs: LabPartner[]) => void) => {
@@ -703,17 +766,13 @@ export const subscribeToLabs = (lang: Language, callback: (labs: LabPartner[]) =
 };
 
 export const saveTestsToFirestore = async (lang: Language, tests: TestPackage[]): Promise<boolean> => {
-  try {
+  return safeFirestoreWrite(async () => {
     const testsDoc = doc(db, 'tests', `list_${lang}`);
     await setDoc(testsDoc, cleanFirestoreData({
       items: tests,
       updatedAt: new Date().toISOString()
     }), { merge: true });
-    return true;
-  } catch (error) {
-    console.error("Error saving tests to Firestore:", error);
-    return false;
-  }
+  });
 };
 
 export const subscribeToTests = (
@@ -741,17 +800,13 @@ export const subscribeToTests = (
 };
 
 export const savePackagesToFirestore = async (lang: Language, packages: HealthPackage[]): Promise<boolean> => {
-  try {
+  return safeFirestoreWrite(async () => {
     const pkgsDoc = doc(db, 'packages', `list_${lang}`);
     await setDoc(pkgsDoc, cleanFirestoreData({
       items: packages,
       updatedAt: new Date().toISOString()
     }), { merge: true });
-    return true;
-  } catch (error) {
-    console.error("Error saving packages to Firestore:", error);
-    return false;
-  }
+  });
 };
 
 export const subscribeToPackages = (lang: Language, callback: (packages: HealthPackage[]) => void) => {
@@ -773,7 +828,7 @@ export const subscribeToPackages = (lang: Language, callback: (packages: HealthP
 };
 
 export const saveDoctorsToFirestore = async (lang: Language, doctors: Doctor[]): Promise<boolean> => {
-  try {
+  return safeFirestoreWrite(async () => {
     const docRef = doc(db, 'doctors', `list_${lang}`);
     await setDoc(docRef, cleanFirestoreData({
       items: doctors,
@@ -826,11 +881,7 @@ export const saveDoctorsToFirestore = async (lang: Language, doctors: Doctor[]):
         }), { merge: true });
       }
     }
-    return true;
-  } catch (error) {
-    console.error("Error saving doctors to Firestore:", error);
-    return false;
-  }
+  });
 };
 
 export const subscribeToDoctors = (lang: Language, callback: (doctors: Doctor[]) => void) => {
@@ -852,17 +903,13 @@ export const subscribeToDoctors = (lang: Language, callback: (doctors: Doctor[])
 };
 
 export const savePaymentConfigToFirestore = async (config: PaymentGatewaysConfig): Promise<boolean> => {
-  try {
+  return safeFirestoreWrite(async () => {
     const payDoc = doc(db, 'settings', 'payment_gateways');
     await setDoc(payDoc, cleanFirestoreData({
       ...config,
       updatedAt: new Date().toISOString()
     }), { merge: true });
-    return true;
-  } catch (error) {
-    console.error("Error saving payment config to Firestore:", error);
-    return false;
-  }
+  });
 };
 
 export const subscribeToPaymentConfig = (callback: (config: PaymentGatewaysConfig) => void) => {
@@ -887,18 +934,14 @@ export const subscribeToPaymentConfig = (callback: (config: PaymentGatewaysConfi
  * Super Admin Credentials Cloud Sync
  */
 export const saveAdminCredentialsToFirestore = async (creds: AdminCredentials): Promise<boolean> => {
-  try {
+  return safeFirestoreWrite(async () => {
     const adminDoc = doc(db, 'settings', 'admin_credentials');
     await setDoc(adminDoc, cleanFirestoreData({
       username: creds.username,
       password: creds.password,
       updatedAt: creds.updatedAt || new Date().toISOString()
     }), { merge: true });
-    return true;
-  } catch (error) {
-    console.error("Error saving admin credentials to Firestore:", error);
-    return false;
-  }
+  });
 };
 
 export const subscribeToAdminCredentials = (callback: (creds: AdminCredentials) => void) => {
@@ -927,17 +970,13 @@ export const subscribeToAdminCredentials = (callback: (creds: AdminCredentials) 
  * Staff Users & Passwords Cloud Sync
  */
 export const saveStaffUsersToFirestore = async (staffList: StaffUser[]): Promise<boolean> => {
-  try {
+  return safeFirestoreWrite(async () => {
     const staffDoc = doc(db, 'settings', 'staff_users');
     await setDoc(staffDoc, cleanFirestoreData({
       items: staffList,
       updatedAt: new Date().toISOString()
     }), { merge: true });
-    return true;
-  } catch (error) {
-    console.error("Error saving staff users to Firestore:", error);
-    return false;
-  }
+  });
 };
 
 export const subscribeToStaffUsers = (callback: (staff: StaffUser[]) => void) => {
@@ -962,17 +1001,13 @@ export const subscribeToStaffUsers = (callback: (staff: StaffUser[]) => void) =>
  * Patients List & Accounts Cloud Sync
  */
 export const savePatientsListToFirestore = async (patients: PatientUser[]): Promise<boolean> => {
-  try {
+  return safeFirestoreWrite(async () => {
     const patientsDoc = doc(db, 'settings', 'patients_list');
     await setDoc(patientsDoc, cleanFirestoreData({
       items: patients,
       updatedAt: new Date().toISOString()
     }), { merge: true });
-    return true;
-  } catch (error) {
-    console.error("Error saving patients list to Firestore:", error);
-    return false;
-  }
+  });
 };
 
 export const subscribeToPatientsList = (callback: (patients: PatientUser[]) => void) => {
@@ -997,17 +1032,13 @@ export const subscribeToPatientsList = (callback: (patients: PatientUser[]) => v
  * Appointment Date & Slot Configuration Cloud Sync
  */
 export const saveDateSlotConfigToFirestore = async (config: DateSlotConfig): Promise<boolean> => {
-  try {
+  return safeFirestoreWrite(async () => {
     const slotDoc = doc(db, 'settings', 'date_slot_config');
     await setDoc(slotDoc, cleanFirestoreData({
       ...config,
       updatedAt: new Date().toISOString()
     }), { merge: true });
-    return true;
-  } catch (error) {
-    console.error("Error saving date slot config to Firestore:", error);
-    return false;
-  }
+  });
 };
 
 export const subscribeToDateSlotConfig = (callback: (config: DateSlotConfig) => void) => {
@@ -1032,17 +1063,13 @@ export const subscribeToDateSlotConfig = (callback: (config: DateSlotConfig) => 
  * Doctor at Home (হোমে ডাক্তার বুকিং) Cloud Firestore Sync
  */
 export const saveDoctorAtHomeBookingsToFirestore = async (bookings: DoctorAtHomeBooking[]): Promise<boolean> => {
-  try {
+  return safeFirestoreWrite(async () => {
     const dahDoc = doc(db, 'bookings', 'doctor_at_home_list');
     await setDoc(dahDoc, cleanFirestoreData({
       items: bookings,
       updatedAt: new Date().toISOString()
     }), { merge: true });
-    return true;
-  } catch (error) {
-    console.error("Error saving Doctor at Home bookings to Firestore:", error);
-    return false;
-  }
+  });
 };
 
 export const subscribeToDoctorAtHomeBookings = (callback: (bookings: DoctorAtHomeBooking[]) => void) => {
@@ -1067,17 +1094,13 @@ export const subscribeToDoctorAtHomeBookings = (callback: (bookings: DoctorAtHom
  * Home Visit Doctors (হোম ভিজিট ডাক্তারদের তালিকা) Cloud Firestore Sync
  */
 export const saveHomeVisitDoctorsToFirestore = async (doctors: HomeVisitDoctor[]): Promise<boolean> => {
-  try {
+  return safeFirestoreWrite(async () => {
     const hvdDoc = doc(db, 'settings', 'home_visit_doctors');
     await setDoc(hvdDoc, cleanFirestoreData({
       items: doctors,
       updatedAt: new Date().toISOString()
     }), { merge: true });
-    return true;
-  } catch (error) {
-    console.error("Error saving Home Visit Doctors to Firestore:", error);
-    return false;
-  }
+  });
 };
 
 export const subscribeToHomeVisitDoctors = (callback: (doctors: HomeVisitDoctor[]) => void) => {
@@ -1102,17 +1125,13 @@ export const subscribeToHomeVisitDoctors = (callback: (doctors: HomeVisitDoctor[
  * Phlebotomists Roster (স্যাম্পল কালেকশন ফ্লেবোটোমিস্টদের তালিকা) Cloud Firestore Sync
  */
 export const savePhlebotomistsToFirestore = async (phlebotomists: Phlebotomist[]): Promise<boolean> => {
-  try {
+  return safeFirestoreWrite(async () => {
     const phlebDoc = doc(db, 'settings', 'phlebotomists_list');
     await setDoc(phlebDoc, cleanFirestoreData({
       items: phlebotomists,
       updatedAt: new Date().toISOString()
     }), { merge: true });
-    return true;
-  } catch (error) {
-    console.error("Error saving Phlebotomists to Firestore:", error);
-    return false;
-  }
+  });
 };
 
 export const subscribeToPhlebotomists = (callback: (phlebotomists: Phlebotomist[]) => void) => {

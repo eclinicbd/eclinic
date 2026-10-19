@@ -546,9 +546,6 @@ export default function App() {
         }
       });
     } catch {}
-
-    saveSiteSettingsToFirestore('bn', getStoredSiteSettings('bn'));
-    saveSiteSettingsToFirestore('en', getStoredSiteSettings('en'));
   }, []);
 
   // Real-time subscription to Categories

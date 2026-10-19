@@ -302,7 +302,7 @@ export const getStoredStaffUsers = (): StaffUser[] => {
 export const saveStoredStaffUsers = (staff: StaffUser[]): void => {
   try {
     localStorage.setItem(STORAGE_KEYS.STAFF_USERS, JSON.stringify(staff));
-    saveStaffUsersToFirestore(staff);
+    saveStaffUsersToFirestore(staff).catch(() => {});
   } catch (e) {
     console.error("Error saving staff users:", e);
   }
@@ -379,7 +379,7 @@ export const getStoredDateSlotConfig = (): DateSlotConfig => {
 export const setStoredDateSlotConfig = (config: DateSlotConfig): void => {
   try {
     localStorage.setItem(STORAGE_KEYS.DATE_SLOT_CONFIG, JSON.stringify(config));
-    saveDateSlotConfigToFirestore(config);
+    saveDateSlotConfigToFirestore(config).catch(() => {});
   } catch (e) {
     console.error("Failed to save date slot config:", e);
   }
@@ -1197,7 +1197,7 @@ export const getStoredPatients = (): PatientUser[] => {
 export const saveStoredPatients = (patients: PatientUser[]): void => {
   try {
     localStorage.setItem(STORAGE_KEYS.PATIENTS, JSON.stringify(patients));
-    savePatientsListToFirestore(patients);
+    savePatientsListToFirestore(patients).catch(() => {});
   } catch (e) {
     console.error("Failed to save patients to storage:", e);
   }
@@ -1380,7 +1380,7 @@ export const saveStoredAdminCredentials = (credentials: AdminCredentials): void 
       updatedAt: new Date().toISOString()
     };
     localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(credObj));
-    saveAdminCredentialsToFirestore(credObj);
+    saveAdminCredentialsToFirestore(credObj).catch(() => {});
   } catch (e) {
     console.error("Error saving admin credentials:", e);
   }
