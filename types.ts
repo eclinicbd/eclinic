@@ -194,6 +194,10 @@ export interface BookingHistoryItem {
   assignedStaffId?: string;
   assignedStaffName?: string;
   assignedStaffRole?: StaffRole;
+  assignedPhlebotomistId?: string;
+  assignedPhlebotomistName?: string;
+  assignedPhlebotomistPhone?: string;
+  assignedPhlebotomistAt?: string;
   sampleCollectedAt?: string;
   deliveredAt?: string;
   notes?: string;
@@ -201,6 +205,26 @@ export interface BookingHistoryItem {
   paymentStatus?: 'unpaid' | 'paid' | 'pending_verification';
   transactionId?: string;
   senderPhone?: string;
+}
+
+export interface Phlebotomist {
+  id: string; // e.g. "PHLEB-201"
+  name: string; // e.g. "Md. Karim Ullah"
+  nameEn?: string;
+  phone: string; // e.g. "01822334455"
+  altPhone?: string;
+  email?: string;
+  assignedArea: string; // e.g. "Dhanmondi, Mohammadpur, Lalmatia"
+  experienceYears?: number; // e.g. 4
+  certifications?: string; // e.g. "Certified Phlebotomist, Medical Tech (Lab)"
+  vehicleType?: 'bike' | 'bicycle' | 'public' | 'other';
+  gender?: 'male' | 'female';
+  isAvailable: boolean; // Ready for collection dispatch
+  totalCollections?: number; // Sample collections count
+  rating?: number; // e.g. 4.9
+  notes?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface ReportItem {

@@ -1,4 +1,4 @@
-import { TestPackage, LabPartner, Language, BookingHistoryItem, SiteSettings, PatientUser, HealthPackage, CategoryItem, DateSlotConfig, TimeSlotConfigItem, StaffUser, StaffRole, StaffPermissions, PaymentGatewaysConfig, AdminCredentials, Doctor, DoctorAppointment, EPrescription, DoctorAtHomeBooking, DoctorAtHomeSpecialty, DoctorAtHomeScheduleConfig, HomeVisitDoctor } from '../types';
+import { TestPackage, LabPartner, Language, BookingHistoryItem, SiteSettings, PatientUser, HealthPackage, CategoryItem, DateSlotConfig, TimeSlotConfigItem, StaffUser, StaffRole, StaffPermissions, PaymentGatewaysConfig, AdminCredentials, Doctor, DoctorAppointment, EPrescription, DoctorAtHomeBooking, DoctorAtHomeSpecialty, DoctorAtHomeScheduleConfig, HomeVisitDoctor, Phlebotomist } from '../types';
 import { 
   getTests as getDefaultTests, 
   getLabs as getDefaultLabs, 
@@ -24,6 +24,7 @@ const STORAGE_KEYS = {
   BOOKINGS: 'labhome_bookings_v2',
   DOCTOR_AT_HOME_BOOKINGS: 'labhome_doctor_at_home_bookings_v1',
   HOME_VISIT_DOCTORS: 'labhome_home_visit_doctors_v1',
+  PHLEBOTOMISTS: 'labhome_phlebotomists_v1',
   DOCTOR_AT_HOME_SPECIALTIES: 'labhome_doctor_at_home_specialties_v2',
   DOCTOR_AT_HOME_SCHEDULE: 'labhome_doctor_at_home_schedule_v1',
   CATEGORIES: 'labhome_categories_v2',
@@ -2186,6 +2187,163 @@ export const saveStoredHomeVisitDoctors = (doctors: HomeVisitDoctor[]): void => 
     console.error("Error saving home visit doctors:", e);
   }
 };
+
+export const DEFAULT_PHLEBOTOMISTS: Phlebotomist[] = [
+  {
+    id: 'PHLEB-201',
+    name: 'মোঃ করিম উল্লাহ',
+    nameEn: 'Md. Karim Ullah',
+    phone: '01822-334455',
+    altPhone: '01711-223344',
+    email: 'karim.phleb@eclinic.com',
+    assignedArea: 'ধানমন্ডি, মোহাম্মদপুর, লালমাটিয়া, কলাবাগান',
+    experienceYears: 5,
+    certifications: 'Diploma in Medical Technology (Lab), Certified Clinical Phlebotomist',
+    vehicleType: 'bike',
+    gender: 'male',
+    isAvailable: true,
+    totalCollections: 142,
+    rating: 4.9,
+    notes: 'ভ্যাকুটেইনার, পেডিয়াট্রিক ব্লাড ড্র এবং হোম স্যাম্পল কালেকশনে বিশেষ অভিজ্ঞ।'
+  },
+  {
+    id: 'PHLEB-202',
+    name: 'তানভীর আহমেদ',
+    nameEn: 'Tanvir Ahmed',
+    phone: '01711-998877',
+    altPhone: '01912-345678',
+    email: 'tanvir.phleb@eclinic.com',
+    assignedArea: 'মিরপুর, পল্লবী, কাজীপাড়া, শেওড়াপাড়া',
+    experienceYears: 4,
+    certifications: 'BSc in Medical Lab Technology (BMLT), Certified Phlebotomist',
+    vehicleType: 'bike',
+    gender: 'male',
+    isAvailable: true,
+    totalCollections: 98,
+    rating: 4.8,
+    notes: 'মিরপুর জোন কালেকশনে খুব দ্রুত রেসপন্স করেন।'
+  },
+  {
+    id: 'PHLEB-203',
+    name: 'রাশেদুল ইসলাম',
+    nameEn: 'Rashedul Islam',
+    phone: '01922-446688',
+    altPhone: '01815-554433',
+    email: 'rashed.phleb@eclinic.com',
+    assignedArea: 'উত্তরা, বিমানবন্দর, খিলক্ষেত, বসুন্ধরা',
+    experienceYears: 6,
+    certifications: 'Senior Clinical Phlebotomist, BSMMU Trained, Infection Control Certified',
+    vehicleType: 'bike',
+    gender: 'male',
+    isAvailable: true,
+    totalCollections: 215,
+    rating: 5.0,
+    notes: 'জরুরি ভোর ও সকালের ফাস্টিং স্যাম্পল কালেকশনে বিশ্বস্ত এক্সপার্ট।'
+  },
+  {
+    id: 'PHLEB-204',
+    name: 'মাহমুদুল হাসান',
+    nameEn: 'Mahmudul Hasan',
+    phone: '01633-557799',
+    altPhone: '01533-221100',
+    email: 'mahmud.phleb@eclinic.com',
+    assignedArea: 'গুলশান, বনানী, বারিধারা, বাড্ডা, মহাখালী',
+    experienceYears: 3,
+    certifications: 'Medical Technologist (Laboratory), Cold-Chain Sample Handling',
+    vehicleType: 'bike',
+    gender: 'male',
+    isAvailable: true,
+    totalCollections: 76,
+    rating: 4.7,
+    notes: 'কোল্ড চেইন মেনটেইন করে বিশেষ টেস্টের স্যাম্পল নিরাপদে ট্রান্সপোর্ট করেন।'
+  },
+  {
+    id: 'PHLEB-205',
+    name: 'সালমা খাতুন',
+    nameEn: 'Salma Khatun',
+    phone: '01744-889900',
+    altPhone: '01844-776655',
+    email: 'salma.phleb@eclinic.com',
+    assignedArea: 'মতিঝিল, পল্টন, শান্তিনগর, মালিবাগ, কাকরাইল',
+    experienceYears: 4,
+    certifications: 'Specialized Female Phlebotomist, Maternal & Child Care Blood Collection',
+    vehicleType: 'public',
+    gender: 'female',
+    isAvailable: true,
+    totalCollections: 110,
+    rating: 4.9,
+    notes: 'মহিলা ও শিশু রোগীদের জন্য বিশেষ ডেডিকেটেড ফ্লেবোটোমিস্ট।'
+  }
+];
+
+export const getStoredPhlebotomists = (): Phlebotomist[] => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.PHLEBOTOMISTS);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.error("Error reading stored phlebotomists:", e);
+  }
+  return DEFAULT_PHLEBOTOMISTS;
+};
+
+export const saveStoredPhlebotomists = (phlebotomists: Phlebotomist[]): void => {
+  try {
+    localStorage.setItem(STORAGE_KEYS.PHLEBOTOMISTS, JSON.stringify(phlebotomists));
+  } catch (e) {
+    console.error("Error saving phlebotomists:", e);
+  }
+};
+
+/**
+ * Generates an official WhatsApp dispatch message for a phlebotomist
+ */
+export const generatePhlebotomistDispatchWhatsAppText = (
+  booking: BookingHistoryItem,
+  phlebotomist: Phlebotomist,
+  customNotes?: string
+): string => {
+  const testsList = (booking.testNames && booking.testNames.length > 0)
+    ? booking.testNames.map((t, idx) => `  ${idx + 1}. ${t}`).join('\n')
+    : '  1. জেনারেল ল্যাব টেস্ট';
+
+  const orderNum = booking.id ? (booking.id.length > 8 ? booking.id.slice(-6).toUpperCase() : booking.id) : 'ORD-NEW';
+
+  return `*eClinic Diagnostic - স্যাম্পল কালেকশন অ্যাসাইনমেন্ট* 🩸
+---------------------------------------
+হ্যালো *${phlebotomist.name}*,
+আপনাকে একটি নতুন হোম স্যাম্পল কালেকশনের দায়িত্ব দেওয়া হয়েছে:
+
+📋 *অর্ডার আইডি:* #${orderNum}
+📅 *তারিখ:* ${booking.date || 'আজকে'}
+⏰ *নির্ধারিত সময়:* ${booking.time || 'সকাল ৮:০০ - ৯:০০'}
+🏥 *ডায়াগনস্টিক পার্টনার:* ${booking.labName || 'eClinic Partner Lab'}
+
+👤 *রোগীর তথ্য:*
+• নাম: *${booking.customerName || 'সম্মানিত রোগী'}*
+• মোবাইল: *${booking.customerPhone}*
+• ঠিকানা: *${booking.customerAddress || 'ঢাকা'}*
+
+🧪 *টেস্টের তালিকা (${booking.testNames?.length || 1}টি):*
+${testsList}
+
+💰 *বিলের বিবরণ:*
+• মোট বিল: *৳${booking.totalCost}*
+• পেমেন্ট মেথড: ${booking.paymentMethod ? booking.paymentMethod.toUpperCase() : 'ক্যাশ অন কালেকশন'}
+• পেমেন্ট স্ট্যাটাস: ${booking.paymentStatus === 'paid' ? '✅ পেইড (টাকা নেওয়া লাগবে না)' : '⚠️ আনপেইড (রোগীর কাছ থেকে ক্যাশ গ্রহণ করবেন)'}
+${customNotes ? `\n📌 *বিশেষ নির্দেশনা:* ${customNotes}\n` : ''}
+⚠️ *জরুরি রিমাইন্ডার:*
+দয়া করে নির্দিষ্ট সময়ে প্রয়োজনীয় ভ্যাকুটেইনার টিউব, সুই ও সুরক্ষা গ্লাভস সাথে নিয়ে রোগীর ঠিকানায় পৌঁছান। স্যাম্পল কালেকশন শেষে অবিলম্বে যথাযথ তাপমাত্রায় ল্যাবে জমা দিন।
+
+ধন্যবাদ,
+*eClinic Operations Desk*
+হটলাইন: 01586-366002`;
+};
+
 
 export const exportAllDataBackup = () => {
   return {

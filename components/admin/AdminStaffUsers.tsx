@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Language, StaffUser, StaffRole, StaffPermissions } from '../../types';
+import React, { useState, useEffect } from 'react';
+import { Language, StaffUser, StaffRole, StaffPermissions, Phlebotomist } from '../../types';
 import { 
   Users, 
   ShieldCheck, 
@@ -25,22 +25,42 @@ import {
   RotateCcw,
   Sliders,
   BadgePercent,
-  MapPin
+  MapPin,
+  Syringe,
+  Star,
+  Bike,
+  Send,
+  Plus
 } from 'lucide-react';
-import { ROLE_DEFAULT_PERMISSIONS, DEFAULT_STAFF_USERS, POPULAR_AREAS } from '../../services/dataStorage';
+import { 
+  ROLE_DEFAULT_PERMISSIONS, 
+  DEFAULT_STAFF_USERS, 
+  POPULAR_AREAS,
+  getStoredPhlebotomists,
+  saveStoredPhlebotomists,
+  getWhatsAppUrl
+} from '../../services/dataStorage';
+import { 
+  savePhlebotomistsToFirestore, 
+  subscribeToPhlebotomists 
+} from '../../services/firebase';
 
 interface AdminStaffUsersProps {
   lang: Language;
   staffUsers: StaffUser[];
   onUpdateStaffUsers: (users: StaffUser[]) => void;
   showToast: (msg: string) => void;
+  phlebotomists?: Phlebotomist[];
+  onUpdatePhlebotomists?: (phlebotomists: Phlebotomist[]) => void;
 }
 
 export const AdminStaffUsers: React.FC<AdminStaffUsersProps> = ({
   lang,
   staffUsers,
   onUpdateStaffUsers,
-  showToast
+  showToast,
+  phlebotomists: initialPhlebs,
+  onUpdatePhlebotomists
 }) => {
   const isBn = lang === 'bn';
   const [filterRole, setFilterRole] = useState<StaffRole | 'all'>('all');
@@ -60,6 +80,128 @@ export const AdminStaffUsers: React.FC<AdminStaffUsersProps> = ({
   const [assignedArea, setAssignedArea] = useState<string>('All Areas');
   const [isActive, setIsActive] = useState(true);
   const [permissions, setPermissions] = useState<StaffPermissions>(ROLE_DEFAULT_PERMISSIONS.phlebotomist);
+
+  // Phlebotomists Roster State
+  const [phlebList, setPhlebList] = useState<Phlebotomist[]>(() => {
+    if (initialPhlebs && initialPhlebs.length > 0) return initialPhlebs;
+    return getStoredPhlebotomists();
+  });
+
+  useEffect(() => {
+    if (initialPhlebs && initialPhlebs.length > 0) {
+      setPhlebList(initialPhlebs);
+    }
+  }, [initialPhlebs]);
+
+  const handleUpdatePhlebs = (updated: Phlebotomist[]) => {
+    setPhlebList(updated);
+    saveStoredPhlebotomists(updated);
+    if (onUpdatePhlebotomists) {
+      onUpdatePhlebotomists(updated);
+    }
+    savePhlebotomistsToFirestore(updated).catch(() => {});
+  };
+
+  const handleTogglePhlebAvailability = (id: string) => {
+    const updated = phlebList.map(p => p.id === id ? { ...p, isAvailable: !p.isAvailable } : p);
+    handleUpdatePhlebs(updated);
+    showToast(isBn ? 'ফ্লেবোটোমিস্টের ডিউটি স্ট্যাটাস পরিবর্তন করা হয়েছে!' : 'Phlebotomist duty status toggled!');
+  };
+
+  const handleDeletePhleb = (id: string, phlebName: string) => {
+    if (window.confirm(isBn ? `আপনি কি নিশ্চিত যে "${phlebName}" ফ্লেবোটোমিস্ট কার্ডটি মুছে ফেলতে চান?` : `Are you sure you want to delete phlebotomist "${phlebName}"?`)) {
+      const updated = phlebList.filter(p => p.id !== id);
+      handleUpdatePhlebs(updated);
+      showToast(isBn ? 'ফ্লেবোটোমিস্ট কার্ড সফলভাবে মুছে ফেলা হয়েছে!' : 'Phlebotomist removed!');
+    }
+  };
+
+  // Phlebotomist Form Modal state
+  const [isPhlebModalOpen, setIsPhlebModalOpen] = useState(false);
+  const [editingPhleb, setEditingPhleb] = useState<Phlebotomist | null>(null);
+  const [pName, setPName] = useState('');
+  const [pPhone, setPPhone] = useState('');
+  const [pArea, setPArea] = useState('');
+  const [pVehicle, setPVehicle] = useState<'bike' | 'bicycle' | 'public' | 'other'>('bike');
+  const [pExperience, setPExperience] = useState<number>(3);
+  const [pCertifications, setPCertifications] = useState('');
+  const [pIsAvailable, setPIsAvailable] = useState(true);
+  const [pNotes, setPNotes] = useState('');
+
+  const handleOpenAddPhlebModal = () => {
+    setEditingPhleb(null);
+    setPName('');
+    setPPhone('01700-000000');
+    setPArea('ধানমন্ডি, মোহাম্মদপুর');
+    setPVehicle('bike');
+    setPExperience(3);
+    setPCertifications('Certified Clinical Phlebotomist, Medical Technologist (Lab)');
+    setPIsAvailable(true);
+    setPNotes('');
+    setIsPhlebModalOpen(true);
+  };
+
+  const handleOpenEditPhlebModal = (p: Phlebotomist) => {
+    setEditingPhleb(p);
+    setPName(p.name);
+    setPPhone(p.phone);
+    setPArea(p.assignedArea);
+    setPVehicle(p.vehicleType || 'bike');
+    setPExperience(p.experienceYears || 3);
+    setPCertifications(p.certifications || '');
+    setPIsAvailable(p.isAvailable !== false);
+    setPNotes(p.notes || '');
+    setIsPhlebModalOpen(true);
+  };
+
+  const handleSavePhleb = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pName.trim() || !pPhone.trim() || !pArea.trim()) {
+      showToast(isBn ? 'অনুগ্রহ করে আবশ্যক তথ্য পূরণ করুন!' : 'Please fill all required fields!');
+      return;
+    }
+    const cleanPhone = pPhone.replace(/[^0-9]/g, '');
+    if (cleanPhone.length < 11) {
+      showToast(isBn ? 'মোবাইল নম্বরটি কমপক্ষে ১১ ডিজিট হতে হবে!' : 'Phone number must be at least 11 digits!');
+      return;
+    }
+
+    if (editingPhleb) {
+      const updated = phlebList.map(item => item.id === editingPhleb.id ? {
+        ...item,
+        name: pName.trim(),
+        phone: pPhone.trim(),
+        assignedArea: pArea.trim(),
+        vehicleType: pVehicle,
+        experienceYears: Number(pExperience) || 1,
+        certifications: pCertifications.trim() || undefined,
+        isAvailable: pIsAvailable,
+        notes: pNotes.trim() || undefined,
+        updatedAt: new Date().toISOString()
+      } : item);
+      handleUpdatePhlebs(updated);
+      showToast(isBn ? `ফ্লেবোটোমিস্ট "${pName}" আপডেট করা হয়েছে!` : `Phlebotomist "${pName}" updated!`);
+    } else {
+      const newId = `PHLEB-${Math.floor(200 + Math.random() * 800)}`;
+      const newPhleb: Phlebotomist = {
+        id: newId,
+        name: pName.trim(),
+        phone: pPhone.trim(),
+        assignedArea: pArea.trim(),
+        vehicleType: pVehicle,
+        experienceYears: Number(pExperience) || 1,
+        certifications: pCertifications.trim() || undefined,
+        isAvailable: pIsAvailable,
+        totalCollections: 0,
+        rating: 4.9,
+        notes: pNotes.trim() || undefined,
+        createdAt: new Date().toISOString()
+      };
+      handleUpdatePhlebs([newPhleb, ...phlebList]);
+      showToast(isBn ? `নতুন ফ্লেবোটোমিস্ট (${newId}) যোগ করা হয়েছে!` : `New phlebotomist (${newId}) added!`);
+    }
+    setIsPhlebModalOpen(false);
+  };
 
   const handleOpenAddModal = () => {
     setEditingStaff(null);
@@ -330,6 +472,162 @@ export const AdminStaffUsers: React.FC<AdminStaffUsersProps> = ({
           </p>
         </div>
       </div>
+
+      {/* ========================================================= */}
+      {/* PHLEBOTOMIST TEAM CARDS (স্যাম্পল কালেকশন ফ্লেবোটোমিস্ট টিম কার্ড) */}
+      {/* ========================================================= */}
+      {(filterRole === 'all' || filterRole === 'phlebotomist') && (
+        <div className="bg-white p-5 rounded-2xl border border-rose-100 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-2.5">
+              <span className="p-2 bg-rose-50 text-rose-600 rounded-xl">
+                <Syringe size={20} />
+              </span>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base font-bold text-slate-900">
+                    {isBn ? 'স্যাম্পল কালেকশন ফ্লেবোটোমিস্ট টিম কার্ড (Phlebotomists Roster)' : 'Phlebotomist Team & Field Specialist Cards'}
+                  </h2>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700">
+                    {phlebList.length} {isBn ? 'জন ফ্লেবোটোমিস্ট' : 'Phlebotomists'}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {isBn 
+                    ? 'হোম স্যাম্পল কালেকশনে ফিল্ডে সক্রিয় ফ্লেবোটোমিস্টদের কভারেজ এরিয়া, মোবাইল, অন-ডিউটি স্ট্যাটাস ও কালেকশন রেকর্ড' 
+                    : 'Field sample collectors with coverage areas, vehicle, rating, active duty status, and WhatsApp contact'}
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={handleOpenAddPhlebModal}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs self-start sm:self-auto"
+            >
+              <Plus size={14} />
+              <span>{isBn ? '+ নতুন ফ্লেবোটোমিস্ট যোগ' : '+ Add Phlebotomist'}</span>
+            </button>
+          </div>
+
+          {/* Phlebotomist Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {phlebList.map((phleb) => (
+              <div 
+                key={phleb.id}
+                className="bg-gradient-to-b from-white to-slate-50/60 rounded-2xl border border-rose-100/80 hover:border-rose-300 p-4 shadow-2xs hover:shadow-sm transition-all space-y-3 relative group"
+              >
+                {/* Card Header */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center font-bold text-base shrink-0 shadow-2xs">
+                      🩸
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <h3 className="font-bold text-sm text-slate-900 truncate" title={phleb.name}>
+                          {phleb.name}
+                        </h3>
+                        <span className="text-[9px] font-mono px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded">
+                          {phleb.id}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-slate-500 truncate" title={phleb.certifications}>
+                        {phleb.certifications || 'Certified Clinical Phlebotomist'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleTogglePhlebAvailability(phleb.id)}
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold cursor-pointer transition-colors shrink-0 ${
+                      phleb.isAvailable 
+                        ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' 
+                        : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                    }`}
+                    title={isBn ? 'ডিউটি স্ট্যাটাস টগল করুন' : 'Toggle availability'}
+                  >
+                    {phleb.isAvailable ? '🟢 On-Duty' : '⚪ Off-Duty'}
+                  </button>
+                </div>
+
+                {/* Details Box */}
+                <div className="bg-white rounded-xl p-3 border border-slate-100 space-y-1.5 text-[11px]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">{isBn ? 'মোবাইল নম্বর:' : 'Phone:'}</span>
+                    <a href={`tel:${phleb.phone}`} className="font-mono font-bold text-slate-900 hover:text-primary">
+                      📞 {phleb.phone}
+                    </a>
+                  </div>
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="text-slate-500 shrink-0">{isBn ? 'নির্ধারিত এরিয়া:' : 'Coverage Area:'}</span>
+                    <span className="font-semibold text-primary text-right truncate" title={phleb.assignedArea}>
+                      📍 {phleb.assignedArea}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">{isBn ? 'যানবাহন ও অভিজ্ঞতা:' : 'Vehicle & Exp:'}</span>
+                    <span className="font-semibold text-slate-700 capitalize">
+                      {phleb.vehicleType === 'bike' ? '🏍️ Motorcycle' : phleb.vehicleType === 'bicycle' ? '🚲 Bicycle' : '🚌 Public'} • {phleb.experienceYears || 3} yrs
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-100">
+                    <span className="text-slate-500">{isBn ? 'মোট স্যাম্পল কালেকশন:' : 'Collections Done:'}</span>
+                    <span className="font-extrabold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md">
+                      {phleb.totalCollections || 0} টি
+                    </span>
+                  </div>
+                </div>
+
+                {phleb.notes && (
+                  <p className="text-[10px] text-slate-400 italic line-clamp-1">
+                    📌 {phleb.notes}
+                  </p>
+                )}
+
+                {/* Actions Row */}
+                <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                  <div className="flex items-center gap-1.5">
+                    <a
+                      href={getWhatsAppUrl(phleb.phone, isBn ? `হ্যালো ${phleb.name}, eClinic থেকে মেসেজ করছি।` : `Hello ${phleb.name}, contacting from eClinic.`)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-[10px] font-bold transition-colors flex items-center gap-1"
+                    >
+                      <span>💬 WhatsApp</span>
+                    </a>
+                    <a
+                      href={`tel:${phleb.phone}`}
+                      className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[10px] font-semibold transition-colors"
+                    >
+                      📞 Call
+                    </a>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEditPhlebModal(phleb)}
+                      className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
+                      title="Edit Phlebotomist details"
+                    >
+                      <Edit size={13} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeletePhleb(phleb.id, phleb.name)}
+                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer"
+                      title="Delete Phlebotomist"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Filter & Search Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
@@ -745,6 +1043,174 @@ export const AdminStaffUsers: React.FC<AdminStaffUsersProps> = ({
                   className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer"
                 >
                   {isBn ? 'সংরক্ষণ করুন' : 'Save Staff User'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* ADD / EDIT PHLEBOTOMIST MODAL                             */}
+      {/* ========================================================= */}
+      {isPhlebModalOpen && (
+        <div 
+          onClick={() => setIsPhlebModalOpen(false)}
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl overflow-hidden max-w-lg w-full max-h-[92vh] flex flex-col shadow-2xl animate-in zoom-in-95"
+          >
+            <div className="p-4 bg-slate-900 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Syringe size={18} className="text-rose-400" />
+                <h3 className="font-bold text-sm">
+                  {editingPhleb 
+                    ? (isBn ? 'ফ্লেবোটোমিস্ট কার্ড সম্পাদন করুন' : 'Edit Phlebotomist Card') 
+                    : (isBn ? 'নতুন ফ্লেবোটোমিস্ট কার্ড তৈরি করুন' : 'Add New Phlebotomist')}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPhlebModalOpen(false)}
+                className="p-1 text-slate-400 hover:text-white"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSavePhleb} className="p-5 space-y-3.5 overflow-y-auto max-h-[75vh] text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">{isBn ? 'নাম *' : 'Full Name *'}</label>
+                  <input
+                    type="text"
+                    required
+                    value={pName}
+                    onChange={(e) => setPName(e.target.value)}
+                    placeholder="e.g. মোঃ তানভীর হাসান"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">{isBn ? 'মোবাইল নম্বর *' : 'Phone Number *'}</label>
+                  <input
+                    type="tel"
+                    required
+                    value={pPhone}
+                    onChange={(e) => setPPhone(e.target.value)}
+                    placeholder="01711223344"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  {isBn ? 'নির্ধারিত কভারেজ এরিয়া *' : 'Assigned Coverage Area *'}
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={pArea}
+                  onChange={(e) => setPArea(e.target.value)}
+                  placeholder="ধানমন্ডি, মোহাম্মদপুর, লালমাটিয়া"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none"
+                />
+                <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                  <span className="text-[10px] text-slate-400 font-bold mr-1">Quick Add:</span>
+                  {['ধানমন্ডি', 'মিরপুর', 'উত্তরা', 'গুলশান', 'বনানী', 'মোহাম্মদপুর', 'মতিঝিল', 'বাড্ডা'].map(areaName => (
+                    <button
+                      type="button"
+                      key={areaName}
+                      onClick={() => {
+                        if (!pArea.includes(areaName)) {
+                          setPArea(prev => prev ? `${prev}, ${areaName}` : areaName);
+                        }
+                      }}
+                      className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-[10px] font-semibold cursor-pointer"
+                    >
+                      + {areaName}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">{isBn ? 'যানবাহন' : 'Vehicle Type'}</label>
+                  <select
+                    value={pVehicle}
+                    onChange={(e) => setPVehicle(e.target.value as any)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-slate-900 outline-none cursor-pointer"
+                  >
+                    <option value="bike">🏍️ Motorcycle / Bike</option>
+                    <option value="bicycle">🚲 Bicycle</option>
+                    <option value="public">🚌 Public Transport</option>
+                    <option value="other">🚶 Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">{isBn ? 'অভিজ্ঞতা (বছর)' : 'Experience (Years)'}</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="30"
+                    value={pExperience}
+                    onChange={(e) => setPExperience(Number(e.target.value))}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">{isBn ? 'ডিগ্রি / সার্টিফিকেশন' : 'Certifications'}</label>
+                <input
+                  type="text"
+                  value={pCertifications}
+                  onChange={(e) => setPCertifications(e.target.value)}
+                  placeholder="e.g. Diploma in Medical Technology (Lab)"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">{isBn ? 'নোট বা মন্তব্য' : 'Notes / Remarks'}</label>
+                <textarea
+                  rows={2}
+                  value={pNotes}
+                  onChange={(e) => setPNotes(e.target.value)}
+                  placeholder="e.g. পেডিয়াট্রিক স্যাম্পল কালেকশনে বিশেষ অভিজ্ঞতা..."
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none text-xs"
+                />
+              </div>
+
+              <label className="flex items-center gap-2 p-2.5 bg-slate-50 border border-slate-100 rounded-xl cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={pIsAvailable}
+                  onChange={(e) => setPIsAvailable(e.target.checked)}
+                  className="rounded text-rose-600 focus:ring-rose-500 cursor-pointer"
+                />
+                <span className="font-bold text-slate-800">
+                  {isBn ? 'স্যাম্পল কালেকশনের জন্য প্রস্তুত (অন-ডিউটি)' : 'Available for Home Sample Collections (On-Duty)'}
+                </span>
+              </label>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsPhlebModalOpen(false)}
+                  className="px-4 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  {isBn ? 'বাতিল' : 'Cancel'}
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-sm transition-colors"
+                >
+                  {editingPhleb ? (isBn ? 'আপডেট করুন' : 'Update') : (isBn ? 'যোগ করুন' : 'Save')}
                 </button>
               </div>
             </form>

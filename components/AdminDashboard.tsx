@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Language, BookingHistoryItem, TestPackage, HealthPackage, LabPartner, BookingStatus, SiteSettings, ServiceItem, CategoryItem, PatientUser, StaffUser, StaffRole, StaffPermissions, Doctor, DoctorAppointment, EPrescription, DoctorAtHomeBooking } from '../types';
+import { Language, BookingHistoryItem, TestPackage, HealthPackage, LabPartner, BookingStatus, SiteSettings, ServiceItem, CategoryItem, PatientUser, StaffUser, StaffRole, StaffPermissions, Doctor, DoctorAppointment, EPrescription, DoctorAtHomeBooking, Phlebotomist } from '../types';
 import { TRANSLATIONS } from '../translations';
 import { 
   LayoutDashboard, 
@@ -12,20 +12,20 @@ import {
   ChevronRight, 
   Check, 
   Globe, 
-  ArrowLeft,
-  Sparkles,
-  ShieldCheck,
-  ShieldAlert,
-  Layers,
-  FileEdit,
-  Tag,
-  BarChart3,
-  CalendarClock,
-  UserCheck,
-  Lock,
-  CreditCard,
-  Stethoscope,
-  Home
+  ArrowLeft, 
+  Sparkles, 
+  ShieldCheck, 
+  ShieldAlert, 
+  Layers, 
+  FileEdit, 
+  Tag, 
+  BarChart3, 
+  CalendarClock, 
+  UserCheck, 
+  Lock, 
+  CreditCard, 
+  Stethoscope, 
+  Home 
 } from 'lucide-react';
 import { Button } from './Button';
 import { 
@@ -41,8 +41,15 @@ import {
   setStoredDoctors,
   getStoredDoctorAtHomeBookings,
   saveStoredDoctorAtHomeBookings,
-  saveAdminTestOverride
+  saveAdminTestOverride,
+  getStoredPhlebotomists,
+  saveStoredPhlebotomists
 } from '../services/dataStorage';
+import { 
+  savePhlebotomistsToFirestore, 
+  subscribeToPhlebotomists,
+  saveBookingToFirestore
+} from '../services/firebase';
 import { getLabs, getTests } from '../constants';
 
 // Modular Admin Sub-components
@@ -196,6 +203,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const handleUpdateStaffUsers = (newUsers: StaffUser[]) => {
     setStaffUsers(newUsers);
     saveStoredStaffUsers(newUsers);
+  };
+
+  // Phlebotomists State & Sync
+  const [phlebotomists, setPhlebotomists] = useState<Phlebotomist[]>(getStoredPhlebotomists);
+
+  useEffect(() => {
+    try {
+      const unsub = subscribeToPhlebotomists((livePhlebs) => {
+        if (livePhlebs && livePhlebs.length > 0) {
+          setPhlebotomists(livePhlebs);
+          saveStoredPhlebotomists(livePhlebs);
+        }
+      });
+      return () => unsub();
+    } catch {
+      // Handled quietly
+    }
+  }, []);
+
+  const handleUpdatePhlebotomists = (updatedPhlebs: Phlebotomist[]) => {
+    setPhlebotomists(updatedPhlebs);
+    saveStoredPhlebotomists(updatedPhlebs);
+    savePhlebotomistsToFirestore(updatedPhlebs).catch(() => {});
   };
 
   // Date and Slot Configuration State
@@ -1100,6 +1130,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               onOpenEditOrder={handleOpenEditOrder}
               onOpenAddOrder={handleOpenAddOrder}
               onOpenDeleteOrder={(order) => setDeleteTarget({ type: 'order', id: order.id, name: `Order #${order.id} (${order.customerName || 'Patient'})` })}
+              phlebotomists={phlebotomists}
+              onUpdatePhlebotomists={handleUpdatePhlebotomists}
+              onUpdateBookings={onUpdateBookings}
+              showToast={showToast}
             />
           )}
 
@@ -1208,6 +1242,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               staffUsers={staffUsers}
               onUpdateStaffUsers={handleUpdateStaffUsers}
               showToast={showToast}
+              phlebotomists={phlebotomists}
+              onUpdatePhlebotomists={handleUpdatePhlebotomists}
             />
           )}
 
@@ -1355,6 +1391,33 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         order={selectedOrderForDetails}
         onClose={() => setSelectedOrderForDetails(null)}
         onUpdateStatus={handleUpdateOrderStatus}
+        phlebotomists={phlebotomists}
+        onAssignPhlebotomist={(orderId, phleb, notes) => {
+          const updated = bookings.map(b => {
+            if (b.id === orderId) {
+              const updatedItem: BookingHistoryItem = {
+                ...b,
+                assignedPhlebotomistId: phleb.id,
+                assignedPhlebotomistName: phleb.name,
+                assignedPhlebotomistPhone: phleb.phone,
+                assignedPhlebotomistAt: new Date().toISOString(),
+                status: b.status === 'pending' ? 'confirmed' : b.status,
+                notes: notes ? (b.notes ? `${b.notes}\n[Phleb Note]: ${notes}` : notes) : b.notes
+              };
+              saveBookingToFirestore(updatedItem).catch(() => {});
+              return updatedItem;
+            }
+            return b;
+          });
+          onUpdateBookings(updated);
+          const target = updated.find(b => b.id === orderId);
+          if (target) {
+            setSelectedOrderForDetails(target);
+          }
+          const updatedPhlebs = phlebotomists.map(p => p.id === phleb.id ? { ...p, totalCollections: (p.totalCollections || 0) + 1 } : p);
+          handleUpdatePhlebotomists(updatedPhlebs);
+          showToast(lang === 'bn' ? `${phleb.name} কে সফলভাবে অর্ডারে অ্যাসাইন করা হয়েছে!` : `${phleb.name} assigned to order!`);
+        }}
       />
 
 

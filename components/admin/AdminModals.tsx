@@ -1,8 +1,15 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { TestPackage, HealthPackage, LabPartner, BookingHistoryItem, BookingStatus, Language, ServiceItem, CategoryItem } from '../../types';
+import { TestPackage, HealthPackage, LabPartner, BookingHistoryItem, BookingStatus, Language, ServiceItem, CategoryItem, Phlebotomist } from '../../types';
 import { TRANSLATIONS } from '../../translations';
 import { generateUniqueOrderId, formatOrderId, calculateAccessoriesFee } from '../BookingModal';
-import { getStoredDateSlotConfig, DEFAULT_TIME_SLOTS, getStoredStaffUsers } from '../../services/dataStorage';
+import { 
+  getStoredDateSlotConfig, 
+  DEFAULT_TIME_SLOTS, 
+  getStoredStaffUsers,
+  getStoredPhlebotomists,
+  generatePhlebotomistDispatchWhatsAppText,
+  getWhatsAppUrl
+} from '../../services/dataStorage';
 import { LabLogo } from '../LabLogo';
 import { 
   X, 
@@ -42,7 +49,8 @@ import {
   Upload,
   ImageIcon,
   RotateCcw,
-  ArrowDownAZ
+  ArrowDownAZ,
+  Syringe
 } from 'lucide-react';
 import { printOrDownloadInvoice, resolveOrderCollectionFee } from '../../services/invoiceService';
 import { getTests } from '../../constants';
@@ -2677,13 +2685,17 @@ interface OrderDetailsModalProps {
   order: BookingHistoryItem | null;
   onClose: () => void;
   onUpdateStatus: (orderId: string, status: BookingStatus) => void;
+  phlebotomists?: Phlebotomist[];
+  onAssignPhlebotomist?: (orderId: string, phleb: Phlebotomist, notes?: string) => void;
 }
 
 export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
   lang,
   order,
   onClose,
-  onUpdateStatus
+  onUpdateStatus,
+  phlebotomists,
+  onAssignPhlebotomist
 }) => {
   if (!order) return null;
 
@@ -2838,6 +2850,83 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
               </div>
             );
           })()}
+
+          {/* Assigned Phlebotomist & Quick Dispatch */}
+          <div className="p-3 bg-rose-50/60 border border-rose-200/80 rounded-xl space-y-2 print:hidden">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-rose-800 uppercase font-bold flex items-center gap-1">
+                <Syringe size={12} className="text-rose-600" />
+                <span>{lang === 'bn' ? 'হোম স্যাম্পল কালেকশন ফ্লেবোটোমিস্ট' : 'Assigned Home Phlebotomist'}</span>
+              </span>
+              {order.assignedPhlebotomistName ? (
+                <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.2 rounded-full">
+                  ✓ {lang === 'bn' ? 'অ্যাসাইনড' : 'Assigned'}
+                </span>
+              ) : (
+                <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.2 rounded-full">
+                  ⏳ {lang === 'bn' ? 'অ্যাসাইন বাকি' : 'Pending Assignment'}
+                </span>
+              )}
+            </div>
+
+            {order.assignedPhlebotomistName ? (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 border-t border-rose-100">
+                <div>
+                  <span className="font-bold text-slate-900 block text-xs">{order.assignedPhlebotomistName}</span>
+                  <span className="text-slate-500 font-mono text-[11px]">📞 {order.assignedPhlebotomistPhone || 'No Phone'}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <a
+                    href={getWhatsAppUrl(order.assignedPhlebotomistPhone, generatePhlebotomistDispatchWhatsAppText(order, {
+                      id: order.assignedPhlebotomistId || 'PHLEB',
+                      name: order.assignedPhlebotomistName,
+                      phone: order.assignedPhlebotomistPhone || '01822334455',
+                      assignedArea: 'Dhaka',
+                      isAvailable: true
+                    }, order.notes))}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-bold transition-colors flex items-center gap-1 shadow-2xs cursor-pointer"
+                  >
+                    <span>🟢 WhatsApp Dispatch</span>
+                  </a>
+                  {order.assignedPhlebotomistPhone && (
+                    <a
+                      href={`tel:${order.assignedPhlebotomistPhone}`}
+                      className="px-2 py-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-[10px] font-bold transition-colors"
+                    >
+                      📞 Call
+                    </a>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 border-t border-rose-100">
+                <span className="text-slate-500 text-[11px] italic">
+                  {lang === 'bn' ? 'স্যাম্পল সংগ্রহের জন্য এখনো কাউকে নির্ধারণ করা হয়নি।' : 'No phlebotomist assigned to collect sample yet.'}
+                </span>
+                {onAssignPhlebotomist && (
+                  <select
+                    defaultValue=""
+                    onChange={(e) => {
+                      if (!e.target.value) return;
+                      const phlebs = phlebotomists || getStoredPhlebotomists();
+                      const p = phlebs.find(item => item.id === e.target.value);
+                      if (p) onAssignPhlebotomist(order.id, p);
+                    }}
+                    className="text-[11px] font-bold px-2 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg outline-none cursor-pointer"
+                  >
+                    <option value="" disabled>{lang === 'bn' ? '+ ফ্লেবোটোমিস্ট অ্যাসাইন' : '+ Assign Phlebotomist'}</option>
+                    {(phlebotomists || getStoredPhlebotomists()).map(p => (
+                      <option key={p.id} value={p.id} className="bg-white text-slate-800">
+                        {p.name} ({p.assignedArea.slice(0, 16)}...)
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Quick Status & Assigned Staff */}
           <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 print:hidden">

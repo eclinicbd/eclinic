@@ -43,7 +43,8 @@ import {
   DateSlotConfig,
   Doctor,
   DoctorAtHomeBooking,
-  HomeVisitDoctor
+  HomeVisitDoctor,
+  Phlebotomist
 } from '../types';
 import { cleanBrandText } from './dataStorage';
 import { sendPatientRegistrationNotificationEmail } from './emailNotificationService';
@@ -1096,6 +1097,42 @@ export const subscribeToHomeVisitDoctors = (callback: (doctors: HomeVisitDoctor[
     return () => {};
   }
 };
+
+/**
+ * Phlebotomists Roster (স্যাম্পল কালেকশন ফ্লেবোটোমিস্টদের তালিকা) Cloud Firestore Sync
+ */
+export const savePhlebotomistsToFirestore = async (phlebotomists: Phlebotomist[]): Promise<boolean> => {
+  try {
+    const phlebDoc = doc(db, 'settings', 'phlebotomists_list');
+    await setDoc(phlebDoc, cleanFirestoreData({
+      items: phlebotomists,
+      updatedAt: new Date().toISOString()
+    }), { merge: true });
+    return true;
+  } catch (error) {
+    console.error("Error saving Phlebotomists to Firestore:", error);
+    return false;
+  }
+};
+
+export const subscribeToPhlebotomists = (callback: (phlebotomists: Phlebotomist[]) => void) => {
+  try {
+    const phlebDoc = doc(db, 'settings', 'phlebotomists_list');
+    return onSnapshot(phlebDoc, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        if (data && Array.isArray(data.items)) {
+          callback(data.items as Phlebotomist[]);
+        }
+      }
+    }, (_error) => {
+      // Handled quietly
+    });
+  } catch (_error) {
+    return () => {};
+  }
+};
+
 
 
 
