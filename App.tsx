@@ -27,7 +27,9 @@ import {
   saveStoredPatients,
   getIsAdminSessionActive,
   setAdminSessionActive,
-  cleanBrandText
+  cleanBrandText,
+  getAdminTestOverrides,
+  saveAdminTestOverride
 } from './services/dataStorage';
 import { 
   auth, 
@@ -582,10 +584,19 @@ export default function App() {
 
         const storedList = getStoredTests(language);
         const storedMap = new Map(storedList.map(t => [String(t.id), t]));
+        const overrides = getAdminTestOverrides();
 
-        // Merge live tests with locally edited tests to prevent stale Firestore snapshots from rolling back admin edits
+        // Merge live tests with locally edited tests and admin overrides to prevent stale Firestore snapshots from rolling back admin edits
         const mergedLive = liveTests.map(liveItem => {
           const strId = String(liveItem.id);
+          const overrideItem = overrides[strId];
+          if (overrideItem) {
+            return {
+              ...liveItem,
+              ...overrideItem,
+              id: strId
+            };
+          }
           const localItem = storedMap.get(strId);
           if (localItem) {
             const localItemTime = localItem.updatedAt ? new Date(localItem.updatedAt).getTime() : localTimestamp;

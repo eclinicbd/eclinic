@@ -40,7 +40,8 @@ import {
   getStoredDoctors,
   setStoredDoctors,
   getStoredDoctorAtHomeBookings,
-  saveStoredDoctorAtHomeBookings
+  saveStoredDoctorAtHomeBookings,
+  saveAdminTestOverride
 } from '../services/dataStorage';
 import { getLabs, getTests } from '../constants';
 
@@ -368,8 +369,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
     const testWithTimestamp: TestPackage = {
       ...testToSave,
+      id: String(testToSave.id),
       updatedAt: new Date().toISOString()
     };
+
+    saveAdminTestOverride(testWithTimestamp);
 
     if (editingTest) {
       const updated = tests.map(t => String(t.id) === String(testWithTimestamp.id) ? testWithTimestamp : t);
@@ -477,7 +481,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         const newSelling = Math.max(0, currentSelling + delta);
         const currentOrig = t.originalPriceByLab?.[labId] ?? t.originalPrice ?? currentSelling;
         const newOrig = Math.max(newSelling, currentOrig);
-        return {
+        const updatedItem = {
           ...t,
           priceByLab: {
             ...(t.priceByLab || {}),
@@ -486,8 +490,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           originalPriceByLab: {
             ...(t.originalPriceByLab || {}),
             [labId]: newOrig
-          }
+          },
+          updatedAt: new Date().toISOString()
         };
+        saveAdminTestOverride(updatedItem);
+        return updatedItem;
       }
       return t;
     });

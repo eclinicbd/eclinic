@@ -603,11 +603,37 @@ const INITIAL_BOOKINGS: BookingHistoryItem[] = [
   }
 ];
 
+export const getAdminTestOverrides = (): Record<string, Partial<TestPackage>> => {
+  try {
+    const raw = localStorage.getItem('labhome_admin_test_overrides_v2');
+    if (raw) return JSON.parse(raw);
+  } catch (e) {
+    console.error("Error reading admin test overrides:", e);
+  }
+  return {};
+};
+
+export const saveAdminTestOverride = (test: TestPackage): void => {
+  try {
+    const current = getAdminTestOverrides();
+    current[String(test.id)] = {
+      ...test,
+      id: String(test.id),
+      updatedAt: test.updatedAt || new Date().toISOString()
+    };
+    localStorage.setItem('labhome_admin_test_overrides_v2', JSON.stringify(current));
+  } catch (e) {
+    console.error("Error saving admin test override:", e);
+  }
+};
+
 export const getStoredTests = (lang: Language): TestPackage[] => {
   try {
     const key = lang === 'en' ? STORAGE_KEYS.TESTS_EN : STORAGE_KEYS.TESTS_BN;
     const stored = localStorage.getItem(key);
     const defaultList = getDefaultTests(lang);
+    const overrides = getAdminTestOverrides();
+
     if (stored) {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed) && parsed.length > 0) {
@@ -635,7 +661,20 @@ export const getStoredTests = (lang: Language): TestPackage[] => {
             changed = true;
           }
         }
-        updatedList = deduplicated;
+        
+        // Apply persistent admin overrides
+        updatedList = deduplicated.map(t => {
+          const ov = overrides[String(t.id)];
+          if (ov) {
+            return {
+              ...t,
+              ...ov,
+              id: String(t.id),
+              name: (lang === 'bn' && t.name) ? t.name : (ov.name || t.name)
+            };
+          }
+          return t;
+        });
 
         if (changed) {
           localStorage.setItem(key, JSON.stringify(updatedList));
@@ -643,6 +682,20 @@ export const getStoredTests = (lang: Language): TestPackage[] => {
         return updatedList;
       }
     }
+    
+    // Fallback with overrides applied
+    return defaultList.map(t => {
+      const ov = overrides[String(t.id)];
+      if (ov) {
+        return {
+          ...t,
+          ...ov,
+          id: String(t.id),
+          name: (lang === 'bn' && t.name) ? t.name : (ov.name || t.name)
+        };
+      }
+      return t;
+    });
   } catch (e) {
     console.error("Failed to parse stored tests:", e);
   }
@@ -661,6 +714,11 @@ export const saveStoredTests = (lang: Language, tests: TestPackage[]): void => {
     localStorage.setItem(key, JSON.stringify(cleanTests));
     localStorage.setItem(`labhome_tests_updated_at_${lang}`, nowIso);
     
+    // Save each test into persistent admin overrides
+    cleanTests.forEach(test => {
+      saveAdminTestOverride(test);
+    });
+
     // Also sync test IDs, prices, lab matrix, categories, and status to other language
     const otherLang = lang === 'en' ? 'bn' : 'en';
     const otherKey = otherLang === 'en' ? STORAGE_KEYS.TESTS_EN : STORAGE_KEYS.TESTS_BN;

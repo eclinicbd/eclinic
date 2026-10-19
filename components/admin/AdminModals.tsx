@@ -719,6 +719,37 @@ export const TestFormModal: React.FC<TestModalProps> = ({
                   {pct}% {lang === 'bn' ? 'ছাড়' : 'Off'}
                 </button>
               ))}
+
+              {/* Quick 1-click sync across all diagnostic centers */}
+              <button
+                type="button"
+                onClick={() => {
+                  const rate = Number(formData.price) || Number(formData.originalPrice) || 0;
+                  const updatedSelling: Record<string, number> = {};
+                  const updatedOriginal: Record<string, number> = {};
+                  labs.forEach(l => {
+                    updatedSelling[l.id] = rate;
+                    updatedOriginal[l.id] = rate;
+                  });
+                  setCustomizedLabIds(new Set());
+                  setSyncLabsWithBasePrice(true);
+                  setFormData(prev => ({
+                    ...prev,
+                    price: rate,
+                    originalPrice: rate,
+                    discountPercent: 0,
+                    priceByLab: updatedSelling,
+                    originalPriceByLab: updatedOriginal
+                  }));
+                  setApplySuccessMsg(lang === 'bn' ? `সকল ডায়াগনস্টিক সেন্টারে সরাসরি ৳${rate} রেট সেট করা হয়েছে!` : `Set ৳${rate} rate across all partner diagnostic centers!`);
+                  setTimeout(() => setApplySuccessMsg(null), 3500);
+                }}
+                className="ml-auto px-2.5 py-0.5 rounded-lg text-[10px] font-bold bg-sky-600 hover:bg-sky-700 text-white transition-all border border-sky-600 flex items-center gap-1 cursor-pointer shadow-xs"
+                title={lang === 'bn' ? `সকল সেন্টারে সরাসরি এই মূল্য সেট করুন` : `Sync all diagnostic centers to this price`}
+              >
+                <Building2 size={11} />
+                <span>{lang === 'bn' ? `সকল সেন্টারে ৳${formData.price || formData.originalPrice || 0} সেট করুন` : `Apply ৳${formData.price || formData.originalPrice || 0} to All Centers`}</span>
+              </button>
             </div>
 
             {/* Live Discount Calculator Preview */}
