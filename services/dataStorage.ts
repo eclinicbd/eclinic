@@ -879,21 +879,58 @@ export const saveStoredLabs = (lang: Language, labs: LabPartner[]): void => {
   }
 };
 
+const DELETED_BOOKINGS_KEY = 'eclinic_deleted_bookings_v2';
+
+export const getDeletedBookingIds = (): Set<string> => {
+  try {
+    const raw = localStorage.getItem(DELETED_BOOKINGS_KEY);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) return new Set(arr);
+    }
+  } catch {}
+  return new Set();
+};
+
+export const markBookingAsDeleted = (id: string): void => {
+  try {
+    const set = getDeletedBookingIds();
+    const rawId = String(id).trim();
+    const cleanId = rawId.replace(/^#?EC-?/i, '').replace(/^#?BK-?/i, '').replace(/^#?LH-?/i, '').replace(/^#/, '');
+    set.add(rawId);
+    if (cleanId) {
+      set.add(cleanId);
+      set.add(`LH-${cleanId}`);
+      set.add(`#LH-${cleanId}`);
+      set.add(`EC-${cleanId}`);
+    }
+    if (rawId.startsWith('#')) {
+      set.add(rawId.slice(1));
+    } else {
+      set.add(`#${rawId}`);
+    }
+    localStorage.setItem(DELETED_BOOKINGS_KEY, JSON.stringify(Array.from(set)));
+  } catch {}
+};
+
 export const getStoredBookings = (): BookingHistoryItem[] => {
   try {
     const stored = localStorage.getItem(STORAGE_KEYS.BOOKINGS);
-    if (stored) {
+    if (stored !== null) {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed)) {
+        const deletedIds = getDeletedBookingIds();
         const seen = new Set<string>();
         const deduplicated: BookingHistoryItem[] = [];
         for (const item of parsed) {
           if (item && item.id) {
-            const cleanId = String(item.id).replace(/^#?EC-?/i, '').replace(/^#?BK-?/i, '').replace(/^#/, '');
-            const sanitizedItem = { ...item, id: cleanId };
-            if (!seen.has(cleanId)) {
-              seen.add(cleanId);
-              deduplicated.push(sanitizedItem);
+            const rawId = String(item.id);
+            if (deletedIds.has(rawId) || deletedIds.has(rawId.replace(/^#?LH-?/i, ''))) {
+              continue;
+            }
+            if (!seen.has(rawId)) {
+              seen.add(rawId);
+              deduplicated.push(item);
             }
           }
         }
@@ -903,14 +940,17 @@ export const getStoredBookings = (): BookingHistoryItem[] => {
   } catch (e) {
     console.error("Failed to parse stored bookings:", e);
   }
-  return INITIAL_BOOKINGS;
+  const deletedIds = getDeletedBookingIds();
+  return INITIAL_BOOKINGS.filter(b => !deletedIds.has(b.id));
 };
 
 export const saveStoredBookings = (bookings: BookingHistoryItem[]): void => {
   try {
+    const deletedIds = getDeletedBookingIds();
     const seen = new Set<string>();
     const deduplicated = bookings.filter(item => {
       if (!item || !item.id || seen.has(item.id)) return false;
+      if (deletedIds.has(item.id) || deletedIds.has(item.id.replace(/^#?LH-?/i, ''))) return false;
       seen.add(item.id);
       return true;
     });

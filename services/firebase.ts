@@ -81,39 +81,15 @@ export { onAuthStateChanged };
 
 /**
  * Circuit Breaker for Firestore Quota Limit Exceeded (Resource Exhausted)
- * Automatically halts write attempts if the daily quota on Google Cloud has been exhausted,
- * preventing Firestore SDK from continuously failing and spamming exponential backoff logs.
+ * Safely handles free-tier write quotas without blocking writes or crashing the application.
  */
 const QUOTA_KEY = 'eclinic_firestore_quota_exhausted';
-let isFirestoreQuotaExhausted = false;
-let quotaExhaustedUntil: number = 0;
 
+// Proactively clear any stale quota lockout keys from previous sessions
 try {
-  const saved = localStorage.getItem(QUOTA_KEY) || localStorage.getItem('labhome_firestore_quota_exhausted');
-  if (saved && Number(saved) > Date.now()) {
-    isFirestoreQuotaExhausted = true;
-    quotaExhaustedUntil = Number(saved);
-  }
+  localStorage.removeItem(QUOTA_KEY);
+  localStorage.removeItem('labhome_firestore_quota_exhausted');
 } catch {}
-
-export const isQuotaExhausted = (): boolean => {
-  if (isFirestoreQuotaExhausted) {
-    if (Date.now() < quotaExhaustedUntil) {
-      return true;
-    }
-    isFirestoreQuotaExhausted = false;
-  }
-  return false;
-};
-
-export const markQuotaExhausted = () => {
-  isFirestoreQuotaExhausted = true;
-  // Hold back further write attempts for 12 hours or until daily quota reset
-  quotaExhaustedUntil = Date.now() + 12 * 60 * 60 * 1000;
-  try {
-    localStorage.setItem(QUOTA_KEY, String(quotaExhaustedUntil));
-  } catch {}
-};
 
 // Suppress internal Firestore quota/retry noise if free tier write limit is reached
 if (typeof window !== 'undefined') {
@@ -127,7 +103,6 @@ if (typeof window !== 'undefined') {
       fullMsg.includes('Using maximum backoff delay') ||
       (fullMsg.includes('@firebase/firestore') && fullMsg.includes('quota'))
     ) {
-      markQuotaExhausted();
       return; // Handled smoothly - app seamlessly uses local storage fallback
     }
     originalConsoleError.apply(console, args);
@@ -151,9 +126,6 @@ if (typeof window !== 'undefined') {
  * Executes a Firestore write operation safely with quota protection
  */
 export const safeFirestoreWrite = async (operation: () => Promise<any>): Promise<boolean> => {
-  if (isQuotaExhausted()) {
-    return false;
-  }
   try {
     await operation();
     return true;
@@ -166,10 +138,10 @@ export const safeFirestoreWrite = async (operation: () => Promise<any>): Promise
       errMsg.includes('resource-exhausted') ||
       errMsg.includes('Free daily write units')
     ) {
-      markQuotaExhausted();
+      // Gracefully return false without throwing or breaking UI
       return false;
     }
-    console.error("Firestore write error:", error);
+    console.warn("Firestore write notice:", error?.message || error);
     return false;
   }
 };
@@ -510,8 +482,25 @@ export const saveBookingToFirestore = async (booking: BookingHistoryItem): Promi
  */
 export const deleteBookingFromFirestore = async (bookingId: string): Promise<boolean> => {
   return safeFirestoreWrite(async () => {
-    const bookingDoc = doc(db, 'bookings', bookingId);
-    await deleteDoc(bookingDoc);
+    const rawId = String(bookingId).trim();
+    const cleanId = rawId.replace(/^#?EC-?/i, '').replace(/^#?BK-?/i, '').replace(/^#?LH-?/i, '').replace(/^#/, '');
+    
+    // Delete raw ID and possible normalized variants in Firestore
+    const idsToDelete = new Set<string>([rawId]);
+    if (cleanId) {
+      idsToDelete.add(cleanId);
+      idsToDelete.add(`LH-${cleanId}`);
+      idsToDelete.add(`#LH-${cleanId}`);
+      idsToDelete.add(`EC-${cleanId}`);
+    }
+    if (rawId.startsWith('#')) {
+      idsToDelete.add(rawId.slice(1));
+    } else {
+      idsToDelete.add(`#${rawId}`);
+    }
+
+    const deletePromises = Array.from(idsToDelete).map(id => deleteDoc(doc(db, 'bookings', id)).catch(() => {}));
+    await Promise.all(deletePromises);
   });
 };
 
@@ -521,34 +510,37 @@ export const deleteBookingFromFirestore = async (bookingId: string): Promise<boo
 export const subscribeToBookings = (callback: (bookings: BookingHistoryItem[]) => void) => {
   try {
     const bookingsCol = collection(db, 'bookings');
-    const q = query(bookingsCol, orderBy('createdAt', 'desc'));
     
-    return onSnapshot(q, (snapshot) => {
+    return onSnapshot(bookingsCol, (snapshot) => {
       const bookings: BookingHistoryItem[] = [];
       const seenIds = new Set<string>();
 
       snapshot.forEach((docSnap) => {
+        // Skip metadata / settings stored in bookings collection
+        if (docSnap.id === 'doctor_at_home_list') return;
         const data = docSnap.data();
         const finalId = data.id || docSnap.id;
         if (!seenIds.has(finalId)) {
           seenIds.add(finalId);
           bookings.push({
+            ...data,
             id: finalId,
-            customerName: data.customerName,
-            customerPhone: data.customerPhone,
-            customerAddress: data.customerAddress,
-            date: data.date,
-            time: data.time,
-            labId: data.labId,
-            labName: data.labName,
-            testNames: data.testNames || [],
-            totalCost: data.totalCost || 0,
+            customerName: data.customerName || 'Valued Patient',
+            customerPhone: data.customerPhone || '',
+            customerAddress: data.customerAddress || '',
+            date: data.date || '',
+            time: data.time || '',
+            labName: data.labName || '',
+            testNames: Array.isArray(data.testNames) ? data.testNames : [],
+            totalCost: Number(data.totalCost) || 0,
             status: data.status || 'pending',
-            doctorName: data.doctorName,
-            createdAt: data.createdAt
-          });
+            createdAt: data.createdAt || new Date().toISOString()
+          } as BookingHistoryItem);
         }
       });
+
+      // Sort by createdAt descending
+      bookings.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
       callback(bookings);
     }, (_error) => {
       // Offline fallback
@@ -564,33 +556,34 @@ export const subscribeToBookings = (callback: (bookings: BookingHistoryItem[]) =
 export const getBookingsFromFirestore = async (): Promise<BookingHistoryItem[]> => {
   try {
     const bookingsCol = collection(db, 'bookings');
-    const q = query(bookingsCol, orderBy('createdAt', 'desc'));
-    const snapshot = await getDocs(q);
+    const snapshot = await getDocs(bookingsCol);
     const bookings: BookingHistoryItem[] = [];
     const seenIds = new Set<string>();
 
     snapshot.forEach((docSnap) => {
+      if (docSnap.id === 'doctor_at_home_list') return;
       const data = docSnap.data();
       const finalId = data.id || docSnap.id;
       if (!seenIds.has(finalId)) {
         seenIds.add(finalId);
         bookings.push({
+          ...data,
           id: finalId,
-          customerName: data.customerName,
-          customerPhone: data.customerPhone,
-          customerAddress: data.customerAddress,
-          date: data.date,
-          time: data.time,
-          labId: data.labId,
-          labName: data.labName,
-          testNames: data.testNames || [],
-          totalCost: data.totalCost || 0,
+          customerName: data.customerName || 'Valued Patient',
+          customerPhone: data.customerPhone || '',
+          customerAddress: data.customerAddress || '',
+          date: data.date || '',
+          time: data.time || '',
+          labName: data.labName || '',
+          testNames: Array.isArray(data.testNames) ? data.testNames : [],
+          totalCost: Number(data.totalCost) || 0,
           status: data.status || 'pending',
-          doctorName: data.doctorName,
-          createdAt: data.createdAt
-        });
+          createdAt: data.createdAt || new Date().toISOString()
+        } as BookingHistoryItem);
       }
     });
+
+    bookings.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
     return bookings;
   } catch (error) {
     console.error("Error getting bookings:", error);

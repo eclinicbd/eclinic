@@ -29,12 +29,15 @@ import {
   setAdminSessionActive,
   cleanBrandText,
   getAdminTestOverrides,
-  saveAdminTestOverride
+  saveAdminTestOverride,
+  getDeletedBookingIds,
+  markBookingAsDeleted
 } from './services/dataStorage';
 import { 
   auth, 
   onAuthStateChanged, 
   saveBookingToFirestore, 
+  deleteBookingFromFirestore,
   saveUserProfileToFirestore,
   subscribeToBookings, 
   logoutFirebase,
@@ -216,16 +219,45 @@ export default function App() {
   };
 
   const handleNewDoctorAtHomeBooking = (newBooking: DoctorAtHomeBooking) => {
-    const updated = [newBooking, ...doctorAtHomeBookings];
-    handleUpdateDoctorAtHomeBookings(updated);
+    setDoctorAtHomeBookings(prev => {
+      const updated = [newBooking, ...prev.filter(b => b.id !== newBooking.id)];
+      saveStoredDoctorAtHomeBookings(updated);
+      saveDoctorAtHomeBookingsToFirestore(updated);
+      return updated;
+    });
+    if (newBooking.patientName || newBooking.patientPhone) {
+      handleEnsurePatientFromBooking({
+        name: newBooking.patientName,
+        phone: newBooking.patientPhone,
+        address: newBooking.address,
+        gender: newBooking.patientGender,
+        age: newBooking.patientAge
+      });
+    }
   };
 
   // Real-time subscription to Doctor at Home Bookings
   useEffect(() => {
     const unsubscribe = subscribeToDoctorAtHomeBookings((liveBookings) => {
-      if (liveBookings && liveBookings.length > 0) {
-        setDoctorAtHomeBookings(liveBookings);
-        saveStoredDoctorAtHomeBookings(liveBookings);
+      if (Array.isArray(liveBookings) && liveBookings.length > 0) {
+        setDoctorAtHomeBookings(prev => {
+          const seen = new Set<string>();
+          const merged: DoctorAtHomeBooking[] = [];
+          for (const b of liveBookings) {
+            if (b && b.id && !seen.has(b.id)) {
+              seen.add(b.id);
+              merged.push(b);
+            }
+          }
+          for (const b of prev) {
+            if (b && b.id && !seen.has(b.id)) {
+              seen.add(b.id);
+              merged.push(b);
+            }
+          }
+          saveStoredDoctorAtHomeBookings(merged);
+          return merged;
+        });
       }
     });
     return () => unsubscribe();
@@ -433,8 +465,64 @@ export default function App() {
   };
 
   const handleUpdateBookings = (updated: BookingHistoryItem[]) => {
-    setBookings(updated);
-    saveStoredBookings(updated);
+    setBookings(prev => {
+      // Find deleted bookings and delete them from Firestore and deleted blacklist
+      const newIds = new Set(updated.map(b => b.id));
+      prev.filter(b => !newIds.has(b.id)).forEach(del => {
+        markBookingAsDeleted(del.id);
+        deleteBookingFromFirestore(del.id).catch(() => {});
+      });
+      saveStoredBookings(updated);
+      return updated;
+    });
+  };
+
+  const handleEnsurePatientFromBooking = (customer: {
+    name?: string;
+    phone?: string;
+    address?: string;
+    gender?: 'male' | 'female' | 'other';
+    age?: string | number;
+    email?: string;
+  }) => {
+    if (!customer.phone && !customer.name) return;
+    const cleanPhone = (customer.phone || '').trim();
+
+    setPatients(prev => {
+      const existing = prev.find(p => 
+        (cleanPhone && p.phone && p.phone.replace(/[^0-9]/g, '') === cleanPhone.replace(/[^0-9]/g, '')) ||
+        (customer.name && p.name && p.name.trim().toLowerCase() === customer.name.trim().toLowerCase())
+      );
+
+      if (existing) {
+        const updatedPatient: PatientUser = {
+          ...existing,
+          address: existing.address && existing.address !== 'Dhaka' ? existing.address : (customer.address || existing.address || 'Dhaka'),
+          gender: existing.gender || customer.gender || 'male',
+          age: existing.age || customer.age
+        };
+        const next = prev.map(p => p.id === existing.id ? updatedPatient : p);
+        saveStoredPatients(next);
+        saveUserProfileToFirestore(updatedPatient).catch(() => {});
+        return next;
+      }
+
+      const newPatient: PatientUser = {
+        id: `PT-${Date.now().toString().slice(-6)}`,
+        name: customer.name || 'Valued Patient',
+        phone: cleanPhone || '01700000000',
+        email: customer.email,
+        address: customer.address || 'Dhaka, Bangladesh',
+        gender: customer.gender || 'male',
+        age: customer.age,
+        createdAt: new Date().toISOString()
+      };
+
+      const next = [newPatient, ...prev];
+      saveStoredPatients(next);
+      saveUserProfileToFirestore(newPatient).catch(() => {});
+      return next;
+    });
   };
 
   const handleUpdatePatients = (updated: PatientUser[]) => {
@@ -733,21 +821,22 @@ export default function App() {
   // Subscribe to real-time Firestore bookings
   useEffect(() => {
     const unsubscribe = subscribeToBookings((firestoreBookings) => {
-      if (firestoreBookings && firestoreBookings.length > 0) {
+      const deletedIds = getDeletedBookingIds();
+      if (firestoreBookings) {
         setBookings(prev => {
           const seenIds = new Set<string>();
           const deduplicated: BookingHistoryItem[] = [];
           
-          // Prioritize incoming Firestore entries
+          // Prioritize incoming Firestore entries that have not been deleted
           for (const item of firestoreBookings) {
-            if (item && item.id && !seenIds.has(item.id)) {
+            if (item && item.id && !deletedIds.has(item.id) && !deletedIds.has(item.id.replace(/^#?LH-?/i, '')) && !seenIds.has(item.id)) {
               seenIds.add(item.id);
               deduplicated.push(item);
             }
           }
-          // Append any local-only entries that don't match Firestore IDs or same phone+time+date
+          // Append any local-only entries that don't match Firestore IDs and are not deleted
           for (const item of prev) {
-            if (item && item.id && !seenIds.has(item.id)) {
+            if (item && item.id && !deletedIds.has(item.id) && !deletedIds.has(item.id.replace(/^#?LH-?/i, '')) && !seenIds.has(item.id)) {
               seenIds.add(item.id);
               deduplicated.push(item);
             }
@@ -797,6 +886,15 @@ export default function App() {
     });
     // Persist real-time to Firebase Firestore
     saveBookingToFirestore(booking);
+
+    // Auto register or ensure customer appears in Admin Panel Patients list
+    if (booking.customerName || booking.customerPhone) {
+      handleEnsurePatientFromBooking({
+        name: booking.customerName,
+        phone: booking.customerPhone,
+        address: booking.customerAddress
+      });
+    }
 
     // Send automatic notification email to eclinicbd24@gmail.com with Invoice, Schedule & Patient Details
     sendOrderNotificationEmail(booking, language);
