@@ -40,7 +40,8 @@ import {
   getStoredDoctorAtHomeSchedule,
   getDoctorSpecialtyDefaultImage,
   MALE_DOCTOR_VECTOR_ICON,
-  getWhatsAppUrl
+  getWhatsAppUrl,
+  isDoctorAtHomeSlotAvailable
 } from '../services/dataStorage';
 import { printOrDownloadDoctorAtHomeSlip, downloadDoctorAtHomeSlipHtml } from '../services/invoiceService';
 
@@ -286,6 +287,20 @@ export const DoctorAtHomeBookingModal: React.FC<DoctorAtHomeBookingModalProps> =
       return;
     }
     setAppointmentDate(newDateStr);
+
+    // Auto-select valid slot for newly selected date based on 2-hour advance rule
+    const activeSlots = (scheduleConfig.timeSlots || []).filter(s => s.isActive !== false);
+    const allSlots = activeSlots.length > 0 ? activeSlots : TIME_SLOTS;
+    const isCurrentStillValid = allSlots.some(s => 
+      ((isBn ? s.timeBn : s.timeEn) === timeSlot || s.timeBn === timeSlot || s.timeEn === timeSlot) &&
+      isDoctorAtHomeSlotAvailable(newDateStr, s, scheduleConfig.leadTimeHours || 2)
+    );
+    if (!isCurrentStillValid) {
+      const nextAvailable = allSlots.find(s => isDoctorAtHomeSlotAvailable(newDateStr, s, scheduleConfig.leadTimeHours || 2));
+      if (nextAvailable) {
+        setTimeSlot(isBn ? nextAvailable.timeBn : nextAvailable.timeEn);
+      }
+    }
   };
 
   // Holiday checks for selected date
@@ -306,8 +321,9 @@ export const DoctorAtHomeBookingModal: React.FC<DoctorAtHomeBookingModalProps> =
       const firstValidDate = getFirstAvailableWorkingDate(loadedSchedule, 7);
       setAppointmentDate(firstValidDate);
       const activeSlots = (loadedSchedule.timeSlots || []).filter(s => s.isActive !== false);
-      const firstSlot = activeSlots.length > 0 ? activeSlots[0] : TIME_SLOTS[0];
-      setTimeSlot(isBn ? firstSlot.timeBn : firstSlot.timeEn);
+      const allSlots = activeSlots.length > 0 ? activeSlots : TIME_SLOTS;
+      const firstAvailableSlot = allSlots.find(s => isDoctorAtHomeSlotAvailable(firstValidDate, s, loadedSchedule.leadTimeHours || 2)) || allSlots[0];
+      setTimeSlot(isBn ? firstAvailableSlot.timeBn : firstAvailableSlot.timeEn);
 
       setErrorMsg(null);
       setConfirmedBooking(null);
@@ -477,6 +493,18 @@ export const DoctorAtHomeBookingModal: React.FC<DoctorAtHomeBookingModalProps> =
       setErrorMsg(isBn 
         ? `দুঃখিত, নির্বাচিত তারিখে (${appointmentDate}) আমাদের নিয়মিত সিডিউল বন্ধ/ছুটি রয়েছে (${holidayCheck.reasonBn})। ছুটির দিনে বুকিং সম্ভব নয়, অনুগ্রহ করে খোলা কার্যদিবস নির্বাচন করুন।` 
         : `Doctor at Home schedule is closed on this holiday (${holidayCheck.reasonEn}). Please choose an available working day.`);
+      return;
+    }
+
+    // Minimum 2 hours advance notice validation
+    const selectedSlotObj = availableTimeSlots.find(s => 
+      (isBn ? s.timeBn : s.timeEn) === timeSlot || s.timeBn === timeSlot || s.timeEn === timeSlot
+    ) || timeSlot;
+
+    if (!isDoctorAtHomeSlotAvailable(appointmentDate, selectedSlotObj, scheduleConfig.leadTimeHours || 2)) {
+      setErrorMsg(isBn 
+        ? 'ডাক্তার হোম ভিজিট নিশ্চিত করতে নূন্যতম ২ ঘণ্টা আগে স্লট বুকিং করতে হবে। অনুগ্রহ করে পরবর্তী কোনো সময় বা তারিখ নির্বাচন করুন।' 
+        : 'A minimum 2 hours advance notice is required to book a Doctor at Home visit. Please select an upcoming slot or date.');
       return;
     }
 
@@ -1105,27 +1133,68 @@ export const DoctorAtHomeBookingModal: React.FC<DoctorAtHomeBookingModalProps> =
                     </span>
                   </div>
 
+                  {/* 2-Hour Advance Notice Guidance Banner */}
+                  <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50/90 border border-emerald-200/80 rounded-xl text-[11px] text-emerald-900">
+                    <Clock size={14} className="text-emerald-600 shrink-0" />
+                    <span>
+                      {isBn 
+                        ? 'নিয়মাবলী: ডাক্তার হোম ভিজিট নিশ্চিত করতে নূন্যতম ২ ঘণ্টা আগে স্লট বুকিং করতে হবে।' 
+                        : 'Notice: A minimum 2 hours advance notice is required for Doctor at Home visit scheduling.'}
+                    </span>
+                  </div>
+
                   {/* Slot buttons grid */}
                   <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2">
                     {availableTimeSlots.map(s => {
                       const slotVal = isBn ? s.timeBn : s.timeEn;
+                      const isAvailable = isDoctorAtHomeSlotAvailable(appointmentDate, s, scheduleConfig.leadTimeHours || 2);
                       const isSelected = timeSlot === slotVal;
                       return (
                         <button
                           key={s.id}
                           type="button"
-                          onClick={() => setTimeSlot(slotVal)}
-                          className={`p-2.5 rounded-xl text-[11px] font-semibold border transition-all text-center cursor-pointer ${
-                            isSelected
-                              ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm font-bold ring-2 ring-emerald-300'
-                              : 'bg-slate-50/80 text-slate-800 border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/50'
+                          disabled={!isAvailable}
+                          onClick={() => {
+                            if (isAvailable) {
+                              setTimeSlot(slotVal);
+                              setErrorMsg(null);
+                            }
+                          }}
+                          className={`p-2.5 rounded-xl text-[11px] font-semibold border transition-all text-center relative ${
+                            !isAvailable
+                              ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-55'
+                              : isSelected
+                              ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm font-bold ring-2 ring-emerald-300 cursor-pointer'
+                              : 'bg-slate-50/80 text-slate-800 border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/50 cursor-pointer'
                           }`}
                         >
                           <span className="block leading-snug">{slotVal}</span>
+                          {!isAvailable && (
+                            <span className="text-[9.5px] block text-amber-700 font-bold mt-1">
+                              {isBn ? '⚠️ ২ ঘণ্টা আগের নিয়ম' : '⚠️ < 2 hrs'}
+                            </span>
+                          )}
                         </button>
                       );
                     })}
                   </div>
+
+                  {/* Notice if all slots for the day are unavailable */}
+                  {availableTimeSlots.every(s => !isDoctorAtHomeSlotAvailable(appointmentDate, s, scheduleConfig.leadTimeHours || 2)) && (
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs flex items-start gap-2">
+                      <AlertCircle size={15} className="text-amber-600 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-bold">
+                          {isBn ? 'আজকের সকল স্লট বুকিংয়ের সময়সীমা শেষ হয়েছে।' : 'All slots for this date are outside the booking window.'}
+                        </p>
+                        <p className="text-[11px] text-amber-800 mt-0.5">
+                          {isBn 
+                            ? 'ডাক্তার হোম ভিজিটের জন্য নূন্যতম ২ ঘণ্টা পূর্বে স্লট বুক করতে হয়। অনুগ্রহ করে পরবর্তী দিনের তারিখ নির্বাচন করুন।' 
+                            : 'Home visits require at least 2 hours advance notice. Please select tomorrow or an upcoming date.'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 

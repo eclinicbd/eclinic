@@ -1,5 +1,5 @@
 import { BookingHistoryItem, DoctorAtHomeBooking, Language, SiteSettings } from '../types';
-import { getStoredSiteSettings, getStoredTests, getStoredPackages, getStoredLabs } from './dataStorage';
+import { getStoredSiteSettings, getStoredTests, getStoredPackages, getStoredLabs, getStoredPhlebotomists } from './dataStorage';
 
 export const resolveOrderCollectionFee = (
   order: BookingHistoryItem, 
@@ -212,6 +212,34 @@ export const generateInvoiceHtml = (
   const tableFontSize = count > 12 ? '9.5px' : (count > 6 ? '11px' : '12px');
   const sectionMargin = count > 10 ? '5px' : (count > 5 ? '8px' : '11px');
   const cardPadding = count > 10 ? '10px 14px' : (count > 5 ? '16px 20px' : '20px 24px');
+
+  // Phlebotomist details for invoice display
+  const phlebName = order.assignedPhlebotomistName || (order.assignedPhlebotomistId ? getStoredPhlebotomists().find(p => p.id === order.assignedPhlebotomistId)?.name : undefined);
+  const phlebPhone = order.assignedPhlebotomistPhone || (order.assignedPhlebotomistId ? getStoredPhlebotomists().find(p => p.id === order.assignedPhlebotomistId)?.phone : undefined);
+
+  const phlebBannerHtml = phlebName ? `
+    <!-- Assigned Phlebotomist Info Banner -->
+    <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 8px; padding: 7px 12px; margin-bottom: ${sectionMargin}; display: flex; justify-content: space-between; align-items: center;">
+      <div style="display: flex; align-items: center; gap: 9px;">
+        <div style="width: 28px; height: 28px; border-radius: 6px; background: #16a34a; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 900; shrink-0;">
+          🩸
+        </div>
+        <div>
+          <div style="font-size: 11px; font-weight: 800; color: #166534; line-height: 1.2;">
+            ${isBn ? 'অ্যাসাইনকৃত ফ্লেবোটোমিস্ট (Sample Collector):' : 'Assigned Phlebotomist:'} <strong style="color: #14532d; font-size: 12px;">${phlebName}</strong>
+          </div>
+          <div style="font-size: 9.5px; color: #15803d; font-weight: 600; margin-top: 1px;">
+            ${phlebPhone ? `📞 ${isBn ? 'যোগাযোগ:' : 'Contact:'} <strong>${phlebPhone}</strong> • ` : ''}${isBn ? 'নির্ধারিত সময়ে জীবাণুমুক্ত কিট নিয়ে স্যাম্পল কালেকশনের জন্য প্রস্তুত' : 'Designated Certified Medical Phlebotomist'}
+          </div>
+        </div>
+      </div>
+      <div style="text-align: right; white-space: nowrap;">
+        <span style="display: inline-block; font-size: 8.5px; font-weight: 800; text-transform: uppercase; padding: 2px 8px; border-radius: 12px; background: #dcfce7; color: #15803d; border: 1px solid #86efac;">
+          ✓ ${isBn ? 'অ্যাসাইনড' : 'ASSIGNED'}
+        </span>
+      </div>
+    </div>
+  ` : '';
 
   return `
 <!DOCTYPE html>
@@ -643,8 +671,15 @@ export const generateInvoiceHtml = (
         <p>${isBn ? 'তারিখ ও সময়:' : 'Slot:'} ${order.date} (${order.time})</p>
         <span class="sub-text">🕒 ${isBn ? 'ইস্যুর সময়:' : 'Issued At:'} ${issueDate}</span>
         <span class="sub-text">👨‍⚕️ ${isBn ? 'রেফারেল ডক্টর:' : 'Doctor Ref:'} ${order.doctorName || (isBn ? 'সেলফ / নির্দিষ্ট নেই' : 'Self Reference')}</span>
+        ${phlebName ? `
+          <span class="sub-text" style="color: #166534; font-weight: 700; margin-top: 3px; display: block;">
+            🩸 ${isBn ? 'ফ্লেবোটোমিস্ট:' : 'Phlebotomist:'} ${phlebName} ${phlebPhone ? `(${phlebPhone})` : ''}
+          </span>
+        ` : ''}
       </div>
     </div>
+
+    ${phlebBannerHtml}
 
     <!-- Lab Partner Info -->
     <div class="lab-box">

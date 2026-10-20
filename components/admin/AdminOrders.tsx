@@ -48,6 +48,7 @@ import {
   getStoredStaffUsers, 
   getStoredPhlebotomists, 
   saveStoredPhlebotomists, 
+  saveStoredBookings,
   generatePhlebotomistDispatchWhatsAppText, 
   getWhatsAppUrl, 
   POPULAR_AREAS 
@@ -381,6 +382,7 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({
     if (onUpdateBookings) {
       onUpdateBookings(updatedBookings);
     }
+    saveStoredBookings(updatedBookings);
     saveBookingToFirestore(updatedBooking).catch(() => {});
 
     // Increment phlebotomist collections counter

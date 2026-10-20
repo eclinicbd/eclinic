@@ -43,7 +43,8 @@ import {
   saveStoredDoctorAtHomeBookings,
   saveAdminTestOverride,
   getStoredPhlebotomists,
-  saveStoredPhlebotomists
+  saveStoredPhlebotomists,
+  saveStoredBookings
 } from '../services/dataStorage';
 import { 
   savePhlebotomistsToFirestore, 
@@ -1410,6 +1411,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             return b;
           });
           onUpdateBookings(updated);
+          saveStoredBookings(updated);
           const target = updated.find(b => b.id === orderId);
           if (target) {
             setSelectedOrderForDetails(target);

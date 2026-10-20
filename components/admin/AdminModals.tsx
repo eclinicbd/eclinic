@@ -2753,6 +2753,34 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
               <span className="text-[10px] text-slate-400 uppercase font-bold block">Doctor Reference</span>
               <span className="text-slate-800 font-medium">{order.doctorName || 'Self / Not Specified'}</span>
             </div>
+            {(order.assignedPhlebotomistName || order.assignedPhlebotomistId) && (() => {
+              const pName = order.assignedPhlebotomistName || getStoredPhlebotomists().find(p => p.id === order.assignedPhlebotomistId)?.name;
+              const pPhone = order.assignedPhlebotomistPhone || getStoredPhlebotomists().find(p => p.id === order.assignedPhlebotomistId)?.phone;
+              if (!pName) return null;
+              return (
+                <div className="col-span-2 p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-base">🩸</span>
+                    <div>
+                      <span className="text-[10px] text-emerald-800 uppercase font-black block">
+                        {lang === 'bn' ? 'অ্যাসাইনকৃত ফ্লেবোটোমিস্ট' : 'Assigned Phlebotomist'}
+                      </span>
+                      <span className="font-bold text-emerald-950 text-xs">
+                        {pName}
+                      </span>
+                      {pPhone && (
+                        <span className="text-emerald-700 font-semibold text-[10px] block">
+                          📞 {pPhone}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <span className="text-[9px] bg-emerald-600 text-white font-bold px-2 py-0.5 rounded-full uppercase">
+                    {lang === 'bn' ? 'অ্যাসাইনড' : 'Assigned'}
+                  </span>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Diagnostic Center */}

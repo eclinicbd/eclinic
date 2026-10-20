@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { BookingHistoryItem, Language } from '../types';
 import { printOrDownloadInvoice, resolveOrderCollectionFee } from '../services/invoiceService';
-import { getStoredSiteSettings, getStoredTests, getStoredPackages } from '../services/dataStorage';
+import { getStoredSiteSettings, getStoredTests, getStoredPackages, getStoredPhlebotomists } from '../services/dataStorage';
 import { formatOrderId } from './BookingModal';
 import { 
   X, 
@@ -254,6 +254,38 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
               </p>
             </div>
           </div>
+
+          {/* Assigned Phlebotomist Banner if assigned */}
+          {(order.assignedPhlebotomistName || order.assignedPhlebotomistId) && (() => {
+            const phlebName = order.assignedPhlebotomistName || getStoredPhlebotomists().find(p => p.id === order.assignedPhlebotomistId)?.name;
+            const phlebPhone = order.assignedPhlebotomistPhone || getStoredPhlebotomists().find(p => p.id === order.assignedPhlebotomistId)?.phone;
+            if (!phlebName) return null;
+            return (
+              <div className="bg-emerald-50/90 border border-emerald-200 rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-2xs">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-base shadow-2xs shrink-0">
+                    🩸
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black uppercase text-emerald-800 tracking-wider block">
+                      {isBn ? 'অ্যাসাইনকৃত ফ্লেবোটোমিস্ট (Sample Collector)' : 'Assigned Phlebotomist'}
+                    </span>
+                    <p className="font-extrabold text-emerald-950 text-sm">
+                      {phlebName}
+                    </p>
+                    {phlebPhone && (
+                      <p className="text-[11px] font-semibold text-emerald-700 flex items-center gap-1 mt-0.5">
+                        <Phone size={12} /> {phlebPhone}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <span className="px-2.5 py-1 bg-emerald-600 text-white font-black text-[10px] rounded-lg uppercase tracking-wide shrink-0">
+                  {isBn ? 'অ্যাসাইনড' : 'Assigned'}
+                </span>
+              </div>
+            );
+          })()}
 
           {/* Patient and Lab Information 2-col Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -438,6 +438,7 @@ export interface DoctorAtHomeTimeSlot {
 
 export interface DoctorAtHomeScheduleConfig {
   maxAdvanceDays: number; // max 7 days
+  leadTimeHours?: number; // min hours notice required before slot start time (default: 2 hours)
   weeklyHolidays: number[]; // 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
   holidayDates: string[]; // YYYY-MM-DD
   timeSlots: DoctorAtHomeTimeSlot[];

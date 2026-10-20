@@ -1,4 +1,4 @@
-import { TestPackage, LabPartner, Language, BookingHistoryItem, SiteSettings, PatientUser, HealthPackage, CategoryItem, DateSlotConfig, TimeSlotConfigItem, StaffUser, StaffRole, StaffPermissions, PaymentGatewaysConfig, AdminCredentials, Doctor, DoctorAppointment, EPrescription, DoctorAtHomeBooking, DoctorAtHomeSpecialty, DoctorAtHomeScheduleConfig, HomeVisitDoctor, Phlebotomist } from '../types';
+import { TestPackage, LabPartner, Language, BookingHistoryItem, SiteSettings, PatientUser, HealthPackage, CategoryItem, DateSlotConfig, TimeSlotConfigItem, StaffUser, StaffRole, StaffPermissions, PaymentGatewaysConfig, AdminCredentials, Doctor, DoctorAppointment, EPrescription, DoctorAtHomeBooking, DoctorAtHomeSpecialty, DoctorAtHomeScheduleConfig, DoctorAtHomeTimeSlot, HomeVisitDoctor, Phlebotomist } from '../types';
 import { 
   getTests as getDefaultTests, 
   getLabs as getDefaultLabs, 
@@ -456,6 +456,93 @@ export const isSlotAvailable = (dateStr?: string, slotTime?: string): boolean =>
 
   return true;
 };
+
+/**
+ * Parse start time of Doctor At Home slot.
+ * Supports slot objects ({ id, timeBn, timeEn }) and formatted slot strings.
+ */
+export const parseDoctorAtHomeSlotStartTime = (dateStr: string, slotInput: DoctorAtHomeTimeSlot | string): Date | null => {
+  try {
+    if (!dateStr || !slotInput) return null;
+    const [year, month, day] = dateStr.split('-').map(Number);
+    if (!year || !month || !day) return null;
+
+    const timeEn = typeof slotInput === 'string' ? slotInput : (slotInput.timeEn || slotInput.timeBn || '');
+    const slotId = typeof slotInput === 'object' ? slotInput.id : '';
+
+    // Standard preset slot IDs
+    if (slotId === 'morning_1') {
+      return new Date(year, month - 1, day, 9, 0, 0, 0);
+    } else if (slotId === 'afternoon_1') {
+      return new Date(year, month - 1, day, 12, 0, 0, 0);
+    } else if (slotId === 'evening_1') {
+      return new Date(year, month - 1, day, 15, 0, 0, 0);
+    } else if (slotId === 'night_1') {
+      return new Date(year, month - 1, day, 18, 0, 0, 0);
+    }
+
+    // Match 12-hour AM/PM format (e.g., "09:00 AM", "12:00 PM", "03:00 PM", "06:00 PM")
+    const match12 = timeEn.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+    if (match12) {
+      let hours = parseInt(match12[1], 10);
+      const minutes = parseInt(match12[2], 10);
+      const ampm = match12[3].toUpperCase();
+      if (ampm === 'PM' && hours < 12) hours += 12;
+      if (ampm === 'AM' && hours === 12) hours = 0;
+      return new Date(year, month - 1, day, hours, minutes, 0, 0);
+    }
+
+    // Match Bengali/English text patterns
+    const bnToEnMap: Record<string, string> = { '০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4', '৫': '5', '৬': '6', '৭': '7', '৮': '8', '৯': '9' };
+    const normalized = timeEn.replace(/[০-৯]/g, d => bnToEnMap[d] || d);
+
+    const matchTime = normalized.match(/(\d{1,2}):(\d{2})/);
+    if (matchTime) {
+      let hours = parseInt(matchTime[1], 10);
+      const minutes = parseInt(matchTime[2], 10);
+      const isMorning = /সকাল|morning/i.test(timeEn);
+      const isAfternoon = /দুপুর|afternoon/i.test(timeEn);
+      const isEvening = /বিকাল|সন্ধ্যা|evening/i.test(timeEn);
+      const isNight = /রাত|night/i.test(timeEn);
+
+      if ((isEvening || isNight) && hours < 12) {
+        hours += 12;
+      } else if (isAfternoon && hours < 12 && hours >= 1) {
+        hours += 12;
+      } else if (isMorning && hours === 12) {
+        hours = 0;
+      }
+      return new Date(year, month - 1, day, hours, minutes, 0, 0);
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Check if a Doctor at Home slot is available with minimum lead time.
+ * User requirement: "Doctor at Home Bookings অপশনে ২ ঘন্টা আগে স্লট বুকিং দিতে পারবে"
+ * Strictly enforces a minimum 2 hours advance notice before slot start time.
+ */
+export const isDoctorAtHomeSlotAvailable = (
+  dateStr?: string, 
+  slotInput?: DoctorAtHomeTimeSlot | string,
+  leadTimeHours: number = 2
+): boolean => {
+  if (!dateStr || !slotInput) return false;
+
+  const slotDate = parseDoctorAtHomeSlotStartTime(dateStr, slotInput);
+  if (!slotDate) return true; // fallback to allow booking if time cannot be parsed
+
+  const now = new Date();
+  const diffMs = slotDate.getTime() - now.getTime();
+  const minRequiredMs = leadTimeHours * 60 * 60 * 1000;
+
+  return diffMs >= minRequiredMs;
+};
+
 
 
 export const DEFAULT_CATEGORIES: CategoryItem[] = [
@@ -1932,6 +2019,7 @@ export const DEFAULT_DOCTOR_AT_HOME_SPECIALTIES: DoctorAtHomeSpecialty[] = [
 
 export const DEFAULT_DOCTOR_AT_HOME_SCHEDULE: DoctorAtHomeScheduleConfig = {
   maxAdvanceDays: 7, // User requirement: সর্বোচ্চ ৭ দিনের বেশি অগ্রীম বুক করা যাবে না
+  leadTimeHours: 2, // User requirement: ২ ঘন্টা আগে স্লট বুকিং দিতে পারবে
   weeklyHolidays: [], // Default: No off-days unless explicitly selected by admin
   holidayDates: [], // Special holiday dates e.g. ['2026-10-25']
   timeSlots: [
@@ -1988,6 +2076,7 @@ export const getStoredDoctorAtHomeSchedule = (): DoctorAtHomeScheduleConfig => {
         return {
           ...DEFAULT_DOCTOR_AT_HOME_SCHEDULE,
           ...parsed,
+          leadTimeHours: Number(parsed.leadTimeHours) || 2,
           adminConfiguredHolidays: !!parsed.adminConfiguredHolidays,
           weeklyHolidays,
           holidayDates,
@@ -2005,6 +2094,7 @@ export const saveStoredDoctorAtHomeSchedule = (schedule: DoctorAtHomeScheduleCon
   try {
     const sanitized = {
       ...schedule,
+      leadTimeHours: Number(schedule.leadTimeHours) || 2,
       maxAdvanceDays: Math.min(7, Math.max(1, Number(schedule.maxAdvanceDays) || 7)) // Capped at 7
     };
     localStorage.setItem(STORAGE_KEYS.DOCTOR_AT_HOME_SCHEDULE, JSON.stringify(sanitized));
